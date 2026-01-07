@@ -12,11 +12,11 @@
 const Auth = {
     // Discord OAuth Configuration
     // Get CLIENT_ID from Discord Developer Portal: https://discord.com/developers/applications
-    CLIENT_ID: 'YOUR_DISCORD_CLIENT_ID_HERE',
+    CLIENT_ID: '1458307936462831658',
     
     // OAuth Redirect URI - Update this to your GitHub Pages URL
     // Format: https://YOUR_USERNAME.github.io/whistler (or your domain root if Whistler is there)
-    REDIRECT_URI: 'https://YOUR_USERNAME.github.io/whistler',
+    REDIRECT_URI: 'https://goldenpete.github.io/whistler/',
     
     // Serverless function to handle OAuth token exchange
     // Instructions: Deploy this to Vercel, Netlify, or similar
