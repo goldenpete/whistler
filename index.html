@@ -56,16 +56,33 @@
                     </ul>
                 </div>
             </div>
+
+
+            <!-- Sidebar PiP Container -->
+            <div id="sidebar-pip" class="sidebar-pip hidden">
+                <div class="pip-video-container" id="pip-video-wrapper">
+                    <!-- Video will be reparented here -->
+                </div>
+                <div class="pip-controls">
+                    <button class="icon-btn pip-btn" id="pip-btn-rewind" title="-10s"><i
+                            class="ph-bold ph-rewind"></i></button>
+                    <button class="icon-btn pip-btn" id="pip-btn-play-pause"><i class="ph-fill ph-play"></i></button>
+                    <button class="icon-btn pip-btn" id="pip-btn-forward" title="+10s"><i
+                            class="ph-bold ph-fast-forward"></i></button>
+                    <div style="flex: 1;"></div>
+                    <button class="icon-btn pip-btn" id="pip-btn-expand" title="Expand"><i
+                            class="ph-bold ph-arrows-out-simple"></i></button>
+                    <button class="icon-btn pip-btn" id="pip-btn-close" title="Close"><i
+                            class="ph-bold ph-x"></i></button>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Top Bar -->
-            <header class="top-bar">
-                <div id="breadcrumb-container" class="breadcrumb-container">
-                    <span class="breadcrumb-item active">Projects</span>
-                </div>
-            </header>
+            <!-- Top Bar Removed -->
+            <!-- <header class="top-bar"> ... </header> -->
 
             <!-- Views -->
             <div class="view-container">
@@ -99,6 +116,22 @@
                     <div class="player-layout">
                         <!-- Video Area -->
                         <div class="video-container" id="video-wrapper">
+                            <!-- New Connected Header (Moved back) -->
+                            <!-- NOTE: Header is inside here to stack vertically with video -->
+                            <div class="player-header" id="player-header">
+                                <h2 id="player-title">Video Title</h2>
+                                <div class="player-actions">
+                                    <button class="btn-secondary" id="btn-edit-file" title="Edit File"
+                                        style="padding: 6px 12px;">
+                                        <i class="ph-bold ph-pencil-simple"></i>
+                                    </button>
+                                    <button class="btn-danger" id="btn-delete-file" title="Delete File"
+                                        style="padding: 6px 12px;">
+                                        <i class="ph-bold ph-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- Catbox Embed (Video or Audio) -->
                             <!-- We will use a video tag if direct link, or iframe if needed. 
                                  For better control, we'll assume direct video mp4 links from catbox for this mockup 
@@ -137,6 +170,11 @@
                                         </button>
                                         <button class="btn-secondary"
                                             style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
+                                            id="btn-toggle-pip" title="Toggle Picture-in-Picture">
+                                            <i class="ph-bold ph-picture-in-picture"></i>
+                                        </button>
+                                        <button class="btn-secondary"
+                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
                                             id="btn-toggle-notes">
                                             <i class="ph-bold ph-sidebar-simple"></i>
                                         </button>
@@ -155,9 +193,6 @@
                             <div class="section-header"
                                 style="padding: var(--space-md); display: flex; justify-content: space-between; align-items: center;">
                                 <span class="section-title">Timestamped Notes</span>
-                                <button class="icon-btn" id="btn-close-notes" title="Close Notes">
-                                    <i class="ph-bold ph-x"></i>
-                                </button>
                             </div>
                             <div class="timestamp-list" id="active-timestamps">
                                 <!-- Timestamp items -->
@@ -259,10 +294,39 @@
                 <input type="text" class="form-input" id="input-timestamp-note" placeholder="Description...">
             </div>
 
-            <button class="btn-primary" id="submit-timestamp">Save Timestamp</button>
+            <button class="btn-primary" id="submit-timestamp" style="margin-top: 20px; width: 100%;">Save
+                Timestamp</button>
+
             <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
                 <i class="ph-bold ph-x"></i>
             </button>
+        </div>
+    </div>
+
+    <!-- Generic Prompt Modal -->
+    <div class="modal-overlay" id="modal-prompt">
+        <div class="modal">
+            <h3 id="prompt-title">Prompt</h3>
+            <div class="form-group">
+                <label id="prompt-label" class="form-label" style="display:none;"></label>
+                <input type="text" class="form-input" id="input-prompt-value">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn-secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn-primary" id="btn-prompt-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Confirm Modal -->
+    <div class="modal-overlay" id="modal-confirm">
+        <div class="modal">
+            <h3 id="confirm-title">Confirm</h3>
+            <p id="confirm-message" style="margin-bottom: var(--space-md); color: var(--text-secondary);"></p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn-secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn-danger" id="btn-confirm-yes">Delete</button>
+            </div>
         </div>
     </div>
 
@@ -307,7 +371,7 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="whistler.js"></script>
 </body>
 
 </html>

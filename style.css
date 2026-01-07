@@ -439,10 +439,49 @@ body.mode-focus .brand {
 }
 
 /* File Player Styles */
+
+/* Player View as Overlay Modal */
+#player-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.4);
+    /* More transparent */
+    backdrop-filter: blur(12px);
+    padding: var(--space-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#player-view.hidden {
+    display: none;
+}
+
+/* Storage view blur - Keep for depth */
+#storage-view.blurred {
+    filter: blur(4px);
+    pointer-events: none;
+}
+
 .player-layout {
     display: flex;
-    height: 100%;
-    gap: var(--space-md);
+    height: 80vh;
+    /* Fixed height to ensure alignment */
+    width: 100%;
+    max-width: 1400px;
+    gap: 0;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    /* Unified shadow */
+    border-radius: var(--radius-md);
+    /* Overall radius */
+    border: 1px solid var(--border-color);
+    /* Main Container Border */
+    overflow: hidden;
+    /* Clips children to radius */
 }
 
 .video-container {
@@ -452,13 +491,17 @@ body.mode-focus .brand {
     justify-content: center;
     align-items: center;
     position: relative;
+    border-radius: 0;
+    /* Remove radius, let parent handle it */
 }
 
 .catbox-frame {
     width: 100%;
-    max-height: 75vh;
-    object-fit: contain;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    height: 100%;
+    object-fit: cover;
+    /* Cover ensures no black bars */
+    border-radius: 0;
+    /* Remove radius */
     background-color: #000;
 }
 
@@ -467,13 +510,44 @@ body.mode-focus .brand {
     position: relative;
     width: 100%;
     background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
-    border: 1px solid var(--border-color);
-    border-top: none;
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    /* Remove borders and radius */
+    border: none;
+    border-radius: 0;
     padding: var(--space-md) var(--space-lg);
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+}
+
+/* Header Unification */
+.player-header {
+    position: relative;
+    width: 100%;
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+    /* Remove borders and radius */
+    border: none;
+    border-radius: 0;
+    padding: var(--space-md) var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+}
+
+.video-container:hover .player-header {
+    opacity: 1;
+}
+
+/* PiP Controls Styling */
+.pip-controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    margin-top: var(--space-xs);
 }
 
 .video-container:hover .player-controls {
@@ -549,6 +623,9 @@ body.mode-focus .brand {
     cursor: pointer;
     position: relative;
     margin: 0 var(--space-xs);
+    overflow: visible;
+    /* CRITICAL: Allow dot to hang off ends */
+    z-index: 10;
 }
 
 #marker-layer {
@@ -562,10 +639,50 @@ body.mode-focus .brand {
     z-index: 2;
 }
 
-/* Seek Bar - Styles Consolidated Above */
+/* Seek Bar Styles */
+.seek-bar-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
 
-.seek-bar-container:hover .seek-thumb {
+.seek-progress {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 4px;
+    background: var(--primary);
+    border-radius: 2px;
+    pointer-events: none;
+    /* Let clicks pass to container */
+}
+
+/* The Dot (Thumb) */
+.seek-progress::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    /* Center dot on end */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     opacity: 1;
+    /* Always visible as per user fix request */
+    transition: transform 0.1s;
+}
+
+.seek-bar-container:hover .seek-progress::after {
+    transform: translateY(-50%) scale(1.2);
 }
 
 /* Marker Ranges */
@@ -670,14 +787,22 @@ body.mode-focus .brand {
     align-self: flex-start;
 }
 
+/* Sidebar Unification */
 .timestamp-sidebar {
-    width: 300px;
+    width: 350px;
+    /* Slightly wider */
     background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+    /* Remove borders and radius */
+    border: none;
+    border-left: 1px solid var(--border-color);
+    /* Separator only */
+    border-radius: 0;
+
     display: flex;
     flex-direction: column;
     overflow: visible;
+    height: 100%;
+    /* Match parent height */
 }
 
 .timestamp-list {
@@ -693,13 +818,22 @@ body.mode-focus .brand {
     padding: var(--space-sm);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background-color 0.2s;
-    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: none;
+    /* Removed colored strip */
+    border-radius: var(--radius-md);
+    /* Smooth corners for button look */
+    margin-bottom: var(--space-xs);
+    /* Space between buttons */
     position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .timestamp-item:hover {
-    background-color: var(--bg-tertiary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    /* No bg change here, keeping collection color */
 }
 
 .time-badge {

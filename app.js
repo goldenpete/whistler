@@ -21,7 +21,9 @@ const state = {
     activeCollectionId: null,
 
     // Playback State
-    playbackRange: null // { start, end } for constrained playback
+    playbackRange: null, // { start, end } for constrained playback
+    pipFileId: null, // Track file in PiP
+    pipEnabled: true, // Default to true
 };
 
 // --- Storage Utilities ---
@@ -63,6 +65,13 @@ const elements = {
         toggleBtn: document.getElementById('btn-toggle-sidebar'),
         toggleIcon: document.getElementById('toggle-icon'),
         brandContent: document.querySelector('.brand-content'),
+        pipContainer: document.getElementById('sidebar-pip'),
+        pipVideoWrapper: document.getElementById('pip-video-wrapper'),
+        pipBtnRewind: document.getElementById('pip-btn-rewind'),
+        pipBtnPlayPause: document.getElementById('pip-btn-play-pause'),
+        pipBtnForward: document.getElementById('pip-btn-forward'),
+        pipBtnExpand: document.getElementById('pip-btn-expand'),
+        pipBtnClose: document.getElementById('pip-btn-close')
     },
     main: {
         // title: document.getElementById('page-title'), // Removed for breadcrumbs
@@ -86,7 +95,12 @@ const elements = {
         markerLayer: document.getElementById('marker-layer'),
         btnAddTimestamp: document.getElementById('btn-manage-timestamps'),
         activeTimestampsList: document.getElementById('active-timestamps'),
-        videoLoader: document.getElementById('video-loader')
+        videoLoader: document.getElementById('video-loader'),
+        btnTogglePiP: document.getElementById('btn-toggle-pip'),
+        playerHeader: document.getElementById('player-header'),
+        playerTitle: document.getElementById('player-title'),
+        btnEditFile: document.getElementById('btn-edit-file'),
+        btnDeleteFile: document.getElementById('btn-delete-file')
     },
     modals: {
         overlayProject: document.getElementById('modal-project'),
@@ -113,6 +127,18 @@ const elements = {
         btnSetEnd: document.getElementById('btn-set-end'),
         btnSubmitTimestamp: document.getElementById('submit-timestamp'),
 
+        // New Modals
+        overlayPrompt: document.getElementById('modal-prompt'),
+        promptTitle: document.getElementById('prompt-title'),
+        promptLabel: document.getElementById('prompt-label'),
+        inputPromptValue: document.getElementById('input-prompt-value'),
+        btnPromptConfirm: document.getElementById('btn-prompt-confirm'),
+
+        overlayConfirm: document.getElementById('modal-confirm'),
+        confirmTitle: document.getElementById('confirm-title'),
+        confirmMessage: document.getElementById('confirm-message'),
+        btnConfirmYes: document.getElementById('btn-confirm-yes'),
+
         // Popup Player
         overlayPlayer: document.getElementById('modal-player-popup'),
         popupVideo: document.getElementById('popup-video'),
@@ -129,33 +155,8 @@ const elements = {
     }
 };
 
-// --- Breadcrumbs ---
+// --- Breadcrumbs (Removed) ---
 
-function updateBreadcrumbs(items) {
-    const container = document.getElementById('breadcrumb-container');
-    if (!container) return;
-    container.innerHTML = '';
-
-    items.forEach((item, index) => {
-        const span = document.createElement('span');
-        const isLast = index === items.length - 1;
-        span.className = `breadcrumb-item ${isLast ? 'active' : ''} ${item.onClick ? 'interactive' : ''}`;
-        span.textContent = item.label; // Expect object { label, onClick }
-
-        if (item.onClick && !isLast) {
-            span.onclick = item.onClick;
-        }
-
-        container.appendChild(span);
-
-        if (!isLast) {
-            const separator = document.createElement('span');
-            separator.className = 'breadcrumb-separator';
-            separator.textContent = '/';
-            container.appendChild(separator);
-        }
-    });
-}
 
 // --- Logic ---
 
@@ -164,12 +165,24 @@ function updateBreadcrumbs(items) {
 // --- Logic ---
 
 function goToProjects() {
+    // Check if we need to enable PiP (before clearing state)
+    // Only if pipEnabled is true
+    if (state.activeFileId) {
+        if (state.pipEnabled && !elements.main.video.paused) {
+            state.pipFileId = state.activeFileId;
+            enablePiP();
+        } else {
+            elements.main.video.pause();
+            disablePiP(false); // Ensure it's back and hidden
+            state.pipFileId = null;
+        }
+    }
+
     state.activeProjectId = null;
     state.activeFileId = null;
     state.activeCollectionId = null;
     state.playbackRange = null;
 
-    elements.main.video.pause();
     exitFocusMode();
 
     hideAllViews();
@@ -190,16 +203,27 @@ function goToProjects() {
 
     setActiveNav('nav-projects');
     renderProjects();
-    updateBreadcrumbs([{ label: 'Projects' }]);
+    // updateBreadcrumbs([{ label: 'Projects' }]);
 }
 
 function goToStorage() {
+    // Check PiP first
+    if (state.activeFileId) {
+        if (state.pipEnabled && !elements.main.video.paused) {
+            state.pipFileId = state.activeFileId;
+            enablePiP();
+        } else {
+            elements.main.video.pause();
+            disablePiP(false);
+            state.pipFileId = null;
+        }
+    }
+
     state.activeProjectId = null; // View all
     state.activeFileId = null;
     state.activeCollectionId = null;
     state.playbackRange = null;
 
-    elements.main.video.pause();
     exitFocusMode();
 
     hideAllViews();
@@ -207,7 +231,7 @@ function goToStorage() {
 
     setActiveNav('nav-storage');
     renderStorage();
-    updateBreadcrumbs([{ label: 'Storage' }]);
+    // updateBreadcrumbs([{ label: 'Storage' }]);
 }
 
 function hideAllViews() {
@@ -229,11 +253,15 @@ function init() {
     elements.sidebar.navProjects.onclick = goToProjects;
     elements.sidebar.navStorage.onclick = goToStorage;
 
-    if (elements.sidebar.btnAddCollectionSidebar) {
-        elements.sidebar.btnAddCollectionSidebar.onclick = (e) => {
+    const btnAddCollection = document.getElementById('btn-add-collection-sidebar');
+    if (btnAddCollection) {
+        btnAddCollection.onclick = (e) => {
             e.stopPropagation();
+            console.log("Add Collection Clicked");
             openModal(elements.modals.overlayCollection);
         };
+    } else {
+        console.error("Add Collection Button not found in init");
     }
 
     // Brand click
@@ -255,6 +283,7 @@ function init() {
     }
 
     // Initial Load
+    console.log("App Initialized");
     goToProjects();
 }
 
@@ -374,7 +403,7 @@ function createFile() {
 
     const file = {
         id: crypto.randomUUID(),
-        project_id: state.activeProjectId,
+        projectId: state.activeProjectId,
         name: name,
         url: url,
         created_at: new Date().toISOString(),
@@ -398,6 +427,7 @@ function createCollection() {
 
     const collection = {
         id: crypto.randomUUID(),
+        projectId: state.activeProjectId,
         name: name,
         color: color,
         created_at: new Date().toISOString(),
@@ -407,8 +437,98 @@ function createCollection() {
     state.collections.push(collection);
     Storage.save();
     closeModals();
-    // renderSidebarCollections(); // Removed - sidebar is static
+    renderSidebarCollections();
     elements.modals.inputCollectionName.value = '';
+}
+
+function closeModals() {
+    if (elements.modals.overlayProject) elements.modals.overlayProject.classList.remove('open');
+    if (elements.modals.overlayFile) elements.modals.overlayFile.classList.remove('open');
+    if (elements.modals.overlayCollection) elements.modals.overlayCollection.classList.remove('open');
+    if (elements.modals.overlayPlayer) elements.modals.overlayPlayer.classList.remove('open');
+    if (elements.modals.overlayTimestamp) elements.modals.overlayTimestamp.classList.remove('open');
+    if (elements.modals.overlayPrompt) elements.modals.overlayPrompt.classList.remove('open');
+    if (elements.modals.overlayConfirm) elements.modals.overlayConfirm.classList.remove('open');
+
+    // Clear inputs
+    if (elements.modals.inputProjectName) elements.modals.inputProjectName.value = '';
+    if (elements.modals.inputFileName) elements.modals.inputFileName.value = '';
+    if (elements.modals.inputFileUrl) elements.modals.inputFileUrl.value = '';
+    if (elements.modals.inputCollectionName) elements.modals.inputCollectionName.value = '';
+    if (elements.modals.inputPromptValue) elements.modals.inputPromptValue.value = '';
+}
+
+// Helper for Custom Prompt
+function showPrompt(title, defaultValue, callback) {
+    elements.modals.promptTitle.textContent = title;
+    elements.modals.inputPromptValue.value = defaultValue || '';
+    elements.modals.overlayPrompt.classList.add('open');
+    elements.modals.inputPromptValue.focus();
+
+    // Remove old listener
+    const newBtn = elements.modals.btnPromptConfirm.cloneNode(true);
+    elements.modals.btnPromptConfirm.parentNode.replaceChild(newBtn, elements.modals.btnPromptConfirm);
+    elements.modals.btnPromptConfirm = newBtn;
+
+    newBtn.onclick = () => {
+        const value = elements.modals.inputPromptValue.value;
+        if (value && value.trim() !== "") {
+            callback(value.trim());
+            closeModals();
+        }
+    };
+}
+
+// Helper for Custom Confirm
+function showConfirm(title, message, callback) {
+    elements.modals.confirmTitle.textContent = title;
+    elements.modals.confirmMessage.textContent = message;
+    elements.modals.overlayConfirm.classList.add('open');
+
+    // Remove old listener
+    const newBtn = elements.modals.btnConfirmYes.cloneNode(true);
+    elements.modals.btnConfirmYes.parentNode.replaceChild(newBtn, elements.modals.btnConfirmYes);
+    elements.modals.btnConfirmYes = newBtn;
+
+    newBtn.onclick = () => {
+        callback();
+        closeModals();
+    };
+}
+
+function editFile(fileId) {
+    const file = state.files.find(f => f.id === fileId);
+    if (!file) return;
+
+    showPrompt("Rename File", file.name, (newName) => {
+        file.name = newName;
+        Storage.save();
+        if (elements.main.playerTitle) elements.main.playerTitle.textContent = file.name;
+    });
+}
+
+function deleteFile(fileId) {
+    showConfirm("Delete File", "Are you sure you want to delete this file? This action cannot be undone.", () => {
+        // Remove file
+        state.files = state.files.filter(f => f.id !== fileId);
+        // Remove associated timestamps
+        state.timestamps = state.timestamps.filter(t => t.fileId !== fileId);
+
+        Storage.save();
+
+        // Reset player if active
+        if (state.activeFileId === fileId) {
+            state.activeFileId = null;
+            elements.main.video.src = "";
+
+            // Go back to project
+            if (state.activeProjectId) {
+                selectProject(state.activeProjectId);
+            } else {
+                goToProjects();
+            }
+        }
+    });
 }
 
 function openTimestampEditor() {
@@ -623,11 +743,16 @@ function renderSidebarFiles() {
 }
 
 function renderSidebarCollections() {
-    const list = elements.sidebar.collectionList;
-    if (!list) return;
+    // Re-fetch list to ensure freshness
+    const list = document.getElementById('collection-list');
+    if (!list) {
+        console.error("Collection list element not found");
+        return;
+    }
     list.innerHTML = '';
 
     const projectCollections = state.collections.filter(c => c.projectId === state.activeProjectId);
+    console.log("Rendering Collections:", projectCollections.length, "for project:", state.activeProjectId);
 
     projectCollections.forEach(c => {
         const li = document.createElement('li');
@@ -642,8 +767,6 @@ function renderSidebarCollections() {
         };
         list.appendChild(li);
     });
-
-    // Note: The empty state is handled by the list being empty
 }
 // Side note: Need to ensure new Add Collection button logic is hooked up in init.
 
@@ -794,13 +917,13 @@ function selectProject(id) {
         elements.main.storageView.classList.remove('hidden');
         setActiveNav('nav-storage');
         renderStorage();
-        updateBreadcrumbs([{ label: 'Storage' }]);
+        // updateBreadcrumbs([{ label: 'Storage' }]);
     };
 
     renderSidebarCollections(); // Render collections for this project
 
     // Update breadcrumbs - just show "Storage"
-    updateBreadcrumbs([{ label: 'Storage' }]);
+    // updateBreadcrumbs([{ label: 'Storage' }]);
 
     // Use renderStorage but it will filter by activeProjectId
     renderStorage();
@@ -816,6 +939,9 @@ function selectFile(fileId) {
     const file = state.files.find(f => f.id === fileId);
     if (!file) return;
 
+    const project = state.projects.find(p => p.id === file.projectId);
+    if (!project) return;
+
     state.activeFileId = fileId;
     state.activeCollectionId = null;
     state.playbackRange = null;
@@ -823,21 +949,68 @@ function selectFile(fileId) {
     // Switch to Player View
     hideAllViews();
     elements.main.playerView.classList.remove('hidden');
+    // Ensure header is visible
+    if (elements.main.playerHeader) elements.main.playerHeader.classList.remove('hidden');
+
+    // Update Header
+    if (elements.main.playerTitle) elements.main.playerTitle.textContent = file.name;
+
+    // Attach Action Listeners - Re-fetch elements to ensure freshness and add stopPropagation
+    const btnEdit = document.getElementById('btn-edit-file');
+    const btnDelete = document.getElementById('btn-delete-file');
+
+    // Remove old listeners to prevent duplicates (cloning)
+    if (btnEdit) {
+        const newBtnEdit = btnEdit.cloneNode(true);
+        btnEdit.parentNode.replaceChild(newBtnEdit, btnEdit);
+        newBtnEdit.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Edit button clicked for file:', fileId);
+            editFile(fileId);
+        });
+    }
+    if (btnDelete) {
+        const newBtnDelete = btnDelete.cloneNode(true);
+        btnDelete.parentNode.replaceChild(newBtnDelete, btnDelete);
+        newBtnDelete.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Delete button clicked for file:', fileId);
+            deleteFile(fileId);
+        });
+    }
 
     elements.main.video.src = file.url;
     elements.main.video.play();
     elements.main.playPauseBtn.innerHTML = '<i class="ph-fill ph-pause"></i>';
 
+    disablePiP(true); // Ensure video is in main view
+
+    // Initial Render
     renderPlayerTimestamps();
     renderProgressBarMarkers();
 
-    // Simple breadcrumb - just show the file name
-    updateBreadcrumbs([{ label: file.name }]);
+    // Breadcrumbs
+    // updateBreadcrumbs([
+    //     { label: project.name, onclick: () => selectProject(project.id) },
+    //     { label: file.name, active: true }
+    // ]);
 }
 
 function selectCollection(collectionId) {
     const collection = state.collections.find(c => c.id === collectionId);
     if (!collection) return;
+
+    // Check PiP first
+    if (state.activeFileId) {
+        if (state.pipEnabled && !elements.main.video.paused) {
+            state.pipFileId = state.activeFileId;
+            enablePiP();
+        } else {
+            elements.main.video.pause();
+            disablePiP(false);
+            state.pipFileId = null;
+        }
+    }
 
     state.activeCollectionId = collectionId;
     state.activeFileId = null;
@@ -852,7 +1025,7 @@ function selectCollection(collectionId) {
     renderSidebarCollections(); // Re-render to update active class
 
     // Simple breadcrumb - just show the collection name
-    updateBreadcrumbs([{ label: collection.name }]);
+    // updateBreadcrumbs([{ label: collection.name }]); -> Removed
 }
 
 
@@ -1067,6 +1240,110 @@ function parseTime(timeStr) {
     return (m * 60) + s;
 }
 
+// --- PiP Logic ---
+
+function enablePiP() {
+    // Reparent video to sidebar
+    elements.sidebar.pipVideoWrapper.appendChild(elements.main.video);
+    elements.sidebar.pipContainer.classList.remove('hidden');
+
+    // Update Play/Pause Icon in PiP
+    updatePiPPlayIcon();
+}
+
+function disablePiP(restoreToMain = true) {
+    elements.sidebar.pipContainer.classList.add('hidden');
+
+    if (restoreToMain) {
+        // Move back to main container.
+        // We want the order: Header -> Video -> Controls.
+        // The Header is static at the top. The Controls are static at the bottom.
+        // So we should insert the video BEFORE the controls.
+        const controls = elements.main.videoContainer.querySelector('.player-controls');
+        if (controls) {
+            elements.main.videoContainer.insertBefore(elements.main.video, controls);
+        } else {
+            elements.main.videoContainer.appendChild(elements.main.video);
+        }
+        // Ensure loader is also handled if needed, but loader is absolute usually.
+        // If loader is in flow, it should be after video.
+        const loader = elements.main.videoLoader;
+        if (loader && loader.parentNode === elements.main.videoContainer) {
+            // Ensure loader is after video (z-index handles visibility, but DOM order helps)
+            elements.main.videoContainer.insertBefore(loader, controls);
+        }
+    }
+}
+
+function updatePiPPlayIcon() {
+    if (elements.main.video.paused) {
+        elements.sidebar.pipBtnPlayPause.innerHTML = '<i class="ph-fill ph-play"></i>';
+    } else {
+        elements.sidebar.pipBtnPlayPause.innerHTML = '<i class="ph-fill ph-pause"></i>';
+    }
+}
+
+// PiP Listeners
+if (elements.sidebar.pipBtnRewind) {
+    elements.sidebar.pipBtnRewind.onclick = (e) => {
+        e.stopPropagation();
+        elements.main.video.currentTime -= 10;
+    };
+    elements.sidebar.pipBtnForward.onclick = (e) => {
+        e.stopPropagation();
+        elements.main.video.currentTime += 10;
+    };
+    elements.sidebar.pipBtnPlayPause.onclick = (e) => {
+        e.stopPropagation();
+        if (elements.main.video.paused) {
+            elements.main.video.play();
+        } else {
+            elements.main.video.pause();
+        }
+        updatePiPPlayIcon();
+        // Also update main player icon just in case
+        elements.main.playPauseBtn.innerHTML = elements.main.video.paused ? '<i class="ph-fill ph-play"></i>' : '<i class="ph-fill ph-pause"></i>';
+    };
+    elements.sidebar.pipBtnExpand.onclick = (e) => {
+        e.stopPropagation();
+        if (state.pipFileId) {
+            selectFile(state.pipFileId);
+            state.pipFileId = null;
+        } else {
+            // Fallback: just go to player view?
+            disablePiP(true);
+            hideAllViews();
+            elements.main.playerView.classList.remove('hidden');
+        }
+    };
+    elements.sidebar.pipBtnClose.onclick = (e) => {
+        e.stopPropagation();
+        elements.main.video.pause();
+        disablePiP(true);
+        state.pipFileId = null;
+    };
+}
+
+if (elements.main.btnTogglePiP) {
+    elements.main.btnTogglePiP.onclick = () => {
+        state.pipEnabled = !state.pipEnabled;
+        if (state.pipEnabled) {
+            elements.main.btnTogglePiP.innerHTML = '<i class="ph-bold ph-picture-in-picture"></i>';
+            elements.main.btnTogglePiP.style.opacity = '1';
+        } else {
+            // Use "slash" icon or dim it
+            elements.main.btnTogglePiP.innerHTML = '<i class="ph-bold ph-picture-in-picture" style="position:relative;"><div style="position:absolute;width:100%;height:2px;background:var(--text-primary);top:50%;left:0;transform:rotate(45deg);"></div></i>';
+            // Or simpler:
+            elements.main.btnTogglePiP.innerHTML = '<i class="ph-bold ph-monitor-play"></i>'; // Fallback if no specific icon
+            // Actually, phosphor has ph-picture-in-picture-slash? Let's assume standard behavior or just dim.
+            // Let's use opacity for simplicity + icon change.
+            elements.main.btnTogglePiP.innerHTML = '<i class="ph-bold ph-picture-in-picture"></i>';
+            elements.main.btnTogglePiP.style.opacity = '0.5';
+        }
+    };
+}
+
+
 // --- Modals ---
 
 function openModal(modal) {
@@ -1097,14 +1374,14 @@ window.closeModals = function () {
 window.addEventListener('DOMContentLoaded', init);
 
 // Close modals when clicking the overlay background
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     if (event.target.classList && event.target.classList.contains('modal-overlay') && event.target.classList.contains('open')) {
         closeModals();
     }
 });
 
 // Close modals when clicking X button
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     const closeBtn = event.target.closest('.modal-close');
     if (closeBtn) {
         event.stopPropagation();
