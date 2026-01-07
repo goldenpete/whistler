@@ -66,8 +66,18 @@ export default async function handler(req, res) {
         let supabaseUserId;
         
         if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-            // User exists, use their ID
+            // User exists, get a session for them
             supabaseUserId = existingUsers[0].id;
+            
+            // Create a session for the existing user
+            const { data: sessionData, error: sessionError } = await fetch(`${supabaseAdminUrl}/auth/v1/admin/users/${supabaseUserId}/identity_data`, {
+                method: 'POST',
+                headers: {
+                    'apikey': supabaseServiceKey,
+                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
         } else {
             // Create new Supabase user with Discord auth
             const email = discordUser.email || `discord_${discordUser.id}@example.com`;
@@ -113,6 +123,20 @@ export default async function handler(req, res) {
                 throw new Error('Failed to create Supabase user');
             }
         }
+        
+        // Create a session/access token for the user
+        const sessionRes = await fetch(`${supabaseAdminUrl}/auth/v1/admin/users/${supabaseUserId}/sessions`, {
+            method: 'POST',
+            headers: {
+                'apikey': supabaseServiceKey,
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
+        
+        const sessionData = await sessionRes.json();
+        const accessToken = sessionData.access_token || null;
 
         return res.status(200).json({
             user: {
@@ -122,6 +146,9 @@ export default async function handler(req, res) {
                 discriminator: discordUser.discriminator,
                 email: discordUser.email,
                 avatar: discordUser.avatar
+            },
+            session: {
+                access_token: accessToken
             }
         });
     } catch (error) {

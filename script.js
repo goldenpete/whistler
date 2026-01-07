@@ -75,6 +75,15 @@ const Auth = {
                     CloudSync.userId = data.user.supabase_id;
                     console.log('Set CloudSync.userId to:', CloudSync.userId);
                     
+                    // Authenticate Supabase client with session token
+                    if (data.session && data.session.access_token) {
+                        console.log('Setting Supabase session...');
+                        await supabaseClient.auth.setSession({
+                            access_token: data.session.access_token,
+                            refresh_token: null
+                        });
+                    }
+                    
                     // Load cloud data
                     await CloudSync.pullData();
                     
