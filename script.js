@@ -523,7 +523,8 @@ function createProject() {
     const project = {
         id: crypto.randomUUID(),
         name: name,
-        created: Date.now()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
     };
 
     state.projects.push(project);
@@ -543,16 +544,17 @@ function createFile() {
 
     const file = {
         id: crypto.randomUUID(),
-        projectId: state.activeProjectId,
+        project_id: state.activeProjectId,
         name: name,
         url: url,
-        type: 'video'
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
     };
 
     state.files.push(file);
     Storage.save();
     closeModals();
-    renderSidebarFiles();
+    // renderSidebarFiles(); // Removed - sidebar is static
     selectProject(state.activeProjectId);
     elements.modals.inputFileName.value = '';
     elements.modals.inputFileUrl.value = '';
@@ -566,15 +568,16 @@ function createCollection() {
 
     const collection = {
         id: crypto.randomUUID(),
-        projectId: state.activeProjectId,
         name: name,
-        color: color
+        color: color,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
     };
 
     state.collections.push(collection);
     Storage.save();
     closeModals();
-    renderSidebarCollections();
+    // renderSidebarCollections(); // Removed - sidebar is static
     elements.modals.inputCollectionName.value = '';
 }
 
@@ -626,11 +629,13 @@ function saveTimestampFromEditor() {
 
     const timestamp = {
         id: crypto.randomUUID(),
-        fileId: state.activeFileId,
-        collectionId: collectionId,
-        startTime: start,
-        endTime: end,
-        note: note
+        file_id: state.activeFileId,
+        collection_id: collectionId,
+        start_time: start,
+        end_time: end,
+        note: note,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
     };
 
     state.timestamps.push(timestamp);
