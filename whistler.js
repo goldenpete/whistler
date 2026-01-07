@@ -1,1187 +1,860 @@
 /**
  * Whistler.js
- * Robust Application Logic Reference Implementation
+ * Rebuilt Core Logic
  */
 
-const Whistler = {
-    // --- State ---
-    state: {
-        projects: [],
-        files: [],
-        collections: [],
-        timestamps: [],
-        // UI State
-        activeProjectId: null,
-        activeFileId: null,
-        activeCollectionId: null,
-        // Playback State
-        playbackRange: null,
-        pipFileId: null,
-        pipEnabled: true
-    },
-
-    // --- DOM Elements Helper (Dynamic to prevent null refs) ---
-    get elements() {
-        return {
-            sidebar: {
-                navProjects: document.getElementById('nav-projects'),
-                navProjectsIcon: document.getElementById('nav-projects-icon'),
-                navProjectsLabel: document.getElementById('nav-projects-label'),
-                navStorage: document.getElementById('nav-storage'),
-                navCollectionsContainer: document.getElementById('nav-collections-container'),
-                collectionList: document.getElementById('collection-list'),
-                btnAddCollectionSidebar: document.getElementById('btn-add-collection-sidebar'),
-                projectTitle: document.getElementById('sidebar-project-title'),
-                toggleBtn: document.getElementById('btn-toggle-sidebar'),
-                toggleIcon: document.getElementById('toggle-icon'),
-                brandContent: document.querySelector('.brand-content'),
-
-                // PiP
-                pipContainer: document.getElementById('sidebar-pip'),
-                pipVideoWrapper: document.getElementById('pip-video-wrapper'),
-                pipBtnPlayPause: document.getElementById('pip-btn-play-pause'),
-                pipBtnRewind: document.getElementById('pip-btn-rewind'),
-                pipBtnForward: document.getElementById('pip-btn-forward'),
-                pipBtnExpand: document.getElementById('pip-btn-expand'),
-                pipBtnClose: document.getElementById('pip-btn-close')
-            },
-            main: {
-                projectsView: document.getElementById('projects-view'),
-                projectGrid: document.getElementById('project-grid'),
-                storageView: document.getElementById('storage-view'),
-                storageGrid: document.getElementById('storage-grid'),
-                collectionView: document.getElementById('collection-view'),
-                collectionHeaderTitle: document.getElementById('collection-header-title'),
-                collectionGrid: document.getElementById('collection-grid'),
-                playerView: document.getElementById('player-view'),
-                video: document.getElementById('main-player'),
-                videoContainer: document.getElementById('video-wrapper'),
-                playPauseBtn: document.getElementById('btn-play-pause'),
-                timeDisplay: document.getElementById('time-display'),
-                seekBarContainer: document.getElementById('seek-container'),
-                seekBarProgress: document.getElementById('seek-progress'),
-                markerLayer: document.getElementById('marker-layer'),
-                btnAddTimestamp: document.getElementById('btn-manage-timestamps'),
-                activeTimestampsList: document.getElementById('active-timestamps'),
-                videoLoader: document.getElementById('video-loader'),
-                btnTogglePiP: document.getElementById('btn-toggle-pip'),
-                playerHeader: document.getElementById('player-header'),
-                playerTitle: document.getElementById('player-title'),
-                btnEditFile: document.getElementById('btn-edit-file'),
-                btnEditFile: document.getElementById('btn-edit-file'),
-                btnDeleteFile: document.getElementById('btn-delete-file'),
-                // New Controls
-                timestampSidebar: document.getElementById('timestamp-sidebar'),
-                btnToggleNotes: document.getElementById('btn-toggle-notes'),
-                btnCloseNotes: document.getElementById('btn-close-notes'),
-                btnPlaybackSpeed: document.getElementById('btn-playback-speed')
-            },
-            modals: {
-                // ... Map all modals dynamically ...
-                overlayProject: document.getElementById('modal-project'),
-                inputProjectName: document.getElementById('input-project-name'),
-                btnSubmitProject: document.getElementById('submit-project'),
-
-                overlayFile: document.getElementById('modal-file'),
-                inputFileName: document.getElementById('input-file-name'),
-                inputFileUrl: document.getElementById('input-file-url'),
-                btnSubmitFile: document.getElementById('submit-file'),
-
-                overlayCollection: document.getElementById('modal-collection'),
-                inputCollectionName: document.getElementById('input-collection-name'),
-                inputCollectionColor: document.getElementById('input-collection-color'),
-                btnSubmitCollection: document.getElementById('submit-collection'),
-
-                overlayTimestamp: document.getElementById('modal-timestamp'),
-                inputTimestampCollection: document.getElementById('input-timestamp-collection'),
-                inputTimestampNote: document.getElementById('input-timestamp-note'),
-                inputTimestampStart: document.getElementById('input-timestamp-start'),
-                inputTimestampEnd: document.getElementById('input-timestamp-end'),
-                btnSetStart: document.getElementById('btn-set-start'),
-                btnSetEnd: document.getElementById('btn-set-end'),
-                btnSubmitTimestamp: document.getElementById('submit-timestamp'),
-
-                // Custom Prompts
-                overlayPrompt: document.getElementById('modal-prompt'),
-                promptTitle: document.getElementById('prompt-title'),
-                inputPromptValue: document.getElementById('input-prompt-value'),
-                btnPromptConfirm: document.getElementById('btn-prompt-confirm'),
-
-                overlayConfirm: document.getElementById('modal-confirm'),
-                confirmTitle: document.getElementById('confirm-title'),
-                confirmMessage: document.getElementById('confirm-message'),
-                btnConfirmYes: document.getElementById('btn-confirm-yes'),
-
-                // Popup
-                overlayPlayer: document.getElementById('modal-player-popup'),
-                popupVideo: document.getElementById('popup-video'),
-                popupTitle: document.getElementById('popup-title'),
-                popupNote: document.getElementById('popup-note'),
-                btnDelete: document.getElementById('btn-delete-timestamp'),
-                btnSavePopup: document.getElementById('btn-save-popup'),
-                popupPlayBtn: document.getElementById('popup-play-btn'),
-                popupSeekBar: document.getElementById('popup-seek-bar'),
-                popupProgress: document.getElementById('popup-progress'),
-                popupTimeVal: document.getElementById('popup-time-val')
-            }
+class WhistlerApp {
+    constructor() {
+        this.state = {
+            projects: [],
+            files: [],
+            collections: [],
+            timestamps: [],
+            activeProjectId: null,
+            activeFileId: null,
+            activeCollectionId: null,
+            isPipActive: false
         };
-    },
 
-    // --- Init ---
-    init: function () {
+        // Modules
+        this.storage = new StorageManager(this);
+        this.router = new Router(this);
+        this.player = new Player(this);
+        this.ui = new UIManager(this);
+        this.modals = new ModalManager(this);
+
+        this.init();
+    }
+
+    init() {
         console.log("Whistler Initializing...");
-        Whistler.Storage.load();
-        Whistler.Events.setupNavigation();
-        Whistler.Events.setupSpecifics();
-        Whistler.Router.goToProjects();
-    },
+        this.storage.load();
+        this.router.init();
+        this.modals.init();
+        this.ui.setupNavigation();
 
-    // --- Storage ---
-    Storage: {
-        save: () => {
-            localStorage.setItem('whistler_data', JSON.stringify({
-                projects: Whistler.state.projects,
-                files: Whistler.state.files,
-                collections: Whistler.state.collections,
-                timestamps: Whistler.state.timestamps
-            }));
-        },
-        load: () => {
-            try {
-                const data = localStorage.getItem('whistler_data');
-                if (data) {
-                    const parsed = JSON.parse(data);
-                    Whistler.state.projects = parsed.projects || [];
-                    Whistler.state.files = parsed.files || [];
-                    Whistler.state.collections = parsed.collections || [];
-                    Whistler.state.timestamps = parsed.timestamps || [];
-                }
-            } catch (e) {
-                console.error("Failed to load storage", e);
+        // Initial Route
+        this.router.goTo('projects');
+    }
+}
+
+class StorageManager {
+    constructor(app) {
+        this.app = app;
+        this.KEY = 'whistler_v2_data';
+    }
+
+    save() {
+        const data = {
+            projects: this.app.state.projects,
+            files: this.app.state.files,
+            collections: this.app.state.collections,
+            timestamps: this.app.state.timestamps
+        };
+        localStorage.setItem(this.KEY, JSON.stringify(data));
+    }
+
+    load() {
+        try {
+            const raw = localStorage.getItem(this.KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                this.app.state.projects = data.projects || [];
+                this.app.state.files = data.files || [];
+                // Ensure legacy or new structure compatibility if needed (none for rebuild)
+                this.app.state.collections = data.collections || [];
+                this.app.state.timestamps = data.timestamps || [];
             }
-        }
-    },
-
-    // --- Router ---
-    Router: {
-        hideAllViews: () => {
-            const els = Whistler.elements.main;
-            if (els.projectsView) els.projectsView.classList.add('hidden');
-            if (els.storageView) els.storageView.classList.add('hidden');
-            if (els.collectionView) els.collectionView.classList.add('hidden');
-            if (els.playerView) els.playerView.classList.add('hidden');
-        },
-        goToProjects: () => {
-            // Handle PiP transition if needed
-            if (Whistler.state.activeFileId && Whistler.state.pipEnabled && !Whistler.elements.main.video.paused) {
-                Whistler.state.pipFileId = Whistler.state.activeFileId;
-                Whistler.PiP.enable();
-            } else {
-                if (Whistler.elements.main.video) Whistler.elements.main.video.pause();
-                Whistler.PiP.disable(false);
-                Whistler.state.pipFileId = null;
-            }
-
-            Whistler.state.activeProjectId = null;
-            Whistler.state.activeFileId = null;
-            Whistler.state.activeCollectionId = null;
-
-            Whistler.Router.hideAllViews();
-            Whistler.elements.main.projectsView.classList.remove('hidden');
-
-            // Sidebar adjustments
-            const sb = Whistler.elements.sidebar;
-            sb.navStorage.classList.add('hidden');
-            sb.navCollectionsContainer.classList.add('hidden');
-            sb.projectTitle.classList.add('hidden');
-
-            sb.navProjectsIcon.className = 'ph-bold ph-squares-four';
-            sb.navProjectsLabel.textContent = 'Projects';
-            sb.navProjects.onclick = Whistler.Router.goToProjects;
-
-            Whistler.UI.setActiveNav('nav-projects');
-            Whistler.UI.renderProjects();
-        },
-        goToStorage: () => {
-            // PiP Logic
-            if (Whistler.state.activeFileId && Whistler.state.pipEnabled && !Whistler.elements.main.video.paused) {
-                Whistler.state.pipFileId = Whistler.state.activeFileId;
-                Whistler.PiP.enable();
-            } else {
-                if (Whistler.elements.main.video) Whistler.elements.main.video.pause();
-                Whistler.PiP.disable(false);
-                Whistler.state.pipFileId = null;
-            }
-
-            Whistler.state.activeProjectId = null;
-            Whistler.state.activeFileId = null;
-            Whistler.state.activeCollectionId = null;
-
-            Whistler.Router.hideAllViews();
-            Whistler.elements.main.storageView.classList.remove('hidden');
-            Whistler.UI.setActiveNav('nav-storage');
-            Whistler.UI.renderStorage();
-        },
-        selectProject: (id) => {
-            const project = Whistler.state.projects.find(p => p.id === id);
-            if (!project) return;
-
-            Whistler.state.activeProjectId = id;
-            Whistler.state.activeFileId = null;
-
-            Whistler.Router.hideAllViews();
-            Whistler.elements.main.storageView.classList.remove('hidden');
-
-            // Update Sidebar
-            const sb = Whistler.elements.sidebar;
-            sb.navStorage.classList.remove('hidden');
-            sb.navCollectionsContainer.classList.remove('hidden');
-            sb.projectTitle.textContent = project.name;
-            sb.projectTitle.classList.remove('hidden');
-
-            sb.navProjectsIcon.className = 'ph-bold ph-arrow-left';
-            sb.navProjectsLabel.textContent = 'Back to Projects';
-            sb.navProjects.onclick = Whistler.Router.goToProjects;
-
-            // Navigation on Storage Click
-            sb.navStorage.onclick = () => {
-                Whistler.state.activeFileId = null;
-                Whistler.state.activeCollectionId = null;
-                Whistler.Router.hideAllViews();
-                Whistler.elements.main.storageView.classList.remove('hidden');
-                Whistler.UI.setActiveNav('nav-storage');
-                Whistler.UI.renderStorage();
-            };
-
-            Whistler.UI.setActiveNav('nav-storage');
-            Whistler.UI.renderStorage();
-            Whistler.UI.renderSidebarCollections();
-        },
-        selectFile: (fileId) => {
-            const file = Whistler.state.files.find(f => f.id === fileId);
-            if (!file) return;
-
-            Whistler.state.activeFileId = fileId;
-            Whistler.state.activeCollectionId = null;
-
-            // Don't hide storage view - show player as overlay instead
-            const storageView = Whistler.elements.main.storageView;
-            const playerView = Whistler.elements.main.playerView;
-
-            // Blur storage view
-            if (storageView) storageView.classList.add('blurred');
-
-            // Show player as overlay
-            if (playerView) playerView.classList.remove('hidden');
-            if (Whistler.elements.main.playerHeader) Whistler.elements.main.playerHeader.classList.remove('hidden');
-
-            if (Whistler.elements.main.playerTitle) Whistler.elements.main.playerTitle.textContent = file.name;
-
-            // Attach Player Action Listeners Safely
-            const btnEdit = document.getElementById('btn-edit-file');
-            if (btnEdit) {
-                const newBtn = btnEdit.cloneNode(true);
-                btnEdit.parentNode.replaceChild(newBtn, btnEdit);
-                newBtn.onclick = (e) => { e.stopPropagation(); Whistler.Actions.editFile(fileId); };
-            }
-            const btnDelete = document.getElementById('btn-delete-file');
-            if (btnDelete) {
-                const newBtn = btnDelete.cloneNode(true);
-                btnDelete.parentNode.replaceChild(newBtn, btnDelete);
-                newBtn.onclick = (e) => { e.stopPropagation(); Whistler.Actions.deleteFile(fileId); };
-            }
-
-            const video = Whistler.elements.main.video;
-
-            // Smart Resume Check: If opening the PiP file, don't reset
-            const isResumingPip = (Whistler.state.pipFileId === fileId);
-
-            if (isResumingPip) {
-                // Ensure video is back in main container (PiP disable handles this if forceMoveBack=true)
-                Whistler.PiP.disable(true);
-                Whistler.state.pipFileId = null; // Clear PiP state
-
-                // If paused, maybe play? Depends on UX. Let's keep state.
-                // Update icon just in case
-                if (!video.paused) {
-                    Whistler.elements.main.playPauseBtn.innerHTML = '<i class="ph-fill ph-pause"></i>';
-                } else {
-                    Whistler.elements.main.playPauseBtn.innerHTML = '<i class="ph-fill ph-play"></i>';
-                }
-            } else {
-                // Full Load
-                Whistler.PiP.disable(true); // Close any existing PiP
-                video.src = file.url;
-                video.load(); // Ensure fresh load
-                video.play();
-                Whistler.elements.main.playPauseBtn.innerHTML = '<i class="ph-fill ph-pause"></i>';
-            }
-
-            Whistler.Player.renderTimestamps();
-            Whistler.Player.renderMarkers();
-            Whistler.Player.setupCloseHandlers();
-        },
-        selectCollection: (id) => {
-            const collection = Whistler.state.collections.find(c => c.id === id);
-            if (!collection) return;
-
-            // PiP Check
-            if (Whistler.state.activeFileId && Whistler.state.pipEnabled && !Whistler.elements.main.video.paused) {
-                Whistler.state.pipFileId = Whistler.state.activeFileId;
-                Whistler.PiP.enable();
-            } else {
-                if (Whistler.elements.main.video) Whistler.elements.main.video.pause();
-                Whistler.PiP.disable(false);
-                Whistler.state.pipFileId = null;
-            }
-
-            Whistler.state.activeCollectionId = id;
-            Whistler.state.activeFileId = null;
-
-            Whistler.Router.hideAllViews();
-            Whistler.elements.main.collectionView.classList.remove('hidden');
-
-            Whistler.UI.renderCollectionView();
-            Whistler.UI.setActiveNav('nav-storage', false); // deactivate storage
-
-            // Update sidebar active state manually
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            Whistler.UI.renderSidebarCollections(); // will set active class based on state
-        }
-    },
-
-    // --- UI Rendering ---
-    UI: {
-        setActiveNav: (id, isActive = true) => {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            const el = document.getElementById(id);
-            if (el && isActive) el.classList.add('active');
-        },
-        renderProjects: () => {
-            const grid = Whistler.elements.main.projectGrid;
-            if (!grid) return;
-            grid.innerHTML = '';
-
-            Whistler.state.projects.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <i class="ph-duotone ph-folder-open" style="font-size: 2rem; color: var(--accent-primary);"></i>
-                    <span class="card-title">${p.name}</span>
-                    <span class="card-subtitle">Project</span>
-                `;
-                card.onclick = () => Whistler.Router.selectProject(p.id);
-                grid.appendChild(card);
-            });
-
-            // Add Project Card
-            const addCard = document.createElement('div');
-            addCard.className = 'card';
-            addCard.style.borderStyle = 'dashed';
-            addCard.innerHTML = `
-                <i class="ph-bold ph-plus" style="font-size: 1.5rem; color: var(--text-muted);"></i>
-                <span class="card-title" style="color: var(--text-muted);">New Project</span>
-            `;
-            addCard.onclick = () => Whistler.Modals.open(Whistler.elements.modals.overlayProject);
-            grid.appendChild(addCard);
-        },
-        renderStorage: () => {
-            const grid = Whistler.elements.main.storageGrid;
-            grid.innerHTML = '';
-
-            const files = Whistler.state.activeProjectId
-                ? Whistler.state.files.filter(f => f.projectId === Whistler.state.activeProjectId)
-                : Whistler.state.files;
-
-            if (files.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No files found.</div>';
-            }
-
-            files.forEach(f => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <i class="ph-duotone ph-film-strip" style="font-size: 2rem; color: var(--text-primary);"></i>
-                    <span class="card-title">${f.name}</span>
-                    <span class="card-subtitle">Video</span>
-                `;
-                card.onclick = () => Whistler.Router.selectFile(f.id);
-                grid.appendChild(card);
-            });
-
-            // Add File Card
-            const addCard = document.createElement('div');
-            addCard.className = 'card';
-            addCard.style.borderStyle = 'dashed';
-            addCard.innerHTML = `
-                <i class="ph-bold ph-plus" style="font-size: 1.5rem; color: var(--text-muted);"></i>
-                <span class="card-title" style="color: var(--text-muted);">Add File</span>
-            `;
-            addCard.onclick = () => Whistler.Modals.open(Whistler.elements.modals.overlayFile);
-            grid.appendChild(addCard);
-        },
-        renderCollectionView: () => {
-            const collection = Whistler.state.collections.find(c => c.id === Whistler.state.activeCollectionId);
-            if (!collection) return;
-
-            if (Whistler.elements.main.collectionHeaderTitle) {
-                Whistler.elements.main.collectionHeaderTitle.textContent = collection.name + " Moments";
-            }
-
-            const grid = Whistler.elements.main.collectionGrid;
-            grid.innerHTML = '';
-
-            const projectFiles = Whistler.state.files.filter(f => f.projectId === Whistler.state.activeProjectId);
-            const fileIds = projectFiles.map(f => f.id);
-
-            const timestamps = Whistler.state.timestamps.filter(t => t.collectionId === collection.id && fileIds.includes(t.fileId));
-
-            if (timestamps.length === 0) {
-                grid.innerHTML = '<div style="color: var(--text-muted);">No timestamps in this collection yet.</div>';
-                return;
-            }
-
-            timestamps.forEach(t => {
-                const file = projectFiles.find(f => f.id === t.fileId);
-                const card = document.createElement('div');
-                card.className = 'timestamp-card';
-                card.style.borderTopColor = collection.color;
-                card.innerHTML = `
-                    <div style="font-weight: 500;">${t.note || 'Untitled Note'}</div>
-                    <div style="font-size: 0.9rem; color: var(--text-secondary);"><i class="ph-fill ph-film-strip"></i> ${file.name}</div>
-                    <div class="card-meta">${Whistler.Utils.fmtTime(t.startTime)} - ${Whistler.Utils.fmtTime(t.endTime)}</div>
-                 `;
-                card.onclick = () => Whistler.Player.openPopup(t.id);
-                grid.appendChild(card);
-            });
-        },
-        renderSidebarCollections: () => {
-            const list = document.getElementById('collection-list');
-            if (!list) return;
-            list.innerHTML = '';
-
-            const cols = Whistler.state.collections.filter(c => c.projectId === Whistler.state.activeProjectId);
-
-            cols.forEach(c => {
-                const li = document.createElement('li');
-                li.className = `nav-item ${Whistler.state.activeCollectionId === c.id ? 'active' : ''}`;
-                li.innerHTML = `
-                    <span class="collection-dot" style="width: 10px; height: 10px; border-radius: 50%; background-color: ${c.color}; display: inline-block; flex-shrink: 0;"></span>
-                    <span>${c.name}</span>
-                 `;
-                li.onclick = (e) => {
-                    e.stopPropagation();
-                    Whistler.Router.selectCollection(c.id);
-                };
-                list.appendChild(li);
-            });
-        }
-    },
-
-    // --- Actions (CRUD) ---
-    Actions: {
-        createProject: () => {
-            const name = Whistler.elements.modals.inputProjectName.value;
-            if (!name) return;
-            const p = { id: crypto.randomUUID(), name: name, created_at: new Date().toISOString() };
-            Whistler.state.projects.push(p);
-            Whistler.Storage.save();
-            Whistler.Modals.closeAll();
-            Whistler.Router.goToProjects();
-            Whistler.elements.modals.inputProjectName.value = '';
-        },
-        createFile: () => {
-            const name = Whistler.elements.modals.inputFileName.value;
-            const url = Whistler.elements.modals.inputFileUrl.value;
-            if (!name || !url) return;
-            const f = { id: crypto.randomUUID(), projectId: Whistler.state.activeProjectId, name: name, url: url, created_at: new Date().toISOString() };
-            Whistler.state.files.push(f);
-            Whistler.Storage.save();
-            Whistler.Modals.closeAll();
-            Whistler.Router.selectProject(Whistler.state.activeProjectId);
-            Whistler.elements.modals.inputFileName.value = '';
-            Whistler.elements.modals.inputFileUrl.value = '';
-        },
-        createCollection: () => {
-            const name = Whistler.elements.modals.inputCollectionName.value;
-            const color = Whistler.elements.modals.inputCollectionColor.value;
-            if (!name) return;
-            const c = { id: crypto.randomUUID(), projectId: Whistler.state.activeProjectId, name: name, color: color, created_at: new Date().toISOString() };
-            Whistler.state.collections.push(c);
-            Whistler.Storage.save();
-            Whistler.Modals.closeAll();
-            Whistler.UI.renderSidebarCollections();
-            Whistler.elements.modals.inputCollectionName.value = '';
-        },
-        createTimestamp: () => {
-            const colId = Whistler.elements.modals.inputTimestampCollection.value;
-            const note = Whistler.elements.modals.inputTimestampNote.value;
-            const start = Whistler.Utils.parseTime(Whistler.elements.modals.inputTimestampStart.value);
-            const end = Whistler.Utils.parseTime(Whistler.elements.modals.inputTimestampEnd.value);
-
-            if (!colId || start === null || end === null || !Whistler.state.activeFileId) return;
-
-            const t = { id: crypto.randomUUID(), fileId: Whistler.state.activeFileId, collectionId: colId, startTime: start, endTime: end, note: note };
-            Whistler.state.timestamps.push(t);
-            Whistler.Storage.save();
-            Whistler.Modals.closeAll();
-            Whistler.Player.renderTimestamps();
-            Whistler.Player.renderMarkers();
-        },
-        editFile: (id) => {
-            const file = Whistler.state.files.find(f => f.id === id);
-            if (!file) return;
-            Whistler.Modals.showPrompt("Rename File", file.name, (newName) => {
-                file.name = newName;
-                Whistler.Storage.save();
-                if (Whistler.elements.main.playerTitle) Whistler.elements.main.playerTitle.textContent = newName;
-            });
-        },
-        deleteFile: (id) => {
-            Whistler.Modals.showConfirm("Delete File", "Are you sure? This cannot be undone.", () => {
-                Whistler.state.files = Whistler.state.files.filter(f => f.id !== id);
-                Whistler.state.timestamps = Whistler.state.timestamps.filter(t => t.fileId !== id);
-                Whistler.Storage.save();
-
-                if (Whistler.state.activeFileId === id) {
-                    Whistler.state.activeFileId = null;
-                    Whistler.elements.main.video.src = "";
-                    Whistler.Router.selectProject(Whistler.state.activeProjectId);
-                }
-            });
-        }
-    },
-
-    // --- Events ---
-    Events: {
-        setupNavigation: () => {
-            const els = Whistler.elements;
-            if (els.sidebar.navProjects) els.sidebar.navProjects.onclick = Whistler.Router.goToProjects;
-            if (els.sidebar.navStorage) els.sidebar.navStorage.onclick = Whistler.Router.goToStorage;
-            if (els.sidebar.brandContent) els.sidebar.brandContent.onclick = Whistler.Router.goToProjects;
-
-            // Add Collection Button
-            const btnAddCol = document.getElementById('btn-add-collection-sidebar');
-            if (btnAddCol) {
-                btnAddCol.onclick = (e) => {
-                    e.stopPropagation();
-                    Whistler.Modals.open(Whistler.elements.modals.overlayCollection);
-                };
-            }
-
-            // Toggle
-            if (els.sidebar.toggleBtn) {
-                els.sidebar.toggleBtn.onclick = () => {
-                    const sb = document.querySelector('.sidebar');
-                    sb.classList.toggle('collapsed');
-                    if (els.sidebar.toggleIcon) {
-                        els.sidebar.toggleIcon.className = sb.classList.contains('collapsed') ? 'ph-bold ph-caret-right' : 'ph-bold ph-caret-left';
-                    }
-                };
-            }
-
-            // Modals
-            const m = Whistler.elements.modals;
-            if (m.btnSubmitProject) m.btnSubmitProject.onclick = Whistler.Actions.createProject;
-            if (m.btnSubmitFile) m.btnSubmitFile.onclick = Whistler.Actions.createFile;
-            if (m.btnSubmitCollection) m.btnSubmitCollection.onclick = Whistler.Actions.createCollection;
-            if (m.btnSubmitTimestamp) m.btnSubmitTimestamp.onclick = Whistler.Actions.createTimestamp;
-
-            // Global Close for Modals (clicking X)
-            document.querySelectorAll('.modal-close, .modal-overlay').forEach(el => {
-                el.addEventListener('click', (e) => {
-                    if (e.target === el || el.classList.contains('modal-close')) {
-                        Whistler.Modals.closeAll();
-                    }
-                });
-            });
-
-            // Legacy Support for inline onclick="closeModals()"
-            window.closeModals = Whistler.Modals.closeAll;
-        },
-        setupSpecifics: () => {
-            const els = Whistler.elements.main;
-            const m = Whistler.elements.modals;
-            // Player
-            if (els.playPauseBtn) els.playPauseBtn.onclick = Whistler.Player.togglePlay;
-            if (els.video) {
-                els.video.onclick = Whistler.Player.togglePlay;
-                els.video.addEventListener('timeupdate', Whistler.Player.updateProgress);
-                els.video.addEventListener('loadedmetadata', () => {
-                    Whistler.Player.updateProgress();
-                    Whistler.Player.renderMarkers();
-                });
-
-                // Smooth Seek Loop
-                els.video.addEventListener('play', () => {
-                    Whistler.Player.startLoop();
-                    if (els.playPauseBtn) els.playPauseBtn.innerHTML = '<i class="ph-fill ph-pause"></i>';
-                    Whistler.PiP.updatePlayIcon();
-                });
-                els.video.addEventListener('pause', () => {
-                    Whistler.Player.stopLoop();
-                    if (els.playPauseBtn) els.playPauseBtn.innerHTML = '<i class="ph-fill ph-play"></i>';
-                    Whistler.PiP.updatePlayIcon();
-                });
-                els.video.addEventListener('ended', () => {
-                    Whistler.Player.stopLoop();
-                    if (els.playPauseBtn) els.playPauseBtn.innerHTML = '<i class="ph-fill ph-arrow-counter-clockwise"></i>';
-                    Whistler.PiP.updatePlayIcon();
-                });
-            }
-            if (els.seekBarContainer) {
-                // Dragging Support
-                let isDragging = false;
-
-                const onDrag = (e) => {
-                    const rect = els.seekBarContainer.getBoundingClientRect();
-                    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    if (els.video && els.video.duration) {
-                        els.video.currentTime = pos * els.video.duration;
-                    }
-                };
-
-                els.seekBarContainer.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                    // Dont pause, just seek. If you want pause-seek-resume pattern, add here.
-                    // For modern fluid feel, just seeking while playing is often fine, or pause.
-                    // Let's pause for smoother drag if loop fights us? 
-                    // No, loop updates UI based on currentTime, so if we update currentTime, loop reflects it.
-                    onDrag(e);
-
-                    const moveHandler = (moveEvent) => {
-                        if (isDragging) onDrag(moveEvent);
-                    };
-                    const upHandler = () => {
-                        isDragging = false;
-                        document.removeEventListener('mousemove', moveHandler);
-                        document.removeEventListener('mouseup', upHandler);
-                    };
-                    document.addEventListener('mousemove', moveHandler);
-                    document.addEventListener('mouseup', upHandler);
-                });
-            }
-
-            // PiP Toggle
-            if (els.btnTogglePiP) {
-                els.btnTogglePiP.onclick = (e) => {
-                    e.stopPropagation();
-                    Whistler.state.pipEnabled = !Whistler.state.pipEnabled;
-                    Whistler.elements.main.btnTogglePiP.style.opacity = Whistler.state.pipEnabled ? '1' : '0.4';
-                };
-                // Set initial state
-                els.btnTogglePiP.style.opacity = Whistler.state.pipEnabled ? '1' : '0.4';
-            }
-
-            // Editor
-            if (els.btnAddTimestamp) els.btnAddTimestamp.onclick = Whistler.Player.openEditor;
-            if (m.btnSetStart) m.btnSetStart.onclick = () => {
-                if (els.video) m.inputTimestampStart.value = Whistler.Utils.fmtTime(els.video.currentTime);
-            };
-            if (m.btnSetEnd) m.btnSetEnd.onclick = () => {
-                if (els.video) m.inputTimestampEnd.value = Whistler.Utils.fmtTime(els.video.currentTime);
-            };
-
-            // Notes Sidebar
-            const toggleNotes = () => {
-                if (els.timestampSidebar) els.timestampSidebar.classList.toggle('hidden');
-            };
-            if (els.btnToggleNotes) els.btnToggleNotes.onclick = toggleNotes;
-
-            // Playback Speed
-            if (els.btnPlaybackSpeed) {
-                const speeds = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
-                let speedIndex = 2; // 1x
-                els.btnPlaybackSpeed.onclick = () => {
-                    speedIndex = (speedIndex + 1) % speeds.length;
-                    const sp = speeds[speedIndex];
-                    if (els.video) els.video.playbackRate = sp;
-                    els.btnPlaybackSpeed.innerHTML = `<i class="ph-bold ph-gauge"></i> ${sp}x`;
-                };
-            }
-
-            // Popup Player Controls
-            if (m.popupPlayBtn) {
-                m.popupPlayBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    if (!m.popupVideo) return;
-                    if (m.popupVideo.paused) {
-                        m.popupVideo.play();
-                        m.popupPlayBtn.innerHTML = '<i class="ph-fill ph-pause"></i>';
-                    } else {
-                        m.popupVideo.pause();
-                        m.popupPlayBtn.innerHTML = '<i class="ph-fill ph-play"></i>';
-                    }
-                };
-            }
-
-            if (m.popupSeekBar) {
-                m.popupSeekBar.onclick = (e) => {
-                    if (!m.popupVideo || !Whistler.state.playbackRange) return;
-                    const rect = m.popupSeekBar.getBoundingClientRect();
-                    const pos = (e.clientX - rect.left) / rect.width;
-                    const r = Whistler.state.playbackRange;
-                    const total = r.end - r.start;
-                    m.popupVideo.currentTime = r.start + (pos * total);
-                };
-            }
-
-            if (m.btnDelete) {
-                m.btnDelete.onclick = (e) => {
-                    e.stopPropagation();
-                    const id = Whistler.state.currentPopupTimestampId;
-                    if (!id) return;
-                    Whistler.Modals.showConfirm("Delete Timestamp", "Are you sure?", () => {
-                        Whistler.state.timestamps = Whistler.state.timestamps.filter(t => t.id !== id);
-                        Whistler.Storage.save();
-                        Whistler.Modals.closeAll();
-                        // Refresh if in collection view or player
-                        if (Whistler.state.activeCollectionId) {
-                            Whistler.UI.renderCollectionView();
-                        }
-                        if (Whistler.state.activeFileId) {
-                            Whistler.Player.renderTimestamps();
-                            Whistler.Player.renderMarkers();
-                        }
-                    });
-                };
-            }
-
-            if (m.btnSavePopup) {
-                m.btnSavePopup.onclick = (e) => {
-                    e.stopPropagation();
-                    const id = Whistler.state.currentPopupTimestampId;
-                    if (!id || !m.popupNote) return;
-                    const t = Whistler.state.timestamps.find(x => x.id === id);
-                    if (t) {
-                        t.note = m.popupNote.value;
-                        Whistler.Storage.save();
-                        Whistler.Modals.closeAll();
-                        // Refresh views
-                        if (Whistler.state.activeCollectionId) {
-                            Whistler.UI.renderCollectionView();
-                        }
-                        if (Whistler.state.activeFileId) {
-                            Whistler.Player.renderTimestamps();
-                        }
-                    }
-                };
-            }
-        }
-    },
-
-    // --- PiP ---
-    PiP: {
-        enable: () => {
-            const sidebarPip = Whistler.elements.sidebar.pipContainer;
-            if (!sidebarPip) return;
-            const pipVideoWrapper = Whistler.elements.sidebar.pipVideoWrapper;
-
-            // Prevent duplicate PiP enabling
-            if (!sidebarPip.classList.contains('hidden') && pipVideoWrapper.contains(Whistler.elements.main.video)) {
-                return;
-            }
-
-            sidebarPip.classList.remove('hidden');
-
-            // Move video to PiP wrapper if not already there
-            if (!pipVideoWrapper.contains(Whistler.elements.main.video)) {
-                pipVideoWrapper.appendChild(Whistler.elements.main.video);
-            }
-
-            Whistler.elements.main.video.play();
-            Whistler.PiP.updatePlayIcon();
-
-            // Listeners (Ensure only one set exists by overwriting onclick)
-            Whistler.elements.sidebar.pipBtnPlayPause.onclick = (e) => {
-                e.stopPropagation();
-                Whistler.Player.togglePlay();
-                Whistler.PiP.updatePlayIcon();
-            };
-
-            Whistler.elements.sidebar.pipBtnRewind.onclick = (e) => {
-                e.stopPropagation();
-                if (Whistler.elements.main.video) Whistler.elements.main.video.currentTime -= 5;
-            };
-
-            Whistler.elements.sidebar.pipBtnForward.onclick = (e) => {
-                e.stopPropagation();
-                if (Whistler.elements.main.video) Whistler.elements.main.video.currentTime += 5;
-            };
-
-            Whistler.elements.sidebar.pipBtnExpand.onclick = (e) => {
-                e.stopPropagation();
-                Whistler.PiP.disable(true);
-                // Restore Overlay
-                if (Whistler.state.pipFileId) {
-                    Whistler.Router.selectFile(Whistler.state.pipFileId);
-                }
-            };
-
-            Whistler.elements.sidebar.pipBtnClose.onclick = (e) => {
-                e.stopPropagation();
-                Whistler.PiP.disable(true); // Move back to main container but hidden
-                if (Whistler.elements.main.video) {
-                    Whistler.elements.main.video.pause();
-                    Whistler.elements.main.video.src = '';
-                }
-                Whistler.state.pipFileId = null;
-                Whistler.state.activeFileId = null;
-            };
-        },
-        disable: (forceMoveBack) => {
-            const sidebarPip = Whistler.elements.sidebar.pipContainer;
-            if (!sidebarPip) return;
-            sidebarPip.classList.add('hidden');
-
-            if (forceMoveBack && Whistler.elements.main.videoContainer) {
-                // Check if video is actually in PiP wrapper before moving back to avoid errors
-                // OR just blindly move it if it exists.
-                if (Whistler.elements.main.video) {
-                    const controls = Whistler.elements.main.videoContainer.querySelector('.player-controls');
-                    if (controls) {
-                        Whistler.elements.main.videoContainer.insertBefore(Whistler.elements.main.video, controls);
-                    } else {
-                        Whistler.elements.main.videoContainer.appendChild(Whistler.elements.main.video);
-                    }
-                }
-            }
-        },
-        updatePlayIcon: () => {
-            if (Whistler.elements.main.video && !Whistler.elements.main.video.paused) {
-                Whistler.elements.sidebar.pipBtnPlayPause.innerHTML = '<i class="ph-fill ph-pause"></i>';
-            } else {
-                Whistler.elements.sidebar.pipBtnPlayPause.innerHTML = '<i class="ph-fill ph-play"></i>';
-            }
-        }
-    },
-
-    // --- Player ---
-    Player: {
-        togglePlay: () => {
-            const v = Whistler.elements.main.video;
-            if (v.paused) {
-                v.play();
-            } else {
-                v.pause();
-            }
-        },
-        _rafId: null,
-        startLoop: () => {
-            if (Whistler.Player._rafId) cancelAnimationFrame(Whistler.Player._rafId);
-            const loop = () => {
-                Whistler.Player.updateProgress();
-                if (Whistler.elements.main.video && !Whistler.elements.main.video.paused) {
-                    Whistler.Player._rafId = requestAnimationFrame(loop);
-                }
-            };
-            loop();
-        },
-        stopLoop: () => {
-            if (Whistler.Player._rafId) cancelAnimationFrame(Whistler.Player._rafId);
-            Whistler.Player._rafId = null;
-        },
-        updateProgress: () => {
-            const v = Whistler.elements.main.video;
-            if (!v || !v.duration) return;
-            const p = (v.currentTime / v.duration) * 100;
-            if (Whistler.elements.main.seekBarProgress) {
-                Whistler.elements.main.seekBarProgress.style.width = `${p}%`;
-            }
-            if (Whistler.elements.main.timeDisplay) {
-                Whistler.elements.main.timeDisplay.textContent = `${Whistler.Utils.fmtTime(v.currentTime)} / ${Whistler.Utils.fmtTime(v.duration)}`;
-            }
-        },
-        seek: (e) => {
-            const v = Whistler.elements.main.video;
-            const bar = Whistler.elements.main.seekBarContainer;
-            const rect = bar.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
-            v.currentTime = pos * v.duration;
-        },
-        openEditor: () => {
-            const cols = Whistler.state.collections.filter(c => c.projectId === Whistler.state.activeProjectId);
-            if (cols.length === 0) { alert("Create a collection first!"); return; }
-
-            const sel = Whistler.elements.modals.inputTimestampCollection;
-            sel.innerHTML = '';
-            cols.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.id;
-                opt.textContent = c.name;
-                sel.appendChild(opt);
-            });
-
-            const t = Whistler.elements.main.video.currentTime;
-            Whistler.elements.modals.inputTimestampStart.value = Whistler.Utils.fmtTime(t);
-            Whistler.elements.modals.inputTimestampEnd.value = Whistler.Utils.fmtTime(t + 5);
-            Whistler.elements.modals.inputTimestampNote.value = '';
-            Whistler.Modals.open(Whistler.elements.modals.overlayTimestamp);
-        },
-        renderTimestamps: () => {
-            const list = Whistler.elements.main.activeTimestampsList;
-            if (!list) return;
-            list.innerHTML = '';
-            const ts = Whistler.state.timestamps.filter(t => t.fileId === Whistler.state.activeFileId);
-
-            if (ts.length === 0) {
-                list.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding-top: 20px;">No timestamps for this file.</div>';
-                return;
-            }
-
-            // Sort by start time
-            ts.sort((a, b) => a.startTime - b.startTime);
-
-            // Helper to convert hex to rgba
-            const hexToRgba = (hex, alpha) => {
-                let c = hex.substring(1).split('');
-                if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-                c = '0x' + c.join('');
-                return 'rgba(' + [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',') + ',' + alpha + ')';
-            };
-
-            ts.forEach(t => {
-                const col = Whistler.state.collections.find(c => c.id === t.collectionId);
-                if (!col) return;
-
-                const li = document.createElement('div');
-                li.className = 'timestamp-item';
-                // Glassmorphism Style: Transparent Bg + Solid Border
-                li.style.backgroundColor = hexToRgba(col.color, 0.2);
-                li.style.border = `1px solid ${col.color}`;
-                li.style.color = '#fff';
-                li.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)';
-                li.style.display = 'flex';
-                li.style.justifyContent = 'space-between';
-                li.style.alignItems = 'center';
-
-                li.dataset.note = t.note || '';
-                li.onclick = () => Whistler.Player.openPopup(t.id);
-
-                const leftCol = document.createElement('div');
-                leftCol.style.flex = '1';
-                leftCol.innerHTML = `
-                        <div style="font-weight: 600; font-size: 0.9rem;">${col.name}</div>
-                        <span class="time-badge" style="background: rgba(0,0,0,0.4); color: white; display: inline-block; margin-top: 4px;">${Whistler.Utils.fmtTime(t.startTime)} - ${Whistler.Utils.fmtTime(t.endTime)}</span>
-                `;
-
-                // Delete Button (X) - Styled like seekbar buttons
-                const delBtn = document.createElement('button');
-                delBtn.className = 'icon-btn';
-                delBtn.innerHTML = '<i class="ph-bold ph-x"></i>';
-                delBtn.title = 'Delete Timestamp';
-                delBtn.style.marginLeft = '8px';
-                delBtn.style.opacity = '0.7';
-                delBtn.style.width = '24px';
-                delBtn.style.height = '24px';
-                delBtn.style.padding = '0';
-                delBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    if (confirm('Delete this timestamp?')) {
-                        Whistler.state.timestamps = Whistler.state.timestamps.filter(x => x.id !== t.id);
-                        Whistler.Storage.save();
-                        Whistler.Player.renderTimestamps();
-                        Whistler.Player.renderMarkers();
-                    }
-                };
-                // Hover effect for delete button
-                delBtn.onmouseenter = () => delBtn.style.opacity = '1';
-                delBtn.onmouseleave = () => delBtn.style.opacity = '0.7';
-
-                li.appendChild(leftCol);
-                li.appendChild(delBtn);
-                list.appendChild(li);
-            });
-        },
-        renderMarkers: () => {
-            const layer = Whistler.elements.main.markerLayer;
-            if (!layer) return;
-            layer.innerHTML = '';
-            const v = Whistler.elements.main.video;
-            if (!v.duration) return;
-            const ts = Whistler.state.timestamps.filter(t => t.fileId === Whistler.state.activeFileId);
-            ts.forEach(t => {
-                const col = Whistler.state.collections.find(c => c.id === t.collectionId);
-                const m = document.createElement('div');
-                m.className = 'marker-range'; // Use the range class!
-                const startP = (t.startTime / v.duration) * 100;
-                const endP = (t.endTime / v.duration) * 100;
-                const width = Math.max(0.5, endP - startP); // Ensure at least visible sliver
-
-                m.style.left = `${startP}%`;
-                m.style.width = `${width}%`;
-                m.style.backgroundColor = col ? col.color : 'var(--primary)';
-                m.title = `${col ? col.name : 'Timestamp'}: ${t.note || 'No note'} (${Whistler.Utils.fmtTime(t.startTime)} - ${Whistler.Utils.fmtTime(t.endTime)})`;
-
-                // Make markers clickable to open popup
-                m.onclick = (e) => {
-                    e.stopPropagation();
-                    Whistler.Player.openPopup(t.id);
-                };
-                layer.appendChild(m);
-            });
-        },
-        openPopup: (id) => {
-            const t = Whistler.state.timestamps.find(x => x.id === id);
-            if (!t) return;
-
-            const file = Whistler.state.files.find(f => f.id === t.fileId);
-            if (!file) { alert("File not found"); return; }
-
-            const col = Whistler.state.collections.find(c => c.id === t.collectionId);
-
-            // Set State for Popup
-            Whistler.state.playbackRange = { start: t.startTime, end: t.endTime };
-            Whistler.state.currentPopupTimestampId = id; // New state needed if we want to save/edit from popup
-
-            const m = Whistler.elements.modals;
-            if (m.popupTitle) m.popupTitle.textContent = col ? col.name : 'Moment';
-            if (m.popupVideo) {
-                m.popupVideo.src = file.url;
-                m.popupVideo.currentTime = t.startTime;
-                m.popupVideo.play();
-            }
-            if (m.popupNote) m.popupNote.value = t.note;
-            if (m.popupPlayBtn) m.popupPlayBtn.innerHTML = '<i class="ph-fill ph-pause"></i>';
-
-            Whistler.Modals.open(m.overlayPlayer);
-
-            // Attach Popup listeners if not already (or re-attach to be safe/simple)
-            // Ideally we do this in setupSpecifics but we need the specific logic here or global variables.
-            // Let's rely on event listeners set up in setupSpecifics IF we add them. 
-            // For now, let's just make sure the video handles its own timeupdate for range constraining.
-            // We need to add the timeupdate listener for the popup video again if it's missing.
-
-            if (m.popupVideo) {
-                m.popupVideo.ontimeupdate = () => {
-                    const r = Whistler.state.playbackRange;
-                    if (!r) return;
-                    if (m.popupVideo.currentTime > r.end) {
-                        m.popupVideo.pause();
-                        m.popupVideo.currentTime = r.start;
-                        if (m.popupPlayBtn) m.popupPlayBtn.innerHTML = '<i class="ph-fill ph-play"></i>';
-                    }
-                    // Progress Bar
-                    const total = r.end - r.start;
-                    const current = Math.max(0, m.popupVideo.currentTime - r.start);
-                    const p = Math.min(100, (current / total) * 100);
-                    if (m.popupProgress) m.popupProgress.style.width = `${p}%`;
-                    if (m.popupTimeVal) m.popupTimeVal.textContent = `${Whistler.Utils.fmtTime(m.popupVideo.currentTime)} / ${Whistler.Utils.fmtTime(r.end)}`;
-                };
-            }
-        },
-        setupCloseHandlers: () => {
-            const playerView = Whistler.elements.main.playerView;
-
-            // Remove old listeners if they exist (using stored reference)
-            if (Whistler.Player._escHandler) {
-                document.removeEventListener('keydown', Whistler.Player._escHandler);
-            }
-            if (Whistler.Player._backdropHandler && playerView) {
-                playerView.removeEventListener('click', Whistler.Player._backdropHandler);
-            }
-
-            // Create new handlers
-            Whistler.Player._escHandler = (e) => {
-                const pv = Whistler.elements.main.playerView;
-                if (e.key === 'Escape' && pv && !pv.classList.contains('hidden')) {
-                    Whistler.Player.closePlayer();
-                }
-            };
-
-            Whistler.Player._backdropHandler = (e) => {
-                const pv = Whistler.elements.main.playerView;
-                if (e.target === pv) {
-                    Whistler.Player.closePlayer();
-                }
-            };
-
-            // Add new listeners
-            document.addEventListener('keydown', Whistler.Player._escHandler);
-            if (playerView) playerView.addEventListener('click', Whistler.Player._backdropHandler);
-        },
-        closePlayer: () => {
-            const playerView = Whistler.elements.main.playerView;
-            const storageView = Whistler.elements.main.storageView;
-            const video = Whistler.elements.main.video;
-
-            // Hide player
-            if (playerView) playerView.classList.add('hidden');
-
-            // Remove blur from storage
-            if (storageView) storageView.classList.remove('blurred');
-
-            // Move to PiP if enabled and playing
-            if (Whistler.state.pipEnabled && Whistler.state.activeFileId && video && !video.ended) {
-                Whistler.state.pipFileId = Whistler.state.activeFileId;
-                Whistler.PiP.enable();
-            } else {
-                // Stop video completely
-                if (video) {
-                    video.pause();
-                    video.src = '';
-                }
-            }
-
-            // Clear active file (main player no longer active)
-            Whistler.state.activeFileId = null;
-        }
-    },
-
-    // --- Modals ---
-    Modals: {
-        open: (el) => el.classList.add('open'),
-        closeAll: () => {
-            Object.values(Whistler.elements.modals).forEach(el => {
-                if (el && el.classList) el.classList.remove('open');
-            });
-        },
-        showPrompt: (title, defaultValue, callback) => {
-            const m = Whistler.elements.modals;
-            m.promptTitle.textContent = title;
-            m.inputPromptValue.value = defaultValue;
-            m.overlayPrompt.classList.add('open');
-
-            // Dynamic Listener
-            const newBtn = m.btnPromptConfirm.cloneNode(true);
-            m.btnPromptConfirm.parentNode.replaceChild(newBtn, m.btnPromptConfirm);
-            m.btnPromptConfirm = newBtn;
-            newBtn.onclick = () => {
-                if (m.inputPromptValue.value.trim()) {
-                    callback(m.inputPromptValue.value.trim());
-                    Whistler.Modals.closeAll();
-                }
-            };
-        },
-        showConfirm: (title, msg, callback) => {
-            const m = Whistler.elements.modals;
-            m.confirmTitle.textContent = title;
-            m.confirmMessage.textContent = msg;
-            m.overlayConfirm.classList.add('open');
-            const newBtn = m.btnConfirmYes.cloneNode(true);
-            m.btnConfirmYes.parentNode.replaceChild(newBtn, m.btnConfirmYes);
-            m.btnConfirmYes = newBtn;
-            newBtn.onclick = () => {
-                callback();
-                Whistler.Modals.closeAll();
-            }
-        }
-    },
-
-    // --- Utils ---
-    Utils: {
-        fmtTime: (s) => {
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return `${m}:${sec.toString().padStart(2, '0')}`;
-        },
-        parseTime: (str) => {
-            const p = str.split(':');
-            if (p.length !== 2) return null;
-            return parseInt(p[0]) * 60 + parseInt(p[1]);
+        } catch (e) {
+            console.error("Load failed", e);
         }
     }
-};
 
-// Safe Initialization
-document.addEventListener('DOMContentLoaded', Whistler.init);
+    // CRUD
+    addProject(name) {
+        const p = { id: crypto.randomUUID(), name, created: Date.now() };
+        this.app.state.projects.push(p);
+        this.save();
+        return p;
+    }
+
+    addFile(name, url, type) {
+        if (!this.app.state.activeProjectId) return;
+        const f = {
+            id: crypto.randomUUID(),
+            projectId: this.app.state.activeProjectId,
+            name,
+            url,
+            type, // 'catbox', 'youtube', 'dropbox', 'drive'
+            created: Date.now()
+        };
+        this.app.state.files.push(f);
+        this.save();
+        return f;
+    }
+
+    addCollection(name, color) {
+        if (!this.app.state.activeProjectId) return;
+        const c = {
+            id: crypto.randomUUID(),
+            projectId: this.app.state.activeProjectId,
+            name,
+            color,
+            created: Date.now()
+        };
+        this.app.state.collections.push(c);
+        this.save();
+        return c;
+    }
+
+    addTimestamp(collectionId, fileId, start, end, note) {
+        const t = {
+            id: crypto.randomUUID(),
+            collectionId,
+            fileId,
+            start, end, note,
+            created: Date.now()
+        };
+        this.app.state.timestamps.push(t);
+        this.save();
+        return t;
+    }
+
+    deleteFile(id) {
+        this.app.state.files = this.app.state.files.filter(f => f.id !== id);
+        this.app.state.timestamps = this.app.state.timestamps.filter(t => t.fileId !== id);
+        this.save();
+    }
+
+    updateFile(id, updates) {
+        const f = this.app.state.files.find(x => x.id === id);
+        if (f) {
+            Object.assign(f, updates);
+            this.save();
+        }
+    }
+
+    deleteTimestamp(id) {
+        this.app.state.timestamps = this.app.state.timestamps.filter(t => t.id !== id);
+        this.save();
+    }
+}
+
+class Router {
+    constructor(app) {
+        this.app = app;
+        this.views = {
+            projects: document.getElementById('view-projects'),
+            storage: document.getElementById('view-storage'),
+            collection: document.getElementById('view-collection')
+        };
+    }
+
+    init() {
+        document.getElementById('nav-projects').onclick = () => this.goTo('projects');
+        document.getElementById('nav-storage').onclick = () => this.goTo('storage');
+        document.getElementById('back-to-projects-start').onclick = () => this.goTo('projects');
+    }
+
+    goTo(viewName) {
+        // Hide all
+        Object.values(this.views).forEach(el => el.classList.add('hidden'));
+
+        // Logic
+        if (viewName === 'projects') {
+            this.app.state.activeProjectId = null;
+            this.app.ui.resetSidebar();
+            this.app.ui.renderProjects();
+            this.views.projects.classList.remove('hidden');
+        } else if (viewName === 'storage') {
+            if (!this.app.state.activeProjectId) return this.goTo('projects');
+            this.app.ui.updateSidebarForProject();
+            this.app.ui.renderStorage();
+            this.views.storage.classList.remove('hidden');
+        } else if (viewName === 'collection') {
+            this.app.ui.renderCollectionView();
+            this.views.collection.classList.remove('hidden');
+        }
+    }
+
+    openProject(id) {
+        this.app.state.activeProjectId = id;
+        this.goTo('storage');
+    }
+
+    openCollection(id) {
+        this.app.state.activeCollectionId = id;
+        this.goTo('collection');
+    }
+}
+
+class Player {
+    constructor(app) {
+        this.app = app;
+        this.els = {
+            overlay: document.getElementById('player-overlay'),
+            videoWrapper: document.getElementById('video-wrapper'),
+            video: document.getElementById('main-video'),
+            youtubePlace: document.getElementById('youtube-placeholder'),
+            sidebarList: document.getElementById('timestamps-list'),
+            btnClose: document.getElementById('player-btn-close'),
+            timeDisplay: document.getElementById('time-display'),
+            btnPlay: document.getElementById('btn-play-pause'),
+            seekContainer: document.getElementById('seek-container'),
+            seekFill: document.getElementById('seek-fill'),
+            seekThumb: document.getElementById('seek-thumb'),
+            filename: document.getElementById('player-filename'),
+            btnPip: document.getElementById('btn-pip-toggle'),
+            pipContainer: document.getElementById('pip-container'),
+            pipStage: document.getElementById('pip-video-stage'),
+            pipClose: document.getElementById('pip-close'),
+            pipExpand: document.getElementById('pip-expand'),
+            seekMarkers: document.getElementById('seek-markers'),
+            sidebar: document.getElementById('player-sidebar'),
+            btnSidebarToggle: document.getElementById('btn-sidebar-toggle')
+        };
+
+        this.currentFile = null;
+        this.setupListeners();
+    }
+
+    setupListeners() {
+        this.els.btnClose.onclick = () => this.close();
+        this.els.btnPlay.onclick = () => this.togglePlay();
+        this.els.video.onclick = () => this.togglePlay();
+
+        this.els.video.addEventListener('timeupdate', () => this.updateProgress());
+        this.els.video.addEventListener('loadedmetadata', () => {
+            this.renderSeekMarkers();
+            this.updateProgress();
+        });
+        this.els.video.addEventListener('ended', () => {
+            this.els.btnPlay.innerHTML = '<i class="ph-bold ph-arrow-counter-clockwise"></i>';
+        });
+
+        // Seek
+        let isDragging = false;
+        const handleDrag = (e) => {
+            const rect = this.els.seekContainer.getBoundingClientRect();
+            const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            if (this.els.video.duration) {
+                this.els.video.currentTime = pos * this.els.video.duration;
+            }
+            this.updateUIProgress(pos * 100);
+        };
+
+        this.els.seekContainer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            handleDrag(e);
+            const move = (ev) => isDragging && handleDrag(ev);
+            const up = () => { isDragging = false; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+            document.addEventListener('mousemove', move);
+            document.addEventListener('mouseup', up);
+        });
+
+        // PiP
+        this.els.btnPip.onclick = () => this.togglePiP();
+        this.els.pipExpand.onclick = () => this.restoreFromPiP();
+        this.els.pipClose.onclick = () => this.closePiP();
+
+        // Speed
+        document.getElementById('btn-speed').onclick = (e) => {
+            const speeds = [1, 1.25, 1.5, 2, 0.5];
+            const current = parseFloat(e.target.innerText);
+            let next = speeds[(speeds.indexOf(current) + 1) % speeds.length] || 1;
+            this.els.video.playbackRate = next;
+            e.target.innerText = next + 'x';
+        };
+
+        // Edit/Delete
+        document.getElementById('player-btn-edit').onclick = () => {
+            this.app.modals.prompt("Rename File", this.currentFile.name, (newName) => {
+                this.app.storage.updateFile(this.currentFile.id, { name: newName });
+                this.els.filename.textContent = newName;
+                this.app.ui.renderStorage(); // Refresh grid
+            });
+        };
+        document.getElementById('player-btn-delete').onclick = () => {
+            this.app.modals.confirm("Delete File", "Are you sure you want to delete this file? This cannot be undone.", () => {
+                this.close();
+                this.app.storage.deleteFile(this.currentFile.id);
+                this.app.router.goTo('storage');
+            });
+        };
+
+        document.getElementById('btn-add-timestamp').onclick = () => {
+            this.app.modals.openTimestamp(this.els.video.currentTime);
+        };
+
+        this.els.btnSidebarToggle.onclick = () => {
+            this.els.sidebar.classList.toggle('collapsed');
+        };
+    }
+
+    load(file) {
+        this.currentFile = file;
+        this.els.filename.textContent = file.name;
+
+        // Reset Logic
+        this.els.youtubePlace.innerHTML = '';
+        this.els.video.classList.remove('hidden');
+        this.els.youtubePlace.classList.add('hidden');
+        this.els.video.pause();
+        this.els.video.src = '';
+
+        // PiP cleanup
+        if (this.app.state.isPipActive) {
+            this.closePiP();
+        }
+
+        if (file.type === 'youtube' || file.type === 'drive') {
+            this.els.video.classList.add('hidden');
+            this.els.youtubePlace.classList.remove('hidden');
+
+            let embedSrc = '';
+            if (file.type === 'youtube') {
+                embedSrc = `https://www.youtube.com/embed/${this.extractYoutubeId(file.url)}?enablejsapi=1`;
+            } else if (file.type === 'drive') {
+                const id = this.extractDriveId(file.url);
+                embedSrc = `https://drive.google.com/file/d/${id}/preview`;
+            }
+
+            const iframe = document.createElement('iframe');
+            iframe.className = 'youtube-frame';
+            iframe.src = embedSrc;
+            iframe.allow = "autoplay; encrypted-media; fullscreen";
+            this.els.youtubePlace.appendChild(iframe);
+        } else {
+            let src = file.url;
+            if (file.type === 'dropbox') {
+                src = src.replace('dl=0', 'raw=1');
+            }
+            this.els.video.src = src;
+            this.els.video.play().catch(e => console.log("Autoplay blocked"));
+            this.els.btnPlay.innerHTML = '<i class="ph-fill ph-pause"></i>';
+        }
+
+        this.renderTimestamps();
+        this.renderSeekMarkers();
+        this.els.overlay.classList.remove('hidden');
+    }
+
+    extractYoutubeId(url) {
+        const reg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(reg);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    extractDriveId(url) {
+        // pattern: /file/d/ID/view or /open?id=ID
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match) return match[1];
+        const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
+        return match2 ? match2[1] : null;
+    }
+
+    close() {
+        if (!this.app.state.isPipActive) {
+            this.els.video.pause();
+        }
+        this.els.overlay.classList.add('hidden');
+    }
+
+    togglePlay() {
+        if (this.els.video.paused) {
+            this.els.video.play();
+            this.els.btnPlay.innerHTML = '<i class="ph-fill ph-pause"></i>';
+        } else {
+            this.els.video.pause();
+            this.els.btnPlay.innerHTML = '<i class="ph-fill ph-play"></i>';
+        }
+    }
+
+    updateProgress() {
+        const cur = this.els.video.currentTime;
+        const dur = this.els.video.duration || 1;
+        this.updateUIProgress((cur / dur) * 100);
+        this.els.timeDisplay.innerText = `${this.fmt(cur)} / ${this.fmt(dur)}`;
+    }
+
+    updateUIProgress(pct) {
+        this.els.seekFill.style.width = pct + '%';
+        this.els.seekThumb.style.left = pct + '%';
+    }
+
+    fmt(s) {
+        const m = Math.floor(s / 60);
+        const sec = Math.floor(s % 60);
+        return `${m}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    renderSeekMarkers() {
+        const div = this.els.seekMarkers;
+        div.innerHTML = '';
+        if (!this.currentFile) return;
+
+        const dur = this.els.video.duration;
+        if (!dur) return;
+
+        const ts = this.app.state.timestamps.filter(t => t.fileId === this.currentFile.id);
+        ts.forEach(t => {
+            const col = this.app.state.collections.find(c => c.id === t.collectionId);
+            const color = col ? col.color : '#fff';
+
+            let startPct = (t.start / dur) * 100;
+            let endPct = (t.end / dur) * 100;
+            let width = endPct - startPct;
+
+            // Min width for visibility if start == end
+            if (width < 0.5) width = 0.5;
+
+            const m = document.createElement('div');
+            m.className = 'seek-marker';
+            m.style.left = startPct + '%';
+            m.style.width = width + '%';
+            m.style.backgroundColor = color;
+            m.title = t.note;
+            div.appendChild(m);
+        });
+    }
+
+    renderTimestamps() {
+        const list = this.els.sidebarList;
+        list.innerHTML = '';
+        if (!this.currentFile) return;
+
+        const ts = this.app.state.timestamps.filter(t => t.fileId === this.currentFile.id);
+
+        ts.forEach(t => {
+            const col = this.app.state.collections.find(c => c.id === t.collectionId);
+            const color = col ? col.color : 'transparent';
+            const colName = col ? col.name : '';
+
+            const el = document.createElement('div');
+            el.className = 'timestamp-item';
+            el.style.borderLeftColor = color;
+            el.innerHTML = `
+                <div class="ts-header">
+                    <div class="ts-meta-group">
+                        <span class="ts-time" style="color:${color}">${this.fmt(t.start)} - ${this.fmt(t.end)}</span>
+                        <span class="ts-collection" style="color:${color}">${colName}</span>
+                    </div>
+                    <div class="ts-actions">
+                        <button class="btn-ts-action edit-ts" data-tooltip="Edit"><i class="ph-bold ph-pencil-simple"></i></button>
+                        <button class="btn-ts-action delete-ts" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
+                    </div>
+                </div>
+                <span class="ts-note">${t.note}</span>
+            `;
+
+            // Delegate logic
+            el.onclick = (e) => {
+                // IMPORTANT: Stop propagation for button clicks to prevent list item click logic (seek)
+                if (e.target.closest('.edit-ts')) {
+                    e.stopPropagation();
+                    console.log("Edit clicked", t);
+                    this.app.modals.openTimestamp(null, t);
+                    return;
+                }
+                if (e.target.closest('.delete-ts')) {
+                    e.stopPropagation();
+                    this.app.modals.confirm("Delete Timestamp", "Are you sure?", () => {
+                        this.app.storage.deleteTimestamp(t.id);
+                        this.renderTimestamps();
+                        this.renderSeekMarkers();
+                    });
+                    return;
+                }
+
+                // Seek if main card clicked
+                this.els.video.currentTime = t.start;
+                this.els.video.play();
+            };
+            list.appendChild(el);
+        });
+    }
+
+    // PiP
+    togglePiP() {
+        if (this.app.state.isPipActive) {
+            this.restoreFromPiP();
+        } else {
+            this.activatePiP();
+        }
+    }
+
+    activatePiP() {
+        this.app.state.isPipActive = true;
+        this.els.overlay.classList.add('hidden');
+        this.els.pipContainer.classList.remove('hidden');
+
+        // Move video
+        if (this.currentFile.type !== 'youtube' && this.currentFile.type !== 'drive') {
+            this.els.pipStage.appendChild(this.els.video);
+            this.els.video.play(); // Ensure generic play
+        } else {
+            const iframe = this.els.youtubePlace.querySelector('iframe');
+            if (iframe) this.els.pipStage.appendChild(iframe);
+        }
+    }
+
+    restoreFromPiP() {
+        this.app.state.isPipActive = false;
+        this.els.overlay.classList.remove('hidden');
+        this.els.pipContainer.classList.add('hidden');
+
+        if (this.currentFile.type !== 'youtube' && this.currentFile.type !== 'drive') {
+            this.els.videoWrapper.prepend(this.els.video); // Put back
+        } else {
+            const iframe = this.els.pipStage.querySelector('iframe');
+            if (iframe) this.els.youtubePlace.appendChild(iframe);
+        }
+    }
+
+    closePiP() {
+        this.app.state.isPipActive = false;
+        this.els.video.pause();
+        this.els.pipContainer.classList.add('hidden');
+        if (this.currentFile && this.currentFile.type !== 'youtube' && this.currentFile.type !== 'drive') {
+            this.els.videoWrapper.prepend(this.els.video);
+        }
+    }
+}
+
+class UIManager {
+    constructor(app) {
+        this.app = app;
+    }
+
+    setupNavigation() {
+        document.getElementById('btn-new-project').onclick = () => this.app.modals.openProject();
+        document.getElementById('btn-add-collection').onclick = () => this.app.modals.openCollection();
+
+        document.getElementById('btn-add-media').onclick = () => {
+            const type = document.getElementById('add-type-select').value;
+            const url = document.getElementById('input-add-url').value;
+            if (!url) return;
+            // Name guess
+            const name = "New File " + Math.floor(Math.random() * 1000);
+            this.app.storage.addFile(name, url, type);
+            document.getElementById('input-add-url').value = '';
+            this.renderStorage();
+        };
+    }
+
+    resetSidebar() {
+        document.getElementById('project-context').classList.add('hidden');
+        document.getElementById('project-nav-items').classList.add('hidden');
+        document.getElementById('nav-projects').classList.add('active');
+    }
+
+    updateSidebarForProject() {
+        const p = this.app.state.projects.find(x => x.id === this.app.state.activeProjectId);
+        if (!p) return;
+        document.getElementById('project-context').classList.remove('hidden');
+        document.getElementById('sidebar-project-name').textContent = p.name;
+        document.getElementById('project-nav-items').classList.remove('hidden');
+        document.getElementById('nav-projects').classList.remove('active');
+        document.getElementById('nav-storage').classList.add('active');
+
+        this.renderCollectionsList();
+    }
+
+    renderCollectionsList() {
+        const list = document.getElementById('collections-list');
+        list.innerHTML = '';
+        const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId);
+
+        cols.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'nav-item';
+            btn.innerHTML = `<span style="color:${c.color || '#6366f1'}">●</span> ${c.name}`;
+            btn.onclick = () => this.app.router.openCollection(c.id);
+            list.appendChild(btn);
+        });
+    }
+
+    renderProjects() {
+        const grid = document.getElementById('projects-grid');
+        grid.innerHTML = '';
+        this.app.state.projects.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <i class="ph-duotone ph-folder-open card-icon"></i>
+                <span class="card-title">${p.name}</span>
+             `;
+            card.onclick = () => this.app.router.openProject(p.id);
+            grid.appendChild(card);
+        });
+
+        if (this.app.state.projects.length === 0) {
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color: var(--text-muted);">No projects yet. Create one!</div>';
+        }
+    }
+
+    renderStorage() {
+        const grid = document.getElementById('storage-grid');
+        grid.innerHTML = '';
+        const files = this.app.state.files.filter(f => f.projectId === this.app.state.activeProjectId);
+
+        files.forEach(f => {
+            let icon = 'ph-file';
+            if (f.type === 'youtube') icon = 'ph-youtube-logo';
+            if (f.type === 'dropbox') icon = 'ph-dropbox-logo';
+            if (f.type === 'drive') icon = 'ph-google-drive-logo';
+            if (f.type === 'catbox') icon = 'ph-film-strip';
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <i class="ph-duotone ${icon} card-icon"></i>
+                <span class="card-title">${f.name}</span>
+                <span class="card-meta">${new Date(f.created).toLocaleDateString()}</span>
+             `;
+            card.onclick = () => this.app.player.load(f);
+            grid.appendChild(card);
+        });
+    }
+
+    renderCollectionView() {
+        const grid = document.getElementById('collection-items-grid');
+        const title = document.getElementById('collection-title');
+        const col = this.app.state.collections.find(c => c.id === this.app.state.activeCollectionId);
+        if (!col) return;
+
+        title.textContent = col.name;
+        grid.innerHTML = '';
+
+        const ts = this.app.state.timestamps.filter(t => t.collectionId === col.id);
+
+        ts.forEach(t => {
+            const file = this.app.state.files.find(f => f.id === t.fileId);
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.borderColor = col.color;
+            card.innerHTML = `
+                <span class="card-title" style="font-size:14px;">"${t.note}"</span>
+                <span class="card-meta">${file ? file.name : 'Unknown File'}</span>
+                <span class="card-meta" style="color:${col.color}">${this.app.player.fmt(t.start)}</span>
+            `;
+            card.onclick = () => {
+                if (file) {
+                    this.app.player.load(file);
+                    // Slight delay to allow load
+                    setTimeout(() => {
+                        this.app.player.els.video.currentTime = t.start;
+                    }, 200);
+                }
+            };
+            grid.appendChild(card);
+        });
+    }
+}
+
+class ModalManager {
+    constructor(app) {
+        this.app = app;
+        this.backdrop = document.getElementById('modal-backdrop');
+    }
+
+    init() {
+        this.backdrop.addEventListener('click', (e) => {
+            if (e.target === this.backdrop) this.close();
+        });
+
+        // Project
+        document.getElementById('confirm-project').onclick = () => {
+            const name = document.getElementById('input-project-name').value;
+            if (name) {
+                this.app.storage.addProject(name);
+                this.app.ui.renderProjects();
+                this.close();
+                document.getElementById('input-project-name').value = '';
+            }
+        };
+
+        // Collection
+        document.getElementById('confirm-collection').onclick = () => {
+            const name = document.getElementById('input-col-name').value;
+            const color = document.getElementById('input-col-color').value;
+            if (name) {
+                this.app.storage.addCollection(name, color);
+                this.app.ui.renderCollectionsList();
+                this.close();
+                document.getElementById('input-col-name').value = '';
+            }
+        };
+
+        // Timestamp
+        document.getElementById('btn-grab-start').onclick = () => {
+            document.getElementById('input-ts-start').value = this.app.player.fmt(this.app.player.els.video.currentTime);
+        };
+        document.getElementById('btn-grab-end').onclick = () => {
+            document.getElementById('input-ts-end').value = this.app.player.fmt(this.app.player.els.video.currentTime);
+        };
+        document.getElementById('confirm-timestamp').onclick = () => {
+            const colId = this.selectedCollectionId;
+            if (!colId) return alert("Please select a collection.");
+
+            const note = document.getElementById('input-ts-note').value;
+
+            // Parse time simple (MM:SS) -> Seconds
+            const parse = (str) => {
+                const parts = str.split(':');
+                if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                if (parts.length === 1) return parseInt(parts[0]);
+                return 0;
+            };
+            const start = parse(document.getElementById('input-ts-start').value);
+            const end = parse(document.getElementById('input-ts-end').value);
+
+            if (this.currentTimestampId) {
+                this.app.storage.deleteTimestamp(this.currentTimestampId);
+            }
+
+            this.app.storage.addTimestamp(colId, this.app.player.currentFile.id, start, end, note);
+            this.app.player.renderTimestamps();
+            this.app.player.renderSeekMarkers();
+            this.close();
+        };
+
+        // Custom Dropdown Logic
+        const trig = document.getElementById('trigger-ts-collection');
+        const menu = document.getElementById('menu-ts-collection');
+        trig.onclick = (e) => {
+            e.stopPropagation();
+            menu.classList.toggle('hidden');
+            trig.classList.toggle('active');
+        };
+        document.addEventListener('click', () => {
+            menu.classList.add('hidden');
+            trig.classList.remove('active');
+        });
+
+        // Delete TS Button inside Modal
+        document.getElementById('btn-delete-ts').onclick = () => {
+            if (this.currentTimestampId) {
+                this.confirm("Delete Timestamp", "Delete this timestamp?", () => {
+                    this.app.storage.deleteTimestamp(this.currentTimestampId);
+                    this.app.player.renderTimestamps();
+                    this.app.player.renderSeekMarkers();
+                    this.close();
+                });
+            }
+        };
+
+        // Confirm Yes
+        document.getElementById('btn-confirm-yes').onclick = () => {
+            if (this.onConfirmCallback) this.onConfirmCallback();
+            document.getElementById('modal-confirm').classList.add('hidden');
+            this.backdrop.classList.add('hidden');
+        };
+
+        // Prompt OK
+        document.getElementById('btn-prompt-ok').onclick = () => {
+            const val = document.getElementById('input-prompt-value').value;
+            if (this.onPromptCallback && val) this.onPromptCallback(val);
+            /* Close logic repeated for safety */
+            document.getElementById('modal-prompt').classList.add('hidden');
+            this.backdrop.classList.add('hidden');
+        };
+    }
+
+    confirm(title, msg, callback) {
+        this.backdrop.classList.remove('hidden');
+        const m = document.getElementById('modal-confirm');
+        m.classList.remove('hidden');
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = msg;
+        this.onConfirmCallback = callback;
+    }
+
+    prompt(title, value, callback) {
+        this.backdrop.classList.remove('hidden');
+        const m = document.getElementById('modal-prompt');
+        m.classList.remove('hidden');
+        document.getElementById('prompt-title').textContent = title;
+        const inp = document.getElementById('input-prompt-value');
+        inp.value = value;
+        inp.focus();
+        this.onPromptCallback = callback;
+    }
+
+    openProject() {
+        this.close();
+        this.backdrop.classList.remove('hidden');
+        document.getElementById('modal-project').classList.remove('hidden');
+    }
+
+    openCollection() {
+        this.close();
+        this.backdrop.classList.remove('hidden');
+        document.getElementById('modal-collection').classList.remove('hidden');
+    }
+
+    openTimestamp(currentTime, existingTs = null) {
+        const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId);
+        if (cols.length === 0) return alert("Create a collection first!");
+
+        this.close();
+        this.backdrop.classList.remove('hidden');
+        const m = document.getElementById('modal-timestamp');
+        m.classList.remove('hidden');
+
+        // Populate Custom Dropdown logic repeated to ensure clean state
+        const menu = document.getElementById('menu-ts-collection');
+        const triggerSpan = document.querySelector('#trigger-ts-collection span');
+        menu.innerHTML = '';
+        this.selectedCollectionId = null;
+
+        const selectCol = (c) => {
+            this.selectedCollectionId = c.id;
+            triggerSpan.textContent = c.name;
+            triggerSpan.style.color = c.color;
+            // We'll read this.selectedCollectionId in Confirm
+        };
+
+        cols.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            item.innerHTML = `<span style="color:${c.color}">●</span> ${c.name}`;
+            item.onclick = () => selectCol(c);
+            menu.appendChild(item);
+        });
+
+        // Initialize State
+        if (existingTs) {
+            this.currentTimestampId = existingTs.id;
+            document.getElementById('ts-modal-title').textContent = "Edit Timestamp";
+            document.getElementById('btn-delete-ts').classList.remove('hidden');
+
+            document.getElementById('input-ts-start').value = this.app.player.fmt(existingTs.start);
+            document.getElementById('input-ts-end').value = this.app.player.fmt(existingTs.end);
+            document.getElementById('input-ts-note').value = existingTs.note;
+
+            const c = cols.find(x => x.id === existingTs.collectionId);
+            if (c) selectCol(c);
+            else if (cols.length > 0) selectCol(cols[0]); // Fallback
+        } else {
+            this.currentTimestampId = null;
+            document.getElementById('ts-modal-title').textContent = "New Timestamp";
+            document.getElementById('btn-delete-ts').classList.add('hidden');
+
+            document.getElementById('input-ts-start').value = this.app.player.fmt(currentTime);
+            document.getElementById('input-ts-end').value = this.app.player.fmt(currentTime);
+            document.getElementById('input-ts-note').value = '';
+
+            // Default select first
+            if (cols.length > 0) selectCol(cols[0]);
+        }
+    }
+
+    close() {
+        this.backdrop.classList.add('hidden');
+        document.querySelectorAll('.modal').forEach(el => el.classList.add('hidden'));
+    }
+}
+
+// Start
+const app = new WhistlerApp();

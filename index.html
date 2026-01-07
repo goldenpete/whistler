@@ -9,281 +9,281 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Using Phosphor Icons for a clean look -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 
 <body>
     <div id="app">
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="brand" id="brand-header">
-                <div class="brand-content">
-                    <i class="ph-fill ph-wave-sine"></i>
-                    <span>Whistler</span>
-                </div>
-                <button class="icon-btn" id="btn-toggle-sidebar" title="Toggle Sidebar">
-                    <i class="ph-bold ph-caret-left" id="toggle-icon"></i>
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <i class="ph-fill ph-wave-sine logo-icon"></i>
+                <span class="brand-name">Whistler</span>
+            </div>
+
+            <!-- Context Info (Current Project) -->
+            <div id="project-context" class="project-context hidden">
+                <span class="context-label">PROJECT</span>
+                <span class="context-title" id="sidebar-project-name"></span>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" id="nav-projects">
+                    <i class="ph-bold ph-squares-four"></i>
+                    <span>Projects</span>
                 </button>
-            </div>
+                <div id="project-nav-items" class="hidden">
+                    <button class="nav-item" id="nav-storage">
+                        <i class="ph-bold ph-hard-drives"></i>
+                        <span>Storage</span>
+                    </button>
 
-            <!-- Active Project Name Display -->
-            <div id="sidebar-project-title" class="sidebar-project-title hidden"></div>
+                    <div class="nav-divider"></div>
 
-            <div style="flex: 1; overflow-y: auto;">
-                <ul class="nav-list">
-                    <li class="nav-item active" id="nav-projects">
-                        <i class="ph-bold ph-squares-four" id="nav-projects-icon"></i>
-                        <span id="nav-projects-label">Projects</span>
-                    </li>
-                    <li class="nav-item hidden" id="nav-storage">
-                        <i class="ph-bold ph-hard-drives"></i> <span>Storage</span>
-                    </li>
-                </ul>
-
-                <!-- Contextual Collections -->
-                <div id="nav-collections-container" class="hidden" style="margin-top: var(--space-md);">
-                    <div class="section-header"
-                        style="padding: 0 var(--space-md); margin-bottom: var(--space-sm); font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
-                        Collections
-                        <button class="icon-btn" id="btn-add-collection-sidebar" title="New Collection"
-                            style="margin-left: auto;">
-                            <i class="ph-bold ph-plus"></i>
-                        </button>
+                    <div class="nav-section-header">
+                        <span>Collections</span>
+                        <button class="icon-btn-small" id="btn-add-collection"><i class="ph-bold ph-plus"></i></button>
                     </div>
-                    <ul class="nav-list" id="collection-list">
-                        <!-- Collection items injected here -->
-                    </ul>
+                    <div id="collections-list" class="collections-list">
+                        <!-- Collections injected here -->
+                    </div>
                 </div>
-            </div>
+            </nav>
 
+            <div class="spacer"></div>
 
-            <!-- Sidebar PiP Container -->
-            <div id="sidebar-pip" class="sidebar-pip hidden">
-                <div class="pip-video-container" id="pip-video-wrapper">
-                    <!-- Video will be reparented here -->
+            <!-- Sidebar PiP -->
+            <div id="pip-container" class="pip-container hidden">
+                <div class="pip-header">
+                    <span>Now Playing</span>
+                    <button class="icon-btn-small" id="pip-close"><i class="ph-bold ph-x"></i></button>
+                </div>
+                <div class="pip-video-stage" id="pip-video-stage">
+                    <!-- Video moves here -->
                 </div>
                 <div class="pip-controls">
-                    <button class="icon-btn pip-btn" id="pip-btn-rewind" title="-10s"><i
-                            class="ph-bold ph-rewind"></i></button>
-                    <button class="icon-btn pip-btn" id="pip-btn-play-pause"><i class="ph-fill ph-play"></i></button>
-                    <button class="icon-btn pip-btn" id="pip-btn-forward" title="+10s"><i
-                            class="ph-bold ph-fast-forward"></i></button>
-                    <div style="flex: 1;"></div>
-                    <button class="icon-btn pip-btn" id="pip-btn-expand" title="Expand"><i
-                            class="ph-bold ph-arrows-out-simple"></i></button>
-                    <button class="icon-btn pip-btn" id="pip-btn-close" title="Close"><i
-                            class="ph-bold ph-x"></i></button>
+                    <button class="pip-ctrl" id="pip-play"><i class="ph-fill ph-play"></i></button>
+                    <button class="pip-ctrl" id="pip-expand"><i class="ph-bold ph-corners-out"></i></button>
                 </div>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <!-- Top Bar -->
-            <!-- Top Bar Removed -->
-            <!-- <header class="top-bar"> ... </header> -->
-
-            <!-- Views -->
-            <div class="view-container">
-
-                <!-- Projects View (formerly Dashboard) -->
-                <div id="projects-view">
-                    <div class="grid-container" id="project-grid">
-                        <!-- Project Cards -->
-                    </div>
+        <main class="main-view">
+            <!-- Projects View -->
+            <section id="view-projects" class="view-section">
+                <header class="view-header">
+                    <h1>Projects</h1>
+                    <button class="btn-primary" id="btn-new-project">
+                        <i class="ph-bold ph-plus"></i> New Project
+                    </button>
+                </header>
+                <div class="grid-layout" id="projects-grid">
+                    <!-- Project Cards -->
                 </div>
+            </section>
 
-                <!-- Storage View -->
-                <div id="storage-view" class="hidden">
-                    <div class="grid-container" id="storage-grid">
-                        <!-- File Cards -->
+            <!-- Storage View -->
+            <section id="view-storage" class="view-section hidden">
+                <header class="view-header">
+                    <div class="header-breadcrumb">
+                        <button class="btn-text" id="back-to-projects-start"><i class="ph-bold ph-caret-left"></i>
+                            Projects</button>
+                        <h1 id="storage-title">Storage</h1>
                     </div>
+                    <div class="header-actions">
+                        <!-- Input for adding links -->
+                        <div class="quick-add-bar">
+                            <select id="add-type-select" class="type-select">
+                                <option value="catbox">Catbox</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="dropbox">Dropbox</option>
+                                <option value="drive">Drive</option>
+                            </select>
+                            <input type="text" id="input-add-url" placeholder="Paste URL here..." class="url-input">
+                            <button class="btn-primary" id="btn-add-media">Add</button>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="grid-layout" id="storage-grid">
+                    <!-- Media Cards -->
                 </div>
+            </section>
 
-                <!-- Collection Detail View -->
-                <div id="collection-view" class="hidden">
-                    <div class="collection-header">
-                        <div id="collection-header-title" style="font-size: 1.5rem; font-weight: 600;"></div>
+            <!-- Collection View -->
+            <section id="view-collection" class="view-section hidden">
+                <header class="view-header">
+                    <div class="header-breadcrumb">
+                        <h1 id="collection-title">Collection</h1>
                     </div>
-                    <div class="timestamp-grid" id="collection-grid">
-                        <!-- Timestamps injected here -->
-                    </div>
+                </header>
+                <div class="grid-layout" id="collection-items-grid">
+                    <!-- Timestamp Cards -->
                 </div>
+            </section>
+        </main>
 
-                <!-- Player View -->
-                <div id="player-view" class="hidden" style="height: 100%;">
-                    <div class="player-layout">
-                        <!-- Video Area -->
-                        <div class="video-container" id="video-wrapper">
-                            <!-- New Connected Header (Moved back) -->
-                            <!-- NOTE: Header is inside here to stack vertically with video -->
-                            <div class="player-header" id="player-header">
-                                <h2 id="player-title">Video Title</h2>
-                                <div class="player-actions">
-                                    <button class="btn-secondary" id="btn-edit-file" title="Edit File"
-                                        style="padding: 6px 12px;">
-                                        <i class="ph-bold ph-pencil-simple"></i>
-                                    </button>
-                                    <button class="btn-danger" id="btn-delete-file" title="Delete File"
-                                        style="padding: 6px 12px;">
-                                        <i class="ph-bold ph-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
+        <!-- Player Overlay -->
+        <div id="player-overlay" class="player-overlay hidden">
+            <!-- Top Bar (Spans full width over video and sidebar) -->
+            <div class="player-top-bar">
+                <div class="player-info">
+                    <i class="ph-bold ph-film-strip"></i>
+                    <span id="player-filename">Filename.mp4</span>
+                </div>
+                <div class="player-top-actions">
+                    <button class="btn-ghost" id="player-btn-edit" title="Edit Name"><i
+                            class="ph-bold ph-pencil-simple"></i></button>
+                    <button class="btn-ghost" id="player-btn-delete" title="Delete File"><i
+                            class="ph-bold ph-trash"></i></button>
+                    <div class="divider-vertical"></div>
+                    <button class="btn-icon-large" id="player-btn-close" title="Close"><i
+                            class="ph-bold ph-x"></i></button>
+                </div>
+            </div>
 
-                            <!-- Catbox Embed (Video or Audio) -->
-                            <!-- We will use a video tag if direct link, or iframe if needed. 
-                                 For better control, we'll assume direct video mp4 links from catbox for this mockup 
-                                 to enable verify custom seek bar. -->
-                            <video id="main-player" class="catbox-frame" src=""></video>
+            <!-- Player Content -->
+            <div class="player-content">
+                <div class="player-stage" id="player-stage">
+                    <div class="video-wrapper" id="video-wrapper">
+                        <!-- Placeholders -->
+                        <div id="youtube-placeholder" class="hidden"></div>
+                        <video id="main-video" class="main-video"></video>
+                    </div>
 
-                            <!-- Video Loader -->
-                            <div id="video-loader" class="video-loader hidden">
-                                <i class="ph-bold ph-circle-notch spinner"></i>
-                            </div>
-
-                            <!-- Custom Controls overlay (simplified) -->
-                            <div class="player-controls">
-                                <div class="seek-bar-container" id="seek-container">
-                                    <div class="seek-bar-bg">
-                                        <div class="seek-bar-progress" id="seek-progress"></div>
-                                        <div class="seek-thumb"></div>
-                                    </div>
-                                    <!-- Markers injected here -->
-                                    <div id="marker-layer"></div>
-                                </div>
-
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <button class="icon-btn" id="btn-play-pause"><i
-                                                class="ph-fill ph-play"></i></button>
-                                        <span id="time-display"
-                                            style="font-size: 0.9rem; color: var(--text-secondary);">0:00 / 0:00</span>
-                                    </div>
-                                    <div style="display: flex; gap: 10px;">
-                                        <button class="btn-secondary"
-                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
-                                            id="btn-playback-speed">
-                                            <i class="ph-bold ph-gauge"></i> 1x
-                                        </button>
-                                        <button class="btn-secondary"
-                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
-                                            id="btn-toggle-pip" title="Toggle Picture-in-Picture">
-                                            <i class="ph-bold ph-picture-in-picture"></i>
-                                        </button>
-                                        <button class="btn-secondary"
-                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
-                                            id="btn-toggle-notes">
-                                            <i class="ph-bold ph-sidebar-simple"></i>
-                                        </button>
-                                        <button class="btn-primary"
-                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
-                                            id="btn-manage-timestamps">
-                                            <i class="ph-bold ph-bookmark-simple"></i> Note
-                                        </button>
-                                    </div>
-                                </div>
+                    <!-- Bottom Bar -->
+                    <div class="player-bottom-bar">
+                        <div class="seek-container" id="seek-container">
+                            <div class="seek-track" id="seek-track">
+                                <div class="seek-fill" id="seek-fill"></div>
+                                <div class="seek-thumb" id="seek-thumb"></div>
+                                <div class="seek-markers" id="seek-markers"></div>
                             </div>
                         </div>
 
-                        <!-- Side Panel (Timestamps) -->
-                        <aside class="timestamp-sidebar" id="timestamp-sidebar">
-                            <div class="section-header"
-                                style="padding: var(--space-md); display: flex; justify-content: space-between; align-items: center;">
-                                <span class="section-title">Timestamped Notes</span>
+                        <div class="controls-row">
+                            <div class="controls-left">
+                                <button class="ctrl-btn" id="btn-play-pause"><i class="ph-fill ph-play"></i></button>
+                                <span class="time-display" id="time-display">0:00 / 0:00</span>
                             </div>
-                            <div class="timestamp-list" id="active-timestamps">
-                                <!-- Timestamp items -->
+                            <div class="controls-right">
+                                <button class="ctrl-btn-text" id="btn-speed">1x</button>
+                                <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
+                                        class="ph-bold ph-picture-in-picture"></i></button>
+                                <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
+                                        class="ph-bold ph-sidebar-simple"></i></button>
                             </div>
-                        </aside>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Timestamp Sidebar -->
+                <aside class="player-sidebar" id="player-sidebar">
+                    <div class="sidebar-header">
+                        <h3>Timestamps</h3>
+                        <button class="btn-small-primary" id="btn-add-timestamp">
+                            <i class="ph-bold ph-note-pencil"></i> Add
+                        </button>
+                    </div>
+                    <div class="timestamps-scroll" id="timestamps-list">
+                        <!-- Timestamps injected -->
+                    </div>
+                </aside>
             </div>
-        </main>
+        </div>
     </div>
 
     <!-- Modals -->
-    <!-- Login Modal -->
-    <div class="modal-overlay" id="modal-project">
-        <div class="modal">
-            <h3>New Project</h3>
+    <div class="modal-backdrop hidden" id="modal-backdrop">
+        <!-- New Project Modal -->
+        <div class="modal hidden" id="modal-project">
+            <h3 class="modal-title">Create Project</h3>
             <div class="form-group">
                 <label class="form-label">Project Name</label>
                 <input type="text" class="form-input" id="input-project-name" placeholder="e.g., Research Alpha">
             </div>
-            <button class="btn-primary" id="submit-project">Create Project</button>
-            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
-                <i class="ph-bold ph-x"></i>
-            </button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-file">
-        <div class="modal">
-            <h3>Add File</h3>
-            <div class="form-group">
-                <label class="form-label">File Name</label>
-                <input type="text" class="form-input" id="input-file-name" placeholder="e.g., Interview Clip 1">
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
+                <button class="btn-primary" id="confirm-project">Create Project</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Catbox URL</label>
-                <input type="text" class="form-input" id="input-file-url" placeholder="https://files.catbox.moe/...">
-            </div>
-            <button class="btn-primary" id="submit-file">Add File</button>
-            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
-                <i class="ph-bold ph-x"></i>
-            </button>
         </div>
-    </div>
 
-    <div class="modal-overlay" id="modal-collection">
-        <div class="modal">
-            <h3>New Collection</h3>
+        <!-- New Collection Modal -->
+        <div class="modal hidden" id="modal-collection">
+            <h3 class="modal-title">New Collection</h3>
             <div class="form-group">
                 <label class="form-label">Collection Name</label>
-                <input type="text" class="form-input" id="input-collection-name" placeholder="e.g., Highlights">
+                <input type="text" class="form-input" id="input-col-name" placeholder="e.g., Highlights">
             </div>
             <div class="form-group">
-                <label class="form-label">Color</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="color" id="input-collection-color" value="#6366f1"
-                        style="height: 40px; width: 60px; border: none; background: none; cursor: pointer;">
+                <label class="form-label">Color Code</label>
+                <div class="color-picker-wrapper">
+                    <input type="color" id="input-col-color" value="#6366f1">
+                    <span style="font-size: 13px; color: var(--text-secondary);">Pick a color</span>
                 </div>
             </div>
-            <button class="btn-primary" id="submit-collection">Create Collection</button>
-            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
-                <i class="ph-bold ph-x"></i>
-            </button>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
+                <button class="btn-primary" id="confirm-collection">Create Collection</button>
+            </div>
         </div>
-    </div>
 
-    <div class="modal-overlay" id="modal-timestamp">
-        <div class="modal">
-            <h3>Timestamp Editor</h3>
+        <!-- Confirmation Modal -->
+        <div class="modal hidden" id="modal-confirm" style="width: 320px;">
+            <h3 class="modal-title" id="confirm-title">Confirm</h3>
+            <p id="confirm-message"
+                style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px; line-height: 1.5;">Are you
+                sure?</p>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
+                <button class="btn-primary" style="background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);"
+                    id="btn-confirm-yes">Delete</button>
+            </div>
+        </div>
+
+        <!-- Prompt Modal -->
+        <div class="modal hidden" id="modal-prompt" style="width: 320px;">
+            <h3 class="modal-title" id="prompt-title">Enter Value</h3>
+            <div class="form-group">
+                <input type="text" id="input-prompt-value" class="form-input" style="width: 100%;">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
+                <button class="btn-primary" id="btn-prompt-ok">Save</button>
+            </div>
+        </div>
+
+        <!-- Timestamp Editor -->
+        <div class="modal hidden" id="modal-timestamp">
+            <h3 class="modal-title" id="ts-modal-title">Edit Timestamp</h3>
+
             <div class="form-group">
                 <label class="form-label">Collection</label>
-                <select id="input-timestamp-collection" class="form-input">
-                    <!-- Options injected -->
-                </select>
+                <!-- Custom Dropdown -->
+                <div class="custom-dropdown" id="dropdown-ts-collection">
+                    <button class="dropdown-trigger" id="trigger-ts-collection">
+                        <span>Select Collection</span>
+                        <i class="ph-bold ph-caret-down"></i>
+                    </button>
+                    <div class="dropdown-menu hidden" id="menu-ts-collection"></div>
+                </div>
             </div>
 
             <div class="form-row">
                 <div class="form-col">
                     <label class="form-label">Start Time</label>
-                    <div style="display: flex; gap: 5px;">
-                        <input type="text" class="form-input" id="input-timestamp-start" placeholder="00:00">
-                        <button class="btn-secondary" id="btn-set-start" title="Set to Current"><i
+                    <div class="input-group">
+                        <input type="text" id="input-ts-start" class="form-input" placeholder="0:00">
+                        <button class="input-group-btn" id="btn-grab-start" data-tooltip="Grab current time"><i
                                 class="ph-bold ph-clock"></i></button>
                     </div>
                 </div>
                 <div class="form-col">
                     <label class="form-label">End Time</label>
-                    <div style="display: flex; gap: 5px;">
-                        <input type="text" class="form-input" id="input-timestamp-end" placeholder="00:00">
-                        <button class="btn-secondary" id="btn-set-end" title="Set to Current"><i
+                    <div class="input-group">
+                        <input type="text" id="input-ts-end" class="form-input" placeholder="0:00">
+                        <button class="input-group-btn" id="btn-grab-end" data-tooltip="Grab current time"><i
                                 class="ph-bold ph-clock"></i></button>
                     </div>
                 </div>
@@ -291,83 +291,17 @@
 
             <div class="form-group">
                 <label class="form-label">Note</label>
-                <input type="text" class="form-input" id="input-timestamp-note" placeholder="Description...">
+                <textarea id="input-ts-note" class="form-input modal-textarea" placeholder="Enter note..."></textarea>
             </div>
 
-            <button class="btn-primary" id="submit-timestamp" style="margin-top: 20px; width: 100%;">Save
-                Timestamp</button>
-
-            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
-                <i class="ph-bold ph-x"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Generic Prompt Modal -->
-    <div class="modal-overlay" id="modal-prompt">
-        <div class="modal">
-            <h3 id="prompt-title">Prompt</h3>
-            <div class="form-group">
-                <label id="prompt-label" class="form-label" style="display:none;"></label>
-                <input type="text" class="form-input" id="input-prompt-value">
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn-secondary" onclick="closeModals()">Cancel</button>
-                <button class="btn-primary" id="btn-prompt-confirm">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Generic Confirm Modal -->
-    <div class="modal-overlay" id="modal-confirm">
-        <div class="modal">
-            <h3 id="confirm-title">Confirm</h3>
-            <p id="confirm-message" style="margin-bottom: var(--space-md); color: var(--text-secondary);"></p>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn-secondary" onclick="closeModals()">Cancel</button>
-                <button class="btn-danger" id="btn-confirm-yes">Delete</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Popup Player Modal -->
-    <div class="modal-overlay" id="modal-player-popup">
-        <div class="modal modal-lg">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 id="popup-title">Moment</h3>
-                <div style="display: flex; gap: 10px;">
-                    <!-- Timer moved to bottom controls -->
-                    <button class="icon-btn" onclick="closeModals()"><i class="ph-bold ph-x"></i></button>
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button class="btn-ghost" id="btn-delete-ts" style="color: #ef4444;" data-tooltip="Delete Timestamp"><i
+                        class="ph-bold ph-trash"></i></button>
+                <div style="display:flex; gap:12px;">
+                    <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
+                    <button class="btn-primary" id="confirm-timestamp">Save Timestamp</button>
                 </div>
             </div>
-
-            <div class="popup-video-container" id="popup-container-el">
-                <video id="popup-video" class="catbox-frame" style="width: 100%; height: 100%;"></video>
-
-                <!-- Custom Controls for Clip -->
-                <div class="popup-overlay-controls">
-                    <div class="popup-seek-container" id="popup-seek-bar">
-                        <div class="popup-seek-progress" id="popup-progress"></div>
-                    </div>
-                    <div class="popup-controls-row">
-                        <button class="popup-btn" id="popup-play-btn"><i class="ph-fill ph-play"></i></button>
-                        <!-- Removed top timer, moving here -->
-                        <span class="popup-time-display" id="popup-time-val">0:00 / 0:00</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Note (Editable)</label>
-                <textarea class="popup-note-area" id="popup-note"></textarea>
-            </div>
-
-            <div style="display: flex; justify-content: space-between;">
-                <button class="btn-danger" id="btn-delete-timestamp"><i class="ph-bold ph-trash"></i> Delete</button>
-                <button class="btn-primary" id="btn-save-popup"
-                    style="width: auto; padding-left: 30px; padding-right: 30px;">Save Changes</button>
-            </div>
-
         </div>
     </div>
 
