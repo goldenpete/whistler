@@ -209,12 +209,20 @@ class Player {
             pipStage: document.getElementById('pip-video-stage'),
             pipClose: document.getElementById('pip-close'),
             pipExpand: document.getElementById('pip-expand'),
+            seekContainer: document.getElementById('seek-container'),
+            seekTrack: document.getElementById('seek-track'),
+            seekFill: document.getElementById('seek-fill'),
             seekMarkers: document.getElementById('seek-markers'),
+
+            btnVolume: document.getElementById('btn-volume'),
+            volumeSlider: document.getElementById('volume-slider'),
+
             sidebar: document.getElementById('player-sidebar'),
             btnSidebarToggle: document.getElementById('btn-sidebar-toggle')
         };
 
         this.currentFile = null;
+        this.lastVolume = 1;
         this.setupListeners();
     }
 
@@ -275,6 +283,34 @@ class Player {
             this.els.video.playbackRate = next;
             e.target.innerText = next + 'x';
         };
+
+        // Volume
+        this.els.btnVolume.onclick = () => {
+            if (this.els.video.muted) {
+                this.els.video.muted = false;
+                this.els.volumeSlider.value = this.lastVolume || 0.5;
+            } else {
+                if (this.els.video.volume > 0) {
+                    this.lastVolume = this.els.video.volume;
+                    this.els.video.muted = true;
+                    this.els.volumeSlider.value = 0;
+                } else {
+                    this.els.video.muted = false;
+                    this.els.video.volume = this.lastVolume || 1;
+                    this.els.volumeSlider.value = this.els.video.volume;
+                }
+            }
+            this.updateVolumeUI();
+        };
+
+        this.els.volumeSlider.oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            this.els.video.volume = v;
+            this.els.video.muted = (v === 0);
+            this.updateVolumeUI();
+        };
+
+        this.els.video.addEventListener('volumechange', () => this.updateVolumeUI());
 
         // Edit/Delete
         document.getElementById('player-btn-edit').onclick = () => {
