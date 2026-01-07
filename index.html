@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whistler</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Using Phosphor Icons for a clean look -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand" id="brand-header">
+                <div class="brand-content">
+                    <i class="ph-fill ph-wave-sine"></i>
+                    <span>Whistler</span>
+                </div>
+                <button class="icon-btn" id="btn-toggle-sidebar" title="Toggle Sidebar">
+                    <i class="ph-bold ph-caret-left" id="toggle-icon"></i>
+                </button>
+            </div>
+
+            <!-- Active Project Name Display -->
+            <div id="sidebar-project-title" class="sidebar-project-title hidden"></div>
+
+            <div style="flex: 1; overflow-y: auto;">
+                <ul class="nav-list">
+                    <li class="nav-item active" id="nav-projects">
+                        <i class="ph-bold ph-squares-four" id="nav-projects-icon"></i>
+                        <span id="nav-projects-label">Projects</span>
+                    </li>
+                    <li class="nav-item hidden" id="nav-storage">
+                        <i class="ph-bold ph-hard-drives"></i> <span>Storage</span>
+                    </li>
+                </ul>
+
+                <!-- Contextual Collections -->
+                <div id="nav-collections-container" class="hidden" style="margin-top: var(--space-md);">
+                    <div class="section-header"
+                        style="padding: 0 var(--space-md); margin-bottom: var(--space-sm); font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
+                        Collections
+                        <button class="icon-btn" id="btn-add-collection-sidebar" title="New Collection"
+                            style="margin-left: auto;">
+                            <i class="ph-bold ph-plus"></i>
+                        </button>
+                    </div>
+                    <ul class="nav-list" id="collection-list">
+                        <!-- Collection items injected here -->
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div id="breadcrumb-container" class="breadcrumb-container">
+                    <span class="breadcrumb-item active">Projects</span>
+                </div>
+            </header>
+
+            <!-- Views -->
+            <div class="view-container">
+
+                <!-- Projects View (formerly Dashboard) -->
+                <div id="projects-view">
+                    <div class="grid-container" id="project-grid">
+                        <!-- Project Cards -->
+                    </div>
+                </div>
+
+                <!-- Storage View -->
+                <div id="storage-view" class="hidden">
+                    <div class="grid-container" id="storage-grid">
+                        <!-- File Cards -->
+                    </div>
+                </div>
+
+                <!-- Collection Detail View -->
+                <div id="collection-view" class="hidden">
+                    <div class="collection-header">
+                        <div id="collection-header-title" style="font-size: 1.5rem; font-weight: 600;"></div>
+                    </div>
+                    <div class="timestamp-grid" id="collection-grid">
+                        <!-- Timestamps injected here -->
+                    </div>
+                </div>
+
+                <!-- Player View -->
+                <div id="player-view" class="hidden" style="height: 100%;">
+                    <div class="player-layout">
+                        <!-- Video Area -->
+                        <div class="video-container" id="video-wrapper">
+                            <!-- Catbox Embed (Video or Audio) -->
+                            <!-- We will use a video tag if direct link, or iframe if needed. 
+                                 For better control, we'll assume direct video mp4 links from catbox for this mockup 
+                                 to enable verify custom seek bar. -->
+                            <video id="main-player" class="catbox-frame" src=""></video>
+
+                            <!-- Video Loader -->
+                            <div id="video-loader" class="video-loader hidden">
+                                <i class="ph-bold ph-circle-notch spinner"></i>
+                            </div>
+
+                            <!-- Custom Controls overlay (simplified) -->
+                            <div class="player-controls">
+                                <div class="seek-bar-container" id="seek-container">
+                                    <div class="seek-bar-bg">
+                                        <div class="seek-bar-progress" id="seek-progress"></div>
+                                        <div class="seek-thumb"></div>
+                                    </div>
+                                    <!-- Markers injected here -->
+                                    <div id="marker-layer"></div>
+                                </div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <button class="icon-btn" id="btn-play-pause"><i
+                                                class="ph-fill ph-play"></i></button>
+                                        <span id="time-display"
+                                            style="font-size: 0.9rem; color: var(--text-secondary);">0:00 / 0:00</span>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn-secondary"
+                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
+                                            id="btn-playback-speed">
+                                            <i class="ph-bold ph-gauge"></i> 1x
+                                        </button>
+                                        <button class="btn-secondary"
+                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
+                                            id="btn-toggle-notes">
+                                            <i class="ph-bold ph-sidebar-simple"></i>
+                                        </button>
+                                        <button class="btn-primary"
+                                            style="width: auto; padding: 6px 16px; font-size: 0.9rem;"
+                                            id="btn-manage-timestamps">
+                                            <i class="ph-bold ph-bookmark-simple"></i> Note
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Side Panel (Timestamps) -->
+                        <aside class="timestamp-sidebar" id="timestamp-sidebar">
+                            <div class="section-header"
+                                style="padding: var(--space-md); display: flex; justify-content: space-between; align-items: center;">
+                                <span class="section-title">Timestamped Notes</span>
+                                <button class="icon-btn" id="btn-close-notes" title="Close Notes">
+                                    <i class="ph-bold ph-x"></i>
+                                </button>
+                            </div>
+                            <div class="timestamp-list" id="active-timestamps">
+                                <!-- Timestamp items -->
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-project">
+        <div class="modal">
+            <h3>New Project</h3>
+            <div class="form-group">
+                <label class="form-label">Project Name</label>
+                <input type="text" class="form-input" id="input-project-name" placeholder="e.g., Research Alpha">
+            </div>
+            <button class="btn-primary" id="submit-project">Create Project</button>
+            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-file">
+        <div class="modal">
+            <h3>Add File</h3>
+            <div class="form-group">
+                <label class="form-label">File Name</label>
+                <input type="text" class="form-input" id="input-file-name" placeholder="e.g., Interview Clip 1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Catbox URL</label>
+                <input type="text" class="form-input" id="input-file-url" placeholder="https://files.catbox.moe/...">
+            </div>
+            <button class="btn-primary" id="submit-file">Add File</button>
+            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-collection">
+        <div class="modal">
+            <h3>New Collection</h3>
+            <div class="form-group">
+                <label class="form-label">Collection Name</label>
+                <input type="text" class="form-input" id="input-collection-name" placeholder="e.g., Highlights">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Color</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="color" id="input-collection-color" value="#6366f1"
+                        style="height: 40px; width: 60px; border: none; background: none; cursor: pointer;">
+                </div>
+            </div>
+            <button class="btn-primary" id="submit-collection">Create Collection</button>
+            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-timestamp">
+        <div class="modal">
+            <h3>Timestamp Editor</h3>
+            <div class="form-group">
+                <label class="form-label">Collection</label>
+                <select id="input-timestamp-collection" class="form-input">
+                    <!-- Options injected -->
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <label class="form-label">Start Time</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" class="form-input" id="input-timestamp-start" placeholder="00:00">
+                        <button class="btn-secondary" id="btn-set-start" title="Set to Current"><i
+                                class="ph-bold ph-clock"></i></button>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <label class="form-label">End Time</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" class="form-input" id="input-timestamp-end" placeholder="00:00">
+                        <button class="btn-secondary" id="btn-set-end" title="Set to Current"><i
+                                class="ph-bold ph-clock"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Note</label>
+                <input type="text" class="form-input" id="input-timestamp-note" placeholder="Description...">
+            </div>
+
+            <button class="btn-primary" id="submit-timestamp">Save Timestamp</button>
+            <button class="icon-btn" style="position: absolute; top: 1rem; right: 1rem;" onclick="closeModals()">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Popup Player Modal -->
+    <div class="modal-overlay" id="modal-player-popup">
+        <div class="modal modal-lg">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="popup-title">Moment</h3>
+                <div style="display: flex; gap: 10px;">
+                    <!-- Timer moved to bottom controls -->
+                    <button class="icon-btn" onclick="closeModals()"><i class="ph-bold ph-x"></i></button>
+                </div>
+            </div>
+
+            <div class="popup-video-container" id="popup-container-el">
+                <video id="popup-video" class="catbox-frame" style="width: 100%; height: 100%;"></video>
+
+                <!-- Custom Controls for Clip -->
+                <div class="popup-overlay-controls">
+                    <div class="popup-seek-container" id="popup-seek-bar">
+                        <div class="popup-seek-progress" id="popup-progress"></div>
+                    </div>
+                    <div class="popup-controls-row">
+                        <button class="popup-btn" id="popup-play-btn"><i class="ph-fill ph-play"></i></button>
+                        <!-- Removed top timer, moving here -->
+                        <span class="popup-time-display" id="popup-time-val">0:00 / 0:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Note (Editable)</label>
+                <textarea class="popup-note-area" id="popup-note"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: space-between;">
+                <button class="btn-danger" id="btn-delete-timestamp"><i class="ph-bold ph-trash"></i> Delete</button>
+                <button class="btn-primary" id="btn-save-popup"
+                    style="width: auto; padding-left: 30px; padding-right: 30px;">Save Changes</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
