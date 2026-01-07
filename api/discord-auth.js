@@ -124,19 +124,37 @@ export default async function handler(req, res) {
             }
         }
         
-        // Create a session/access token for the user
-        const sessionRes = await fetch(`${supabaseAdminUrl}/auth/v1/admin/users/${supabaseUserId}/sessions`, {
-            method: 'POST',
-            headers: {
-                'apikey': supabaseServiceKey,
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})
-        });
+        // Create a session/access token for the user by generating a JWT
+        // We'll create a simple JWT using the user ID
+        const now = Math.floor(Date.now() / 1000);
+        const header = { alg: 'HS256', typ: 'JWT' };
+        const payload = {
+            sub: supabaseUserId,
+            aud: 'authenticated',
+            iss: `${supabaseAdminUrl}`,
+            iat: now,
+            exp: now + (60 * 60 * 24 * 30) // 30 days
+        };
         
-        const sessionData = await sessionRes.json();
-        const accessToken = sessionData.access_token || null;
+        // Base64 encode helper
+        const base64Encode = (str) => Buffer.from(str).toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, '');
+        
+        const encodedHeader = base64Encode(JSON.stringify(header));
+        const encodedPayload = base64Encode(JSON.stringify(payload));
+        const message = `${encodedHeader}.${encodedPayload}`;
+        
+        // Sign with HMAC SHA256
+        const crypto = require('crypto');
+        const signature = base64Encode(
+            crypto.createHmac('sha256', process.env.SUPABASE_JWT_SECRET)
+                .update(message)
+                .digest()
+        );
+        
+        const jwtToken = `${message}.${signature}`;
 
         return res.status(200).json({
             user: {
@@ -148,7 +166,7 @@ export default async function handler(req, res) {
                 avatar: discordUser.avatar
             },
             session: {
-                access_token: accessToken
+                access_token: jwtToken
             }
         });
     } catch (error) {
