@@ -122,6 +122,15 @@ const Auth = {
             
             document.getElementById('btn-login').addEventListener('click', () => {
                 openModal('modal-login');
+                // Add click handler to Discord button in modal
+                setTimeout(() => {
+                    const discordBtn = document.getElementById('btn-discord-signin');
+                    if (discordBtn) {
+                        discordBtn.addEventListener('click', () => {
+                            window.location.href = this.getOAuthUrl();
+                        });
+                    }
+                }, 100);
             });
         }
     },
