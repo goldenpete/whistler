@@ -524,7 +524,7 @@ function createProject() {
     state.projects.push(project);
     Storage.save();
     closeModals();
-    renderSidebarProjects();
+    // renderSidebarProjects(); // Not needed - sidebar is static
     renderDashboard();
     elements.modals.inputProjectName.value = '';
 }
