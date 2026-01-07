@@ -21,7 +21,7 @@ const Auth = {
     // Serverless function to handle OAuth token exchange
     // Instructions: Deploy this to Vercel, Netlify, or similar
     // See DISCORD_SIGNIN_SETUP.md for detailed setup
-    TOKEN_EXCHANGE_URL: 'https://whistler-sigma.vercel.app/api/discord-auth',
+    TOKEN_EXCHANGE_URL: 'https://whistler-3w3mbfif1-petes-projects-593f31b2.vercel.app/api/discord-auth',
     
     currentUser: null,
 
