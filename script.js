@@ -54,7 +54,7 @@ const Auth = {
                 body: JSON.stringify({ code })
             })
             .then(res => res.json())
-            .then(data => {
+            .then(async data => {
                 if (data.user) {
                     this.currentUser = {
                         id: data.user.id,
@@ -65,6 +65,11 @@ const Auth = {
                         avatarUrl: `https://cdn.discordapp.com/avatars/${data.user.id}/${data.user.avatar}.png?size=256`
                     };
                     localStorage.setItem('whistler_user', JSON.stringify(this.currentUser));
+                    
+                    // Initialize cloud sync with user ID
+                    CloudSync.userId = data.user.id;
+                    await CloudSync.pullData(); // Load cloud data
+                    
                     // Clean URL by removing code parameter
                     window.history.replaceState({}, document.title, window.location.pathname);
                     this.renderAuthUI();
@@ -183,6 +188,8 @@ const Storage = {
             collections: state.collections,
             timestamps: state.timestamps
         }));
+        // Also push to cloud
+        CloudSync.pushData();
     },
     load: () => {
         const data = localStorage.getItem('whistler_data');
@@ -374,6 +381,9 @@ function setActiveNav(id) {
 function init() {
     // Initialize Authentication
     Auth.init();
+    
+    // Initialize Cloud Sync
+    CloudSync.init();
     
     Storage.load();
 
