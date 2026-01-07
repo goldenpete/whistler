@@ -1258,3 +1258,12 @@ document.addEventListener('click', function(event) {
         closeModals();
     }
 });
+
+// Close modals when clicking X button
+document.addEventListener('click', function(event) {
+    const closeBtn = event.target.closest('.modal-close');
+    if (closeBtn) {
+        event.stopPropagation();
+        closeModals();
+    }
+});
