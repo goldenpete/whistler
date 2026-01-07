@@ -1,0 +1,6 @@
+.git
+.gitignore
+README.md
+DISCORD_SIGNIN_SETUP.md
+GOOGLE_SIGNIN_SETUP.md
+node_modules

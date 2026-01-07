@@ -7,6 +7,146 @@
  * - Views: Functions to render Dashboard, Player, Sidebars, Collections
  */
 
+// --- Authentication Management (Discord OAuth) ---
+
+const Auth = {
+    // Discord OAuth Configuration
+    // Get CLIENT_ID from Discord Developer Portal: https://discord.com/developers/applications
+    CLIENT_ID: 'YOUR_DISCORD_CLIENT_ID_HERE',
+    
+    // OAuth Redirect URI - Update this to your GitHub Pages URL
+    // Format: https://YOUR_USERNAME.github.io/whistler (or your domain root if Whistler is there)
+    REDIRECT_URI: 'https://YOUR_USERNAME.github.io/whistler',
+    
+    // Serverless function to handle OAuth token exchange
+    // Instructions: Deploy this to Vercel, Netlify, or similar
+    // See DISCORD_SIGNIN_SETUP.md for detailed setup
+    TOKEN_EXCHANGE_URL: 'https://your-serverless-function.vercel.app/api/discord-auth',
+    
+    currentUser: null,
+
+    init: function() {
+        // Load user from localStorage
+        const savedUser = localStorage.getItem('whistler_user');
+        if (savedUser) {
+            this.currentUser = JSON.parse(savedUser);
+        }
+        
+        // Check for OAuth callback code in URL
+        this.handleOAuthCallback();
+        
+        this.renderAuthUI();
+    },
+
+    handleOAuthCallback: function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        if (code && !this.currentUser) {
+            // Show loading state
+            const authContainer = document.getElementById('auth-container');
+            authContainer.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.9rem;">Signing in...</div>';
+            
+            // Exchange code for token via serverless function
+            fetch(this.TOKEN_EXCHANGE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.user) {
+                    this.currentUser = {
+                        id: data.user.id,
+                        username: data.user.username,
+                        discriminator: data.user.discriminator,
+                        email: data.user.email,
+                        avatar: data.user.avatar,
+                        avatarUrl: `https://cdn.discordapp.com/avatars/${data.user.id}/${data.user.avatar}.png?size=256`
+                    };
+                    localStorage.setItem('whistler_user', JSON.stringify(this.currentUser));
+                    // Clean URL by removing code parameter
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    this.renderAuthUI();
+                } else {
+                    console.error('Auth failed:', data);
+                    this.renderAuthUI();
+                }
+            })
+            .catch(err => {
+                console.error('Token exchange failed:', err);
+                this.renderAuthUI();
+            });
+        }
+    },
+
+    getOAuthUrl: function() {
+        const params = new URLSearchParams({
+            client_id: this.CLIENT_ID,
+            redirect_uri: this.REDIRECT_URI,
+            response_type: 'code',
+            scope: 'identify email'
+        });
+        return `https://discord.com/api/oauth2/authorize?${params.toString()}`;
+    },
+
+    logout: function() {
+        this.currentUser = null;
+        localStorage.removeItem('whistler_user');
+        this.renderAuthUI();
+        closeModals();
+    },
+
+    renderAuthUI: function() {
+        const authContainer = document.getElementById('auth-container');
+        
+        if (this.currentUser) {
+            // Show user avatar and menu
+            const displayName = this.currentUser.username + '#' + this.currentUser.discriminator;
+            authContainer.innerHTML = `
+                <button class="user-avatar-btn" id="btn-user-menu" title="${displayName}">
+                    <img src="${this.currentUser.avatarUrl}" alt="User Avatar" class="user-avatar">
+                </button>
+            `;
+            
+            document.getElementById('btn-user-menu').addEventListener('click', () => {
+                this.showUserProfile();
+            });
+        } else {
+            // Show sign-in button
+            authContainer.innerHTML = `
+                <button class="auth-btn" id="btn-login" title="Sign In with Discord">
+                    <i class="ph-bold ph-discord-logo"></i>
+                </button>
+            `;
+            
+            document.getElementById('btn-login').addEventListener('click', () => {
+                openModal('modal-login');
+            });
+        }
+    },
+
+    showUserProfile: function() {
+        if (this.currentUser) {
+            const displayName = this.currentUser.username + '#' + this.currentUser.discriminator;
+            document.getElementById('user-name').textContent = displayName;
+            document.getElementById('user-email').textContent = this.currentUser.email || 'No email connected';
+            document.getElementById('user-avatar').src = this.currentUser.avatarUrl;
+            
+            // Remove old listener and add new one
+            const logoutBtn = document.getElementById('btn-logout');
+            const newLogoutBtn = logoutBtn.cloneNode(true);
+            logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+            
+            newLogoutBtn.addEventListener('click', () => {
+                this.logout();
+            });
+            
+            openModal('modal-user-profile');
+        }
+    }
+};
+
 // --- State Management ---
 
 const state = {
@@ -223,6 +363,9 @@ function setActiveNav(id) {
 }
 
 function init() {
+    // Initialize Authentication
+    Auth.init();
+    
     Storage.load();
 
     // Navigation Listeners
