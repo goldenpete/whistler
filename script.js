@@ -53,8 +53,13 @@ const Auth = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code })
             })
-            .then(res => res.json())
+            .then(res => {
+                console.log('Discord auth response status:', res.status);
+                return res.json();
+            })
             .then(async data => {
+                console.log('Discord auth response data:', data);
+                
                 if (data.user) {
                     this.currentUser = {
                         id: data.user.discord_id,
@@ -68,7 +73,7 @@ const Auth = {
                     
                     // Use the Supabase user ID from the backend
                     CloudSync.userId = data.user.supabase_id;
-                    console.log('Supabase user ID:', CloudSync.userId);
+                    console.log('Set CloudSync.userId to:', CloudSync.userId);
                     
                     // Load cloud data
                     await CloudSync.pullData();
@@ -77,7 +82,7 @@ const Auth = {
                     window.history.replaceState({}, document.title, window.location.pathname);
                     this.renderAuthUI();
                 } else {
-                    console.error('Auth failed:', data);
+                    console.error('Auth failed - no user in response:', data);
                     this.renderAuthUI();
                 }
             })
@@ -525,7 +530,8 @@ function createProject() {
     Storage.save();
     closeModals();
     // renderSidebarProjects(); // Not needed - sidebar is static
-    renderDashboard();
+    // renderDashboard(); // Use goToProjects instead
+    goToProjects();
     elements.modals.inputProjectName.value = '';
 }
 
