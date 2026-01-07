@@ -11,8 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Using Phosphor Icons for a clean look -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Supabase Client Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -67,8 +65,6 @@
                 <div id="breadcrumb-container" class="breadcrumb-container">
                     <span class="breadcrumb-item active">Projects</span>
                 </div>
-                <!-- Auth Container -->
-                <div id="auth-container" class="auth-container"></div>
             </header>
 
             <!-- Views -->
@@ -177,36 +173,6 @@
     <!-- Modals -->
     <!-- Login Modal -->
     <div class="modal-overlay" id="modal-login">
-        <div class="modal" style="max-width: 400px;">
-            <button class="icon-btn modal-close" style="position: absolute; top: 1rem; right: 1rem;">
-                <i class="ph-bold ph-x"></i>
-            </button>
-            <h3 style="text-align: center; margin-bottom: var(--space-lg);">Sign In with Discord</h3>
-            <button class="btn-discord" id="btn-discord-signin" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; font-size: 1rem;">
-                <i class="ph-bold ph-discord-logo"></i> Continue with Discord
-            </button>
-        </div>
-    </div>
-
-    <!-- User Profile Dropdown Modal -->
-    <div class="modal-overlay" id="modal-user-profile">
-        <div class="modal" style="max-width: 350px;">
-            <div id="user-profile-content" style="text-align: center;">
-                <img id="user-avatar" src="" alt="User" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: var(--space-md);">
-                <h3 id="user-name" style="margin-bottom: var(--space-sm);"></h3>
-                <p id="user-email" style="color: var(--text-secondary); margin-bottom: var(--space-lg); font-size: 0.9rem;"></p>
-                <button class="btn-danger" id="btn-logout" style="width: 100%;">
-                    <i class="ph-bold ph-sign-out"></i> Sign Out
-                </button>
-            </div>
-            <button class="icon-btn modal-close" style="position: absolute; top: 1rem; right: 1rem;">
-                <i class="ph-bold ph-x"></i>
-            </button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-project">
-        <div class="modal">
             <h3>New Project</h3>
             <div class="form-group">
                 <label class="form-label">Project Name</label>
@@ -340,7 +306,6 @@
         </div>
     </div>
 
-    <script src="supabase-sync.js"></script>
     <script src="script.js"></script>
 </body>
 
