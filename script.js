@@ -1216,7 +1216,13 @@ function parseTime(timeStr) {
 // --- Modals ---
 
 function openModal(modal) {
-    modal.classList.add('open');
+    // Handle both string IDs and DOM elements
+    if (typeof modal === 'string') {
+        modal = document.getElementById(modal);
+    }
+    if (modal && modal.classList) {
+        modal.classList.add('open');
+    }
 }
 
 window.closeModals = function () {
