@@ -1241,3 +1241,10 @@ window.closeModals = function () {
 
 // --- Init ---
 window.addEventListener('DOMContentLoaded', init);
+
+// Close modals when clicking the overlay background
+document.addEventListener('click', function(event) {
+    if (event.target.classList && event.target.classList.contains('modal-overlay') && event.target.classList.contains('open')) {
+        closeModals();
+    }
+});
