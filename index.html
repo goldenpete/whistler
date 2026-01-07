@@ -133,12 +133,12 @@
                     <span id="player-filename">Filename.mp4</span>
                 </div>
                 <div class="player-top-actions">
-                    <button class="btn-ghost" id="player-btn-edit" title="Edit Name"><i
+                    <button class="btn-ghost" id="player-btn-edit" data-tooltip="Edit Name"><i
                             class="ph-bold ph-pencil-simple"></i></button>
-                    <button class="btn-ghost" id="player-btn-delete" title="Delete File"><i
+                    <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
                             class="ph-bold ph-trash"></i></button>
                     <div class="divider-vertical"></div>
-                    <button class="btn-icon-large" id="player-btn-close" title="Close"><i
+                    <button class="btn-icon-large" id="player-btn-close" data-tooltip="Close"><i
                             class="ph-bold ph-x"></i></button>
                 </div>
             </div>
@@ -172,10 +172,11 @@
 
                         <div class="controls-row">
                             <div class="controls-left">
-                                <button class="ctrl-btn" id="btn-play-pause"><i class="ph-fill ph-play"></i></button>
+                                <button class="ctrl-btn-filled" id="btn-play-pause" data-tooltip="Play/Pause"><i
+                                        class="ph-fill ph-play"></i></button>
 
                                 <div class="volume-container">
-                                    <button class="ctrl-btn" id="btn-volume"><i
+                                    <button class="ctrl-btn-filled" id="btn-volume" data-tooltip="Mute/Unmute"><i
                                             class="ph-bold ph-speaker-high"></i></button>
                                     <input type="range" id="volume-slider" class="volume-slider" min="0" max="1"
                                         step="0.05" value="1">
@@ -184,7 +185,7 @@
                                 <span class="time-display" id="time-display">0:00 / 0:00</span>
                             </div>
                             <div class="controls-right">
-                                <button class="ctrl-btn-text" id="btn-speed">1x</button>
+                                <button class="ctrl-btn-text" id="btn-speed" data-tooltip="Playback Speed">1x</button>
                                 <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
                                         class="ph-bold ph-picture-in-picture"></i></button>
                                 <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
