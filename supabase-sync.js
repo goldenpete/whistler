@@ -75,26 +75,31 @@ const CloudSync = {
 
     // Push data to cloud (save changes to Supabase)
     async pushData() {
-        if (!this.userId || !this.isOnline) return;
+        if (!this.userId || !this.isOnline) {
+            console.log('Cannot push: userId=' + this.userId + ', isOnline=' + this.isOnline);
+            return;
+        }
 
         try {
+            console.log('Pushing data to Supabase for user:', this.userId);
+            
             // Batch upsert all data types
             const uploadPromises = [
                 state.projects.length > 0 ? supabaseClient.from('projects').upsert(
                     state.projects.map(p => ({ ...p, user_id: this.userId }))
-                ) : Promise.resolve(),
+                ) : Promise.resolve({ data: null, error: null }),
                 
                 state.files.length > 0 ? supabaseClient.from('files').upsert(
                     state.files.map(f => ({ ...f, user_id: this.userId }))
-                ) : Promise.resolve(),
+                ) : Promise.resolve({ data: null, error: null }),
                 
                 state.collections.length > 0 ? supabaseClient.from('collections').upsert(
                     state.collections.map(c => ({ ...c, user_id: this.userId }))
-                ) : Promise.resolve(),
+                ) : Promise.resolve({ data: null, error: null }),
                 
                 state.timestamps.length > 0 ? supabaseClient.from('timestamps').upsert(
                     state.timestamps.map(t => ({ ...t, user_id: this.userId }))
-                ) : Promise.resolve()
+                ) : Promise.resolve({ data: null, error: null })
             ];
 
             const results = await Promise.all(uploadPromises);
@@ -102,6 +107,7 @@ const CloudSync = {
             // Check for errors
             for (const result of results) {
                 if (result && result.error) {
+                    console.error('Supabase error:', result.error);
                     throw result.error;
                 }
             }

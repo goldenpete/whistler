@@ -57,18 +57,21 @@ const Auth = {
             .then(async data => {
                 if (data.user) {
                     this.currentUser = {
-                        id: data.user.id,
+                        id: data.user.discord_id,
                         username: data.user.username,
                         discriminator: data.user.discriminator,
                         email: data.user.email,
                         avatar: data.user.avatar,
-                        avatarUrl: `https://cdn.discordapp.com/avatars/${data.user.id}/${data.user.avatar}.png?size=256`
+                        avatarUrl: `https://cdn.discordapp.com/avatars/${data.user.discord_id}/${data.user.avatar}.png?size=256`
                     };
                     localStorage.setItem('whistler_user', JSON.stringify(this.currentUser));
                     
-                    // Initialize cloud sync with user ID
-                    CloudSync.userId = data.user.id;
-                    await CloudSync.pullData(); // Load cloud data
+                    // Use the Supabase user ID from the backend
+                    CloudSync.userId = data.user.supabase_id;
+                    console.log('Supabase user ID:', CloudSync.userId);
+                    
+                    // Load cloud data
+                    await CloudSync.pullData();
                     
                     // Clean URL by removing code parameter
                     window.history.replaceState({}, document.title, window.location.pathname);
