@@ -228,6 +228,16 @@ class Player {
             this.renderSeekMarkers();
             this.updateProgress();
         });
+
+        // Loader Events
+        const showLoader = () => document.getElementById('video-loader').classList.remove('hidden');
+        const hideLoader = () => document.getElementById('video-loader').classList.add('hidden');
+
+        this.els.video.addEventListener('loadstart', showLoader);
+        this.els.video.addEventListener('waiting', showLoader);
+        this.els.video.addEventListener('canplay', hideLoader);
+        this.els.video.addEventListener('playing', hideLoader);
+        this.els.video.addEventListener('error', hideLoader);
         this.els.video.addEventListener('ended', () => {
             this.els.btnPlay.innerHTML = '<i class="ph-bold ph-arrow-counter-clockwise"></i>';
         });
