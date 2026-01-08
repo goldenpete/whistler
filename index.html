@@ -21,19 +21,23 @@
                 <span class="brand-name">Whistler</span>
             </div>
 
-            <!-- Context Info (Current Project) -->
-            <div id="project-context" class="project-context hidden">
-                <span class="context-label">PROJECT</span>
-                <span class="context-title" id="sidebar-project-name"></span>
+            <!-- Project Dropdown -->
+            <div id="project-switcher" class="project-switcher">
+                <label class="context-label">PROJECT</label>
+                <div class="custom-select" id="project-dropdown">
+                    <div class="custom-select-trigger" id="project-trigger">
+                        <span id="project-trigger-text">Select Project</span>
+                        <i class="ph-bold ph-caret-down"></i>
+                    </div>
+                    <div class="custom-select-menu hidden" id="project-menu">
+                        <!-- Items populated by JS -->
+                    </div>
+                </div>
             </div>
 
             <nav class="nav-menu">
-                <button class="nav-item active" id="nav-projects">
-                    <i class="ph-bold ph-squares-four"></i>
-                    <span>Projects</span>
-                </button>
-                <div id="project-nav-items" class="hidden">
-                    <button class="nav-item" id="nav-storage">
+                <div id="project-nav-items">
+                    <button class="nav-item active" id="nav-storage">
                         <i class="ph-bold ph-hard-drives"></i>
                         <span>Storage</span>
                     </button>
@@ -69,38 +73,40 @@
 
         <!-- Main Content -->
         <main class="main-view">
-            <!-- Projects View -->
-            <section id="view-projects" class="view-section">
-                <header class="view-header">
-                    <h1>Projects</h1>
-                    <button class="btn-primary" id="btn-new-project">
-                        <i class="ph-bold ph-plus"></i> New Project
-                    </button>
-                </header>
-                <div class="grid-layout" id="projects-grid">
-                    <!-- Project Cards -->
-                </div>
-            </section>
-
-            <!-- Storage View -->
-            <section id="view-storage" class="view-section hidden">
+            <!-- Storage View (Default) -->
+            <section id="view-storage" class="view-section">
                 <header class="view-header">
                     <div class="header-breadcrumb">
-                        <button class="btn-text" id="back-to-projects-start"><i class="ph-bold ph-caret-left"></i>
-                            Projects</button>
-                        <h1 id="storage-title">Storage</h1>
+                        <!-- Breadcrumbs injected by JS -->
+                        <div id="breadcrumb-list" class="breadcrumb-list"></div>
                     </div>
                     <div class="header-actions">
-                        <!-- Input for adding links -->
-                        <div class="quick-add-bar">
-                            <select id="add-type-select" class="type-select">
-                                <option value="catbox">Catbox</option>
-                                <option value="youtube">YouTube</option>
-                                <option value="dropbox">Dropbox</option>
-                                <option value="drive">Drive</option>
-                            </select>
-                            <input type="text" id="input-add-url" placeholder="Paste URL here..." class="url-input">
-                            <button class="btn-primary" id="btn-add-media">Add</button>
+                        <!-- Expandable Add Bar -->
+                        <div id="add-bar-wrapper" class="add-bar-wrapper">
+                            <button class="btn-primary btn-icon-only" id="btn-expand-add">
+                                <i class="ph-bold ph-plus"></i>
+                            </button>
+                            <div class="quick-add-bar hidden" id="quick-add-bar">
+                                <div class="custom-select" id="source-dropdown" style="width: 130px;">
+                                    <div class="custom-select-trigger" id="source-trigger">
+                                        <span id="source-trigger-text">Catbox</span>
+                                        <i class="ph-bold ph-caret-down"></i>
+                                    </div>
+                                    <div class="custom-select-menu hidden" id="source-menu">
+                                        <div class="custom-select-item" data-value="catbox">Catbox</div>
+                                        <div class="custom-select-item" data-value="youtube">YouTube</div>
+                                        <div class="custom-select-item" data-value="dropbox">Dropbox</div>
+                                        <div class="custom-select-item" data-value="drive">Drive</div>
+                                    </div>
+                                </div>
+                                <input type="text" id="input-add-url" placeholder="Paste URL here..." class="url-input">
+                                <button class="btn-primary" id="btn-add-folder"
+                                    style="margin-right:8px; background: var(--bg-hover); box-shadow:none; border:1px solid var(--border);"
+                                    data-tooltip="New Folder">
+                                    <i class="ph-bold ph-folder-plus"></i>
+                                </button>
+                                <button class="btn-primary" id="btn-add-media">Add</button>
+                            </div>
                         </div>
                     </div>
                 </header>

@@ -123,6 +123,7 @@ button {
 .brand {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
     margin-bottom: 40px;
     color: var(--text-primary);
@@ -150,24 +151,115 @@ button {
     animation: scaleIn 0.3s var(--ease-out);
 }
 
+.project-switcher {
+    margin-bottom: 24px;
+    padding: 0 8px;
+}
+
 .context-label {
     display: block;
     font-size: 10px;
     color: var(--text-muted);
     text-transform: uppercase;
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     letter-spacing: 0.5px;
 }
 
-.context-title {
-    display: block;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--accent);
-    white-space: nowrap;
+.select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.project-select {
+    width: 100%;
+    appearance: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    padding-right: 32px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+/* Custom Dropdown v2 */
+.custom-select {
+    position: relative;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.custom-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.custom-select-trigger:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+}
+
+.custom-select-trigger i {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-left: 8px;
+}
+
+.custom-select-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
     overflow: hidden;
-    text-overflow: ellipsis;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.custom-select-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: var(--text-secondary);
+}
+
+.custom-select-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.custom-select-item.selected {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+.custom-select-item.separator {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+    padding: 0;
+    pointer-events: none;
 }
 
 .nav-menu {
@@ -176,6 +268,7 @@ button {
     gap: 6px;
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .nav-item {
@@ -190,35 +283,36 @@ button {
     text-align: left;
     width: 100%;
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; Removed to fix animation cutoff */
 }
 
 .nav-item:hover {
     background-color: var(--bg-hover);
     color: var(--text-primary);
-    transform: translateX(4px);
+    transform: translateX(2px);
 }
 
 .nav-item.active {
-    background-color: var(--accent-dim);
-    color: var(--accent);
+    background-color: color-mix(in srgb, var(--item-color, var(--accent)) 10%, transparent);
+    color: var(--item-color, var(--accent));
 }
 
 .nav-item.active::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 10%;
-    height: 80%;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 20px;
     width: 3px;
-    background: var(--accent);
-    border-radius: 0 4px 4px 0;
-    box-shadow: 0 0 10px var(--accent-glow);
+    background: var(--item-color, var(--accent));
+    border-radius: 0 2px 2px 0;
+    box-shadow: 2px 0 10px var(--item-color, var(--accent));
 }
 
 .nav-item i {
     font-size: 20px;
-    transition: transform 0.2s;
+    transition: color 0.2s;
 }
 
 .nav-item:hover i {
@@ -665,6 +759,7 @@ button {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding: 0;
 }
 
 #storage-grid .card-description {
@@ -705,6 +800,28 @@ button {
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
+}
+
+/* Drag and Drop Styling */
+.card.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--accent);
+    cursor: grabbing;
+}
+
+.card.drag-over-folder {
+    background: var(--bg-hover);
+    border: 2px solid var(--accent);
+    transform: scale(1.02);
+}
+
+/* Folder Card Styling */
+.card-folder {
+    border-left: 3px solid var(--accent);
+}
+
+.card-folder .card-thumb-icon {
+    color: var(--accent);
 }
 
 .card-action-btn {
@@ -2043,4 +2160,107 @@ input[type="color"]::-webkit-color-swatch {
     color: #fff;
     font-weight: 700;
     box-shadow: 0 0 15px var(--accent-glow);
+}
+
+/* Breadcrumbs */
+.breadcrumb-list {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.breadcrumb-item {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.breadcrumb-item:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-primary);
+    cursor: default;
+}
+
+.breadcrumb-separator {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0 4px;
+}
+
+/* Add Bar Animation */
+.add-bar-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    height: 40px;
+}
+
+.btn-icon-only {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    box-shadow: 0 4px 12px var(--accent-glow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.btn-icon-only:hover {
+    transform: scale(1.05);
+    background: var(--accent-hover);
+}
+
+.quick-add-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    /* Transition props */
+    transform-origin: right center;
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
+}
+
+.quick-add-bar.hidden {
+    display: none;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* Drag Utils */
+.breadcrumb-item.drag-over {
+    background: var(--bg-hover);
+    color: var(--accent);
+    outline: 2px dashed var(--accent);
 }

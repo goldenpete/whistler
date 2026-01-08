@@ -27,14 +27,11 @@ class WhistlerApp {
     }
 
     init() {
-        console.log("Whistler Initializing...");
         this.storage.load();
         this.router.init();
-        this.modals.init();
+        this.modals.init(); // Restore Modals
         this.ui.setupNavigation();
-
-        // Initial Route
-        this.router.goTo('projects');
+        this.ui.renderProjectDropdown(); // Initialize Dropdown & Auto-select
     }
 }
 
@@ -71,6 +68,7 @@ class StorageManager {
     }
 
     // CRUD
+    // CRUD
     addProject(name) {
         const p = { id: crypto.randomUUID(), name, created: Date.now() };
         this.app.state.projects.push(p);
@@ -78,19 +76,30 @@ class StorageManager {
         return p;
     }
 
-    addFile(name, url, type) {
+    addFile(name, url, type, parentId = null) {
         if (!this.app.state.activeProjectId) return;
+
+        // Get max order
+        const siblings = this.getItems(this.app.state.activeProjectId, parentId);
+        const maxOrder = siblings.length > 0 ? Math.max(...siblings.map(s => s.order || 0)) : -1;
+
         const f = {
             id: crypto.randomUUID(),
             projectId: this.app.state.activeProjectId,
+            parentId: parentId, // null = root
             name,
             url,
-            type, // 'catbox', 'youtube', 'dropbox', 'drive'
+            type, // 'catbox', 'youtube', 'dropbox', 'drive', 'folder'
+            order: maxOrder + 1,
             created: Date.now()
         };
         this.app.state.files.push(f);
         this.save();
         return f;
+    }
+
+    addFolder(name, parentId = null) {
+        return this.addFile(name, null, 'folder', parentId);
     }
 
     addCollection(name, color) {
@@ -121,6 +130,14 @@ class StorageManager {
     }
 
     deleteFile(id) {
+        // Recursive delete if folder
+        const toDelete = [id];
+
+        if (this.app.state.files.find(f => f.id === id)?.type === 'folder') {
+            const children = this.app.state.files.filter(f => f.parentId === id);
+            children.forEach(c => this.deleteFile(c.id)); // Recurse
+        }
+
         this.app.state.files = this.app.state.files.filter(f => f.id !== id);
         this.app.state.timestamps = this.app.state.timestamps.filter(t => t.fileId !== id);
         this.save();
@@ -134,6 +151,35 @@ class StorageManager {
         }
     }
 
+    moveFile(id, targetParentId) {
+        const f = this.app.state.files.find(x => x.id === id);
+        if (f && f.id !== targetParentId) { // Prevent self-parenting
+            f.parentId = targetParentId;
+            // Append to end of new list
+            const siblings = this.getItems(f.projectId, targetParentId);
+            const maxOrder = siblings.length > 0 ? Math.max(...siblings.map(s => s.order || 0)) : -1;
+            f.order = maxOrder + 1;
+            this.save();
+        }
+    }
+
+    reorderItems(projectId, parentId, orderedIds) {
+        const items = this.getItems(projectId, parentId);
+        items.forEach(item => {
+            const index = orderedIds.indexOf(item.id);
+            if (index !== -1) {
+                item.order = index;
+            }
+        });
+        this.save();
+    }
+
+    getItems(projectId, parentId = null) {
+        let items = this.app.state.files.filter(f => f.projectId === projectId && (f.parentId === parentId || (!f.parentId && parentId === null)));
+        // Sort by order
+        return items.sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+
     deleteTimestamp(id) {
         this.app.state.timestamps = this.app.state.timestamps.filter(t => t.id !== id);
         this.save();
@@ -144,16 +190,13 @@ class Router {
     constructor(app) {
         this.app = app;
         this.views = {
-            projects: document.getElementById('view-projects'),
             storage: document.getElementById('view-storage'),
             collection: document.getElementById('view-collection')
         };
     }
 
     init() {
-        document.getElementById('nav-projects').onclick = () => this.goTo('projects');
         document.getElementById('nav-storage').onclick = () => this.goTo('storage');
-        document.getElementById('back-to-projects-start').onclick = () => this.goTo('projects');
     }
 
     goTo(viewName) {
@@ -164,16 +207,30 @@ class Router {
         if (viewName === 'projects') {
             this.app.state.activeProjectId = null;
             this.app.ui.resetSidebar();
-            this.app.ui.renderProjects();
-            this.views.projects.classList.remove('hidden');
+            // this.app.ui.renderProjects(); // Removed in refactor
+            // this.views.projects.classList.remove('hidden'); // Removed
         } else if (viewName === 'storage') {
-            if (!this.app.state.activeProjectId) return this.goTo('projects');
+            if (!this.app.state.activeProjectId) {
+                // return this.goTo('projects'); // Projects view gone
+                return;
+            }
+            this.app.state.activeCollectionId = null; // Clear active collection
+
             this.app.ui.updateSidebarForProject();
             this.app.ui.renderStorage();
+
+            // Ensure sidebar state
+            document.getElementById('nav-storage').classList.add('active');
+            this.app.ui.renderCollectionsList(); // Re-render to clear active collections
+
             this.views.storage.classList.remove('hidden');
         } else if (viewName === 'collection') {
             this.app.ui.renderCollectionView();
             this.views.collection.classList.remove('hidden');
+
+            // Update sidebar state
+            document.getElementById('nav-storage').classList.remove('active');
+            this.app.ui.renderCollectionsList(); // Re-render to highlight active collection
         }
     }
 
@@ -847,36 +904,167 @@ class UIManager {
     }
 
     setupNavigation() {
-        document.getElementById('btn-new-project').onclick = () => this.app.modals.openProject();
+        // Project Dropdown Logic
+        this.setupCustomDropdown('project-dropdown', (value) => {
+            if (value === 'NEW_PROJECT') {
+                this.app.modals.openProject();
+            } else {
+                this.app.router.openProject(value);
+            }
+        });
+
+        // Source Switcher Logic
+        this.setupCustomDropdown('source-dropdown', (value) => {
+            const triggerText = document.getElementById('source-trigger-text');
+            const map = {
+                'catbox': 'Catbox',
+                'youtube': 'YouTube',
+                'dropbox': 'Dropbox',
+                'drive': 'Drive'
+            };
+            if (map[value]) triggerText.textContent = map[value];
+            document.getElementById('source-dropdown').dataset.value = value;
+        });
+
+        // Default source value
+        document.getElementById('source-dropdown').dataset.value = 'catbox';
+
         document.getElementById('btn-add-collection').onclick = () => this.app.modals.openCollection();
 
+        // Expandable Add Bar Logic
+        const btnExpand = document.getElementById('btn-expand-add');
+        const quickBar = document.getElementById('quick-add-bar');
+
+        const toggleAddBar = (show) => {
+            if (show) {
+                btnExpand.classList.add('hidden');
+                quickBar.classList.remove('hidden');
+                document.getElementById('input-add-url').focus();
+            } else {
+                quickBar.classList.add('hidden');
+                btnExpand.classList.remove('hidden');
+            }
+        };
+
+        btnExpand.onclick = (e) => {
+            e.stopPropagation();
+            toggleAddBar(true);
+        };
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+            if (!quickBar.contains(e.target) && !btnExpand.contains(e.target) && !quickBar.classList.contains('hidden')) {
+                // Check if we are clicking a dropdown inside
+                if (!e.target.closest('.custom-select-menu')) {
+                    toggleAddBar(false);
+                }
+            }
+        });
+
+
+        // New Folder
+        document.getElementById('btn-add-folder').onclick = () => {
+            if (!this.app.state.activeProjectId) return;
+            this.app.modals.prompt("New Folder", "New Folder", (name) => {
+                if (name) {
+                    this.app.storage.addFolder(name, this.app.state.currentFolderId);
+                    this.renderStorage();
+                    toggleAddBar(false);
+                }
+            });
+        };
+
         document.getElementById('btn-add-media').onclick = () => {
-            const type = document.getElementById('add-type-select').value;
+            if (!this.app.state.activeProjectId) return;
+
+            const type = document.getElementById('source-dropdown').dataset.value || 'catbox';
             const url = document.getElementById('input-add-url').value;
             if (!url) return;
-            // Name guess
+
             const name = "New File " + Math.floor(Math.random() * 1000);
-            this.app.storage.addFile(name, url, type);
+            this.app.storage.addFile(name, url, type, this.app.state.currentFolderId);
             document.getElementById('input-add-url').value = '';
             this.renderStorage();
+            toggleAddBar(false);
         };
     }
 
-    resetSidebar() {
-        document.getElementById('project-context').classList.add('hidden');
-        document.getElementById('project-nav-items').classList.add('hidden');
-        document.getElementById('nav-projects').classList.add('active');
+    setupCustomDropdown(id, onSelect) {
+        const wrapper = document.getElementById(id);
+        const trigger = wrapper.querySelector('.custom-select-trigger');
+        const menu = wrapper.querySelector('.custom-select-menu');
+
+        trigger.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-menu').forEach(el => {
+                if (el !== menu) el.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+        };
+
+        menu.onclick = (e) => {
+            const item = e.target.closest('.custom-select-item');
+            if (!item || item.classList.contains('separator')) return;
+
+            const value = item.dataset.value;
+            onSelect(value);
+            menu.classList.add('hidden');
+
+            menu.querySelectorAll('.custom-select-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+        };
+
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    }
+
+    renderProjectDropdown() {
+        const menu = document.getElementById('project-menu');
+        const triggerText = document.getElementById('project-trigger-text');
+        menu.innerHTML = '';
+
+        const currentId = this.app.state.activeProjectId;
+
+        if (currentId) {
+            const p = this.app.state.projects.find(x => x.id === currentId);
+            if (p) triggerText.textContent = p.name;
+        } else {
+            triggerText.textContent = "Select Project";
+        }
+
+        this.app.state.projects.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'custom-select-item';
+            if (p.id === currentId) item.classList.add('selected');
+            item.dataset.value = p.id;
+            item.textContent = p.name;
+            menu.appendChild(item);
+        });
+
+        const sep = document.createElement('div');
+        sep.className = 'custom-select-item separator';
+        menu.appendChild(sep);
+
+        const newItem = document.createElement('div');
+        newItem.className = 'custom-select-item';
+        newItem.style.color = 'var(--accent)';
+        newItem.style.fontWeight = '600';
+        newItem.dataset.value = 'NEW_PROJECT';
+        newItem.innerHTML = '<i class="ph-bold ph-plus" style="margin-right:6px"></i> New Project...';
+        menu.appendChild(newItem);
+
+        if (!this.app.state.activeProjectId && this.app.state.projects.length > 0) {
+            this.app.router.openProject(this.app.state.projects[0].id);
+        }
     }
 
     updateSidebarForProject() {
-        const p = this.app.state.projects.find(x => x.id === this.app.state.activeProjectId);
-        if (!p) return;
-        document.getElementById('project-context').classList.remove('hidden');
-        document.getElementById('sidebar-project-name').textContent = p.name;
+        this.renderProjectDropdown();
         document.getElementById('project-nav-items').classList.remove('hidden');
-        document.getElementById('nav-projects').classList.remove('active');
         document.getElementById('nav-storage').classList.add('active');
-
         this.renderCollectionsList();
     }
 
@@ -888,126 +1076,249 @@ class UIManager {
         cols.forEach(c => {
             const btn = document.createElement('button');
             btn.className = 'nav-item';
+
+            // Set dynamic color variable
+            if (c.color) {
+                btn.style.setProperty('--item-color', c.color);
+            }
+
+            if (c.id === this.app.state.activeCollectionId) {
+                btn.classList.add('active');
+            }
             btn.innerHTML = `<span style="color:${c.color || '#6366f1'}">●</span> ${c.name}`;
-            btn.onclick = () => this.app.router.openCollection(c.id);
+            btn.onclick = () => {
+                this.app.router.openCollection(c.id);
+                // Manually update active state to reflect immediately if router doesn't full re-render sidebar
+                this.renderCollectionsList();
+            };
             list.appendChild(btn);
         });
-    }
-
-    renderProjects() {
-        const grid = document.getElementById('projects-grid');
-        grid.innerHTML = '';
-        this.app.state.projects.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <i class="ph-duotone ph-folder-open card-icon"></i>
-                <span class="card-title">${p.name}</span>
-             `;
-            card.onclick = () => this.app.router.openProject(p.id);
-            grid.appendChild(card);
-        });
-
-        if (this.app.state.projects.length === 0) {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color: var(--text-muted);">No projects yet. Create one!</div>';
-        }
     }
 
     renderStorage() {
         const grid = document.getElementById('storage-grid');
         grid.innerHTML = '';
-        const files = this.app.state.files.filter(f => f.projectId === this.app.state.activeProjectId);
+
+        // Breadcrumbs
+        this.renderBreadcrumbs();
+
+        if (!this.app.state.activeProjectId) {
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color: var(--text-muted); padding-top: 40px;">No project selected.</div>';
+            return;
+        }
+
+        const files = this.app.storage.getItems(this.app.state.activeProjectId, this.app.state.currentFolderId);
 
         files.forEach(f => {
             let icon = 'ph-file';
+            let isFolder = false;
             if (f.type === 'youtube') icon = 'ph-youtube-logo';
-            if (f.type === 'dropbox') icon = 'ph-dropbox-logo';
-            if (f.type === 'drive') icon = 'ph-google-drive-logo';
-            if (f.type === 'catbox') icon = 'ph-film-strip';
+            else if (f.type === 'dropbox') icon = 'ph-dropbox-logo';
+            else if (f.type === 'drive') icon = 'ph-google-drive-logo';
+            else if (f.type === 'catbox') icon = 'ph-film-strip';
+            else if (f.type === 'folder') {
+                icon = 'ph-folder-simple';
+                isFolder = true;
+            }
 
             const card = document.createElement('div');
             card.className = 'card';
+            if (isFolder) card.classList.add('card-folder');
+
+            // DRAG AND DROP ATTRIBUTES
+            card.draggable = true;
+            card.dataset.id = f.id;
+            card.dataset.type = f.type;
+
             const desc = f.description || '';
             const truncDesc = desc.length > 50 ? desc.substring(0, 50) + '...' : desc;
+
+            // Different layout for folder vs file? reusing same for consistency
             card.innerHTML = `
                 <div class="card-thumbnail">
-                    <i class="ph-duotone ${icon} card-thumb-icon"></i>
+                    <i class="ph-duotone ${icon} card-thumb-icon" style="${isFolder ? 'color: var(--accent);' : ''}"></i>
                 </div>
                 <div class="card-text">
                     <span class="card-title">${f.name}</span>
-                    <span class="card-description">${truncDesc || 'No description'}</span>
+                    <span class="card-description">${isFolder ? 'Folder' : (truncDesc || 'No description')}</span>
                 </div>
                 <span class="card-meta">${new Date(f.created).toLocaleDateString()}</span>
                 <div class="card-actions">
+                    ${!isFolder ? `
                     <button class="card-action-btn" data-action="open" data-tooltip="Open Link"><i class="ph-bold ph-arrow-square-out"></i></button>
                     <button class="card-action-btn" data-action="copy" data-tooltip="Copy URL"><i class="ph-bold ph-copy"></i></button>
                     <button class="card-action-btn" data-action="share" data-tooltip="Share"><i class="ph-bold ph-share-network"></i></button>
-                    <button class="card-action-btn" data-action="edit-title" data-tooltip="Edit Title"><i class="ph-bold ph-pencil-simple"></i></button>
-                    <button class="card-action-btn" data-action="edit-desc" data-tooltip="Edit Description"><i class="ph-bold ph-note-pencil"></i></button>
+                    ` : ''}
+                    <button class="card-action-btn" data-action="edit-title" data-tooltip="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
+                    ${!isFolder ? `<button class="card-action-btn" data-action="edit-desc" data-tooltip="Edit Description"><i class="ph-bold ph-note-pencil"></i></button>` : ''}
                     <button class="card-action-btn card-action-danger" data-action="delete" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
                 </div>
              `;
 
-            // Main card click - open player
+            // Main card click
             card.onclick = (e) => {
-                if (e.target.closest('.card-actions')) return; // Don't trigger if clicking actions
-                this.app.player.load(f);
-            };
-
-            // Action button handlers
-            card.querySelector('[data-action="open"]').onclick = (e) => {
-                e.stopPropagation();
-                window.open(f.url, '_blank');
-            };
-
-            card.querySelector('[data-action="copy"]').onclick = (e) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(f.url).then(() => {
-                    e.target.closest('.card-action-btn').innerHTML = '<i class="ph-bold ph-check"></i>';
-                    setTimeout(() => {
-                        e.target.closest('.card-action-btn').innerHTML = '<i class="ph-bold ph-copy"></i>';
-                    }, 1500);
-                });
-            };
-
-            card.querySelector('[data-action="share"]').onclick = (e) => {
-                e.stopPropagation();
-                if (navigator.share) {
-                    navigator.share({ title: f.name, url: f.url });
+                if (e.target.closest('.card-actions')) return;
+                if (isFolder) {
+                    this.app.state.currentFolderId = f.id;
+                    this.renderStorage();
                 } else {
-                    navigator.clipboard.writeText(f.url);
+                    this.app.player.load(f);
                 }
             };
 
-            card.querySelector('[data-action="edit-title"]').onclick = (e) => {
-                e.stopPropagation();
-                this.app.modals.prompt("Rename File", f.name, (newName) => {
+            // DnD Handlers (Card Source)
+            card.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', f.id);
+                e.dataTransfer.effectAllowed = 'move';
+                card.classList.add('dragging');
+            };
+
+            card.ondragend = (e) => {
+                card.classList.remove('dragging');
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('drag-over-folder'));
+            };
+
+            card.ondragover = (e) => {
+                e.preventDefault();
+                if (isFolder && !card.classList.contains('dragging')) {
+                    card.classList.add('drag-over-folder');
+                }
+            };
+
+            card.ondragleave = (e) => {
+                card.classList.remove('drag-over-folder');
+            };
+
+            card.ondrop = (e) => {
+                e.preventDefault();
+                const draggedId = e.dataTransfer.getData('text/plain');
+                if (draggedId === f.id) return;
+
+                if (isFolder) {
+                    this.app.storage.moveFile(draggedId, f.id);
+                    this.renderStorage();
+                } else {
+                    // Reorder logic (simplified insert before)
+                    const allCards = Array.from(grid.children);
+                    const currentIds = allCards.map(c => c.dataset.id).filter(id => id !== draggedId);
+                    const dropIndex = currentIds.indexOf(f.id);
+
+                    if (dropIndex !== -1) {
+                        currentIds.splice(dropIndex, 0, draggedId);
+                        this.app.storage.reorderItems(this.app.state.activeProjectId, this.app.state.currentFolderId, currentIds);
+                        this.renderStorage();
+                    }
+                }
+            };
+
+            // Buttons...
+            const bindAction = (sel, fn) => {
+                const el = card.querySelector(sel);
+                if (el) el.onclick = (e) => { e.stopPropagation(); fn(e); };
+            };
+
+            bindAction('[data-action="open"]', () => window.open(f.url, '_blank'));
+            bindAction('[data-action="copy"]', (e) => {
+                navigator.clipboard.writeText(f.url).then(() => {
+                    // feedback
+                });
+            });
+            bindAction('[data-action="share"]', () => {
+                if (navigator.share) navigator.share({ title: f.name, url: f.url });
+                else navigator.clipboard.writeText(f.url);
+            });
+            bindAction('[data-action="edit-title"]', () => {
+                this.app.modals.prompt("Rename", f.name, (newName) => {
                     this.app.storage.updateFile(f.id, { name: newName });
                     this.renderStorage();
                 });
-            };
-
-            card.querySelector('[data-action="edit-desc"]').onclick = (e) => {
-                e.stopPropagation();
-                this.app.modals.prompt("Edit Description", f.description || "", (newDesc) => {
+            });
+            bindAction('[data-action="edit-desc"]', () => {
+                this.app.modals.prompt("Description", f.description || "", (newDesc) => {
                     this.app.storage.updateFile(f.id, { description: newDesc });
                     this.renderStorage();
                 }, true);
-            };
-
-            card.querySelector('[data-action="delete"]').onclick = (e) => {
-                e.stopPropagation();
-                this.app.modals.confirm("Delete File", "Are you sure you want to delete this file?", () => {
+            });
+            bindAction('[data-action="delete"]', () => {
+                this.app.modals.confirm("Delete", "Are you sure?", () => {
                     this.app.storage.deleteFile(f.id);
                     this.renderStorage();
                 });
-            };
+            });
 
             grid.appendChild(card);
 
-            // Generate thumbnail for direct video files (catbox)
-            if (f.type === 'catbox' && f.url) {
+            if (f.type === 'catbox' && f.url && !isFolder) {
                 this.generateVideoThumbnail(f.url, card.querySelector('.card-thumbnail'));
+            }
+        });
+    }
+
+    renderBreadcrumbs() {
+        const container = document.getElementById('breadcrumb-list');
+        container.innerHTML = '';
+
+        const path = [];
+        let curr = this.app.state.currentFolderId;
+
+        // Build Path: [Root, ...Folders]
+        // Root Item
+        const rootName = this.app.state.activeProjectId ?
+            this.app.state.projects.find(p => p.id === this.app.state.activeProjectId)?.name : "Storage";
+
+        path.push({ id: null, name: rootName || "Storage" });
+
+        // Traverse Up
+        const tempStack = [];
+        while (curr) {
+            const f = this.app.state.files.find(x => x.id === curr);
+            if (f) {
+                tempStack.unshift({ id: f.id, name: f.name });
+                curr = f.parentId;
+            } else {
+                curr = null;
+            }
+        }
+
+        const fullPath = path.concat(tempStack);
+
+        fullPath.forEach((item, index) => {
+            const isLast = index === fullPath.length - 1;
+
+            const el = document.createElement('div');
+            el.className = `breadcrumb-item ${isLast ? 'active' : ''}`;
+            el.textContent = item.name;
+
+            if (!isLast) {
+                el.onclick = () => {
+                    this.app.state.currentFolderId = item.id;
+                    this.renderStorage();
+                };
+
+                // Drag Drop Target
+                el.ondragover = (e) => {
+                    e.preventDefault();
+                    el.classList.add('drag-over');
+                };
+                el.ondragleave = () => el.classList.remove('drag-over');
+                el.ondrop = (e) => {
+                    e.preventDefault();
+                    el.classList.remove('drag-over');
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    if (draggedId) {
+                        this.app.storage.moveFile(draggedId, item.id);
+                        this.renderStorage();
+                    }
+                };
+            }
+
+            container.appendChild(el);
+
+            if (!isLast) {
+                const sep = document.createElement('span');
+                sep.className = 'breadcrumb-separator';
+                sep.innerHTML = '<i class="ph-bold ph-caret-right"></i>';
+                container.appendChild(sep);
             }
         });
     }
@@ -1019,7 +1330,6 @@ class UIManager {
         video.preload = 'metadata';
 
         video.onloadeddata = () => {
-            // Seek to 1 second or 10% of the video
             video.currentTime = Math.min(1, video.duration * 0.1);
         };
 
@@ -1035,21 +1345,15 @@ class UIManager {
                 img.src = canvas.toDataURL('image/jpeg', 0.7);
                 img.className = 'card-thumb-img';
 
-                // Replace icon with thumbnail image
                 container.innerHTML = '';
                 container.appendChild(img);
             } catch (e) {
-                // CORS or other error - keep the icon
                 console.log('Could not generate thumbnail:', e);
             }
             video.remove();
         };
 
-        video.onerror = () => {
-            // Keep the icon if video fails to load
-            video.remove();
-        };
-
+        video.onerror = () => video.remove();
         video.src = url;
     }
 
@@ -1100,11 +1404,13 @@ class ModalManager {
         });
 
         // Project
+        // Project
         document.getElementById('confirm-project').onclick = () => {
             const name = document.getElementById('input-project-name').value;
             if (name) {
-                this.app.storage.addProject(name);
-                this.app.ui.renderProjects();
+                const newProject = this.app.storage.addProject(name);
+                this.app.ui.renderProjectDropdown();
+                this.app.router.openProject(newProject.id); // Switch to new project
                 this.close();
                 document.getElementById('input-project-name').value = '';
             }
