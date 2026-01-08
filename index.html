@@ -138,7 +138,7 @@
                     <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
                             class="ph-bold ph-trash"></i></button>
                     <div class="divider-vertical"></div>
-                    <button class="btn-icon-large" id="player-btn-close" data-tooltip="Close"><i
+                    <button class="btn-ghost" id="player-btn-close" data-tooltip="Close"><i
                             class="ph-bold ph-x"></i></button>
                 </div>
             </div>
@@ -162,6 +162,35 @@
 
                     <!-- Bottom Bar -->
                     <div class="player-bottom-bar">
+                        <!-- Speed Menu -->
+                        <div id="speed-menu" class="speed-menu hidden">
+                            <div class="speed-header">
+                                <span id="speed-display">1.00x</span>
+                            </div>
+                            <div class="speed-slider-row">
+                                <button class="btn-icon-small" id="btn-speed-minus"><i
+                                        class="ph-bold ph-minus"></i></button>
+                                <input type="range" id="speed-slider" class="speed-slider" min="0.25" max="8"
+                                    step="0.05" value="1">
+                                <button class="btn-icon-small" id="btn-speed-plus"><i
+                                        class="ph-bold ph-plus"></i></button>
+                            </div>
+                            <div class="speed-grid" id="speed-grid">
+                                <button class="speed-preset">0.25</button>
+                                <button class="speed-preset">0.5</button>
+                                <button class="speed-preset">0.75</button>
+                                <button class="speed-preset active">1.0</button>
+                                <button class="speed-preset">1.25</button>
+                                <button class="speed-preset">1.5</button>
+                                <button class="speed-preset">1.75</button>
+                                <button class="speed-preset">2.0</button>
+                                <button class="speed-preset">2.5</button>
+                                <button class="speed-preset">3.0</button>
+                                <button class="speed-preset">4.0</button>
+                                <button class="speed-preset">8.0</button>
+                            </div>
+                        </div>
+
                         <div class="seek-container" id="seek-container">
                             <div class="seek-track" id="seek-track">
                                 <div class="seek-fill" id="seek-fill"></div>

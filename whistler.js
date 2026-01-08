@@ -217,6 +217,15 @@ class Player {
             btnVolume: document.getElementById('btn-volume'),
             volumeSlider: document.getElementById('volume-slider'),
 
+            // Speed
+            btnSpeed: document.getElementById('btn-speed'),
+            speedMenu: document.getElementById('speed-menu'),
+            speedDisplay: document.getElementById('speed-display'),
+            speedSlider: document.getElementById('speed-slider'),
+            btnSpeedMinus: document.getElementById('btn-speed-minus'),
+            btnSpeedPlus: document.getElementById('btn-speed-plus'),
+            speedPresets: document.querySelectorAll('.speed-preset'),
+
             sidebar: document.getElementById('player-sidebar'),
             btnSidebarToggle: document.getElementById('btn-sidebar-toggle')
         };
@@ -275,14 +284,53 @@ class Player {
         this.els.pipExpand.onclick = () => this.restoreFromPiP();
         this.els.pipClose.onclick = () => this.closePiP();
 
-        // Speed
-        document.getElementById('btn-speed').onclick = (e) => {
-            const speeds = [1, 1.25, 1.5, 2, 0.5];
-            const current = parseFloat(e.target.innerText);
-            let next = speeds[(speeds.indexOf(current) + 1) % speeds.length] || 1;
-            this.els.video.playbackRate = next;
-            e.target.innerText = next + 'x';
+        // Speed Menu Logic
+        const toggleSpeedMenu = (e) => {
+            if (e) e.stopPropagation();
+            this.els.speedMenu.classList.toggle('hidden');
         };
+
+        const updateSpeed = (rate) => {
+            rate = parseFloat(rate).toFixed(2);
+            // Clamp rate
+            if (rate < 0.25) rate = 0.25;
+            if (rate > 8) rate = 8;
+
+            this.els.video.playbackRate = parseFloat(rate);
+            this.els.speedDisplay.innerText = rate + 'x';
+            this.els.btnSpeed.innerText = rate + 'x';
+            this.els.speedSlider.value = rate;
+
+            // Update presets
+            this.els.speedPresets.forEach(btn => {
+                if (parseFloat(btn.innerText) == parseFloat(rate)) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        };
+
+        this.els.btnSpeed.onclick = toggleSpeedMenu;
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.els.speedMenu.contains(e.target) && e.target !== this.els.btnSpeed) {
+                this.els.speedMenu.classList.add('hidden');
+            }
+        });
+
+        // Prevent closing when clicking inside menu
+        this.els.speedMenu.onclick = (e) => e.stopPropagation();
+
+        // Slider
+        this.els.speedSlider.oninput = (e) => updateSpeed(e.target.value);
+
+        // Buttons
+        this.els.btnSpeedMinus.onclick = () => updateSpeed(this.els.video.playbackRate - 0.25);
+        this.els.btnSpeedPlus.onclick = () => updateSpeed(this.els.video.playbackRate + 0.25);
+
+        // Presets
+        this.els.speedPresets.forEach(btn => {
+            btn.onclick = () => updateSpeed(btn.innerText);
+        });
 
         // Volume
         this.els.btnVolume.onclick = () => {
