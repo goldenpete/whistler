@@ -355,6 +355,90 @@ button {
     animation: fadeIn 0.4s ease-out;
 }
 
+/* ========== PiP Container Styles ========== */
+.pip-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.pip-video-stage {
+    position: relative;
+    aspect-ratio: 16/9;
+    background: #000;
+    overflow: hidden;
+}
+
+.pip-video-stage .video-wrapper,
+.pip-video-stage video,
+.pip-video-stage iframe {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pip-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--bg-card);
+}
+
+.pip-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.pip-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.pip-controls {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.pip-ctrl {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.pip-ctrl:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: transparent;
+}
+
 .view-header {
     height: 80px;
     padding: 0 40px;
@@ -551,6 +635,26 @@ button {
     border-radius: 12px;
 }
 
+/* PiP Controls Overlay */
+.pip-controls-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    /* Let clicks pass through when hidden */
+    z-index: 10;
+    /* Ensure on top of video */
+}
+
 /* --- Player Overlay --- */
 .player-overlay {
     position: absolute;
@@ -567,12 +671,12 @@ button {
 }
 
 .player-top-bar {
-    height: 50px;
+    height: 40px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
+    padding: 0 16px;
     background: rgba(15, 15, 18, 0.8);
     flex-shrink: 0;
 }
@@ -580,9 +684,19 @@ button {
 .player-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 13px;
+}
+
+.player-link {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 13px;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .player-info i {
@@ -664,6 +778,55 @@ button {
     /* Ensure video fits without pushing */
 }
 
+/* Fullscreen Overrides */
+.player-stage:fullscreen,
+.player-stage:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.player-stage:fullscreen .video-wrapper,
+.player-stage:-webkit-full-screen .video-wrapper {
+    height: 100%;
+}
+
+.player-stage:fullscreen .player-bottom-bar,
+.player-stage:-webkit-full-screen .player-bottom-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+    border-top: none;
+    transform: translateY(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+    padding-bottom: 30px;
+    /* Extra padding for bottom screen */
+}
+
+/* Hovering the bottom 25% of the screen triggers controls */
+.player-stage:fullscreen::after,
+.player-stage:-webkit-full-screen::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 25%;
+    z-index: 10;
+}
+
+.player-stage:fullscreen:hover .player-bottom-bar,
+.player-stage:-webkit-full-screen:hover .player-bottom-bar,
+.player-stage:fullscreen .player-bottom-bar:hover,
+.player-stage:-webkit-full-screen .player-bottom-bar:hover {
+    transform: translateY(0);
+    opacity: 1;
+}
+
 .player-bottom-bar {
     background: linear-gradient(0deg, var(--bg-card) 0%, rgba(20, 20, 24, 0.9) 100%);
     padding: 16px 30px 24px 30px;
@@ -672,9 +835,9 @@ button {
     flex-direction: column;
     gap: 12px;
     flex-shrink: 0;
-    /* Always stay visible */
     z-index: 20;
     position: relative;
+    /* transition: none; default */
 }
 
 .seek-container {

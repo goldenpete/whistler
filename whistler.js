@@ -193,13 +193,17 @@ class Player {
         this.app = app;
         this.els = {
             overlay: document.getElementById('player-overlay'),
+            playerStage: document.getElementById('player-stage'), // Add this
             videoWrapper: document.getElementById('video-wrapper'),
             video: document.getElementById('main-video'),
             youtubePlace: document.getElementById('youtube-placeholder'),
             sidebarList: document.getElementById('timestamps-list'),
+
+            // ... (keep existing) ...
             btnClose: document.getElementById('player-btn-close'),
             timeDisplay: document.getElementById('time-display'),
             btnPlay: document.getElementById('btn-play-pause'),
+            btnFullscreen: document.getElementById('btn-fullscreen'), // Add this
             seekContainer: document.getElementById('seek-container'),
             seekFill: document.getElementById('seek-fill'),
             seekThumb: document.getElementById('seek-thumb'),
@@ -239,6 +243,42 @@ class Player {
         this.els.btnClose.onclick = () => this.close();
         this.els.btnPlay.onclick = () => this.togglePlay();
         this.els.video.onclick = () => this.togglePlay();
+        this.els.btnFullscreen.onclick = () => this.toggleFullscreen();
+
+        // Fullscreen Sync
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                this.els.btnFullscreen.innerHTML = '<i class="ph-bold ph-corners-in"></i>';
+            } else {
+                this.els.btnFullscreen.innerHTML = '<i class="ph-bold ph-corners-out"></i>';
+            }
+        });
+
+        // Copy URL
+        document.getElementById('player-btn-copy').onclick = () => {
+            const url = this.currentFile.url;
+            navigator.clipboard.writeText(url).then(() => {
+                // Could add toast here, but for now just console or relying on user knowing
+                const btn = document.getElementById('player-btn-copy');
+                const icon = btn.querySelector('i');
+                const original = icon.className;
+                icon.className = 'ph-bold ph-check';
+                setTimeout(() => icon.className = original, 1500);
+            });
+        };
+
+        // Share
+        document.getElementById('player-btn-share').onclick = () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: this.currentFile.name,
+                    url: this.currentFile.url
+                }).catch(console.error);
+            } else {
+                // Fallback to copy behavior or alert
+                alert("Share not supported on this device/browser.");
+            }
+        };
 
         this.els.video.addEventListener('timeupdate', () => this.updateProgress());
         this.els.video.addEventListener('loadedmetadata', () => {
@@ -388,6 +428,7 @@ class Player {
     load(file) {
         this.currentFile = file;
         this.els.filename.textContent = file.name;
+        document.getElementById('player-link').textContent = file.url;
 
         // Reset Logic
         this.els.youtubePlace.innerHTML = '';
@@ -431,6 +472,18 @@ class Player {
         this.renderTimestamps();
         this.renderSeekMarkers();
         this.els.overlay.classList.remove('hidden');
+    }
+
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            this.els.playerStage.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+            this.els.btnFullscreen.innerHTML = '<i class="ph-bold ph-corners-in"></i>';
+        } else {
+            document.exitFullscreen();
+            this.els.btnFullscreen.innerHTML = '<i class="ph-bold ph-corners-out"></i>';
+        }
     }
 
     extractYoutubeId(url) {
@@ -579,39 +632,74 @@ class Player {
 
     activatePiP() {
         this.app.state.isPipActive = true;
-        this.els.overlay.classList.add('hidden');
+        this.els.videoWrapper.classList.add('pip-active');
         this.els.pipContainer.classList.remove('hidden');
 
-        // Move video
-        if (this.currentFile.type !== 'youtube' && this.currentFile.type !== 'drive') {
-            this.els.pipStage.appendChild(this.els.video);
-            this.els.video.play(); // Ensure generic play
-        } else {
-            const iframe = this.els.youtubePlace.querySelector('iframe');
-            if (iframe) this.els.pipStage.appendChild(iframe);
+        // Hide the main player overlay
+        this.els.overlay.classList.add('hidden');
+
+        // Move video element to PiP stage
+        this.els.pipStage.prepend(this.els.videoWrapper);
+
+        // PiP Controls - simplified
+        const pipPlay = document.getElementById('pip-play-pause');
+        const pipRewind = document.getElementById('pip-rewind');
+        const pipForward = document.getElementById('pip-forward');
+
+        const updatePiPButton = () => {
+            if (pipPlay) {
+                pipPlay.innerHTML = this.els.video.paused ?
+                    '<i class="ph-fill ph-play"></i>' :
+                    '<i class="ph-fill ph-pause"></i>';
+            }
+        };
+
+        if (pipPlay) {
+            pipPlay.onclick = (e) => {
+                e.stopPropagation();
+                this.togglePlay();
+                updatePiPButton();
+            };
         }
+        if (pipRewind) {
+            pipRewind.onclick = (e) => {
+                e.stopPropagation();
+                this.els.video.currentTime -= 10;
+            };
+        }
+        if (pipForward) {
+            pipForward.onclick = (e) => {
+                e.stopPropagation();
+                this.els.video.currentTime += 10;
+            };
+        }
+
+        // Sync with video state events
+        this.els.video.addEventListener('play', updatePiPButton);
+        this.els.video.addEventListener('pause', updatePiPButton);
+
+        // Initial state
+        updatePiPButton();
     }
 
     restoreFromPiP() {
         this.app.state.isPipActive = false;
         this.els.overlay.classList.remove('hidden');
         this.els.pipContainer.classList.add('hidden');
+        this.els.videoWrapper.classList.remove('pip-active');
 
-        if (this.currentFile.type !== 'youtube' && this.currentFile.type !== 'drive') {
-            this.els.videoWrapper.prepend(this.els.video); // Put back
-        } else {
-            const iframe = this.els.pipStage.querySelector('iframe');
-            if (iframe) this.els.youtubePlace.appendChild(iframe);
-        }
+        // Move video back
+        this.els.playerStage.insertBefore(this.els.videoWrapper, this.els.playerStage.firstChild);
     }
 
     closePiP() {
         this.app.state.isPipActive = false;
         this.els.video.pause();
         this.els.pipContainer.classList.add('hidden');
-        if (this.currentFile && this.currentFile.type !== 'youtube' && this.currentFile.type !== 'drive') {
-            this.els.videoWrapper.prepend(this.els.video);
-        }
+        this.els.videoWrapper.classList.remove('pip-active');
+
+        // Move video back (same as restore)
+        this.els.playerStage.insertBefore(this.els.videoWrapper, this.els.playerStage.firstChild);
     }
 }
 

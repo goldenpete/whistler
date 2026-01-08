@@ -54,16 +54,15 @@
 
             <!-- Sidebar PiP -->
             <div id="pip-container" class="pip-container hidden">
-                <div class="pip-header">
-                    <span>Now Playing</span>
-                    <button class="icon-btn-small" id="pip-close"><i class="ph-bold ph-x"></i></button>
-                </div>
                 <div class="pip-video-stage" id="pip-video-stage">
                     <!-- Video moves here -->
                 </div>
-                <div class="pip-controls">
-                    <button class="pip-ctrl" id="pip-play"><i class="ph-fill ph-play"></i></button>
-                    <button class="pip-ctrl" id="pip-expand"><i class="ph-bold ph-corners-out"></i></button>
+                <div class="pip-bar">
+                    <button class="pip-btn" id="pip-rewind"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
+                    <button class="pip-btn" id="pip-play-pause"><i class="ph-fill ph-play"></i></button>
+                    <button class="pip-btn" id="pip-expand"><i class="ph-bold ph-arrows-out"></i></button>
+                    <button class="pip-btn" id="pip-close"><i class="ph-bold ph-x"></i></button>
+                    <button class="pip-btn" id="pip-forward"><i class="ph-bold ph-arrow-clockwise"></i></button>
                 </div>
             </div>
         </aside>
@@ -131,8 +130,14 @@
                 <div class="player-info">
                     <i class="ph-bold ph-film-strip"></i>
                     <span id="player-filename">Filename.mp4</span>
+                    <div class="divider-vertical"></div>
+                    <span id="player-link" class="player-link">https://example.com/video</span>
                 </div>
                 <div class="player-top-actions">
+                    <button class="btn-ghost" id="player-btn-copy" data-tooltip="Copy URL"><i
+                            class="ph-bold ph-copy"></i></button>
+                    <button class="btn-ghost" id="player-btn-share" data-tooltip="Share"><i
+                            class="ph-bold ph-share-network"></i></button>
                     <button class="btn-ghost" id="player-btn-edit" data-tooltip="Edit Name"><i
                             class="ph-bold ph-pencil-simple"></i></button>
                     <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
@@ -214,11 +219,14 @@
                                 <span class="time-display" id="time-display">0:00 / 0:00</span>
                             </div>
                             <div class="controls-right">
-                                <button class="ctrl-btn-text" id="btn-speed" data-tooltip="Playback Speed">1x</button>
+                                <button class="ctrl-btn-text" id="btn-speed"
+                                    data-tooltip="Playback Speed">1.00x</button>
                                 <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
                                         class="ph-bold ph-picture-in-picture"></i></button>
                                 <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
                                         class="ph-bold ph-sidebar-simple"></i></button>
+                                <button class="ctrl-btn-filled" id="btn-fullscreen" data-tooltip="Fullscreen"><i
+                                        class="ph-bold ph-corners-out"></i></button>
                             </div>
                         </div>
                     </div>
