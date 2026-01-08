@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 </head>
 
 <body>
@@ -167,6 +169,8 @@
                     <button class="btn-ghost" id="player-btn-share" data-tooltip="Share"><i
                             class="ph-bold ph-share-network"></i></button>
                     <div class="divider-vertical"></div>
+                    <button class="btn-ghost" id="player-btn-move" data-tooltip="Move to Folder"><i
+                            class="ph-bold ph-folder-notch-plus"></i></button>
                     <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
                             class="ph-bold ph-trash"></i></button>
                     <div class="divider-vertical"></div>
@@ -182,6 +186,15 @@
                         <!-- Placeholders -->
                         <div id="youtube-placeholder" class="hidden"></div>
                         <video id="main-video" class="main-video"></video>
+
+                        <!-- PDF Container -->
+                        <div id="pdf-stage" class="pdf-stage hidden">
+                            <div id="pdf-page-container">
+                                <canvas id="pdf-render"></canvas>
+                                <div id="pdf-text-layer" class="textLayer"></div>
+                            </div>
+                        </div>
+
                         <!-- Loader -->
                         <div id="video-loader" class="video-loader hidden">
                             <div class="wave-bar"></div>
@@ -240,30 +253,37 @@
                                 <button class="ctrl-btn-filled" id="btn-play-pause" data-tooltip="Play/Pause"><i
                                         class="ph-fill ph-play"></i></button>
 
-                                <div class="volume-container">
-                                    <button class="ctrl-btn-filled" id="btn-volume" data-tooltip="Mute/Unmute"><i
-                                            class="ph-bold ph-speaker-high"></i></button>
-                                    <input type="range" id="volume-slider" class="volume-slider" min="0" max="1"
-                                        step="0.05" value="1">
-                                </div>
+                                <button class="ctrl-btn-filled" id="btn-volume" data-tooltip="Mute/Unmute"><i
+                                        class="ph-bold ph-speaker-high"></i></button>
+                                <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.05"
+                                    value="1">
+                            </div>
 
-                                <span class="time-display" id="time-display">0:00 / 0:00</span>
+                            <!-- PDF Controls -->
+                            <div id="pdf-controls" class="pdf-controls hidden">
+                                <button class="ctrl-btn-filled" id="btn-pdf-prev" data-tooltip="Previous Page"><i
+                                        class="ph-bold ph-caret-left"></i></button>
+                                <span id="pdf-page-num">1 / 10</span>
+                                <button class="ctrl-btn-filled" id="btn-pdf-next" data-tooltip="Next Page"><i
+                                        class="ph-bold ph-caret-right"></i></button>
                             </div>
-                            <div class="controls-right">
-                                <button class="ctrl-btn-text" id="btn-speed"
-                                    data-tooltip="Playback Speed">1.00x</button>
-                                <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
-                                        class="ph-bold ph-picture-in-picture"></i></button>
-                                <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
-                                        class="ph-bold ph-sidebar-simple"></i></button>
-                                <button class="ctrl-btn-filled" id="btn-fullscreen" data-tooltip="Fullscreen"><i
-                                        class="ph-bold ph-corners-out"></i></button>
-                            </div>
+
+                            <span class="time-display" id="time-display">0:00 / 0:00</span>
+                        </div>
+                        <div class="controls-right">
+                            <button class="ctrl-btn-text" id="btn-speed" data-tooltip="Playback Speed">1.00x</button>
+                            <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
+                                    class="ph-bold ph-picture-in-picture"></i></button>
+                            <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
+                                    class="ph-bold ph-sidebar-simple"></i></button>
+                            <button class="ctrl-btn-filled" id="btn-fullscreen" data-tooltip="Fullscreen"><i
+                                    class="ph-bold ph-corners-out"></i></button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Timestamp Sidebar -->
+
+                <!-- Timestamp Sidebar (Moved inside player-content) -->
                 <aside class="player-sidebar" id="player-sidebar">
                     <div class="sidebar-header">
                         <h3>Timestamps</h3>
@@ -275,9 +295,10 @@
                         <!-- Timestamps injected -->
                     </div>
                 </aside>
-            </div>
-        </div>
-    </div>
+            </div> <!-- End player-content -->
+
+        </div> <!-- End player-overlay -->
+    </div> <!-- End app -->
 
     <!-- Modals -->
     <div id="video-desc-tooltip" class="desc-tooltip hidden"></div>
@@ -390,6 +411,25 @@
                 </div>
             </div>
         </div>
+        <!-- Move File Modal -->
+        <div class="modal hidden" id="modal-move-file" style="width: 400px;">
+            <h3 class="modal-title">Move to Folder</h3>
+            <div id="move-file-list" class="folder-select-list">
+                <!-- Javascript will populate this -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
+            </div>
+            <!-- PDF Mark Popover -->
+            <div id="pdf-popover" class="pdf-popover hidden">
+                <button id="btn-add-mark" class="btn-primary-small">
+                    <i class="ph-bold ph-bookmark-simple"></i>
+                    Add Mark
+                </button>
+            </div>
+
+        </div>
+
     </div>
 
     <script src="whistler.js"></script>

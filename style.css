@@ -804,15 +804,22 @@ button {
 
 /* Drag and Drop Styling */
 .card.dragging {
-    opacity: 0.5;
-    border: 2px dashed var(--accent);
+    opacity: 0.4;
+    background: var(--bg-hover);
+    /* Use box-shadow to prevent layout shift from border width change */
+    box-shadow: 0 0 0 2px var(--accent) inset;
+    border-color: transparent;
+    transform: scale(0.98);
     cursor: grabbing;
+    transition: none;
+    /* Instant feedback */
 }
 
 .card.drag-over-folder {
-    background: var(--bg-hover);
-    border: 2px solid var(--accent);
     transform: scale(1.02);
+    box-shadow: 0 0 0 2px var(--accent), 0 10px 20px rgba(0, 0, 0, 0.3);
+    z-index: 50;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* Folder Card Styling */
@@ -1137,17 +1144,25 @@ button {
 .player-content {
     flex: 1;
     display: flex;
+    flex-direction: row;
+    /* Explicit row */
     overflow: hidden;
+    position: relative;
 }
 
 .player-stage {
     flex: 1;
     display: flex;
+    /* Flex column for video + bar */
     flex-direction: column;
-    background: #000;
+    overflow: hidden;
     position: relative;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    background: black;
+    min-width: 0;
+    /* Critical for flex shrinking */
 }
+
+
 
 .video-wrapper {
     flex: 1;
@@ -2316,13 +2331,22 @@ input[type="color"]::-webkit-color-swatch {
     align-items: center;
     gap: 12px;
     background: #0f0f11;
-    /* Match Search Bar */
-    padding: 0 12px;
+    /* Force neutral border */
+    border: 1px solid #27272a !important;
     border-radius: 20px;
-    border: 1px solid var(--border);
+    padding: 0 14px;
     height: 40px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    min-width: 340px;
+    /* Neutral shadow only */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
     animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none !important;
+}
+
+.quick-add-bar:focus-within {
+    border-color: #3f3f46 !important;
+    /* Slightly lighter grey on focus, NOT purple */
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5) !important;
 }
 
 .quick-add-bar.hidden {
@@ -2337,6 +2361,9 @@ input[type="color"]::-webkit-color-swatch {
     font-size: 14px;
     outline: none;
     height: 100%;
+    flex: 1;
+    /* Fill available space */
+    min-width: 0;
 }
 
 #input-add-url::placeholder {
@@ -2354,25 +2381,68 @@ input[type="color"]::-webkit-color-swatch {
 .quick-add-bar .custom-select-trigger {
     background: transparent;
     border: none;
-    padding: 0;
-    color: var(--text-secondary);
+    padding: 6px 10px;
+    /* More clickable area */
+    color: #a1a1aa;
+    /* Zinc-400 */
     font-size: 13px;
-    height: auto;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
 }
 
 .quick-add-bar .custom-select-trigger:hover {
-    color: var(--text-primary);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Add Button in Quick Bar */
+#btn-add-media {
+    height: 26px;
+    /* Compact */
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 13px;
+    /* Pill */
+    white-space: nowrap;
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px var(--accent-glow);
+    border: none;
+    transition: 0.2s;
+    letter-spacing: 0.02em;
+    box-shadow: none;
+}
+
+#btn-add-media:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Add Folder Button */
+#btn-add-folder {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
     background: transparent;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: 0.2s;
+    cursor: pointer;
 }
 
-/* Add Button in Quick Bar */
-#btn-add-media {
-    height: 28px;
-    padding: 0 16px;
-    font-size: 13px;
-    border-radius: 14px;
-    /* Pill */
-    white-space: nowrap;
+#btn-add-folder:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
 }
 
 /* Search Result Polish */
@@ -2402,46 +2472,7 @@ input[type="color"]::-webkit-color-swatch {
     color: var(--text-muted);
 }
 
-/* Add Button in Quick Bar */
-#btn-add-media {
-    height: 28px;
-    padding: 0 16px;
-    font-size: 13px;
-    border-radius: 14px;
-    /* Pill */
-    white-space: nowrap;
-}
 
-/* Search Result Polish */
-.search-result-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s;
-    color: var(--text-primary);
-}
-
-.search-result-item:hover {
-    background: var(--bg-hover);
-}
-
-.search-result-item i {
-    color: var(--accent);
-    font-size: 18px;
-}
-
-.search-result-path {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.quick-add-bar.hidden {
-    display: none;
-}
 
 @keyframes slideInLeft {
     from {
@@ -2456,8 +2487,203 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 /* Drag Utils */
+.drag-preview {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Folder Selection Modal List */
+.folder-select-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #0f0f11;
+    margin: 16px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.folder-select-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+    color: var(--text-secondary);
+}
+
+.folder-select-item:last-child {
+    border-bottom: none;
+}
+
+.folder-select-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.folder-select-item i {
+    color: var(--accent);
+    font-size: 18px;
+}
+
+.folder-select-item.current-folder {
+    opacity: 0.5;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.folder-select-item .folder-path-context {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
 .breadcrumb-item.drag-over {
     background: var(--bg-hover);
     color: var(--accent);
     outline: 2px dashed var(--accent);
+}
+
+/* PDF Support & Layout Fixes */
+.player-content {
+    display: flex;
+    /* Ensure side-by-side */
+    flex: 1;
+    overflow: hidden;
+    /* Contain scrolls */
+}
+
+.player-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: black;
+}
+
+/* PDF-Specific Slim Bar */
+.player-bottom-bar.pdf-slim-bar {
+    padding: 12px 24px;
+    gap: 0;
+    justify-content: center;
+    min-height: 64px;
+    /* Ensure visual weight */
+    display: flex;
+    flex-direction: row;
+    /* Force row direction for the bar itself */
+    align-items: center;
+}
+
+.player-bottom-bar.pdf-slim-bar .controls-row {
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    margin: 0;
+}
+
+.player-bottom-bar.pdf-slim-bar .controls-right {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.pdf-stage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    background: #0a0a0c;
+    overflow: auto;
+    padding: 40px;
+    position: relative;
+}
+
+#pdf-page-container {
+    position: relative;
+    box-shadow: 0 10px 60px rgba(0, 0, 0, 0.5);
+    align-self: flex-start;
+    /* Allow scrolling if tall */
+    margin: auto;
+    /* Center in scroll view */
+}
+
+.textLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    line-height: 1;
+    text-size-adjust: none;
+    pointer-events: auto;
+}
+
+.textLayer span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+
+.textLayer ::selection {
+    background: rgba(99, 102, 241, 0.3);
+}
+
+.pdf-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    background: #27272a;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+}
+
+.pdf-popover {
+    position: absolute;
+    z-index: 1000;
+    background: var(--bg-card);
+    padding: 6px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    animation: scaleIn 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary-small {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-primary-small:hover {
+    filter: brightness(1.1);
 }

@@ -289,13 +289,32 @@ class Player {
             speedPresets: document.querySelectorAll('.speed-preset'),
 
             sidebar: document.getElementById('player-sidebar'),
-            btnSidebarToggle: document.getElementById('btn-sidebar-toggle')
+            btnSidebarToggle: document.getElementById('btn-sidebar-toggle'),
+
+            // PDF Elements
+            pdfStage: document.getElementById('pdf-stage'),
+            pdfRender: document.getElementById('pdf-render'),
+            pdfTextLayer: document.getElementById('pdf-text-layer'),
+            pdfControls: document.getElementById('pdf-controls'),
+            btnPdfPrev: document.getElementById('btn-pdf-prev'),
+            btnPdfNext: document.getElementById('btn-pdf-next'),
+            pdfPageNum: document.getElementById('pdf-page-num'),
+            pdfPopover: document.getElementById('pdf-popover'),
+            btnAddMark: document.getElementById('btn-add-mark'),
         };
 
         this.currentFile = null;
         this.lastVolume = 1;
         this.showRemainingTime = false; // Toggle state
+
+        // PDF State
+        this.pdfDoc = null;
+        this.pdfPageNum = 1;
+        this.pdfScale = 1.5;
+        this.isPdf = false;
+
         this.setupListeners();
+        this.setupPDFListeners();
     }
 
     setupListeners() {
@@ -564,13 +583,73 @@ class Player {
             });
         };
 
+        // Move File
+        document.getElementById('player-btn-move').onclick = () => {
+            if (this.currentFile) {
+                this.app.modals.openMoveFile(this.currentFile);
+            }
+        };
+
         document.getElementById('btn-add-timestamp').onclick = () => {
-            this.app.modals.openTimestamp(this.els.video.currentTime);
+            if (this.isPdf) {
+                // Manual add (no selection) ? Or maybe just use current page
+                this.openMarkModal(this.pdfPageNum, "");
+            } else {
+                this.app.modals.openTimestamp(this.els.video.currentTime);
+            }
         };
 
         this.els.btnSidebarToggle.onclick = () => {
             this.els.sidebar.classList.toggle('collapsed');
         };
+    }
+
+    setupPDFListeners() {
+        this.els.btnPdfPrev.onclick = () => this.prevPage();
+        this.els.btnPdfNext.onclick = () => this.nextPage();
+
+        // Text Selection for Marking
+        this.els.pdfTextLayer.addEventListener('mouseup', () => this.handleTextSelection());
+
+        this.els.btnAddMark.onclick = () => {
+            const selection = window.getSelection();
+            const text = selection.toString();
+            this.openMarkModal(this.pdfPageNum, text);
+            this.els.pdfPopover.classList.add('hidden');
+            selection.removeAllRanges();
+        };
+
+        // Hide popover on click elsewhere
+        document.addEventListener('mousedown', (e) => {
+            if (!this.els.pdfPopover.contains(e.target) && !this.els.pdfTextLayer.contains(e.target)) {
+                this.els.pdfPopover.classList.add('hidden');
+            }
+        });
+    }
+
+    handleTextSelection() {
+        const selection = window.getSelection();
+        const text = selection.toString().trim();
+
+        if (text.length > 0) {
+            // Position popover
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+
+            this.els.pdfPopover.style.top = (rect.bottom + window.scrollY + 10) + 'px';
+            this.els.pdfPopover.style.left = (rect.left + rect.width / 2) + 'px'; // center but simple
+            this.els.pdfPopover.classList.remove('hidden');
+        } else {
+            this.els.pdfPopover.classList.add('hidden');
+        }
+    }
+
+    openMarkModal(page, text) {
+        // reuse timestamp modal logic but slightly different?
+        // Actually we can reuse "Add Timestamp" modal but repurpose fields
+        // Since modal logic is separate, let's call a specific method on Modals if needed
+        // Or just create a new specialized one. For now, reuse.
+        this.app.modals.openTimestamp(page, text, true); // true = isPdf
     }
 
     load(file) {
@@ -618,7 +697,13 @@ class Player {
             this.closePiP();
         }
 
-        if (file.type === 'youtube' || file.type === 'drive') {
+        if (file.url.toLowerCase().split('.').pop() === 'pdf') {
+            this.isPdf = true;
+            this.togglePDFMode(true);
+            this.renderPDF(file.url);
+        } else if (file.type === 'youtube' || file.type === 'drive') {
+            this.isPdf = false;
+            this.togglePDFMode(false);
             this.els.video.classList.add('hidden');
             this.els.youtubePlace.classList.remove('hidden');
 
@@ -636,6 +721,8 @@ class Player {
             iframe.allow = "autoplay; encrypted-media; fullscreen";
             this.els.youtubePlace.appendChild(iframe);
         } else {
+            this.isPdf = false;
+            this.togglePDFMode(false);
             let src = file.url;
             if (file.type === 'dropbox') {
                 src = src.replace('dl=0', 'raw=1');
@@ -648,6 +735,100 @@ class Player {
         this.renderTimestamps();
         this.renderSeekMarkers();
         this.els.overlay.classList.remove('hidden');
+    }
+
+    togglePDFMode(active) {
+        const bottomBar = document.querySelector('.player-bottom-bar');
+        const controlsLeft = document.querySelector('.controls-left');
+
+        if (active) {
+            document.getElementById('main-video').classList.add('hidden');
+            document.getElementById('youtube-placeholder').classList.add('hidden');
+            this.els.pdfStage.classList.remove('hidden');
+
+            this.els.seekContainer.classList.add('hidden');
+
+            // Hide entire left controls (Play + Volume + Time)
+            if (controlsLeft) controlsLeft.classList.add('hidden');
+            this.els.timeDisplay.classList.add('hidden');
+
+            this.els.speedMenu.classList.add('hidden');
+            document.getElementById('btn-speed').classList.add('hidden');
+
+            this.els.pdfControls.classList.remove('hidden');
+            this.els.btnPip.classList.add('hidden');
+
+            // Slim Bar Class
+            if (bottomBar) bottomBar.classList.add('pdf-slim-bar');
+        } else {
+            document.getElementById('main-video').classList.remove('hidden');
+            this.els.pdfStage.classList.add('hidden');
+
+            this.els.seekContainer.classList.remove('hidden');
+
+            if (controlsLeft) controlsLeft.classList.remove('hidden');
+            this.els.timeDisplay.classList.remove('hidden');
+
+            document.getElementById('btn-speed').classList.remove('hidden');
+
+            this.els.pdfControls.classList.add('hidden');
+            this.els.btnPip.classList.remove('hidden');
+
+            if (bottomBar) bottomBar.classList.remove('pdf-slim-bar');
+        }
+    }
+
+    async renderPDF(url) {
+        this.pdfPageNum = 1;
+        this.els.pdfTextLayer.innerHTML = '';
+        const loadingTask = pdfjsLib.getDocument(url);
+        this.pdfDoc = await loadingTask.promise;
+        this.els.pdfPageNum.textContent = `${this.pdfPageNum} / ${this.pdfDoc.numPages}`;
+        this.renderPage(this.pdfPageNum);
+    }
+
+    async renderPage(num) {
+        const page = await this.pdfDoc.getPage(num);
+        const availableWidth = this.els.pdfStage.clientWidth - 80;
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = availableWidth / viewport.width;
+        const finalViewport = page.getViewport({ scale: scale });
+
+        const canvas = this.els.pdfRender;
+        const context = canvas.getContext('2d');
+        canvas.height = finalViewport.height;
+        canvas.width = finalViewport.width;
+
+        await page.render({ canvasContext: context, viewport: finalViewport }).promise;
+
+        this.els.pdfTextLayer.innerHTML = '';
+        this.els.pdfTextLayer.style.height = canvas.height + 'px';
+        this.els.pdfTextLayer.style.width = canvas.width + 'px';
+        this.els.pdfTextLayer.style.setProperty('--scale-factor', scale);
+
+        const textContent = await page.getTextContent();
+        pdfjsLib.renderTextLayer({
+            textContentSource: textContent,
+            container: this.els.pdfTextLayer,
+            viewport: finalViewport,
+            textDivs: []
+        });
+
+        this.els.pdfPageNum.textContent = `${num} / ${this.pdfDoc.numPages}`;
+    }
+
+    prevPage() {
+        if (this.pdfPageNum > 1) {
+            this.pdfPageNum--;
+            this.renderPage(this.pdfPageNum);
+        }
+    }
+
+    nextPage() {
+        if (this.pdfPageNum < this.pdfDoc.numPages) {
+            this.pdfPageNum++;
+            this.renderPage(this.pdfPageNum);
+        }
     }
 
     toggleFullscreen() {
@@ -1083,7 +1264,7 @@ class UIManager {
                     this.app.state.currentFolderId = f.id;
                     this.renderStorage();
                 } else {
-                    this.app.player.play(f);
+                    this.app.player.load(f);
                 }
                 // Close search
                 document.getElementById('search-bar-container').classList.add('hidden');
@@ -1223,7 +1404,13 @@ class UIManager {
             if (f.type === 'youtube') icon = 'ph-youtube-logo';
             else if (f.type === 'dropbox') icon = 'ph-dropbox-logo';
             else if (f.type === 'drive') icon = 'ph-google-drive-logo';
-            else if (f.type === 'catbox') icon = 'ph-film-strip';
+            else if (f.type === 'catbox') {
+                if (f.url && f.url.toLowerCase().split('.').pop() === 'pdf') {
+                    icon = 'ph-file-pdf';
+                } else {
+                    icon = 'ph-film-strip';
+                }
+            }
             else if (f.type === 'folder') {
                 icon = 'ph-folder-simple';
                 isFolder = true;
@@ -1256,6 +1443,7 @@ class UIManager {
                     <button class="card-action-btn" data-action="open" data-tooltip="Open Link"><i class="ph-bold ph-arrow-square-out"></i></button>
                     <button class="card-action-btn" data-action="copy" data-tooltip="Copy URL"><i class="ph-bold ph-copy"></i></button>
                     <button class="card-action-btn" data-action="share" data-tooltip="Share"><i class="ph-bold ph-share-network"></i></button>
+                    <button class="card-action-btn" data-action="move" data-tooltip="Move to Folder"><i class="ph-bold ph-folder-notch-plus"></i></button>
                     ` : ''}
                     <button class="card-action-btn" data-action="edit-title" data-tooltip="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
                     ${!isFolder ? `<button class="card-action-btn" data-action="edit-desc" data-tooltip="Edit Description"><i class="ph-bold ph-note-pencil"></i></button>` : ''}
@@ -1334,6 +1522,9 @@ class UIManager {
             bindAction('[data-action="share"]', () => {
                 if (navigator.share) navigator.share({ title: f.name, url: f.url });
                 else navigator.clipboard.writeText(f.url);
+            });
+            bindAction('[data-action="move"]', () => {
+                this.app.modals.openMoveFile(f);
             });
             bindAction('[data-action="edit-title"]', () => {
                 this.app.modals.prompt("Rename", f.name, (newName) => {
@@ -1661,6 +1852,54 @@ class ModalManager {
         }
 
         this.onPromptCallback = callback;
+    }
+
+    openMoveFile(file) {
+        this.backdrop.classList.remove('hidden');
+        document.getElementById('modal-move-file').classList.remove('hidden');
+
+        const list = document.getElementById('move-file-list');
+        list.innerHTML = '';
+
+        // Get all folders in current project
+        const projectId = this.app.state.activeProjectId;
+        const allItems = this.app.state.files.filter(f => f.projectId === projectId);
+        const folders = allItems.filter(f => f.type === 'folder');
+
+        // Add "Root" option
+        const createItem = (id, name, isCurrent) => {
+            const el = document.createElement('div');
+            el.className = 'folder-select-item';
+            if (isCurrent) el.classList.add('current-folder');
+
+            el.innerHTML = `
+                <i class="ph-fill ph-folder"></i>
+                <span>${name}</span>
+            `;
+
+            if (isCurrent) {
+                el.innerHTML += `<span class="folder-path-context">Current</span>`;
+            } else {
+                el.onclick = () => {
+                    this.app.storage.moveFile(file.id, id);
+                    if (this.app.state.currentFolderId === file.parentId) {
+                        this.app.ui.renderStorage(); // Update grid if we moved it out of view
+                    }
+                    this.close();
+                };
+            }
+            return el;
+        };
+
+        // Root
+        list.appendChild(createItem(null, "Root Storage", file.parentId === null));
+
+        // Folders
+        folders.forEach(f => {
+            // Prevent moving into itself if it's a folder (not applicable here since we move files, but safety check)
+            if (file.id === f.id) return;
+            list.appendChild(createItem(f.id, f.name, file.parentId === f.id));
+        });
     }
 
     openProject() {
