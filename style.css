@@ -697,6 +697,13 @@ button {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.player-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
 }
 
 .player-info i {

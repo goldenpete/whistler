@@ -131,7 +131,8 @@
                     <i class="ph-bold ph-film-strip"></i>
                     <span id="player-filename">Filename.mp4</span>
                     <div class="divider-vertical"></div>
-                    <span id="player-link" class="player-link">https://example.com/video</span>
+                    <span id="player-link" class="player-link" role="button"
+                        tabindex="0">https://example.com/video</span>
                 </div>
                 <div class="player-top-actions">
                     <button class="btn-ghost" id="player-btn-copy" data-tooltip="Copy URL"><i
@@ -291,8 +292,7 @@
                 sure?</p>
             <div class="modal-actions">
                 <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
-                <button class="btn-primary" style="background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);"
-                    id="btn-confirm-yes">Delete</button>
+                <button class="btn-primary" id="btn-confirm-yes">Delete</button>
             </div>
         </div>
 

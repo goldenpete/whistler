@@ -280,6 +280,18 @@ class Player {
             }
         };
 
+        // Clickable URL link
+        document.getElementById('player-link').onclick = () => {
+            const url = this.currentFile.url;
+            this.app.modals.confirm(
+                "Open External Link",
+                `You are about to leave Whistler and visit:\n\n${url}\n\nContinue?`,
+                () => window.open(url, '_blank'),
+                'Continue',
+                false
+            );
+        };
+
         this.els.video.addEventListener('timeupdate', () => this.updateProgress());
         this.els.video.addEventListener('loadedmetadata', () => {
             this.renderSeekMarkers();
@@ -943,12 +955,23 @@ class ModalManager {
         };
     }
 
-    confirm(title, msg, callback) {
+    confirm(title, msg, callback, buttonText = 'Delete', isDanger = true) {
         this.backdrop.classList.remove('hidden');
         const m = document.getElementById('modal-confirm');
         m.classList.remove('hidden');
         document.getElementById('confirm-title').textContent = title;
         document.getElementById('confirm-message').textContent = msg;
+
+        const btn = document.getElementById('btn-confirm-yes');
+        btn.textContent = buttonText;
+        if (isDanger) {
+            btn.style.background = '#ef4444';
+            btn.style.boxShadow = '0 4px 15px rgba(239, 68, 68, 0.3)';
+        } else {
+            btn.style.background = '';
+            btn.style.boxShadow = '';
+        }
+
         this.onConfirmCallback = callback;
     }
 
