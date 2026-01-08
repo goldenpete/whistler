@@ -331,6 +331,59 @@ class Player {
             document.addEventListener('mouseup', up);
         });
 
+        // Seek Preview (optimized with debounce)
+        const seekPreview = document.getElementById('seek-preview');
+        const seekPreviewCanvas = document.getElementById('seek-preview-canvas');
+        const seekPreviewTime = document.getElementById('seek-preview-time');
+        const previewCtx = seekPreviewCanvas.getContext('2d');
+        let previewVideo = null;
+        let previewDebounce = null;
+        let lastSeekTime = -1;
+
+        this.els.seekContainer.addEventListener('mousemove', (e) => {
+            const rect = this.els.seekContainer.getBoundingClientRect();
+            const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const time = pos * this.els.video.duration;
+
+            // Position preview (instant)
+            const previewWidth = 168;
+            let leftPos = e.clientX - rect.left;
+            leftPos = Math.max(previewWidth / 2, Math.min(rect.width - previewWidth / 2, leftPos));
+            seekPreview.style.left = leftPos + 'px';
+
+            // Update time label (instant)
+            seekPreviewTime.textContent = this.fmt(time);
+
+            // Debounce the video seek (only update frame after pause)
+            clearTimeout(previewDebounce);
+            previewDebounce = setTimeout(() => {
+                // Skip if time hasn't changed significantly (>0.5s)
+                if (Math.abs(time - lastSeekTime) < 0.5) return;
+                lastSeekTime = time;
+
+                if (this.els.video.readyState >= 2) {
+                    if (!previewVideo) {
+                        previewVideo = document.createElement('video');
+                        previewVideo.src = this.els.video.src;
+                        previewVideo.muted = true;
+                        previewVideo.preload = 'auto';
+                    }
+
+                    previewVideo.currentTime = time;
+                    previewVideo.onseeked = () => {
+                        previewCtx.drawImage(previewVideo, 0, 0, 160, 90);
+                    };
+                }
+            }, 100); // 100ms debounce
+        });
+
+        this.els.seekContainer.addEventListener('mouseleave', () => {
+            clearTimeout(previewDebounce);
+            if (previewVideo) {
+                previewVideo.onseeked = null;
+            }
+        });
+
         // PiP
         this.els.btnPip.onclick = () => this.togglePiP();
         this.els.pipExpand.onclick = () => this.restoreFromPiP();
