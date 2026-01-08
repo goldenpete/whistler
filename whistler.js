@@ -193,7 +193,8 @@ class Player {
         this.app = app;
         this.els = {
             overlay: document.getElementById('player-overlay'),
-            playerStage: document.getElementById('player-stage'), // Add this
+            playerContent: document.querySelector('.player-content'), // Added for Fullscreen
+            playerStage: document.getElementById('player-stage'),
             videoWrapper: document.getElementById('video-wrapper'),
             video: document.getElementById('main-video'),
             youtubePlace: document.getElementById('youtube-placeholder'),
@@ -236,6 +237,7 @@ class Player {
 
         this.currentFile = null;
         this.lastVolume = 1;
+        this.showRemainingTime = false; // Toggle state
         this.setupListeners();
     }
 
@@ -244,6 +246,13 @@ class Player {
         this.els.btnPlay.onclick = () => this.togglePlay();
         this.els.video.onclick = () => this.togglePlay();
         this.els.btnFullscreen.onclick = () => this.toggleFullscreen();
+        this.els.btnSidebarToggle.onclick = () => this.toggleSidebar();
+
+        // Time Display Toggle
+        this.els.timeDisplay.onclick = () => {
+            this.showRemainingTime = !this.showRemainingTime;
+            this.updateProgress(); // Refresh immediately
+        };
 
         // Fullscreen Sync
         document.addEventListener('fullscreenchange', () => {
@@ -541,7 +550,7 @@ class Player {
 
     toggleFullscreen() {
         if (!document.fullscreenElement) {
-            this.els.playerStage.requestFullscreen().catch(err => {
+            this.els.playerContent.requestFullscreen().catch(err => {
                 console.error(`Error attempting to enable fullscreen: ${err.message}`);
             });
             this.els.btnFullscreen.innerHTML = '<i class="ph-bold ph-corners-in"></i>';
@@ -549,6 +558,11 @@ class Player {
             document.exitFullscreen();
             this.els.btnFullscreen.innerHTML = '<i class="ph-bold ph-corners-out"></i>';
         }
+    }
+
+    toggleSidebar() {
+        this.els.sidebar.classList.toggle('collapsed');
+        this.els.playerContent.classList.toggle('sidebar-closed');
     }
 
     extractYoutubeId(url) {
@@ -583,10 +597,20 @@ class Player {
     }
 
     updateProgress() {
-        const cur = this.els.video.currentTime;
-        const dur = this.els.video.duration || 1;
-        this.updateUIProgress((cur / dur) * 100);
-        this.els.timeDisplay.innerText = `${this.fmt(cur)} / ${this.fmt(dur)}`;
+        const cur = this.els.video.currentTime || 0;
+        const dur = this.els.video.duration || 1; // Avoid div by zero
+        // Calc percentage
+        const pct = (cur / dur) * 100;
+        this.updateUIProgress(pct);
+
+        if (this.showRemainingTime) {
+            // Show remaining: -1:30 / 3:00
+            const remaining = dur - cur;
+            this.els.timeDisplay.innerText = `-${this.fmt(remaining)} / ${this.fmt(dur)}`;
+        } else {
+            // Show standard: 1:30 / 3:00
+            this.els.timeDisplay.innerText = `${this.fmt(cur)} / ${this.fmt(dur)}`;
+        }
     }
 
     updateUIProgress(pct) {
@@ -595,6 +619,7 @@ class Player {
     }
 
     fmt(s) {
+        if (!s || isNaN(s)) return "0:00";
         const m = Math.floor(s / 60);
         const sec = Math.floor(s % 60);
         return `${m}:${sec.toString().padStart(2, '0')}`;
@@ -652,8 +677,12 @@ class Player {
                         <span class="ts-collection" style="color:${color}">${colName}</span>
                     </div>
                     <div class="ts-actions">
-                        <button class="btn-ts-action edit-ts" data-tooltip="Edit"><i class="ph-bold ph-pencil-simple"></i></button>
-                        <button class="btn-ts-action delete-ts" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
+                        <button class="ts-action-btn btn-edit-ts" data-tooltip="Edit" data-tooltip-pos="left">
+                            <i class="ph-bold ph-pencil-simple"></i>
+                        </button>
+                        <button class="ts-action-btn btn-delete-ts" data-tooltip="Delete" data-tooltip-pos="left">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
                     </div>
                 </div>
                 <span class="ts-note">${t.note}</span>
@@ -662,13 +691,12 @@ class Player {
             // Delegate logic
             el.onclick = (e) => {
                 // IMPORTANT: Stop propagation for button clicks to prevent list item click logic (seek)
-                if (e.target.closest('.edit-ts')) {
+                if (e.target.closest('.btn-edit-ts')) {
                     e.stopPropagation();
-                    console.log("Edit clicked", t);
                     this.app.modals.openTimestamp(null, t);
                     return;
                 }
-                if (e.target.closest('.delete-ts')) {
+                if (e.target.closest('.btn-delete-ts')) {
                     e.stopPropagation();
                     this.app.modals.confirm("Delete Timestamp", "Are you sure?", () => {
                         this.app.storage.deleteTimestamp(t.id);

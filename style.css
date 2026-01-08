@@ -336,6 +336,37 @@ button {
 }
 
 /* --- Main View --- */
+/* Main Player Content Wrapper */
+.player-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg-app);
+}
+
+.player-content:fullscreen {
+    background: #000;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Fix sidebar color in fullscreen */
+.player-content:fullscreen .player-sidebar {
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+}
+
+.player-stage {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Prevent flex blowout */
+    background: #000;
+}
+
 .main-view {
     flex: 1;
     position: relative;
@@ -466,6 +497,20 @@ button {
     display: flex;
     align-items: center;
     gap: 16px;
+}
+
+.time-display {
+    font-size: 13px;
+    font-family: monospace;
+    color: var(--text-secondary);
+    min-width: 80px;
+    text-align: right;
+    cursor: pointer;
+    user-select: none;
+}
+
+.time-display:hover {
+    color: var(--text-primary);
 }
 
 .btn-text {
@@ -786,37 +831,54 @@ button {
 }
 
 /* Fullscreen Overrides */
-.player-stage:fullscreen,
-.player-stage:-webkit-full-screen {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
+/* Fullscreen Overrides */
+/* Note: We now fullscreen .player-content, so .player-stage:fullscreen no longer matches */
+.player-content:fullscreen .player-stage,
+.player-content:-webkit-full-screen .player-stage {
+    width: 100%;
+    height: 100%;
+    /* Flex handled by parent */
 }
 
-.player-stage:fullscreen .video-wrapper,
-.player-stage:-webkit-full-screen .video-wrapper {
+.player-content:fullscreen .video-wrapper,
+.player-content:-webkit-full-screen .video-wrapper {
     height: 100%;
 }
 
-.player-stage:fullscreen .player-bottom-bar,
-.player-stage:-webkit-full-screen .player-bottom-bar {
+/* Immersive Mode (Sidebar Closed in Fullscreen) */
+.player-content.sidebar-closed:fullscreen .player-bottom-bar {
+    background: transparent;
+    border-top: none;
+    padding-bottom: 20px;
+}
+
+/* Add shadows to text/icons in immersive mode since bar is transparent */
+.player-content.sidebar-closed:fullscreen .player-bottom-bar i,
+.player-content.sidebar-closed:fullscreen .player-bottom-bar span,
+.player-content.sidebar-closed:fullscreen .time-display {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.player-content:fullscreen .player-bottom-bar,
+.player-content:-webkit-full-screen .player-bottom-bar {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
+    /* Default Fullscreen Gradient (when sidebar open) */
     background: linear-gradient(0deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
     border-top: none;
     transform: translateY(100%);
     opacity: 0;
     transition: all 0.3s ease;
     padding-bottom: 30px;
-    /* Extra padding for bottom screen */
+    z-index: 50;
 }
 
 /* Hovering the bottom 25% of the screen triggers controls */
-.player-stage:fullscreen::after,
-.player-stage:-webkit-full-screen::after {
+.player-content:fullscreen .player-stage::after,
+.player-content:-webkit-full-screen .player-stage::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -826,10 +888,10 @@ button {
     z-index: 10;
 }
 
-.player-stage:fullscreen:hover .player-bottom-bar,
-.player-stage:-webkit-full-screen:hover .player-bottom-bar,
-.player-stage:fullscreen .player-bottom-bar:hover,
-.player-stage:-webkit-full-screen .player-bottom-bar:hover {
+.player-content:fullscreen .player-stage:hover .player-bottom-bar,
+.player-content:-webkit-full-screen .player-stage:hover .player-bottom-bar,
+.player-content:fullscreen .player-bottom-bar:hover,
+.player-content:-webkit-full-screen .player-bottom-bar:hover {
     transform: translateY(0);
     opacity: 1;
 }
@@ -1419,6 +1481,29 @@ input[type="color"]::-webkit-color-swatch {
     border: 1px solid var(--border);
 }
 
+/* Tooltip Left Variant for Sidebar */
+[data-tooltip-pos="left"]:hover::after {
+    bottom: auto;
+    left: auto;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-bottom: 0;
+    margin-right: 8px;
+}
+
+/* Tooltips for top bar should be below */
+.player-top-bar [data-tooltip] {
+    position: relative;
+}
+
+.player-top-bar [data-tooltip]:hover::after {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 6px;
+}
+
 /* Timestamp Item Enhancements */
 .timestamp-item {
     background: var(--bg-card);
@@ -1430,7 +1515,7 @@ input[type="color"]::-webkit-color-swatch {
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; Removed to allow tooltips */
     display: flex;
     flex-direction: column;
 }
