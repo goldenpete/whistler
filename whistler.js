@@ -904,6 +904,8 @@ class UIManager {
     }
 
     setupNavigation() {
+        this.setupSearch();
+
         // Project Dropdown Logic
         this.setupCustomDropdown('project-dropdown', (value) => {
             if (value === 'NEW_PROJECT') {
@@ -937,18 +939,18 @@ class UIManager {
 
         const toggleAddBar = (show) => {
             if (show) {
-                btnExpand.classList.add('hidden');
+                document.getElementById('search-bar-container').classList.add('hidden'); // Close search
                 quickBar.classList.remove('hidden');
                 document.getElementById('input-add-url').focus();
             } else {
                 quickBar.classList.add('hidden');
-                btnExpand.classList.remove('hidden');
             }
         };
 
         btnExpand.onclick = (e) => {
             e.stopPropagation();
-            toggleAddBar(true);
+            const isHidden = quickBar.classList.contains('hidden');
+            toggleAddBar(isHidden);
         };
 
         // Close on click outside
@@ -987,6 +989,112 @@ class UIManager {
             this.renderStorage();
             toggleAddBar(false);
         };
+    }
+
+    setupSearch() {
+        const toggleBtn = document.getElementById('btn-search-toggle');
+        const container = document.getElementById('search-bar-container');
+        const input = document.getElementById('search-input');
+        const results = document.getElementById('search-results');
+
+        // Exclusive toggling
+        const closeAddBar = () => {
+            document.getElementById('quick-add-bar').classList.add('hidden');
+        };
+
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            const isHidden = container.classList.contains('hidden');
+            if (isHidden) {
+                closeAddBar();
+                container.classList.remove('hidden');
+                input.focus();
+            } else {
+                container.classList.add('hidden');
+            }
+        };
+
+        // Close on click outside
+        window.addEventListener('click', (e) => {
+            if (!container.classList.contains('hidden') && !container.contains(e.target) && e.target !== toggleBtn) {
+                container.classList.add('hidden');
+                toggleBtn.style.display = 'flex';
+                input.value = '';
+                results.classList.add('hidden');
+            }
+        });
+
+        input.oninput = (e) => this.handleSearch(e.target.value);
+    }
+
+    handleSearch(query) {
+        const resultsContainer = document.getElementById('search-results');
+        if (!query || query.trim().length === 0) {
+            resultsContainer.classList.add('hidden');
+            resultsContainer.innerHTML = '';
+            return;
+        }
+
+        const term = query.toLowerCase();
+        // Search all files active project
+        const projectFiles = this.app.state.files.filter(f => f.projectId === this.app.state.activeProjectId);
+
+        const matches = projectFiles.filter(f => f.name.toLowerCase().includes(term));
+
+        this.renderSearchResults(matches.slice(0, 10)); // Limit 10
+    }
+
+    renderSearchResults(matches) {
+        const container = document.getElementById('search-results');
+        container.innerHTML = '';
+
+        if (matches.length === 0) {
+            container.innerHTML = '<div style="padding:10px; color:var(--text-muted); font-size:12px; text-align:center;">No results found.</div>';
+            container.classList.remove('hidden');
+            return;
+        }
+
+        matches.forEach(f => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+
+            let icon = 'ph-file';
+            if (f.type === 'folder') icon = 'ph-folder';
+            else if (f.type === 'youtube') icon = 'ph-youtube-logo';
+            else if (f.type === 'image') icon = 'ph-image';
+
+            // Construct pseudo path (parent name)
+            let pathHint = '';
+            if (f.parentId) {
+                const parent = this.app.state.files.find(p => p.id === f.parentId);
+                if (parent) pathHint = parent.name;
+            } else {
+                pathHint = '/';
+            }
+
+            item.innerHTML = `
+                <i class="ph-bold ${icon}"></i>
+                <span>${f.name}</span>
+                <span class="search-result-path">${pathHint}</span>
+            `;
+
+            item.onclick = () => {
+                if (f.type === 'folder') {
+                    this.app.state.currentFolderId = f.id;
+                    this.renderStorage();
+                } else {
+                    this.app.player.play(f);
+                }
+                // Close search
+                document.getElementById('search-bar-container').classList.add('hidden');
+                document.getElementById('search-input').value = '';
+                container.classList.add('hidden');
+            };
+
+            container.appendChild(item);
+        });
+
+        container.classList.remove('hidden');
     }
 
     setupCustomDropdown(id, onSelect) {

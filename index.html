@@ -81,32 +81,45 @@
                         <div id="breadcrumb-list" class="breadcrumb-list"></div>
                     </div>
                     <div class="header-actions">
-                        <!-- Expandable Add Bar -->
-                        <div id="add-bar-wrapper" class="add-bar-wrapper">
-                            <button class="btn-primary btn-icon-only" id="btn-expand-add">
+                        <!-- Bars (appear to the left) -->
+                        <div id="quick-add-bar" class="quick-add-bar hidden">
+                            <div class="custom-select" id="source-dropdown" style="width: 130px;">
+                                <div class="custom-select-trigger" id="source-trigger">
+                                    <span id="source-trigger-text">Catbox</span>
+                                    <i class="ph-bold ph-caret-down"></i>
+                                </div>
+                                <div class="custom-select-menu hidden" id="source-menu">
+                                    <div class="custom-select-item" data-value="catbox">Catbox</div>
+                                    <div class="custom-select-item" data-value="youtube">YouTube</div>
+                                    <div class="custom-select-item" data-value="dropbox">Dropbox</div>
+                                    <div class="custom-select-item" data-value="drive">Drive</div>
+                                </div>
+                            </div>
+                            <input type="text" id="input-add-url" class="input-light" placeholder="Paste URL..."
+                                style="width: 200px;">
+                            <button class="btn-primary" id="btn-add-media">Add</button>
+                            <div class="vr"></div>
+                            <button class="btn-secondary" id="btn-add-folder" title="New Folder">
+                                <i class="ph-bold ph-folder-plus"></i>
+                            </button>
+                        </div>
+
+                        <div id="search-bar-container" class="search-bar-container hidden">
+                            <i class="ph-bold ph-magnifying-glass search-icon-input"></i>
+                            <input type="text" id="search-input" placeholder="Search..." autocomplete="off">
+                            <!-- Results Dropdown -->
+                            <div id="search-results" class="search-results hidden"></div>
+                        </div>
+
+                        <!-- Connected Pill Buttons -->
+                        <div class="header-action-group">
+                            <button id="btn-search-toggle" class="btn-action-segment">
+                                <i class="ph-bold ph-magnifying-glass"></i>
+                            </button>
+                            <div class="action-divider"></div>
+                            <button id="btn-expand-add" class="btn-action-segment">
                                 <i class="ph-bold ph-plus"></i>
                             </button>
-                            <div class="quick-add-bar hidden" id="quick-add-bar">
-                                <div class="custom-select" id="source-dropdown" style="width: 130px;">
-                                    <div class="custom-select-trigger" id="source-trigger">
-                                        <span id="source-trigger-text">Catbox</span>
-                                        <i class="ph-bold ph-caret-down"></i>
-                                    </div>
-                                    <div class="custom-select-menu hidden" id="source-menu">
-                                        <div class="custom-select-item" data-value="catbox">Catbox</div>
-                                        <div class="custom-select-item" data-value="youtube">YouTube</div>
-                                        <div class="custom-select-item" data-value="dropbox">Dropbox</div>
-                                        <div class="custom-select-item" data-value="drive">Drive</div>
-                                    </div>
-                                </div>
-                                <input type="text" id="input-add-url" placeholder="Paste URL here..." class="url-input">
-                                <button class="btn-primary" id="btn-add-folder"
-                                    style="margin-right:8px; background: var(--bg-hover); box-shadow:none; border:1px solid var(--border);"
-                                    data-tooltip="New Folder">
-                                    <i class="ph-bold ph-folder-plus"></i>
-                                </button>
-                                <button class="btn-primary" id="btn-add-media">Add</button>
-                            </div>
                         </div>
                     </div>
                 </header>
