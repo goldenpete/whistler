@@ -927,14 +927,130 @@ class UIManager {
 
             const card = document.createElement('div');
             card.className = 'card';
+            const desc = f.description || '';
+            const truncDesc = desc.length > 50 ? desc.substring(0, 50) + '...' : desc;
             card.innerHTML = `
-                <i class="ph-duotone ${icon} card-icon"></i>
-                <span class="card-title">${f.name}</span>
+                <div class="card-thumbnail">
+                    <i class="ph-duotone ${icon} card-thumb-icon"></i>
+                </div>
+                <div class="card-text">
+                    <span class="card-title">${f.name}</span>
+                    <span class="card-description">${truncDesc || 'No description'}</span>
+                </div>
                 <span class="card-meta">${new Date(f.created).toLocaleDateString()}</span>
+                <div class="card-actions">
+                    <button class="card-action-btn" data-action="open" data-tooltip="Open Link"><i class="ph-bold ph-arrow-square-out"></i></button>
+                    <button class="card-action-btn" data-action="copy" data-tooltip="Copy URL"><i class="ph-bold ph-copy"></i></button>
+                    <button class="card-action-btn" data-action="share" data-tooltip="Share"><i class="ph-bold ph-share-network"></i></button>
+                    <button class="card-action-btn" data-action="edit-title" data-tooltip="Edit Title"><i class="ph-bold ph-pencil-simple"></i></button>
+                    <button class="card-action-btn" data-action="edit-desc" data-tooltip="Edit Description"><i class="ph-bold ph-note-pencil"></i></button>
+                    <button class="card-action-btn card-action-danger" data-action="delete" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
+                </div>
              `;
-            card.onclick = () => this.app.player.load(f);
+
+            // Main card click - open player
+            card.onclick = (e) => {
+                if (e.target.closest('.card-actions')) return; // Don't trigger if clicking actions
+                this.app.player.load(f);
+            };
+
+            // Action button handlers
+            card.querySelector('[data-action="open"]').onclick = (e) => {
+                e.stopPropagation();
+                window.open(f.url, '_blank');
+            };
+
+            card.querySelector('[data-action="copy"]').onclick = (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(f.url).then(() => {
+                    e.target.closest('.card-action-btn').innerHTML = '<i class="ph-bold ph-check"></i>';
+                    setTimeout(() => {
+                        e.target.closest('.card-action-btn').innerHTML = '<i class="ph-bold ph-copy"></i>';
+                    }, 1500);
+                });
+            };
+
+            card.querySelector('[data-action="share"]').onclick = (e) => {
+                e.stopPropagation();
+                if (navigator.share) {
+                    navigator.share({ title: f.name, url: f.url });
+                } else {
+                    navigator.clipboard.writeText(f.url);
+                }
+            };
+
+            card.querySelector('[data-action="edit-title"]').onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.prompt("Rename File", f.name, (newName) => {
+                    this.app.storage.updateFile(f.id, { name: newName });
+                    this.renderStorage();
+                });
+            };
+
+            card.querySelector('[data-action="edit-desc"]').onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.prompt("Edit Description", f.description || "", (newDesc) => {
+                    this.app.storage.updateFile(f.id, { description: newDesc });
+                    this.renderStorage();
+                }, true);
+            };
+
+            card.querySelector('[data-action="delete"]').onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.confirm("Delete File", "Are you sure you want to delete this file?", () => {
+                    this.app.storage.deleteFile(f.id);
+                    this.renderStorage();
+                });
+            };
+
             grid.appendChild(card);
+
+            // Generate thumbnail for direct video files (catbox)
+            if (f.type === 'catbox' && f.url) {
+                this.generateVideoThumbnail(f.url, card.querySelector('.card-thumbnail'));
+            }
         });
+    }
+
+    generateVideoThumbnail(url, container) {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.muted = true;
+        video.preload = 'metadata';
+
+        video.onloadeddata = () => {
+            // Seek to 1 second or 10% of the video
+            video.currentTime = Math.min(1, video.duration * 0.1);
+        };
+
+        video.onseeked = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 80;
+                canvas.height = 45;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/jpeg', 0.7);
+                img.className = 'card-thumb-img';
+
+                // Replace icon with thumbnail image
+                container.innerHTML = '';
+                container.appendChild(img);
+            } catch (e) {
+                // CORS or other error - keep the icon
+                console.log('Could not generate thumbnail:', e);
+            }
+            video.remove();
+        };
+
+        video.onerror = () => {
+            // Keep the icon if video fails to load
+            video.remove();
+        };
+
+        video.src = url;
     }
 
     renderCollectionView() {

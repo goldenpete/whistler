@@ -608,6 +608,159 @@ button {
     padding-bottom: 100px;
 }
 
+/* Storage Grid - 2 Column List View */
+#storage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 32px 40px;
+    padding-bottom: 80px;
+}
+
+/* When space is limited, go to single column */
+@media (max-width: 900px) {
+    #storage-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+#storage-grid .card {
+    aspect-ratio: unset;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 16px;
+    border-radius: var(--radius-lg);
+    height: 80px;
+    min-height: 80px;
+    overflow: visible;
+    transition: transform 0.3s var(--ease-out), z-index 0s;
+    min-width: 0;
+}
+
+#storage-grid .card:hover {
+    transform: translateY(-2px);
+    z-index: 20;
+}
+
+#storage-grid .card-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+#storage-grid .card-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    gap: 2px;
+    align-items: flex-start;
+}
+
+#storage-grid .card-title {
+    text-align: left;
+    font-size: 14px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#storage-grid .card-description {
+    text-align: left;
+    font-size: 12px;
+    color: var(--text-muted);
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#storage-grid .card-meta {
+    flex-shrink: 0;
+}
+
+/* Card Actions Tooltip */
+/* Card Actions Tooltip */
+.card-actions {
+    position: absolute;
+    left: 50%;
+    bottom: -52px;
+    transform: translateX(-50%) translateY(10px);
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s var(--ease-out);
+    z-index: 100;
+}
+
+#storage-grid .card:hover .card-actions {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.card-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--bg-hover);
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.card-action-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.card-action-btn.card-action-danger:hover {
+    background: #ef4444;
+}
+
+/* Card Thumbnail */
+.card-thumbnail {
+    width: 80px;
+    height: 45px;
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.card-thumb-icon {
+    font-size: 24px;
+    color: var(--text-muted);
+    transition: all 0.3s var(--ease-out);
+}
+
+.card:hover .card-thumb-icon {
+    color: var(--accent);
+}
+
+.card-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 /* Cards */
 .card {
     background: var(--bg-card);
