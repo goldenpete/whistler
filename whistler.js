@@ -474,14 +474,31 @@ class Player {
 
         this.els.video.addEventListener('volumechange', () => this.updateVolumeUI());
 
-        // Edit/Delete
-        document.getElementById('player-btn-edit').onclick = () => {
+        this.els.video.addEventListener('volumechange', () => this.updateVolumeUI());
+
+        // Edit Title
+        document.getElementById('group-filename').onclick = () => {
             this.app.modals.prompt("Rename File", this.currentFile.name, (newName) => {
                 this.app.storage.updateFile(this.currentFile.id, { name: newName });
                 this.els.filename.textContent = newName;
                 this.app.ui.renderStorage(); // Refresh grid
             });
         };
+
+        // Edit Description
+        document.getElementById('group-description').onclick = () => {
+            this.app.modals.prompt("Video Description", this.currentFile.description || "", (newDesc) => {
+                this.app.storage.updateFile(this.currentFile.id, { description: newDesc });
+
+                const el = document.getElementById('player-description');
+                const display = newDesc || "Click to add description";
+                el.textContent = display.length > 60 ? display.substring(0, 60) + '...' : display;
+                el.style.fontStyle = newDesc ? 'normal' : 'italic';
+                // el.title = newDesc || "";
+                el.dataset.fullDescription = newDesc || "";
+            }, true); // Enable textarea
+        };
+
         document.getElementById('player-btn-delete').onclick = () => {
             this.app.modals.confirm("Delete File", "Are you sure you want to delete this file? This cannot be undone.", () => {
                 this.close();
@@ -502,7 +519,35 @@ class Player {
     load(file) {
         this.currentFile = file;
         this.els.filename.textContent = file.name;
-        document.getElementById('player-link').textContent = file.url;
+        // document.getElementById('player-link').textContent = file.url; // Removed for button style
+
+        const descEl = document.getElementById('player-description');
+        const descText = file.description || "Click to add description";
+        const truncated = descText.length > 60 ? descText.substring(0, 60) + '...' : descText;
+
+        descEl.textContent = truncated;
+        descEl.style.fontStyle = file.description ? 'normal' : 'italic';
+        // descEl.title = file.description || ""; // Removed default tooltip
+        descEl.dataset.fullDescription = file.description || "";
+
+        // Custom Tooltip Logic
+        const tooltip = document.getElementById('video-desc-tooltip');
+
+        descEl.onmouseenter = () => {
+            const text = descEl.dataset.fullDescription;
+            if (!text) return;
+            tooltip.textContent = text;
+            tooltip.classList.remove('hidden');
+
+            // Position it
+            const rect = descEl.getBoundingClientRect();
+            tooltip.style.top = (rect.bottom + 10) + 'px';
+            tooltip.style.left = rect.left + 'px';
+        };
+
+        descEl.onmouseleave = () => {
+            tooltip.classList.add('hidden');
+        };
 
         // Reset Logic
         this.els.youtubePlace.innerHTML = '';
@@ -1028,8 +1073,12 @@ class ModalManager {
 
         // Prompt OK
         document.getElementById('btn-prompt-ok').onclick = () => {
-            const val = document.getElementById('input-prompt-value').value;
-            if (this.onPromptCallback && val) this.onPromptCallback(val);
+            const inp = document.getElementById('input-prompt-value');
+            const area = document.getElementById('input-prompt-textarea');
+
+            const val = this.isPromptTextarea ? area.value : inp.value;
+
+            if (this.onPromptCallback) this.onPromptCallback(val); // Allow empty string
             /* Close logic repeated for safety */
             document.getElementById('modal-prompt').classList.add('hidden');
             this.backdrop.classList.add('hidden');
@@ -1056,14 +1105,31 @@ class ModalManager {
         this.onConfirmCallback = callback;
     }
 
-    prompt(title, value, callback) {
+    prompt(title, value, callback, isTextarea = false) {
         this.backdrop.classList.remove('hidden');
         const m = document.getElementById('modal-prompt');
         m.classList.remove('hidden');
         document.getElementById('prompt-title').textContent = title;
+
         const inp = document.getElementById('input-prompt-value');
-        inp.value = value;
-        inp.focus();
+        const area = document.getElementById('input-prompt-textarea');
+
+        this.isPromptTextarea = isTextarea;
+
+        if (isTextarea) {
+            inp.classList.add('hidden');
+            area.classList.remove('hidden');
+            area.value = value;
+            area.focus();
+            m.style.width = '450px'; // Make it wider
+        } else {
+            area.classList.add('hidden');
+            inp.classList.remove('hidden');
+            inp.value = value;
+            inp.focus();
+            m.style.width = ''; // Reset width
+        }
+
         this.onPromptCallback = callback;
     }
 

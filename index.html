@@ -129,18 +129,25 @@
             <div class="player-top-bar">
                 <div class="player-info">
                     <i class="ph-bold ph-film-strip"></i>
-                    <span id="player-filename">Filename.mp4</span>
+                    <div class="editable-group" id="group-filename" data-tooltip="Edit Title">
+                        <span id="player-filename">Filename.mp4</span>
+                        <i class="ph-bold ph-pencil-simple edit-icon"></i>
+                    </div>
                     <div class="divider-vertical"></div>
-                    <span id="player-link" class="player-link" role="button" tabindex="0"
-                        data-tooltip="Open Link">https://example.com/video</span>
+                    <div class="editable-group" id="group-description" data-tooltip="Edit Description">
+                        <span id="player-description" class="player-description text-truncate">Click to add
+                            description</span>
+                        <i class="ph-bold ph-pencil-simple edit-icon"></i>
+                    </div>
                 </div>
                 <div class="player-top-actions">
+                    <button class="btn-ghost" id="player-link" data-tooltip="Open Link"><i
+                            class="ph-bold ph-arrow-square-out"></i></button>
                     <button class="btn-ghost" id="player-btn-copy" data-tooltip="Copy URL"><i
                             class="ph-bold ph-copy"></i></button>
                     <button class="btn-ghost" id="player-btn-share" data-tooltip="Share"><i
                             class="ph-bold ph-share-network"></i></button>
-                    <button class="btn-ghost" id="player-btn-edit" data-tooltip="Edit Name"><i
-                            class="ph-bold ph-pencil-simple"></i></button>
+                    <div class="divider-vertical"></div>
                     <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
                             class="ph-bold ph-trash"></i></button>
                     <div class="divider-vertical"></div>
@@ -254,6 +261,7 @@
     </div>
 
     <!-- Modals -->
+    <div id="video-desc-tooltip" class="desc-tooltip hidden"></div>
     <div class="modal-backdrop hidden" id="modal-backdrop">
         <!-- New Project Modal -->
         <div class="modal hidden" id="modal-project">
@@ -301,10 +309,12 @@
         </div>
 
         <!-- Prompt Modal -->
-        <div class="modal hidden" id="modal-prompt" style="width: 320px;">
+        <div class="modal hidden" id="modal-prompt">
             <h3 class="modal-title" id="prompt-title">Enter Value</h3>
             <div class="form-group">
-                <input type="text" id="input-prompt-value" class="form-input" style="width: 100%;">
+                <input type="text" class="form-input" id="input-prompt-value">
+                <textarea class="form-input modal-textarea hidden" id="input-prompt-textarea"
+                    style="height: 120px; resize: none;"></textarea>
             </div>
             <div class="modal-actions">
                 <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>

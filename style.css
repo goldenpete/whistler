@@ -751,7 +751,7 @@ button {
     text-decoration: underline;
 }
 
-.player-info i {
+.player-info i:not(.edit-icon) {
     color: var(--accent);
 }
 
@@ -787,11 +787,81 @@ button {
     transform: rotate(90deg);
 }
 
+.player-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s;
+}
+
+.player-description:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.editable-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+    min-width: 0;
+    /* Enable truncation for children */
+}
+
+.editable-group:hover {
+    color: var(--text-primary);
+}
+
+#player-filename {
+    color: #e2e8f0;
+    /* Brighter grey/white */
+}
+
+.editable-group:hover #player-filename {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.edit-icon {
+    font-size: 12px;
+    color: #a1a1aa;
+    /* Explicit grey (Zinc-400) */
+    opacity: 1;
+    transition: color 0.2s;
+}
+
+.editable-group:hover .edit-icon {
+    color: var(--accent);
+    /* Accent on hover */
+}
+
+#group-description {
+    flex: 1;
+    /* Allow description group to take remaining space */
+}
+
+/* Trash button specific hover */
+#player-btn-delete:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+}
+
 .divider-vertical {
     width: 1px;
-    height: 24px;
+    height: 20px;
+    /* Condensed height */
     background: var(--border);
     margin: 0 12px;
+    flex-shrink: 0;
 }
 
 .player-content {
@@ -933,10 +1003,30 @@ button {
     align-items: center;
     gap: 4px;
     pointer-events: none;
-    z-index: 100;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
+.desc-tooltip {
+    position: fixed;
+    background: rgba(15, 15, 18, 0.98);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    z-index: 2000;
+    max-width: 400px;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    white-space: pre-wrap;
+    /* Preserve newlines */
+}
+
+/* Scrollbar */
 .seek-container:hover .seek-preview {
     display: flex;
 }
@@ -1135,6 +1225,8 @@ button {
     background: var(--accent-hover);
     box-shadow: 0 2px 10px var(--accent-glow);
 }
+
+
 
 .timestamps-scroll {
     flex: 1;
