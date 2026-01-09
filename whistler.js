@@ -1147,38 +1147,57 @@ class Player {
     // =====================
 
     setupCollectionModeListeners() {
+        // Top bar buttons (legacy - may be hidden)
         const btnCloseView = document.getElementById('btn-close-collection-view');
         const btnDeleteTs = document.getElementById('btn-delete-timestamp');
         const btnMoveCol = document.getElementById('btn-move-collection');
 
-        if (btnCloseView) {
-            btnCloseView.onclick = () => {
+        // New sidebar buttons
+        const btnCloseSidebar = document.getElementById('btn-close-collection-sidebar');
+        const btnDeleteSidebar = document.getElementById('btn-delete-timestamp-sidebar');
+        const btnMoveSidebar = document.getElementById('btn-move-collection-sidebar');
+        const btnEditSidebar = document.getElementById('btn-edit-timestamp-sidebar');
+
+        // Close handlers
+        const handleClose = () => {
+            const colId = this.currentTimestamp?.collectionId;
+            this.exitCollectionMode();
+            this.close();
+            if (colId) this.app.router.openCollection(colId);
+        };
+        if (btnCloseView) btnCloseView.onclick = handleClose;
+        if (btnCloseSidebar) btnCloseSidebar.onclick = handleClose;
+
+        // Delete handlers
+        const handleDelete = () => {
+            this.app.modals.confirm("Delete Timestamp", "Delete this timestamp?", () => {
                 const colId = this.currentTimestamp?.collectionId;
+                this.app.storage.deleteTimestamp(this.currentTimestamp.id);
                 this.exitCollectionMode();
                 this.close();
-                if (colId) this.app.router.openCollection(colId);
-            };
-        }
+                if (colId) {
+                    this.app.router.openCollection(colId);
+                    this.app.ui.renderCollectionView();
+                }
+            });
+        };
+        if (btnDeleteTs) btnDeleteTs.onclick = handleDelete;
+        if (btnDeleteSidebar) btnDeleteSidebar.onclick = handleDelete;
 
-        if (btnDeleteTs) {
-            btnDeleteTs.onclick = () => {
-                this.app.modals.confirm("Delete Timestamp", "Delete this timestamp?", () => {
-                    const colId = this.currentTimestamp?.collectionId;
-                    this.app.storage.deleteTimestamp(this.currentTimestamp.id);
-                    this.exitCollectionMode();
-                    this.close();
-                    if (colId) {
-                        this.app.router.openCollection(colId);
-                        this.app.ui.renderCollectionView();
-                    }
-                });
-            };
-        }
+        // Move handlers
+        const handleMove = () => {
+            if (this.currentTimestamp) {
+                this.app.modals.openMoveTimestamp(this.currentTimestamp);
+            }
+        };
+        if (btnMoveCol) btnMoveCol.onclick = handleMove;
+        if (btnMoveSidebar) btnMoveSidebar.onclick = handleMove;
 
-        if (btnMoveCol) {
-            btnMoveCol.onclick = () => {
+        // Edit handler (sidebar only)
+        if (btnEditSidebar) {
+            btnEditSidebar.onclick = () => {
                 if (this.currentTimestamp) {
-                    this.app.modals.openMoveTimestamp(this.currentTimestamp);
+                    this.app.modals.openTimestamp(null, this.currentTimestamp);
                 }
             };
         }
@@ -1219,6 +1238,21 @@ class Player {
         document.getElementById('info-note').textContent = timestamp.note || 'No note';
         document.getElementById('info-file').innerHTML =
             `<i class="ph-bold ph-film-strip"></i> ${file?.name || 'Unknown'}`;
+        // Populate file description
+        const descEl = document.getElementById('info-file-desc');
+        if (descEl) {
+            if (file && file.description) {
+                descEl.textContent = file.description;
+                descEl.style.display = 'block';
+                descEl.style.fontStyle = 'normal';
+                descEl.style.color = 'var(--text-secondary)';
+            } else {
+                descEl.textContent = "No description";
+                descEl.style.fontStyle = 'italic';
+                descEl.style.color = 'var(--text-muted)';
+            }
+        }
+
         document.getElementById('info-sidebar-title').textContent = collection.name;
 
         // Wire up "View original" button to exit collection mode and open the base player

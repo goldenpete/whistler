@@ -315,20 +315,49 @@
                 <aside class="player-sidebar info-sidebar hidden" id="info-sidebar">
                     <div class="sidebar-header">
                         <h3 id="info-sidebar-title">Clip Info</h3>
-                        <button class="btn-view-original" id="btn-view-original">
-                            <i class="ph-bold ph-arrow-square-out"></i>
-                            View original
-                        </button>
                     </div>
+
                     <div class="info-content">
+                        <!-- Group for Tight Spacing -->
+                        <div class="info-actions-group">
+                            <button class="info-action-btn view-original-btn" id="btn-view-original">
+                                <i class="ph-bold ph-arrow-square-out"></i>
+                                <span>View Original</span>
+                            </button>
+
+                            <div class="info-actions-row">
+                                <button class="info-action-btn" id="btn-edit-timestamp-sidebar" data-tooltip="Edit">
+                                    <i class="ph-bold ph-pencil-simple"></i>
+                                </button>
+                                <button class="info-action-btn" id="btn-move-collection-sidebar" data-tooltip="Move">
+                                    <i class="ph-bold ph-folder-notch-plus"></i>
+                                </button>
+                                <button class="info-action-btn danger" id="btn-delete-timestamp-sidebar"
+                                    data-tooltip="Delete">
+                                    <i class="ph-bold ph-trash"></i>
+                                </button>
+                                <button class="info-action-btn" id="btn-close-collection-sidebar" data-tooltip="Close">
+                                    <i class="ph-bold ph-x"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="info-time-range" id="info-time-range">
                             0:00 - 0:00
                         </div>
+
                         <div class="info-note" id="info-note">
                             No note
                         </div>
-                        <div class="info-file" id="info-file">
-                            <i class="ph-bold ph-film-strip"></i> Unknown
+
+                        <!-- Video Info Card -->
+                        <div class="info-file-card">
+                            <div class="info-file" id="info-file">
+                                <i class="ph-bold ph-film-strip"></i> Unknown
+                            </div>
+                            <div class="info-file-desc" id="info-file-desc">
+                                No description
+                            </div>
                         </div>
                     </div>
                 </aside>

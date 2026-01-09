@@ -1905,13 +1905,13 @@ input[type="color"]::-webkit-color-swatch {
 .ts-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
     margin-bottom: 4px;
 }
 
 .ts-meta-group {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 8px;
     overflow: hidden;
 }
@@ -1927,9 +1927,6 @@ input[type="color"]::-webkit-color-swatch {
     flex-shrink: 0;
     line-height: 1;
     /* Reset line height */
-    display: flex;
-    /* Ensure centering inside pill */
-    align-items: center;
 }
 
 .ts-collection {
@@ -1949,8 +1946,6 @@ input[type="color"]::-webkit-color-swatch {
     /* Full opacity for color pop */
     line-height: 1;
     /* Match time line height */
-    padding-top: 1px;
-    /* Visual tweak for optical alignment */
 }
 
 .ts-note {
@@ -1965,9 +1960,36 @@ input[type="color"]::-webkit-color-swatch {
 
 .ts-actions {
     display: flex;
+    align-items: center;
     gap: 4px;
     opacity: 0;
     transition: 0.2s;
+}
+
+/* Action buttons - height matches ts-time pill (17px = 11px font + 6px padding) */
+.ts-action-btn {
+    width: 17px;
+    height: 17px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    font-size: 14px;
+    transition: 0.15s;
+}
+
+.ts-action-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.ts-action-btn.btn-delete-ts:hover {
+    color: #ef4444;
 }
 
 .timestamp-item:hover .ts-actions {
@@ -2102,6 +2124,7 @@ input[type="color"]::-webkit-color-swatch {
 .speed-slider {
     flex: 1;
     -webkit-appearance: none;
+    appearance: none;
     height: 4px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
@@ -2697,7 +2720,7 @@ input[type="color"]::-webkit-color-swatch {
     padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 12px;
 }
 
 .info-time-range {
@@ -2713,7 +2736,7 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 .info-note {
-    font-size: 15px;
+    font-size: 13px;
     line-height: 1.7;
     color: var(--text-primary);
     padding: 20px;
@@ -2723,6 +2746,15 @@ input[type="color"]::-webkit-color-swatch {
     white-space: pre-wrap;
 }
 
+/* Video Info Card */
+.info-file-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
 .info-file {
     font-size: 13px;
     color: var(--text-muted);
@@ -2730,8 +2762,16 @@ input[type="color"]::-webkit-color-swatch {
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    background: var(--bg-hover);
-    border-radius: 8px;
+    /* Background and radius handled by card container now */
+}
+
+.info-file-desc {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.2);
+    line-height: 1.5;
 }
 
 .info-file i {
@@ -2771,20 +2811,20 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 /* Collection Mode UI Switching */
-.player-overlay.collection-mode .player-top-actions:not(.collection-mode-actions) {
+/* Collection Mode UI Switching */
+.player-overlay.collection-mode .player-top-bar {
     display: none !important;
-}
-
-.player-overlay.collection-mode .collection-mode-actions {
-    display: flex !important;
 }
 
 .player-overlay.collection-mode #player-sidebar {
     display: none !important;
 }
 
+/* Ensure sidebar is on top of top bar for full vertical height */
 .player-overlay.collection-mode #info-sidebar {
     display: flex !important;
+    z-index: 2001;
+    /* Higher than top bar */
 }
 
 /* Collection Color Theming */
@@ -2793,6 +2833,145 @@ input[type="color"]::-webkit-color-swatch {
     box-shadow: 0 0 15px color-mix(in srgb, var(--collection-color, var(--accent)) 50%, transparent);
 }
 
+/* Disable Title/Description Editing in Collection Mode */
+.player-overlay.collection-mode .editable-group {
+    pointer-events: none;
+    cursor: default;
+}
+
+.player-overlay.collection-mode .editable-group .edit-icon {
+    display: none;
+}
+
+.player-overlay.collection-mode .editable-group:hover span {
+    text-decoration: none;
+    /* If there was any hover effect */
+}
+
+/* Allow Title and Description to take full available width */
+.player-overlay.collection-mode .player-info {
+    flex: 1;
+    min-width: 0;
+    /* Enable flex child shrinking */
+    padding-right: 16px;
+    display: flex;
+    /* Ensure flex context */
+    align-items: center;
+    /* Vertical align */
+}
+
+.player-overlay.collection-mode .editable-group {
+    max-width: none !important;
+    /* Allow growth */
+    flex: 0 1 auto;
+}
+
+.player-overlay.collection-mode #group-description {
+    flex: 1;
+    /* Description takes remaining space */
+    min-width: 0;
+    display: flex;
+    /* Ensure it behaves as flex container for child */
+    overflow: hidden;
+    /* Help container intercept overflow */
+}
+
+.player-overlay.collection-mode #player-description {
+    max-width: none !important;
+    /* Remove span text limit */
+    width: 100%;
+    display: block !important;
+    /* Required for text-overflow to work properly on span */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .player-overlay.collection-mode .sidebar-header h3 {
     color: var(--collection-color, var(--accent));
+}
+
+/* Collection Mode Only Actions in Top Bar */
+.collection-only-action {
+    display: none !important;
+}
+
+.player-overlay.collection-mode button.collection-only-action {
+    display: flex !important;
+}
+
+.player-overlay.collection-mode div.collection-only-action {
+    display: block !important;
+}
+
+/* Custom View Original Button in Sidebar */
+.info-action-btn.view-original-btn {
+    width: 100%;
+    margin-bottom: 0;
+    /* Handled by group gap */
+    gap: 10px !important;
+    height: 28px !important;
+    /* Match height of action buttons - use !important to override */
+    letter-spacing: 0.5px;
+    font-size: 14px;
+    /* Larger text */
+    font-weight: 500;
+    flex: none;
+    /* Override flex: 1 from .info-action-btn */
+}
+
+.view-original-btn i {
+    font-size: 18px !important;
+    /* Larger icon */
+}
+
+.info-actions-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Consistent spacing */
+    width: 100%;
+}
+
+/* Info Sidebar Action Buttons Row */
+.info-actions-row {
+    display: flex;
+    gap: 8px;
+}
+
+.info-action-btn {
+    flex: 1;
+    height: 28px;
+    /* Compact height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: var(--bg-hover);
+    border: 1px solid transparent;
+    /* Cleaner border */
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 14px;
+}
+
+.info-action-btn i {
+    font-size: 14px;
+    /* Scaled down icon */
+    transition: 0.2s;
+}
+
+.info-action-btn:hover {
+    background: var(--bg-card);
+    border-color: var(--border);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.info-action-btn.danger:hover {
+    border-color: #ef4444;
+    color: #ef4444;
 }
