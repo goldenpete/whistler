@@ -184,6 +184,16 @@ class StorageManager {
         this.app.state.timestamps = this.app.state.timestamps.filter(t => t.id !== id);
         this.save();
     }
+
+    updateTimestamp(id, updates) {
+        const t = this.app.state.timestamps.find(x => x.id === id);
+        if (t) {
+            Object.assign(t, updates);
+            this.save();
+        } else {
+            console.error("Timestamp not found for update:", id);
+        }
+    }
 }
 
 class Router {
@@ -950,10 +960,17 @@ class Player {
         div.innerHTML = '';
         if (!this.currentFile) return;
 
+        // In collection mode, the seekbar represents the single timestamp itself.
+        // We don't want to overlay markers (which are relative to full video duration).
+        if (this.isCollectionMode) return;
+
         const dur = this.els.video.duration;
         if (!dur) return;
 
-        const ts = this.app.state.timestamps.filter(t => t.fileId === this.currentFile.id);
+        let ts = this.app.state.timestamps.filter(t => t.fileId === this.currentFile.id);
+        if (this.isCollectionMode && this.currentCollection) {
+            ts = ts.filter(t => t.collectionId === this.currentCollection.id);
+        }
         ts.forEach(t => {
             const col = this.app.state.collections.find(c => c.id === t.collectionId);
             const color = col ? col.color : '#fff';
@@ -997,6 +1014,9 @@ class Player {
                         <span class="ts-collection" style="color:${color}">${colName}</span>
                     </div>
                     <div class="ts-actions">
+                        <button class="ts-action-btn btn-open-ts" data-tooltip="Open clip" data-tooltip-pos="left">
+                            <i class="ph-bold ph-play-circle"></i>
+                        </button>
                         <button class="ts-action-btn btn-edit-ts" data-tooltip="Edit" data-tooltip-pos="left">
                             <i class="ph-bold ph-pencil-simple"></i>
                         </button>
@@ -1011,6 +1031,13 @@ class Player {
             // Delegate logic
             el.onclick = (e) => {
                 // IMPORTANT: Stop propagation for button clicks to prevent list item click logic (seek)
+                if (e.target.closest('.btn-open-ts')) {
+                    e.stopPropagation();
+                    if (col) {
+                        this.loadTimestamp(t, col);
+                    }
+                    return;
+                }
                 if (e.target.closest('.btn-edit-ts')) {
                     e.stopPropagation();
                     this.app.modals.openTimestamp(null, t);
@@ -1193,6 +1220,26 @@ class Player {
         document.getElementById('info-file').innerHTML =
             `<i class="ph-bold ph-film-strip"></i> ${file?.name || 'Unknown'}`;
         document.getElementById('info-sidebar-title').textContent = collection.name;
+
+        // Wire up "View original" button to exit collection mode and open the base player
+        const btnViewOriginal = document.getElementById('btn-view-original');
+        if (btnViewOriginal) {
+            btnViewOriginal.onclick = () => {
+                // Exit collection mode visuals
+                this.exitCollectionMode();
+                // Load the underlying file in normal player mode
+                if (file) {
+                    this.load(file);
+                    // Optionally seek to the start of this timestamp for context
+                    setTimeout(() => {
+                        if (this.els.video && !isNaN(timestamp.start)) {
+                            this.els.video.currentTime = timestamp.start;
+                            this.updateProgress();
+                        }
+                    }, 100);
+                }
+            };
+        }
     }
 
     exitCollectionMode() {
@@ -1880,8 +1927,10 @@ class ModalManager {
                 <span>${c.name}</span>
             `;
 
-            div.onclick = () => {
+            div.onclick = (e) => {
+                e.stopPropagation();
                 // Confirm move
+                console.log("Moving timestamp", timestamp.id, "to collection", c.id);
                 this.app.storage.updateTimestamp(timestamp.id, { collectionId: c.id });
 
                 // Close modal and exit collection view
@@ -1963,7 +2012,13 @@ class ModalManager {
                 this.app.storage.deleteTimestamp(this.currentTimestampId);
             }
 
-            this.app.storage.addTimestamp(colId, this.app.player.currentFile.id, start, end, note);
+            const newTs = this.app.storage.addTimestamp(colId, this.app.player.currentFile.id, start, end, note);
+
+            // Update player current timestamp if it matches the one we just edited/deleted
+            if (this.app.player.currentTimestamp && this.app.player.currentTimestamp.id === this.currentTimestampId) {
+                this.app.player.currentTimestamp = newTs;
+            }
+
             this.app.player.renderTimestamps();
             this.app.player.renderSeekMarkers();
             this.close();
