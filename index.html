@@ -177,6 +177,17 @@
                     <button class="btn-ghost" id="player-btn-close" data-tooltip="Close"><i
                             class="ph-bold ph-x"></i></button>
                 </div>
+
+                <!-- Collection Mode Actions (Hidden by default) -->
+                <div class="player-top-actions collection-mode-actions hidden" id="collection-mode-actions">
+                    <button class="btn-ghost" id="btn-move-collection" data-tooltip="Move to Collection"><i
+                            class="ph-bold ph-folder-notch-plus"></i></button>
+                    <button class="btn-ghost" id="btn-delete-timestamp" data-tooltip="Delete Timestamp"><i
+                            class="ph-bold ph-trash"></i></button>
+                    <div class="divider-vertical"></div>
+                    <button class="btn-ghost" id="btn-close-collection-view" data-tooltip="Close"><i
+                            class="ph-bold ph-x"></i></button>
+                </div>
             </div>
 
             <!-- Player Content -->
@@ -253,10 +264,12 @@
                                 <button class="ctrl-btn-filled" id="btn-play-pause" data-tooltip="Play/Pause"><i
                                         class="ph-fill ph-play"></i></button>
 
-                                <button class="ctrl-btn-filled" id="btn-volume" data-tooltip="Mute/Unmute"><i
-                                        class="ph-bold ph-speaker-high"></i></button>
-                                <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.05"
-                                    value="1">
+                                <div class="volume-container">
+                                    <button class="ctrl-btn-filled" id="btn-volume" data-tooltip="Mute/Unmute"><i
+                                            class="ph-bold ph-speaker-high"></i></button>
+                                    <input type="range" id="volume-slider" class="volume-slider" min="0" max="1"
+                                        step="0.05" value="1">
+                                </div>
                             </div>
 
                             <!-- PDF Controls -->
@@ -295,6 +308,24 @@
                     </div>
                     <div class="timestamps-scroll" id="timestamps-list">
                         <!-- Timestamps injected -->
+                    </div>
+                </aside>
+
+                <!-- Info Sidebar (Collection Mode) -->
+                <aside class="player-sidebar info-sidebar hidden" id="info-sidebar">
+                    <div class="sidebar-header">
+                        <h3 id="info-sidebar-title">Clip Info</h3>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-time-range" id="info-time-range">
+                            0:00 - 0:00
+                        </div>
+                        <div class="info-note" id="info-note">
+                            No note
+                        </div>
+                        <div class="info-file" id="info-file">
+                            <i class="ph-bold ph-film-strip"></i> Unknown
+                        </div>
                     </div>
                 </aside>
             </div> <!-- End player-content -->
@@ -430,6 +461,17 @@
                 </button>
             </div>
 
+        </div>
+
+        <!-- Move Timestamp Modal -->
+        <div class="modal hidden" id="modal-move-timestamp" style="width: 400px;">
+            <h3 class="modal-title">Move to Collection</h3>
+            <div id="move-timestamp-list" class="folder-select-list">
+                <!-- Javascript will populate this -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" id="btn-cancel-move-timestamp">Cancel</button>
+            </div>
         </div>
 
     </div>

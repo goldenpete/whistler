@@ -289,6 +289,7 @@ class Player {
             speedPresets: document.querySelectorAll('.speed-preset'),
 
             sidebar: document.getElementById('player-sidebar'),
+            infoSidebar: document.getElementById('info-sidebar'),
             btnSidebarToggle: document.getElementById('btn-sidebar-toggle'),
 
             // PDF Elements
@@ -313,25 +314,35 @@ class Player {
         this.pdfScale = 1.5;
         this.isPdf = false;
 
+        // Collection Mode State
+        this.isCollectionMode = false;
+        this.currentTimestamp = null;
+        this.playbackRange = null; // { start, end }
+        this.currentCollection = null;
+
         this.setupListeners();
         this.setupPDFListeners();
+        this.setupCollectionModeListeners();
     }
 
     setupListeners() {
-        this.els.btnClose.onclick = () => this.close();
-        this.els.btnPlay.onclick = () => this.togglePlay();
-        this.els.video.onclick = () => this.togglePlay();
-        this.els.btnFullscreen.onclick = () => this.toggleFullscreen();
-        this.els.btnSidebarToggle.onclick = () => this.toggleSidebar();
+        if (this.els.btnClose) this.els.btnClose.onclick = () => this.close();
+        if (this.els.btnPlay) this.els.btnPlay.onclick = () => this.togglePlay();
+        if (this.els.video) this.els.video.onclick = () => this.togglePlay();
+        if (this.els.btnFullscreen) this.els.btnFullscreen.onclick = () => this.toggleFullscreen();
+        if (this.els.btnSidebarToggle) this.els.btnSidebarToggle.onclick = () => this.toggleSidebar();
 
         // Time Display Toggle
-        this.els.timeDisplay.onclick = () => {
-            this.showRemainingTime = !this.showRemainingTime;
-            this.updateProgress(); // Refresh immediately
-        };
+        if (this.els.timeDisplay) {
+            this.els.timeDisplay.onclick = () => {
+                this.showRemainingTime = !this.showRemainingTime;
+                this.updateProgress(); // Refresh immediately
+            };
+        }
 
         // Fullscreen Sync
         document.addEventListener('fullscreenchange', () => {
+            if (!this.els.btnFullscreen) return;
             if (document.fullscreenElement) {
                 this.els.btnFullscreen.innerHTML = '<i class="ph-bold ph-corners-in"></i>';
             } else {
@@ -401,7 +412,14 @@ class Player {
         const handleDrag = (e) => {
             const rect = this.els.seekContainer.getBoundingClientRect();
             const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-            if (this.els.video.duration) {
+
+            if (this.playbackRange) {
+                // Collection mode: seek within range
+                const { start, end } = this.playbackRange;
+                const rangeDuration = end - start;
+                this.els.video.currentTime = start + (pos * rangeDuration);
+            } else if (this.els.video.duration) {
+                // Normal mode
                 this.els.video.currentTime = pos * this.els.video.duration;
             }
             this.updateUIProgress(pos * 100);
@@ -584,43 +602,50 @@ class Player {
         };
 
         // Move File
-        document.getElementById('player-btn-move').onclick = () => {
-            if (this.currentFile) {
-                this.app.modals.openMoveFile(this.currentFile);
-            }
-        };
+        // Move File
+        const btnMove = document.getElementById('player-btn-move');
+        if (btnMove) {
+            btnMove.onclick = () => {
+                if (this.currentFile) {
+                    this.app.modals.openMoveFile(this.currentFile);
+                }
+            };
+        }
 
-        document.getElementById('btn-add-timestamp').onclick = () => {
-            if (this.isPdf) {
-                // Manual add (no selection) ? Or maybe just use current page
-                this.openMarkModal(this.pdfPageNum, "");
-            } else {
-                this.app.modals.openTimestamp(this.els.video.currentTime);
-            }
-        };
-
-        this.els.btnSidebarToggle.onclick = () => {
-            this.els.sidebar.classList.toggle('collapsed');
-        };
+        const btnAddTs = document.getElementById('btn-add-timestamp');
+        if (btnAddTs) {
+            btnAddTs.onclick = () => {
+                if (this.isPdf) {
+                    this.openMarkModal(this.pdfPageNum, "");
+                } else {
+                    this.app.modals.openTimestamp(this.els.video.currentTime);
+                }
+            };
+        }
     }
 
     setupPDFListeners() {
-        this.els.btnPdfPrev.onclick = () => this.prevPage();
-        this.els.btnPdfNext.onclick = () => this.nextPage();
+        if (this.els.btnPdfPrev) this.els.btnPdfPrev.onclick = () => this.prevPage();
+        if (this.els.btnPdfNext) this.els.btnPdfNext.onclick = () => this.nextPage();
 
         // Text Selection for Marking
-        this.els.pdfTextLayer.addEventListener('mouseup', () => this.handleTextSelection());
+        if (this.els.pdfTextLayer) {
+            this.els.pdfTextLayer.addEventListener('mouseup', () => this.handleTextSelection());
+        }
 
-        this.els.btnAddMark.onclick = () => {
-            const selection = window.getSelection();
-            const text = selection.toString();
-            this.openMarkModal(this.pdfPageNum, text);
-            this.els.pdfPopover.classList.add('hidden');
-            selection.removeAllRanges();
-        };
+        if (this.els.btnAddMark) {
+            this.els.btnAddMark.onclick = () => {
+                const selection = window.getSelection();
+                const text = selection.toString();
+                this.openMarkModal(this.pdfPageNum, text);
+                if (this.els.pdfPopover) this.els.pdfPopover.classList.add('hidden');
+                selection.removeAllRanges();
+            };
+        }
 
         // Hide popover on click elsewhere
         document.addEventListener('mousedown', (e) => {
+            if (!this.els.pdfPopover || !this.els.pdfTextLayer) return;
             if (!this.els.pdfPopover.contains(e.target) && !this.els.pdfTextLayer.contains(e.target)) {
                 this.els.pdfPopover.classList.add('hidden');
             }
@@ -844,8 +869,15 @@ class Player {
     }
 
     toggleSidebar() {
-        this.els.sidebar.classList.toggle('collapsed');
-        this.els.playerContent.classList.toggle('sidebar-closed');
+        if (this.isCollectionMode && this.els.infoSidebar) {
+            this.els.infoSidebar.classList.toggle('collapsed');
+        } else if (this.els.sidebar) {
+            this.els.sidebar.classList.toggle('collapsed');
+        }
+
+        if (this.els.playerContent) {
+            this.els.playerContent.classList.toggle('sidebar-closed');
+        }
     }
 
     extractYoutubeId(url) {
@@ -880,6 +912,11 @@ class Player {
     }
 
     updateProgress() {
+        // Check if in collection mode first
+        if (this.updateProgressCollectionAware()) {
+            return; // Collection mode handled it
+        }
+
         const cur = this.els.video.currentTime || 0;
         const dur = this.els.video.duration || 1; // Avoid div by zero
         // Calc percentage
@@ -1076,6 +1113,129 @@ class Player {
 
         // Move video back (same as restore)
         this.els.playerStage.insertBefore(this.els.videoWrapper, this.els.playerStage.firstChild);
+    }
+
+    // =====================
+    // Collection Mode Methods
+    // =====================
+
+    setupCollectionModeListeners() {
+        const btnCloseView = document.getElementById('btn-close-collection-view');
+        const btnDeleteTs = document.getElementById('btn-delete-timestamp');
+        const btnMoveCol = document.getElementById('btn-move-collection');
+
+        if (btnCloseView) {
+            btnCloseView.onclick = () => {
+                const colId = this.currentTimestamp?.collectionId;
+                this.exitCollectionMode();
+                this.close();
+                if (colId) this.app.router.openCollection(colId);
+            };
+        }
+
+        if (btnDeleteTs) {
+            btnDeleteTs.onclick = () => {
+                this.app.modals.confirm("Delete Timestamp", "Delete this timestamp?", () => {
+                    const colId = this.currentTimestamp?.collectionId;
+                    this.app.storage.deleteTimestamp(this.currentTimestamp.id);
+                    this.exitCollectionMode();
+                    this.close();
+                    if (colId) {
+                        this.app.router.openCollection(colId);
+                        this.app.ui.renderCollectionView();
+                    }
+                });
+            };
+        }
+
+        if (btnMoveCol) {
+            btnMoveCol.onclick = () => {
+                if (this.currentTimestamp) {
+                    this.app.modals.openMoveTimestamp(this.currentTimestamp);
+                }
+            };
+        }
+    }
+
+    loadTimestamp(timestamp, collection) {
+        const file = this.app.state.files.find(f => f.id === timestamp.fileId);
+        if (!file) return;
+
+        this.isCollectionMode = true;
+        this.currentTimestamp = timestamp;
+        this.playbackRange = { start: timestamp.start, end: timestamp.end };
+        this.currentCollection = collection;
+
+        // Load the file but in collection mode
+        this.load(file);
+
+        // Set video to start time after a brief delay for load
+        setTimeout(() => {
+            this.els.video.currentTime = timestamp.start;
+            this.els.video.play();
+        }, 100);
+
+        // Switch to collection mode UI
+        this.enterCollectionMode(timestamp, collection);
+    }
+
+    enterCollectionMode(timestamp, collection) {
+        this.els.overlay.classList.add('collection-mode');
+
+        // Set collection color
+        this.els.overlay.style.setProperty('--collection-color', collection.color);
+
+        // Populate info sidebar
+        const file = this.app.state.files.find(f => f.id === timestamp.fileId);
+        document.getElementById('info-time-range').textContent =
+            `${this.fmt(timestamp.start)} - ${this.fmt(timestamp.end)}`;
+        document.getElementById('info-note').textContent = timestamp.note || 'No note';
+        document.getElementById('info-file').innerHTML =
+            `<i class="ph-bold ph-film-strip"></i> ${file?.name || 'Unknown'}`;
+        document.getElementById('info-sidebar-title').textContent = collection.name;
+    }
+
+    exitCollectionMode() {
+        this.isCollectionMode = false;
+        this.currentTimestamp = null;
+        this.playbackRange = null;
+        this.currentCollection = null;
+
+        this.els.overlay.classList.remove('collection-mode');
+        this.els.overlay.style.removeProperty('--collection-color');
+    }
+
+    // Override updateProgress to handle collection mode
+    updateProgressCollectionAware() {
+        if (!this.isCollectionMode || !this.playbackRange) {
+            return false; // Use normal progress
+        }
+
+        const cur = this.els.video.currentTime;
+        const { start, end } = this.playbackRange;
+        const rangeDuration = end - start;
+
+        // Constrain playback
+        if (cur >= end) {
+            this.els.video.pause();
+            this.els.video.currentTime = start;
+            this.els.btnPlay.innerHTML = '<i class="ph-fill ph-play"></i>';
+            return true;
+        }
+
+        if (cur < start) {
+            this.els.video.currentTime = start;
+        }
+
+        // Update seekbar relative to range
+        const elapsed = Math.max(0, cur - start);
+        const pct = (elapsed / rangeDuration) * 100;
+        this.updateUIProgress(pct);
+
+        // Update time display
+        this.els.timeDisplay.innerText = `${this.fmt(elapsed)} / ${this.fmt(rangeDuration)}`;
+
+        return true;
     }
 }
 
@@ -1679,11 +1839,7 @@ class UIManager {
             `;
             card.onclick = () => {
                 if (file) {
-                    this.app.player.load(file);
-                    // Slight delay to allow load
-                    setTimeout(() => {
-                        this.app.player.els.video.currentTime = t.start;
-                    }, 200);
+                    this.app.player.loadTimestamp(t, col);
                 }
             };
             grid.appendChild(card);
@@ -1695,6 +1851,59 @@ class ModalManager {
     constructor(app) {
         this.app = app;
         this.backdrop = document.getElementById('modal-backdrop');
+    }
+
+    openMoveTimestamp(timestamp) {
+        const modal = document.getElementById('modal-move-timestamp');
+        const list = document.getElementById('move-timestamp-list');
+        const btnCancel = document.getElementById('btn-cancel-move-timestamp');
+
+        // Safety check
+        if (!modal || !list || !btnCancel) {
+            console.error("Move Timestamp modal elements missing");
+            return;
+        }
+
+        list.innerHTML = '';
+
+        // Populate collections
+        const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId);
+
+        cols.forEach(c => {
+            if (c.id === timestamp.collectionId) return; // Skip current
+
+            const div = document.createElement('div');
+            div.className = 'folder-select-item';
+            div.style.borderLeft = `3px solid ${c.color}`;
+            div.innerHTML = `
+                <i class="ph-bold ph-folder"></i>
+                <span>${c.name}</span>
+            `;
+
+            div.onclick = () => {
+                // Confirm move
+                this.app.storage.updateTimestamp(timestamp.id, { collectionId: c.id });
+
+                // Close modal and exit collection view
+                this.close();
+                this.app.player.exitCollectionMode();
+                this.app.player.close();
+
+                // Go to the new collection
+                this.app.router.openCollection(c.id);
+            };
+
+            list.appendChild(div);
+        });
+
+        if (cols.length <= 1) {
+            list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No other collections available.</div>';
+        }
+
+        btnCancel.onclick = () => this.close();
+
+        if (this.backdrop) this.backdrop.classList.remove('hidden');
+        modal.classList.remove('hidden');
     }
 
     init() {
