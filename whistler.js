@@ -622,6 +622,65 @@ class Player {
             };
         }
 
+        // Change Color
+        const btnColor = document.getElementById('player-btn-color');
+        if (btnColor) {
+            btnColor.onclick = () => {
+                if (this.currentFile) {
+                    const initialColor = this.currentFile.color || '#6366f1';
+                    this.app.modals.openColorPicker(initialColor, (newColor) => {
+                        if (newColor === null) {
+                            this.app.storage.updateFile(this.currentFile.id, { color: undefined });
+                        } else {
+                            this.app.storage.updateFile(this.currentFile.id, { color: newColor });
+                        }
+                        this.app.ui.renderStorage();
+                    });
+                }
+            };
+        }
+
+        // Sidebar Resizing
+        const resizeHandle = document.getElementById('player-resize-handle');
+        if (resizeHandle) {
+            let isResizingSidebar = false;
+            resizeHandle.addEventListener('mousedown', (e) => {
+                isResizingSidebar = true;
+                resizeHandle.classList.add('active');
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizingSidebar) return;
+
+                // Calculate new width: Total Width - Mouse X
+                // Assuming sidebar is on the right
+                const containerWidth = document.body.clientWidth;
+                let newWidth = containerWidth - e.clientX;
+
+                // Constraints
+                if (newWidth < 200) newWidth = 200;
+                if (newWidth > 600) newWidth = 600;
+
+                // Determine active sidebar
+                let activeSidebar = this.els.sidebar;
+                if (this.isCollectionMode && this.els.infoSidebar) {
+                    activeSidebar = this.els.infoSidebar;
+                }
+
+                if (activeSidebar) {
+                    activeSidebar.style.width = `${newWidth}px`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizingSidebar) {
+                    isResizingSidebar = false;
+                    resizeHandle.classList.remove('active');
+                }
+            });
+        }
+
         const btnAddTs = document.getElementById('btn-add-timestamp');
         if (btnAddTs) {
             btnAddTs.onclick = () => {
@@ -879,14 +938,24 @@ class Player {
     }
 
     toggleSidebar() {
+        const resizeHandle = document.getElementById('player-resize-handle');
+        let activeSidebar = this.els.sidebar;
+
         if (this.isCollectionMode && this.els.infoSidebar) {
-            this.els.infoSidebar.classList.toggle('collapsed');
-        } else if (this.els.sidebar) {
-            this.els.sidebar.classList.toggle('collapsed');
+            activeSidebar = this.els.infoSidebar;
         }
 
-        if (this.els.playerContent) {
-            this.els.playerContent.classList.toggle('sidebar-closed');
+        if (activeSidebar) {
+            activeSidebar.classList.toggle('collapsed');
+            const isCollapsed = activeSidebar.classList.contains('collapsed');
+
+            if (resizeHandle) {
+                resizeHandle.classList.toggle('collapsed', isCollapsed);
+            }
+
+            if (this.els.playerContent) {
+                this.els.playerContent.classList.toggle('sidebar-closed', isCollapsed);
+            }
         }
     }
 
@@ -1326,6 +1395,7 @@ class UIManager {
     }
 
     setupNavigation() {
+        // this.setupColorPicker(); // Removed custom nav setup for picker
         this.setupSearch();
 
         // Project Dropdown Logic
@@ -1412,6 +1482,8 @@ class UIManager {
             toggleAddBar(false);
         };
     }
+
+
 
     setupSearch() {
         const toggleBtn = document.getElementById('btn-search-toggle');
@@ -1661,6 +1733,12 @@ class UIManager {
             card.className = 'card';
             if (isFolder) card.classList.add('card-folder');
 
+            // Custom Color Logic
+            if (f.color) {
+                card.style.setProperty('--card-accent', f.color);
+                card.classList.add('has-color');
+            }
+
             // DRAG AND DROP ATTRIBUTES
             card.draggable = true;
             card.dataset.id = f.id;
@@ -1687,6 +1765,7 @@ class UIManager {
                     <button class="card-action-btn" data-action="move" data-tooltip="Move to Folder"><i class="ph-bold ph-folder-notch-plus"></i></button>
                     ` : ''}
                     <button class="card-action-btn" data-action="edit-title" data-tooltip="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
+                    <button class="card-action-btn" data-action="color" data-tooltip="Color"><i class="ph-bold ph-palette"></i></button>
                     ${!isFolder ? `<button class="card-action-btn" data-action="edit-desc" data-tooltip="Edit Description"><i class="ph-bold ph-note-pencil"></i></button>` : ''}
                     <button class="card-action-btn card-action-danger" data-action="delete" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
                 </div>
@@ -1770,6 +1849,18 @@ class UIManager {
             bindAction('[data-action="edit-title"]', () => {
                 this.app.modals.prompt("Rename", f.name, (newName) => {
                     this.app.storage.updateFile(f.id, { name: newName });
+                    this.renderStorage();
+                });
+            });
+            bindAction('[data-action="color"]', () => {
+                const initialColor = f.color || '#6366f1';
+                this.app.modals.openColorPicker(initialColor, (newColor) => {
+                    // null means reset - remove custom color
+                    if (newColor === null) {
+                        this.app.storage.updateFile(f.id, { color: undefined });
+                    } else {
+                        this.app.storage.updateFile(f.id, { color: newColor });
+                    }
                     this.renderStorage();
                 });
             });
@@ -1863,38 +1954,59 @@ class UIManager {
         });
     }
 
-    generateVideoThumbnail(url, container) {
+    generateVideoThumbnail(url, container, timestamp = null) {
+        // Normalize URL for local files (Windows support)
+        let safeUrl = url;
+        if (typeof safeUrl === 'string' && !safeUrl.startsWith('file:') && !safeUrl.startsWith('http') && safeUrl.match(/^[a-zA-Z]:/)) {
+            safeUrl = 'file:///' + safeUrl.replace(/\\/g, '/');
+        }
+
         const video = document.createElement('video');
-        video.crossOrigin = 'anonymous';
+        // Remove crossOrigin for local files to allow loading (will taint canvas but we handle it)
+        // video.crossOrigin = 'anonymous'; 
         video.muted = true;
         video.preload = 'metadata';
 
         video.onloadeddata = () => {
-            video.currentTime = Math.min(1, video.duration * 0.1);
+            if (timestamp !== null) {
+                video.currentTime = timestamp;
+            } else {
+                video.currentTime = Math.min(1, video.duration * 0.1);
+            }
         };
 
         video.onseeked = () => {
             try {
                 const canvas = document.createElement('canvas');
-                canvas.width = 80;
-                canvas.height = 45;
+                // Higher resolution for background usage
+                canvas.width = 320;
+                canvas.height = 180;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                const img = document.createElement('img');
-                img.src = canvas.toDataURL('image/jpeg', 0.7);
-                img.className = 'card-thumb-img';
-
-                container.innerHTML = '';
-                container.appendChild(img);
+                try {
+                    const img = document.createElement('img');
+                    img.src = canvas.toDataURL('image/jpeg', 0.7);
+                    img.className = 'card-thumb-img';
+                    container.innerHTML = '';
+                    container.appendChild(img);
+                } catch (err) {
+                    // Fallback for tainted canvas (local files)
+                    canvas.className = 'card-thumb-img';
+                    container.innerHTML = '';
+                    container.appendChild(canvas);
+                }
             } catch (e) {
                 console.log('Could not generate thumbnail:', e);
             }
             video.remove();
         };
 
-        video.onerror = () => video.remove();
-        video.src = url;
+        video.onerror = (e) => {
+            console.warn('Thumbnail video load error:', safeUrl, e);
+            video.remove();
+        };
+        video.src = safeUrl;
     }
 
     renderCollectionView() {
@@ -1911,13 +2023,28 @@ class UIManager {
         ts.forEach(t => {
             const file = this.app.state.files.find(f => f.id === t.fileId);
             const card = document.createElement('div');
-            card.className = 'card';
+            card.className = 'card collection-card';
             card.style.borderColor = col.color;
-            card.innerHTML = `
+
+            // Background Preview
+            const bg = document.createElement('div');
+            bg.className = 'card-bg-preview';
+            card.appendChild(bg);
+
+            if (file && file.url) {
+                this.generateVideoThumbnail(file.url, bg, t.start);
+            }
+
+            // Content
+            const content = document.createElement('div');
+            content.className = 'card-content';
+            content.innerHTML = `
                 <span class="card-title" style="font-size:14px;">"${t.note}"</span>
                 <span class="card-meta">${file ? file.name : 'Unknown File'}</span>
                 <span class="card-meta" style="color:${col.color}">${this.app.player.fmt(t.start)}</span>
             `;
+            card.appendChild(content);
+
             card.onclick = () => {
                 if (file) {
                     this.app.player.loadTimestamp(t, col);
@@ -1993,6 +2120,26 @@ class ModalManager {
         this.backdrop.addEventListener('click', (e) => {
             if (e.target === this.backdrop) this.close();
         });
+
+        // Initialize Color Picker Logic
+        this.setupColorPickerListeners();
+
+        // Collection Color Trigger
+        const colTrigger = document.getElementById('btn-collection-color-trigger');
+        if (colTrigger) {
+            colTrigger.onclick = () => {
+                const input = document.getElementById('input-col-color');
+                const preview = document.getElementById('collection-color-preview');
+                const currentColor = input.value;
+
+                this.openColorPicker(currentColor, (newColor) => {
+                    input.value = newColor;
+                    preview.style.backgroundColor = newColor;
+                });
+                // Set flag to reopen collection modal after color pick
+                this.reopenModalAfterColorPick = 'modal-collection';
+            };
+        }
 
         // Project
         // Project
@@ -2272,6 +2419,265 @@ class ModalManager {
     close() {
         this.backdrop.classList.add('hidden');
         document.querySelectorAll('.modal').forEach(el => el.classList.add('hidden'));
+    }
+
+    // --- Color Picker ---
+    openColorPicker(initialColor, callback) {
+        this.close();
+        this.backdrop.classList.remove('hidden');
+        const m = document.getElementById('modal-color-picker');
+        m.classList.remove('hidden');
+
+        this.onColorPickCallback = callback;
+        this.pickerColor = initialColor || '#6366f1';
+
+        // Reset Tabs to Basic
+        this.switchPickerTab('basic');
+        this.renderColorPresets();
+        this.updateAdvancedPickerUI(this.pickerColor);
+    }
+
+    switchPickerTab(tab) {
+        document.querySelectorAll('.cp-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.cp-panel').forEach(p => p.classList.add('hidden'));
+
+        document.querySelector(`.cp-tab[data-tab="${tab}"]`).classList.add('active');
+        document.getElementById(`cp-panel-${tab}`).classList.remove('hidden');
+    }
+
+    renderColorPresets() {
+        const grid = document.getElementById('cp-basic-grid');
+        grid.innerHTML = '';
+        const presets = [
+            '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e',
+            '#10b981', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
+            '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#71717a',
+            '#ffffff', '#000000', '#78350f', '#064e3b', '#1e3a8a'
+        ];
+
+        presets.forEach(color => {
+            const el = document.createElement('div');
+            el.className = 'cp-preset';
+            el.style.backgroundColor = color;
+            if (color.toLowerCase() === this.pickerColor.toLowerCase()) el.classList.add('selected');
+
+            el.onclick = () => {
+                this.pickerColor = color;
+                // Visual selection update
+                document.querySelectorAll('.cp-preset').forEach(p => p.classList.remove('selected'));
+                el.classList.add('selected');
+                // Also update advanced UI state in background
+                this.updateAdvancedPickerUI(color);
+            };
+            grid.appendChild(el);
+        });
+    }
+
+    setupColorPickerListeners() {
+        // Tabs
+        document.querySelectorAll('.cp-tab').forEach(btn => {
+            btn.onclick = () => this.switchPickerTab(btn.dataset.tab);
+        });
+
+        // Confirm
+        document.getElementById('btn-cp-confirm').onclick = () => {
+            const reopenModalId = this.reopenModalAfterColorPick;
+            if (this.onColorPickCallback) this.onColorPickCallback(this.pickerColor);
+            this.close();
+            // Reopen a modal if one was specified
+            if (reopenModalId) {
+                this.backdrop.classList.remove('hidden');
+                document.getElementById(reopenModalId).classList.remove('hidden');
+                this.reopenModalAfterColorPick = null;
+            }
+        };
+
+        // Cancel
+        document.getElementById('btn-cp-cancel').onclick = () => {
+            const reopenModalId = this.reopenModalAfterColorPick;
+            this.close();
+            if (reopenModalId) {
+                this.backdrop.classList.remove('hidden');
+                document.getElementById(reopenModalId).classList.remove('hidden');
+                this.reopenModalAfterColorPick = null;
+            }
+        };
+
+        // Reset to default (remove color)
+        document.getElementById('btn-cp-reset').onclick = () => {
+            const reopenModalId = this.reopenModalAfterColorPick;
+            if (this.onColorPickCallback) this.onColorPickCallback(null);
+            this.close();
+            if (reopenModalId) {
+                this.backdrop.classList.remove('hidden');
+                document.getElementById(reopenModalId).classList.remove('hidden');
+                this.reopenModalAfterColorPick = null;
+            }
+        };
+
+        // Advanced Logic with drag support
+        const sat = document.getElementById('cp-saturation');
+        const hue = document.getElementById('cp-hue-rail');
+        const hexInput = document.getElementById('cp-input-hex');
+
+        // Saturation box drag
+        const handleSatMove = (e) => {
+            e.preventDefault();
+            this.handleSatInteraction(e, sat);
+        };
+        const stopSatDrag = () => {
+            document.removeEventListener('mousemove', handleSatMove);
+            document.removeEventListener('mouseup', stopSatDrag);
+        };
+        sat.onmousedown = (e) => {
+            this.handleSatInteraction(e, sat);
+            document.addEventListener('mousemove', handleSatMove);
+            document.addEventListener('mouseup', stopSatDrag);
+        };
+
+        // Hue rail drag
+        const handleHueMove = (e) => {
+            e.preventDefault();
+            this.handleHueInteraction(e, hue);
+        };
+        const stopHueDrag = () => {
+            document.removeEventListener('mousemove', handleHueMove);
+            document.removeEventListener('mouseup', stopHueDrag);
+        };
+        hue.onmousedown = (e) => {
+            this.handleHueInteraction(e, hue);
+            document.addEventListener('mousemove', handleHueMove);
+            document.addEventListener('mouseup', stopHueDrag);
+        };
+
+        hexInput.onchange = (e) => {
+            let val = e.target.value;
+            if (!val.startsWith('#')) val = '#' + val;
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                this.pickerColor = val;
+                this.updateAdvancedPickerUI(val);
+                this.renderColorPresets(); // Sync basic selection
+            }
+        };
+    }
+
+    // Helper: Parse Hex to HSV would be needed for full bi-directional sync.
+    // Simplifying: We rely on HEX for source of truth.
+    // Drawing the saturation box requires a hue. 
+
+    updateAdvancedPickerUI(hex) {
+        document.getElementById('cp-preview').style.backgroundColor = hex;
+        document.getElementById('cp-input-hex').value = hex;
+
+        // Update visual cursors based on hex
+        const hsv = this.hexToHsv(hex);
+        this.currentHsv = hsv; // Store current HSV state
+
+        // Update Hue Thumb
+        const hueRail = document.getElementById('cp-hue-rail');
+        const hueThumb = document.getElementById('cp-hue-thumb');
+        const huePct = hsv.h / 360;
+        hueThumb.style.left = (huePct * 100) + '%';
+
+        // Update Saturation Background (Hue color)
+        const satBox = document.getElementById('cp-saturation');
+        satBox.style.backgroundColor = `hsl(${hsv.h}, 100%, 50%)`;
+
+        // Update Sat Cursor
+        const cursor = document.getElementById('cp-cursor');
+        cursor.style.left = (hsv.s * 100) + '%';
+        cursor.style.top = (100 - (hsv.v * 100)) + '%';
+    }
+
+    handleSatInteraction(e, el) {
+        const rect = el.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+        x = Math.max(0, Math.min(x, rect.width));
+        y = Math.max(0, Math.min(y, rect.height));
+
+        const s = x / rect.width;
+        const v = 1 - (y / rect.height);
+
+        if (!this.currentHsv) this.currentHsv = { h: 0, s: 1, v: 1 };
+        this.currentHsv.s = s;
+        this.currentHsv.v = v;
+
+        const hex = this.hsvToHex(this.currentHsv.h, this.currentHsv.s, this.currentHsv.v);
+        this.pickerColor = hex;
+        this.updateAdvancedPickerUI(hex);
+    }
+
+    handleHueInteraction(e, el) {
+        const rect = el.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        x = Math.max(0, Math.min(x, rect.width));
+
+        const hue = (x / rect.width) * 360;
+        if (!this.currentHsv) this.currentHsv = { h: 0, s: 1, v: 1 };
+        this.currentHsv.h = hue;
+
+        const hex = this.hsvToHex(this.currentHsv.h, this.currentHsv.s, this.currentHsv.v);
+        this.pickerColor = hex;
+        this.updateAdvancedPickerUI(hex);
+    }
+
+    // Color Helpers
+    hexToHsv(hex) {
+        let r = 0, g = 0, b = 0;
+        if (!hex) hex = "#000000";
+        if (hex.startsWith('#')) hex = hex.slice(1);
+
+        if (hex.length === 3) {
+            r = "0x" + hex[0] + hex[0];
+            g = "0x" + hex[1] + hex[1];
+            b = "0x" + hex[2] + hex[2];
+        } else if (hex.length >= 6) {
+            r = "0x" + hex.substring(0, 2);
+            g = "0x" + hex.substring(2, 4);
+            b = "0x" + hex.substring(4, 6);
+        }
+        r /= 255; g /= 255; b /= 255;
+
+        let cmin = Math.min(r, g, b), cmax = Math.max(r, g, b), delta = cmax - cmin;
+        let h = 0, s = 0, v = 0;
+
+        if (delta == 0) h = 0;
+        else if (cmax == r) h = ((g - b) / delta) % 6;
+        else if (cmax == g) h = (b - r) / delta + 2;
+        else h = (r - g) / delta + 4;
+        h = Math.round(h * 60);
+        if (h < 0) h += 360;
+
+        v = cmax;
+        s = cmax == 0 ? 0 : delta / cmax;
+
+        return { h, s, v };
+    }
+
+    hsvToHex(h, s, v) {
+        let r, g, b, i, f, p, q, t;
+        h = h / 360;
+        i = Math.floor(h * 6);
+        f = h * 6 - i;
+        p = v * (1 - s);
+        q = v * (1 - f * s);
+        t = v * (1 - (1 - f) * s);
+
+        switch (i % 6) {
+            case 0: r = v, g = t, b = p; break;
+            case 1: r = q, g = v, b = p; break;
+            case 2: r = p, g = v, b = t; break;
+            case 3: r = p, g = q, b = v; break;
+            case 4: r = t, g = p, b = v; break;
+            case 5: r = v, g = p, b = q; break;
+        }
+
+        const toHex = x => {
+            const val = Math.round(x * 255).toString(16);
+            return val.length === 1 ? '0' + val : val;
+        };
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     }
 }
 

@@ -16,6 +16,7 @@
 
 <body>
     <div id="app">
+        <input type="color" id="global-color-picker" style="display:none">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="brand">
@@ -171,6 +172,8 @@
                     <div class="divider-vertical"></div>
                     <button class="btn-ghost" id="player-btn-move" data-tooltip="Move to Folder"><i
                             class="ph-bold ph-folder-notch-plus"></i></button>
+                    <button class="btn-ghost" id="player-btn-color" data-tooltip="Change Color"><i
+                            class="ph-bold ph-palette"></i></button>
                     <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
                             class="ph-bold ph-trash"></i></button>
                     <div class="divider-vertical"></div>
@@ -295,8 +298,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> <!-- End player-stage -->
 
+                <!-- Resize Handle -->
+                <div class="resize-handle" id="player-resize-handle"></div>
 
                 <!-- Timestamp Sidebar (Moved inside player-content) -->
                 <aside class="player-sidebar" id="player-sidebar">
@@ -391,9 +396,12 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Color Code</label>
-                <div class="color-picker-wrapper">
-                    <input type="color" id="input-col-color" value="#6366f1">
+                <div class="color-picker-wrapper" id="btn-collection-color-trigger" style="cursor: pointer;">
+                    <div id="collection-color-preview"
+                        style="width:32px; height:32px; border-radius:50%; background:#6366f1; border:2px solid var(--border);">
+                    </div>
                     <span style="font-size: 13px; color: var(--text-secondary);">Pick a color</span>
+                    <input type="hidden" id="input-col-color" value="#6366f1">
                 </div>
             </div>
             <div class="modal-actions">
@@ -504,6 +512,53 @@
             </div>
             <div class="modal-actions">
                 <button class="btn-ghost" id="btn-cancel-move-timestamp">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Custom Color Picker Modal -->
+        <div class="modal hidden" id="modal-color-picker" style="width: 360px;">
+            <div class="cp-header">
+                <h3 class="modal-title">Select Color</h3>
+                <div class="cp-tabs">
+                    <button class="cp-tab active" data-tab="basic">Basic</button>
+                    <button class="cp-tab" data-tab="advanced">Advanced</button>
+                </div>
+            </div>
+
+            <!-- Basic Tab -->
+            <div class="cp-panel active" id="cp-panel-basic">
+                <div class="cp-grid" id="cp-basic-grid">
+                    <!-- Presets injected by JS -->
+                </div>
+            </div>
+
+            <!-- Advanced Tab -->
+            <div class="cp-panel hidden" id="cp-panel-advanced">
+                <div class="cp-saturation" id="cp-saturation">
+                    <div class="cp-saturation-white"></div>
+                    <div class="cp-saturation-black"></div>
+                    <div class="cp-cursor" id="cp-cursor"></div>
+                </div>
+                <div class="cp-controls-row">
+                    <div class="cp-hue-rail" id="cp-hue-rail">
+                        <div class="cp-hue-thumb" id="cp-hue-thumb"></div>
+                    </div>
+                    <div class="cp-preview" id="cp-preview"></div>
+                </div>
+                <div class="cp-inputs">
+                    <div class="cp-input-group">
+                        <label>HEX</label>
+                        <input type="text" id="cp-input-hex" value="#FFFFFF">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button class="btn-ghost" id="btn-cp-reset" style="color: var(--text-muted);">Reset to Default</button>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn-ghost" id="btn-cp-cancel">Cancel</button>
+                    <button class="btn-primary" id="btn-cp-confirm">Select</button>
+                </div>
             </div>
         </div>
 
