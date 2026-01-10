@@ -22,6 +22,7 @@ class WhistlerApp {
         this.player = new Player(this);
         this.ui = new UIManager(this);
         this.modals = new ModalManager(this);
+        this.exportImport = new ExportImportManager(this);
 
         this.init();
     }
@@ -30,8 +31,18 @@ class WhistlerApp {
         this.storage.load();
         this.router.init();
         this.modals.init(); // Restore Modals
+        this.exportImport.init(); // Initialize export/import
         this.ui.setupNavigation();
         this.ui.renderProjectDropdown(); // Initialize Dropdown & Auto-select
+        
+        // Show welcome page if no projects, otherwise go to storage
+        if (this.state.projects.length === 0) {
+            this.router.goTo('welcome');
+        } else if (this.state.activeProjectId) {
+            this.router.openProject(this.state.activeProjectId);
+        } else if (this.state.projects.length > 0) {
+            this.router.openProject(this.state.projects[0].id);
+        }
     }
 }
 
@@ -492,7 +503,9 @@ class Router {
         this.views = {
             storage: document.getElementById('view-storage'),
             collection: document.getElementById('view-collection'),
-            docs: document.getElementById('view-docs')
+            docs: document.getElementById('view-docs'),
+            exportImport: document.getElementById('view-export-import'),
+            welcome: document.getElementById('view-welcome')
         };
     }
 
@@ -503,7 +516,17 @@ class Router {
 
     goTo(viewName) {
         // Hide all
-        Object.values(this.views).forEach(el => el.classList.add('hidden'));
+        Object.values(this.views).forEach(el => {
+            if (el) el.classList.add('hidden');
+        });
+
+        // Check if we should show welcome page instead (only for certain views)
+        if (viewName === 'storage' || viewName === 'docs' || viewName === 'collection') {
+            if (this.app.state.projects.length === 0) {
+                this.goTo('welcome');
+                return;
+            }
+        }
 
         // Logic
         if (viewName === 'projects') {
@@ -549,6 +572,16 @@ class Router {
             this.app.ui.renderDocs();
 
             this.views.docs.classList.remove('hidden');
+        } else if (viewName === 'exportImport') {
+            if (this.views.exportImport) {
+                this.views.exportImport.classList.remove('hidden');
+                // Initialize export/import tab
+                this.app.exportImport.initTabs();
+            }
+        } else if (viewName === 'welcome') {
+            if (this.views.welcome) {
+                this.views.welcome.classList.remove('hidden');
+            }
         }
     }
 
@@ -4937,6 +4970,312 @@ class ModalManager {
             return val.length === 1 ? '0' + val : val;
         };
         return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+}
+
+class ExportImportManager {
+    constructor(app) {
+        this.app = app;
+    }
+
+    init() {
+        // Setup export/import button
+        const btnExportImport = document.getElementById('btn-export-import');
+        if (btnExportImport) {
+            btnExportImport.onclick = () => {
+                this.app.router.goTo('exportImport');
+            };
+        }
+
+        // Setup tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.onclick = () => {
+                const tab = btn.dataset.tab;
+                this.switchTab(tab);
+            };
+        });
+
+        // Export to file
+        const btnExportFile = document.getElementById('btn-export-file');
+        if (btnExportFile) {
+            btnExportFile.onclick = () => this.exportToFile();
+        }
+
+        // Export to URL
+        const btnExportUrl = document.getElementById('btn-export-url');
+        if (btnExportUrl) {
+            btnExportUrl.onclick = () => this.exportToURL();
+        }
+
+        // Import from file
+        const btnImportFile = document.getElementById('btn-import-file');
+        const importFileInput = document.getElementById('import-file-input');
+        if (btnImportFile && importFileInput) {
+            btnImportFile.onclick = () => importFileInput.click();
+            importFileInput.onchange = (e) => this.importFromFile(e.target.files[0]);
+        }
+
+        // Import from URL
+        const btnImportUrl = document.getElementById('btn-import-url');
+        if (btnImportUrl) {
+            btnImportUrl.onclick = () => this.importFromURL();
+        }
+
+        // Copy URL
+        const btnCopyUrl = document.getElementById('btn-copy-url');
+        if (btnCopyUrl) {
+            btnCopyUrl.onclick = () => this.copyURL();
+        }
+
+        // Open URL
+        const btnOpenUrl = document.getElementById('btn-open-url');
+        if (btnOpenUrl) {
+            btnOpenUrl.onclick = () => this.openURL();
+        }
+
+        // Welcome page buttons
+        const btnWelcomeCreate = document.getElementById('btn-welcome-create-project');
+        if (btnWelcomeCreate) {
+            btnWelcomeCreate.onclick = () => {
+                this.app.modals.openProject();
+            };
+        }
+
+        const btnWelcomeImport = document.getElementById('btn-welcome-import');
+        if (btnWelcomeImport) {
+            btnWelcomeImport.onclick = () => {
+                this.app.router.goTo('exportImport');
+                this.switchTab('import');
+            };
+        }
+
+        // Handle URL import on page load
+        this.checkURLImport();
+    }
+
+    initTabs() {
+        // Reset to export tab when opening
+        this.switchTab('export');
+        // Hide URL result
+        const urlResult = document.getElementById('export-url-result');
+        if (urlResult) urlResult.classList.add('hidden');
+        // Clear import errors
+        const importError = document.getElementById('import-error');
+        if (importError) {
+            importError.classList.add('hidden');
+            importError.textContent = '';
+        }
+    }
+
+    switchTab(tab) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if (btn.dataset.tab === tab) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // Update tab panels
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            if (panel.id === `tab-${tab}`) {
+                panel.classList.remove('hidden');
+                panel.classList.add('active');
+            } else {
+                panel.classList.add('hidden');
+                panel.classList.remove('active');
+            }
+        });
+    }
+
+    exportToFile() {
+        const data = this.getExportData();
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `whistler-export-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    exportToURL() {
+        const data = this.getExportData();
+        const json = JSON.stringify(data);
+        const base64 = btoa(unescape(encodeURIComponent(json)));
+        const url = `${window.location.origin}${window.location.pathname}?import=${base64}`;
+        
+        const urlInput = document.getElementById('export-url-input');
+        const urlResult = document.getElementById('export-url-result');
+        if (urlInput && urlResult) {
+            urlInput.value = url;
+            urlResult.classList.remove('hidden');
+        }
+    }
+
+    getExportData() {
+        return {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            projects: this.app.state.projects,
+            files: this.app.state.files,
+            collections: this.app.state.collections,
+            timestamps: this.app.state.timestamps
+        };
+    }
+
+    importFromFile(file) {
+        if (!file) return;
+
+        const fileNameDiv = document.getElementById('import-file-name');
+        if (fileNameDiv) {
+            fileNameDiv.textContent = `Selected: ${file.name}`;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target.result;
+                const data = JSON.parse(text);
+                this.importData(data);
+            } catch (err) {
+                this.showImportError('Invalid file format. Please make sure the file is a valid Whistler export.');
+                console.error('Import error:', err);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async importFromURL() {
+        const urlInput = document.getElementById('import-url-input');
+        if (!urlInput || !urlInput.value.trim()) {
+            this.showImportError('Please enter a valid URL.');
+            return;
+        }
+
+        try {
+            const url = new URL(urlInput.value);
+            const base64 = url.searchParams.get('import');
+            if (!base64) {
+                this.showImportError('Invalid URL format. The URL must contain an "import" parameter.');
+                return;
+            }
+
+            const json = decodeURIComponent(escape(atob(base64)));
+            const data = JSON.parse(json);
+            this.importData(data);
+            urlInput.value = '';
+        } catch (err) {
+            this.showImportError('Failed to import from URL. Please check that the URL is valid.');
+            console.error('Import error:', err);
+        }
+    }
+
+    checkURLImport() {
+        const params = new URLSearchParams(window.location.search);
+        const base64 = params.get('import');
+        if (base64) {
+            try {
+                const json = decodeURIComponent(escape(atob(base64)));
+                const data = JSON.parse(json);
+                
+                // Clear the URL parameter
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Show confirmation before importing
+                if (confirm('Import data from URL? This will replace all existing data.')) {
+                    this.importData(data);
+                    // Navigate to export/import tab to show success
+                    this.app.router.goTo('exportImport');
+                    this.switchTab('import');
+                }
+            } catch (err) {
+                console.error('URL import error:', err);
+                alert('Failed to import data from URL.');
+            }
+        }
+    }
+
+    importData(data) {
+        try {
+            // Validate data structure
+            if (!data || typeof data !== 'object') {
+                throw new Error('Invalid data format');
+            }
+
+            // Clear existing data
+            this.app.state.projects = data.projects || [];
+            this.app.state.files = data.files || [];
+            this.app.state.collections = data.collections || [];
+            this.app.state.timestamps = data.timestamps || [];
+
+            // Reset active states
+            this.app.state.activeProjectId = null;
+            this.app.state.activeFileId = null;
+            this.app.state.activeCollectionId = null;
+
+            // Save to storage
+            this.app.storage.save();
+
+            // Refresh UI
+            this.app.ui.renderProjectDropdown();
+            
+            // Show welcome page if no projects, otherwise go to storage
+            if (this.app.state.projects.length === 0) {
+                this.app.router.goTo('welcome');
+            } else {
+                this.app.router.openProject(this.app.state.projects[0].id);
+            }
+
+            // Show success
+            alert('Data imported successfully!');
+            
+            // Clear errors
+            const importError = document.getElementById('import-error');
+            if (importError) {
+                importError.classList.add('hidden');
+                importError.textContent = '';
+            }
+        } catch (err) {
+            this.showImportError('Failed to import data. The file may be corrupted or in an incompatible format.');
+            console.error('Import error:', err);
+        }
+    }
+
+    showImportError(message) {
+        const errorDiv = document.getElementById('import-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+
+    copyURL() {
+        const urlInput = document.getElementById('export-url-input');
+        if (urlInput) {
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999); // For mobile
+            document.execCommand('copy');
+            const btnCopy = document.getElementById('btn-copy-url');
+            if (btnCopy) {
+                const originalText = btnCopy.innerHTML;
+                btnCopy.innerHTML = '<i class="ph-bold ph-check"></i> <span>Copied!</span>';
+                setTimeout(() => {
+                    btnCopy.innerHTML = originalText;
+                }, 2000);
+            }
+        }
+    }
+
+    openURL() {
+        const urlInput = document.getElementById('export-url-input');
+        if (urlInput && urlInput.value) {
+            window.open(urlInput.value, '_blank');
+        }
     }
 }
 
