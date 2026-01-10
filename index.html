@@ -138,6 +138,22 @@
                     <div class="header-breadcrumb">
                         <h1 id="collection-title">Collection</h1>
                     </div>
+                    <div class="header-actions">
+                        <div class="search-bar-container hidden" id="collection-search-container">
+                            <i class="ph-bold ph-magnifying-glass search-icon-input"></i>
+                            <input type="text" id="collection-search-input" placeholder="Search collection..."
+                                autocomplete="off">
+                        </div>
+                        <div class="header-action-group">
+                            <button id="btn-collection-search" class="btn-action-segment" title="Toggle Search">
+                                <i class="ph-bold ph-magnifying-glass"></i>
+                            </button>
+                            <div class="action-divider"></div>
+                            <button id="btn-add-clip" class="btn-action-segment" title="Add Clip from Video">
+                                <i class="ph-bold ph-plus"></i>
+                            </button>
+                        </div>
+                    </div>
                 </header>
                 <div class="grid-layout" id="collection-items-grid">
                     <!-- Timestamp Cards -->
@@ -275,14 +291,7 @@
                                 </div>
                             </div>
 
-                            <!-- PDF Controls -->
-                            <div id="pdf-controls" class="pdf-controls hidden">
-                                <button class="ctrl-btn-filled" id="btn-pdf-prev" data-tooltip="Previous Page"><i
-                                        class="ph-bold ph-caret-left"></i></button>
-                                <span id="pdf-page-num">1 / 10</span>
-                                <button class="ctrl-btn-filled" id="btn-pdf-next" data-tooltip="Next Page"><i
-                                        class="ph-bold ph-caret-right"></i></button>
-                            </div>
+
 
                             <span class="time-display" id="time-display">0:00 / 0:00</span>
 
@@ -296,6 +305,27 @@
                                 <button class="ctrl-btn-filled" id="btn-fullscreen" data-tooltip="Fullscreen"><i
                                         class="ph-bold ph-corners-out"></i></button>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- PDF Controls (Floating, inside player-stage) -->
+                    <div id="pdf-controls" class="pdf-controls hidden">
+                        <button class="ctrl-btn-filled" id="btn-pdf-zoom-out" data-tooltip="Zoom Out"><i
+                                class="ph-bold ph-minus"></i></button>
+                        <button class="ctrl-btn-filled" id="btn-pdf-zoom-in" data-tooltip="Zoom In"><i
+                                class="ph-bold ph-plus"></i></button>
+                        <div class="pdf-nav-group">
+                            <button class="ctrl-btn-filled" id="btn-pdf-prev" data-tooltip="Previous Page"><i
+                                    class="ph-bold ph-caret-left"></i></button>
+                            <span id="pdf-page-num">1 / 10</span>
+                            <button class="ctrl-btn-filled" id="btn-pdf-next" data-tooltip="Next Page"><i
+                                    class="ph-bold ph-caret-right"></i></button>
+                        </div>
+                        <div class="pdf-nav-group">
+                            <button class="ctrl-btn-filled" id="btn-pdf-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
+                                    class="ph-bold ph-sidebar-simple"></i></button>
+                            <button class="ctrl-btn-filled" id="btn-pdf-fullscreen" data-tooltip="Fullscreen"><i
+                                    class="ph-bold ph-corners-out"></i></button>
                         </div>
                     </div>
                 </div> <!-- End player-stage -->

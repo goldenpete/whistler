@@ -102,11 +102,12 @@ class StorageManager {
         return this.addFile(name, null, 'folder', parentId);
     }
 
-    addCollection(name, color) {
+    addCollection(name, color, parentId = null) {
         if (!this.app.state.activeProjectId) return;
         const c = {
             id: crypto.randomUUID(),
             projectId: this.app.state.activeProjectId,
+            parentId,
             name,
             color,
             created: Date.now()
@@ -312,11 +313,24 @@ class Player {
             pdfPageNum: document.getElementById('pdf-page-num'),
             pdfPopover: document.getElementById('pdf-popover'),
             btnAddMark: document.getElementById('btn-add-mark'),
+
+            // PDF Zoom Buttons (inside pdf-controls now)
+            btnPdfZoomIn: document.getElementById('btn-pdf-zoom-in'),
+            btnPdfZoomOut: document.getElementById('btn-pdf-zoom-out'),
         };
 
         this.currentFile = null;
         this.lastVolume = 1;
         this.showRemainingTime = false; // Toggle state
+        this.pdfZoomLevel = 1.0;
+
+        // Bind PDF Zoom
+        if (this.els.btnPdfZoomIn) {
+            this.els.btnPdfZoomIn.onclick = () => this.changeZoom(0.25);
+        }
+        if (this.els.btnPdfZoomOut) {
+            this.els.btnPdfZoomOut.onclick = () => this.changeZoom(-0.25);
+        }
 
         // PDF State
         this.pdfDoc = null;
@@ -341,6 +355,12 @@ class Player {
         if (this.els.video) this.els.video.onclick = () => this.togglePlay();
         if (this.els.btnFullscreen) this.els.btnFullscreen.onclick = () => this.toggleFullscreen();
         if (this.els.btnSidebarToggle) this.els.btnSidebarToggle.onclick = () => this.toggleSidebar();
+
+        // PDF-specific buttons (inside pdf-controls bar)
+        const btnPdfSidebar = document.getElementById('btn-pdf-sidebar-toggle');
+        const btnPdfFullscreen = document.getElementById('btn-pdf-fullscreen');
+        if (btnPdfSidebar) btnPdfSidebar.onclick = () => this.toggleSidebar();
+        if (btnPdfFullscreen) btnPdfFullscreen.onclick = () => this.toggleFullscreen();
 
         // Time Display Toggle
         if (this.els.timeDisplay) {
@@ -874,6 +894,7 @@ class Player {
 
     async renderPDF(url) {
         this.pdfPageNum = 1;
+        this.pdfZoomLevel = 1.0; // Reset zoom on new file
         this.els.pdfTextLayer.innerHTML = '';
         const loadingTask = pdfjsLib.getDocument(url);
         this.pdfDoc = await loadingTask.promise;
@@ -885,7 +906,7 @@ class Player {
         const page = await this.pdfDoc.getPage(num);
         const availableWidth = this.els.pdfStage.clientWidth - 80;
         const viewport = page.getViewport({ scale: 1 });
-        const scale = availableWidth / viewport.width;
+        const scale = (availableWidth / viewport.width) * this.pdfZoomLevel;
         const finalViewport = page.getViewport({ scale: scale });
 
         const canvas = this.els.pdfRender;
@@ -921,6 +942,15 @@ class Player {
     nextPage() {
         if (this.pdfPageNum < this.pdfDoc.numPages) {
             this.pdfPageNum++;
+            this.renderPage(this.pdfPageNum);
+        }
+    }
+
+    changeZoom(delta) {
+        const newZoom = this.pdfZoomLevel + delta;
+        // Clamp zoom between 0.5x and 3.0x
+        if (newZoom >= 0.5 && newZoom <= 3.0) {
+            this.pdfZoomLevel = newZoom;
             this.renderPage(this.pdfPageNum);
         }
     }
@@ -1397,6 +1427,7 @@ class UIManager {
     setupNavigation() {
         // this.setupColorPicker(); // Removed custom nav setup for picker
         this.setupSearch();
+        this.initCollectionSearch();
 
         // Project Dropdown Logic
         this.setupCustomDropdown('project-dropdown', (value) => {
@@ -1481,6 +1512,25 @@ class UIManager {
             this.renderStorage();
             toggleAddBar(false);
         };
+
+        // Add Folder button in Collection View
+        const btnAddClip = document.getElementById('btn-add-clip');
+        if (btnAddClip) {
+            btnAddClip.onclick = () => {
+                if (!this.app.state.activeCollectionId) return;
+                // Prompt for new sub-collection/folder name
+                this.app.modals.prompt("New Folder", "Folder Name", (name) => {
+                    if (name) {
+                        // Get current collection's color as default
+                        const currentCol = this.app.state.collections.find(c => c.id === this.app.state.activeCollectionId);
+                        const color = currentCol ? currentCol.color : '#6366f1';
+                        // Create as sub-collection with parentId
+                        this.app.storage.addCollection(name, color, this.app.state.activeCollectionId);
+                        this.renderCollectionView();
+                    }
+                });
+            };
+        }
     }
 
 
@@ -1489,7 +1539,7 @@ class UIManager {
         const toggleBtn = document.getElementById('btn-search-toggle');
         const container = document.getElementById('search-bar-container');
         const input = document.getElementById('search-input');
-        const results = document.getElementById('search-results');
+        // const results = document.getElementById('search-results'); // No longer using dropdown results
 
         // Exclusive toggling
         const closeAddBar = () => {
@@ -1505,6 +1555,8 @@ class UIManager {
                 input.focus();
             } else {
                 container.classList.add('hidden');
+                input.value = '';
+                this.renderStorage(); // Reset view
             }
         };
 
@@ -1514,29 +1566,15 @@ class UIManager {
                 container.classList.add('hidden');
                 toggleBtn.style.display = 'flex';
                 input.value = '';
-                results.classList.add('hidden');
+                // results.classList.add('hidden');
+                this.renderStorage(); // Reset view
             }
         });
 
-        input.oninput = (e) => this.handleSearch(e.target.value);
+        input.oninput = (e) => this.renderStorage(e.target.value);
     }
 
-    handleSearch(query) {
-        const resultsContainer = document.getElementById('search-results');
-        if (!query || query.trim().length === 0) {
-            resultsContainer.classList.add('hidden');
-            resultsContainer.innerHTML = '';
-            return;
-        }
-
-        const term = query.toLowerCase();
-        // Search all files active project
-        const projectFiles = this.app.state.files.filter(f => f.projectId === this.app.state.activeProjectId);
-
-        const matches = projectFiles.filter(f => f.name.toLowerCase().includes(term));
-
-        this.renderSearchResults(matches.slice(0, 10)); // Limit 10
-    }
+    // handleSearch and renderSearchResults are deprecated by unified renderStorage logic
 
     renderSearchResults(matches) {
         const container = document.getElementById('search-results');
@@ -1612,8 +1650,11 @@ class UIManager {
             onSelect(value);
             menu.classList.add('hidden');
 
-            menu.querySelectorAll('.custom-select-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
+            // Only update UI if the DOM wasn't fully replaced by onSelect
+            if (menu.contains(item)) {
+                menu.querySelectorAll('.custom-select-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+            }
         };
 
         document.addEventListener('click', (e) => {
@@ -1673,33 +1714,100 @@ class UIManager {
     renderCollectionsList() {
         const list = document.getElementById('collections-list');
         list.innerHTML = '';
-        const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId);
+        // Only show top-level collections (no parentId) in sidebar
+        const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId && !c.parentId);
 
         cols.forEach(c => {
-            const btn = document.createElement('button');
-            btn.className = 'nav-item';
+            const item = document.createElement('div');
+            item.className = 'nav-item sidebar-collection-item'; // Added specific class for styling
 
             // Set dynamic color variable
             if (c.color) {
-                btn.style.setProperty('--item-color', c.color);
+                item.style.setProperty('--item-color', c.color);
             }
 
             if (c.id === this.app.state.activeCollectionId) {
-                btn.classList.add('active');
+                item.classList.add('active');
             }
-            btn.innerHTML = `<span style="color:${c.color || '#6366f1'}">●</span> ${c.name}`;
-            btn.onclick = () => {
+
+            // Name content
+            const content = document.createElement('div');
+            content.className = 'nav-item-content';
+            content.style.cssText = 'display:flex; align-items:center; gap:8px; flex:1; overflow:hidden;';
+            content.innerHTML = `<span style="color:${c.color || '#6366f1'}">●</span> <span class="nav-item-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.name}</span>`;
+            item.appendChild(content);
+
+            // Actions
+            const actions = document.createElement('div');
+            actions.className = 'sidebar-actions';
+            actions.innerHTML = `
+                <button class="sidebar-action-btn" title="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="sidebar-action-btn sidebar-action-danger" title="Delete"><i class="ph-bold ph-trash"></i></button>
+            `;
+            item.appendChild(actions);
+
+            // Click behavior
+            item.onclick = (e) => {
+                // If clicked on action buttons, don't navigate
+                if (e.target.closest('.sidebar-actions')) return;
+
                 this.app.router.openCollection(c.id);
-                // Manually update active state to reflect immediately if router doesn't full re-render sidebar
                 this.renderCollectionsList();
             };
-            list.appendChild(btn);
+
+            // Bind actions
+            const editBtn = actions.querySelector('[title="Rename"]');
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.prompt("Rename Collection", c.name, (newName) => {
+                    if (newName) {
+                        c.name = newName;
+                        this.app.storage.save();
+                        this.renderCollectionsList();
+                        if (this.app.state.activeCollectionId === c.id) {
+                            this.renderCollectionView(); // Update title/breadcrumbs if active
+                        }
+                    }
+                });
+            };
+
+            const delBtn = actions.querySelector('[title="Delete"]');
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.confirm("Delete Collection", "Are you sure? This will delete all clips inside.", () => {
+                    this.app.state.collections = this.app.state.collections.filter(x => x.id !== c.id);
+                    // Also delete sub-collections? 
+                    // And timestamps?
+                    this.app.state.timestamps = this.app.state.timestamps.filter(t => t.collectionId !== c.id);
+                    // Recursive delete of sub-cols is tricky if flat list, but parentId handles reference.
+                    // Ideally we should delete children too.
+                    const deleteChildren = (parentId) => {
+                        const children = this.app.state.collections.filter(k => k.parentId === parentId);
+                        children.forEach(child => {
+                            this.app.state.collections = this.app.state.collections.filter(k => k.id !== child.id);
+                            this.app.state.timestamps = this.app.state.timestamps.filter(t => t.collectionId !== child.id);
+                            deleteChildren(child.id);
+                        });
+                    };
+                    deleteChildren(c.id);
+
+                    this.app.storage.save();
+                    this.renderCollectionsList();
+                    if (this.app.state.activeCollectionId === c.id) {
+                        this.app.router.openStorage(); // Go back home
+                    }
+                });
+            };
+
+            list.appendChild(item);
         });
     }
 
-    renderStorage() {
+    renderStorage(searchQuery = '') {
         const grid = document.getElementById('storage-grid');
         grid.innerHTML = '';
+
+        const query = searchQuery ? searchQuery.toLowerCase().trim() : '';
 
         // Breadcrumbs
         this.renderBreadcrumbs();
@@ -1709,7 +1817,69 @@ class UIManager {
             return;
         }
 
-        const files = this.app.storage.getItems(this.app.state.activeProjectId, this.app.state.currentFolderId);
+        let files = [];
+
+        if (query) {
+            // DEEP SEARCH: Scope to current folder (or root if null)
+            const currentScopeId = this.app.state.currentFolderId;
+
+            // Helper: Get all descendant folder IDs starting from a parent
+            // If parent is null (Propject Root), we get ALL folders in project
+            const getDescendantFolders = (rootId) => {
+                let results = [];
+                // If rootId is null, start with all top-level folders? No, just all Project folders if Root.
+                // Actually to make it easy: Get ALL project folders, build hierarchy?
+                // Or recursive from rootId.
+
+                const children = this.app.state.files.filter(f => f.projectId === this.app.state.activeProjectId && f.type === 'folder' && f.parentId === (rootId || null));
+
+                children.forEach(child => {
+                    results.push(child);
+                    results = results.concat(getDescendantFolders(child.id));
+                });
+                return results;
+            }
+
+            let scopeFolders = [];
+            // If we are at root, we search EVERYTHING in project
+            if (!currentScopeId) {
+                // All folders in project
+                scopeFolders = this.app.state.files.filter(f => f.projectId === this.app.state.activeProjectId && f.type === 'folder');
+            } else {
+                // Current folder + descendants
+                scopeFolders = getDescendantFolders(currentScopeId);
+                // We also need the current folder itself? No, we filter files by parentId
+            }
+
+            // Files to search: 
+            // If Root: All files in project
+            // If Folder: All files where parentId is in [currentScopeId, ...descendants]
+
+            const scopeIds = scopeFolders.map(f => f.id);
+            if (currentScopeId) scopeIds.push(currentScopeId);
+
+            let allProjectFiles = this.app.state.files.filter(f => f.projectId === this.app.state.activeProjectId);
+
+            // Filter by Scope
+            if (currentScopeId) {
+                allProjectFiles = allProjectFiles.filter(f =>
+                    (f.type === 'folder' && scopeIds.includes(f.id)) || // Include scoped folders
+                    (f.parentId && scopeIds.includes(f.parentId)) || // Include files in scoped folders
+                    (f.parentId === currentScopeId) // Direct children
+                );
+            }
+
+            files = allProjectFiles.filter(f => f.name.toLowerCase().includes(query));
+
+        } else {
+            // STANDARD VIEW
+            files = this.app.storage.getItems(this.app.state.activeProjectId, this.app.state.currentFolderId);
+        }
+
+        if (query && files.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color: var(--text-muted); padding-top: 40px;">No results found for "${searchQuery}"</div>`;
+            return;
+        }
 
         files.forEach(f => {
             let icon = 'ph-file';
@@ -1747,12 +1917,24 @@ class UIManager {
             const desc = f.description || '';
             const truncDesc = desc.length > 50 ? desc.substring(0, 50) + '...' : desc;
 
+            // Context Badge Logic (Deep Search)
+            let contextHtml = '';
+            if (query && f.parentId !== this.app.state.currentFolderId) {
+                // It's from a subfolder (or random place if root search)
+                const parent = this.app.state.files.find(p => p.id === f.parentId);
+                if (parent) {
+                    contextHtml = `<div style="font-size:10px; opacity:0.7; margin-bottom:4px; display:flex; align-items:center; gap:4px;"><i class="ph-bold ph-folder" style="font-size:10px;"></i> ${parent.name}</div>`;
+                }
+            }
+
+
             // Different layout for folder vs file? reusing same for consistency
             card.innerHTML = `
                 <div class="card-thumbnail">
-                    <i class="ph-duotone ${icon} card-thumb-icon" style="${isFolder ? 'color: var(--accent);' : ''}"></i>
+                    <i class="ph-duotone ${icon} card-thumb-icon" style="${isFolder ? `color: ${f.color || 'var(--accent)'};` : ''}"></i>
                 </div>
                 <div class="card-text">
+                    ${contextHtml}
                     <span class="card-title">${f.name}</span>
                     <span class="card-description">${isFolder ? 'Folder' : (truncDesc || 'No description')}</span>
                 </div>
@@ -1888,26 +2070,32 @@ class UIManager {
     renderBreadcrumbs() {
         const container = document.getElementById('breadcrumb-list');
         container.innerHTML = '';
+        // Match Collection Breadcrumb container styles
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '8px';
 
         const path = [];
+
+        // 1. Root "Storage"
+        path.push({ type: 'storage', name: 'Storage', id: 'ROOT' });
+
+        // 2. Project Root
+        if (this.app.state.activeProjectId) {
+            const proj = this.app.state.projects.find(p => p.id === this.app.state.activeProjectId);
+            path.push({ type: 'project', name: proj ? proj.name : 'Unknown Project', id: null });
+        }
+
+        // 3. Folders
         let curr = this.app.state.currentFolderId;
-
-        // Build Path: [Root, ...Folders]
-        // Root Item
-        const rootName = this.app.state.activeProjectId ?
-            this.app.state.projects.find(p => p.id === this.app.state.activeProjectId)?.name : "Storage";
-
-        path.push({ id: null, name: rootName || "Storage" });
-
-        // Traverse Up
         const tempStack = [];
         while (curr) {
             const f = this.app.state.files.find(x => x.id === curr);
             if (f) {
-                tempStack.unshift({ id: f.id, name: f.name });
+                tempStack.unshift({ type: 'folder', id: f.id, name: f.name });
                 curr = f.parentId;
             } else {
-                curr = null;
+                curr = null; // Break if not found
             }
         }
 
@@ -1917,26 +2105,51 @@ class UIManager {
             const isLast = index === fullPath.length - 1;
 
             const el = document.createElement('div');
-            el.className = `breadcrumb-item ${isLast ? 'active' : ''}`;
+            el.className = isLast ? 'breadcrumb-current' : 'breadcrumb-link';
             el.textContent = item.name;
+
+            // Apply Styles matching renderCollectionBreadcrumbs
+            el.style.fontSize = isLast ? '24px' : '14px';
+            el.style.fontWeight = isLast ? '700' : '500';
+            el.style.color = isLast ? 'var(--text-primary)' : 'var(--text-secondary)';
+            if (!isLast) el.style.cursor = 'pointer';
 
             if (!isLast) {
                 el.onclick = () => {
-                    this.app.state.currentFolderId = item.id;
-                    this.renderStorage();
+                    if (item.type === 'storage') {
+                        // Go back to "No Project" / Project Selection?
+                        this.app.state.activeProjectId = null;
+                        this.app.state.currentFolderId = null;
+                        this.app.ui.renderProjectDropdown(); // Update dropdown UI
+                        this.renderStorage();
+                    } else if (item.type === 'project') {
+                        this.app.state.currentFolderId = null;
+                        this.renderStorage();
+                    } else {
+                        this.app.state.currentFolderId = item.id;
+                        this.renderStorage();
+                    }
                 };
 
                 // Drag Drop Target
                 el.ondragover = (e) => {
                     e.preventDefault();
-                    el.classList.add('drag-over');
+                    if (item.type !== 'storage') { // Don't strip-tease drop on Storage label
+                        el.style.color = 'var(--accent)';
+                    }
                 };
-                el.ondragleave = () => el.classList.remove('drag-over');
+                el.ondragleave = () => {
+                    el.style.color = 'var(--text-secondary)';
+                };
                 el.ondrop = (e) => {
                     e.preventDefault();
-                    el.classList.remove('drag-over');
+                    el.style.color = 'var(--text-secondary)';
+
+                    if (item.type === 'storage') return; // Cannot drop on "Storage"
+
                     const draggedId = e.dataTransfer.getData('text/plain');
                     if (draggedId) {
+                        // Move to folder ID (item.id). For Project root, item.id is null, which works for moveFile(id, null)
                         this.app.storage.moveFile(draggedId, item.id);
                         this.renderStorage();
                     }
@@ -1949,6 +2162,8 @@ class UIManager {
                 const sep = document.createElement('span');
                 sep.className = 'breadcrumb-separator';
                 sep.innerHTML = '<i class="ph-bold ph-caret-right"></i>';
+                sep.style.color = 'var(--text-muted)';
+                sep.style.fontSize = '12px';
                 container.appendChild(sep);
             }
         });
@@ -2009,22 +2224,318 @@ class UIManager {
         video.src = safeUrl;
     }
 
-    renderCollectionView() {
+    initCollectionSearch() {
+        const btnSearch = document.getElementById('btn-collection-search');
+        const container = document.getElementById('collection-search-container');
+        const input = document.getElementById('collection-search-input');
+
+        if (btnSearch && container && input) {
+            btnSearch.onclick = (e) => {
+                e.stopPropagation();
+                // Toggle Hidden (display:none) instead of collapsed
+                const isHidden = container.classList.contains('hidden');
+
+                if (isHidden) {
+                    container.classList.remove('hidden');
+                    input.focus();
+                } else {
+                    container.classList.add('hidden');
+                    input.value = '';
+                    this.renderCollectionView(); // Reset on close
+                }
+            };
+
+            input.oninput = (e) => {
+                const query = e.target.value;
+                this.renderCollectionView(query);
+            };
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target) && !btnSearch.contains(e.target) && !container.classList.contains('hidden')) {
+                    container.classList.add('hidden');
+                    input.value = '';
+                    this.renderCollectionView();
+                }
+            });
+        }
+    }
+
+    renderCollectionBreadcrumbs() {
+        const container = document.querySelector('#view-collection .header-breadcrumb');
+        container.innerHTML = '';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '8px';
+
+        const path = [];
+        let curr = this.app.state.collections.find(c => c.id === this.app.state.activeCollectionId);
+
+        // Build path up to root
+        while (curr) {
+            path.unshift({ id: curr.id, name: curr.name });
+            if (curr.parentId) {
+                curr = this.app.state.collections.find(c => c.id === curr.parentId);
+            } else {
+                curr = null;
+            }
+        }
+
+        // Add "Collection" root
+        path.unshift({ id: null, name: 'Collections' });
+
+        path.forEach((item, index) => {
+            const isLast = index === path.length - 1;
+
+            const el = document.createElement('div');
+            el.className = isLast ? 'breadcrumb-current' : 'breadcrumb-link';
+            el.textContent = item.name;
+
+            // Base styles
+            el.style.fontSize = isLast ? '24px' : '14px';
+            el.style.fontWeight = isLast ? '700' : '500';
+            el.style.color = isLast ? 'var(--text-primary)' : 'var(--text-secondary)';
+            if (!isLast) el.style.cursor = 'pointer';
+
+            if (!isLast) {
+                el.onclick = () => {
+                    if (item.id === null) {
+                        // Go back to main storage or specific root view? 
+                        // For now, maybe just do nothing or close collection view?
+                        // Actually, if we are in collection view, "Collections" root might mean top level
+                        // But we don't have a "Root Collection View".
+                        // So let's make the FIRST actual collection the root of this view effectively 
+                        // or provide a way to go to "All Collections" (which is effectively Storage view filtered?)
+
+                        // User request: "port breadcrumb system over". 
+                        // If item.id is null, it's the virtual root.
+                        // Let's just navigate to the top-most parent of the current chain?
+                        // Or if I click "Collections", maybe it should close the viewer?
+                        // Let's leave it non-clickable for virtual root for now unless we have a "Root Collection" concept.
+                    } else {
+                        this.app.router.openCollection(item.id);
+                    }
+                };
+
+                // Drag Drop Target (Move to parent)
+                el.ondragover = (e) => {
+                    e.preventDefault();
+                    el.style.color = 'var(--accent)';
+                };
+                el.ondragleave = () => {
+                    el.style.color = 'var(--text-secondary)';
+                };
+                el.ondrop = (e) => {
+                    e.preventDefault();
+                    el.style.color = 'var(--text-secondary)';
+
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    const draggedType = e.dataTransfer.getData('item-type');
+
+                    if (!draggedId) return;
+
+                    // Support moving both collections and timestamps
+                    if (draggedType === 'collection') {
+                        // Move sub-collection to this parent
+                        if (draggedId !== item.id) {
+                            const c = this.app.state.collections.find(x => x.id === draggedId);
+                            if (c) {
+                                c.parentId = item.id; // item.id can be null (root)
+                                this.app.storage.save();
+                                this.renderCollectionView();
+                            }
+                        }
+                    } else if (draggedType === 'timestamp') {
+                        // Move timestamp to this collection
+                        if (item.id) {
+                            this.app.storage.updateTimestamp(draggedId, { collectionId: item.id });
+                            this.renderCollectionView();
+                        }
+                    }
+                };
+            }
+
+            container.appendChild(el);
+
+            if (!isLast) {
+                const sep = document.createElement('span');
+                sep.innerHTML = '<i class="ph-bold ph-caret-right"></i>';
+                sep.style.color = 'var(--text-muted)';
+                sep.style.fontSize = '12px';
+                container.appendChild(sep);
+            }
+        });
+    }
+
+    renderCollectionView(searchQuery = '') {
         const grid = document.getElementById('collection-items-grid');
-        const title = document.getElementById('collection-title');
+        // Breadcrumbs replace the simple title
+        // update header directly in renderCollectionBreadcrumbs
+
         const col = this.app.state.collections.find(c => c.id === this.app.state.activeCollectionId);
         if (!col) return;
 
-        title.textContent = col.name;
+        this.renderCollectionBreadcrumbs();
         grid.innerHTML = '';
 
-        const ts = this.app.state.timestamps.filter(t => t.collectionId === col.id);
+        // Helper for action button binding
+        const bindAction = (card, sel, fn) => {
+            const el = card.querySelector(sel);
+            if (el) el.onclick = (e) => { e.stopPropagation(); fn(e); };
+        };
 
-        ts.forEach(t => {
+        const query = searchQuery.toLowerCase().trim();
+
+        let foldersToRender = [];
+        let timestampsToRender = [];
+
+        if (query) {
+            // DEEP SEARCH MODE
+            // 1. Gather all descendant collection IDs
+            const getAllSubCols = (rootId) => {
+                let results = [];
+                const children = this.app.state.collections.filter(c => c.parentId === rootId);
+                children.forEach(child => {
+                    results.push(child);
+                    results = results.concat(getAllSubCols(child.id));
+                });
+                return results;
+            }
+            const allDescendants = getAllSubCols(col.id);
+            const allScopeIds = [col.id, ...allDescendants.map(c => c.id)];
+
+            // 2. Filter Folders (Descendants)
+            foldersToRender = allDescendants.filter(c => c.name.toLowerCase().includes(query));
+
+            // 3. Filter Timestamps (In scope)
+            timestampsToRender = this.app.state.timestamps.filter(t =>
+                allScopeIds.includes(t.collectionId) &&
+                t.note && t.note.toLowerCase().includes(query)
+            );
+
+        } else {
+            // STANDARD HIERARCHY MODE
+            foldersToRender = this.app.state.collections.filter(c => c.parentId === col.id);
+            timestampsToRender = this.app.state.timestamps.filter(t => t.collectionId === col.id);
+        }
+
+        // RENDER FOLDERS
+        foldersToRender.forEach(subCol => {
+            const card = document.createElement('div');
+            card.className = 'card card-folder';
+            card.style.setProperty('--card-accent', subCol.color);
+            card.draggable = true;
+            card.dataset.id = subCol.id;
+            card.dataset.type = 'collection';
+
+            card.innerHTML = `
+                <div class="card-thumbnail">
+                    <i class="ph-bold ph-folder card-thumb-icon"></i>
+                </div>
+                <span class="card-title">${subCol.name}</span>
+                <span class="card-meta">${this.app.state.timestamps.filter(t => t.collectionId === subCol.id).length} clips</span>
+                <div class="collection-actions">
+                    <button class="card-action-btn" data-action="edit-title" data-tooltip="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
+                    <button class="card-action-btn" data-action="color" data-tooltip="Color"><i class="ph-bold ph-palette"></i></button>
+                    <button class="card-action-btn card-action-danger" data-action="delete" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
+                </div>
+            `;
+
+            // Add context if deep search
+            if (query && subCol.parentId !== col.id) {
+                // Maybe show parent name? 
+                // For now just flat list is fine as per "searches sub-folders"
+            }
+
+            card.onclick = (e) => {
+                if (e.target.closest('.collection-actions')) return;
+                this.app.router.openCollection(subCol.id);
+            };
+
+            // Drag handlers for sub-collection
+            card.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', subCol.id);
+                e.dataTransfer.setData('item-type', 'collection');
+                e.dataTransfer.effectAllowed = 'move';
+                card.classList.add('dragging');
+            };
+            card.ondragend = () => {
+                card.classList.remove('dragging');
+                grid.querySelectorAll('.card').forEach(c => c.classList.remove('drag-over-folder'));
+            };
+            card.ondragover = (e) => {
+                e.preventDefault();
+                if (!card.classList.contains('dragging')) {
+                    card.classList.add('drag-over-folder');
+                }
+            };
+            card.ondragleave = () => card.classList.remove('drag-over-folder');
+            card.ondrop = (e) => {
+                e.preventDefault();
+                card.classList.remove('drag-over-folder');
+                const draggedId = e.dataTransfer.getData('text/plain');
+                const draggedType = e.dataTransfer.getData('item-type');
+                if (draggedId === subCol.id) return;
+
+                if (draggedType === 'timestamp') {
+                    // Move timestamp into this sub-collection
+                    this.app.storage.updateTimestamp(draggedId, { collectionId: subCol.id });
+                    this.renderCollectionView();
+                }
+            };
+
+            // Action buttons for sub-collection
+            bindAction(card, '[data-action="edit-title"]', () => {
+                this.app.modals.prompt("Rename Folder", subCol.name, (newName) => {
+                    if (newName) {
+                        const c = this.app.state.collections.find(x => x.id === subCol.id);
+                        if (c) { c.name = newName; this.app.storage.save(); }
+                        this.renderCollectionView(); // This might reset search if not careful? 
+                        // Actually renderCollectionView stores no state, so search clears. 
+                        // But user action usually implies "done searching". 
+                        // To keep search, we'd need to pass query back. 
+                        // For now, accept reset.
+                    }
+                });
+            });
+            bindAction(card, '[data-action="color"]', () => {
+                this.app.modals.openColorPicker(subCol.color, (newColor) => {
+                    const c = this.app.state.collections.find(x => x.id === subCol.id);
+                    if (c) { c.color = newColor || '#6366f1'; this.app.storage.save(); }
+                    this.renderCollectionView();
+                });
+            });
+            bindAction(card, '[data-action="delete"]', () => {
+                this.app.modals.confirm("Delete Folder", "This will delete the folder and all clips inside. Are you sure?", () => {
+                    // Delete all timestamps in this sub-collection
+                    this.app.state.timestamps = this.app.state.timestamps.filter(t => t.collectionId !== subCol.id);
+                    // Delete the sub-collection
+                    this.app.state.collections = this.app.state.collections.filter(c => c.id !== subCol.id);
+                    this.app.storage.save();
+                    this.renderCollectionView();
+                });
+            });
+
+            grid.appendChild(card);
+        });
+
+        // RENDER TIMESTAMPS
+        if (query && timestampsToRender.length === 0 && foldersToRender.length === 0) {
+            grid.innerHTML += `<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted)">No results found for "${query}"</div>`;
+        }
+
+        timestampsToRender.forEach(t => {
             const file = this.app.state.files.find(f => f.id === t.fileId);
+            // Resolve source collection for color context
+            const sourceCol = this.app.state.collections.find(c => c.id === t.collectionId);
+            const displayColor = sourceCol ? (sourceCol.color || '#6366f1') : col.color;
+
             const card = document.createElement('div');
             card.className = 'card collection-card';
-            card.style.borderColor = col.color;
+            card.style.borderColor = displayColor;
+            card.draggable = true;
+            card.dataset.id = t.id;
+            card.dataset.type = 'timestamp';
 
             // Background Preview
             const bg = document.createElement('div');
@@ -2038,18 +2549,83 @@ class UIManager {
             // Content
             const content = document.createElement('div');
             content.className = 'card-content';
+
+            // Context Badge implementation
+            let contextHtml = '';
+            if (sourceCol && sourceCol.id !== col.id) {
+                contextHtml = `<span style="font-size:11px; padding:2px 6px; border-radius:4px; background:${displayColor}20; color:${displayColor}; margin-right:6px; font-weight:600;">${sourceCol.name}</span>`;
+            }
+
             content.innerHTML = `
-                <span class="card-title" style="font-size:14px;">"${t.note}"</span>
+                <div style="display:flex; align-items:center;">
+                    ${contextHtml}
+                    <span class="card-meta" style="color:${displayColor}">${this.app.player.fmt(t.start)}</span>
+                </div>
+                <span class="card-title" style="font-size:14px; margin-top:4px;">"${t.note}"</span>
                 <span class="card-meta">${file ? file.name : 'Unknown File'}</span>
-                <span class="card-meta" style="color:${col.color}">${this.app.player.fmt(t.start)}</span>
             `;
             card.appendChild(content);
 
-            card.onclick = () => {
+            // Action buttons for timestamp
+            const actions = document.createElement('div');
+            actions.className = 'collection-actions';
+            actions.innerHTML = `
+                <button class="card-action-btn" data-action="edit-note" data-tooltip="Edit Note"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="card-action-btn" data-action="move" data-tooltip="Move to Collection"><i class="ph-bold ph-folder-notch-plus"></i></button>
+                <button class="card-action-btn card-action-danger" data-action="delete" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
+            `;
+            card.appendChild(actions);
+
+            card.onclick = (e) => {
+                if (e.target.closest('.collection-actions')) return;
                 if (file) {
                     this.app.player.loadTimestamp(t, col);
                 }
             };
+
+            // Drag handlers for timestamp
+            card.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', t.id);
+                e.dataTransfer.setData('item-type', 'timestamp');
+                e.dataTransfer.effectAllowed = 'move';
+                card.classList.add('dragging');
+            };
+            card.ondragend = () => {
+                card.classList.remove('dragging');
+                grid.querySelectorAll('.card').forEach(c => c.classList.remove('drag-over-folder'));
+            };
+            card.ondragover = (e) => e.preventDefault();
+            card.ondragleave = () => { };
+            card.ondrop = (e) => {
+                e.preventDefault();
+                // Reorder logic (simplified)
+                const draggedId = e.dataTransfer.getData('text/plain');
+                const draggedType = e.dataTransfer.getData('item-type');
+                if (draggedId === t.id || draggedType !== 'timestamp') return;
+
+                // Simple reorder: swap positions? For now just visual feedback
+                // Full reorder would require order property on timestamps
+            };
+
+            // Action button handlers for timestamp
+            bindAction(card, '[data-action="edit-note"]', () => {
+                this.app.modals.prompt("Edit Note", t.note, (newNote) => {
+                    if (newNote !== null) {
+                        this.app.storage.updateTimestamp(t.id, { note: newNote });
+                        this.renderCollectionView();
+                    }
+                });
+            });
+            bindAction(card, '[data-action="move"]', () => {
+                this.app.modals.openMoveTimestamp(t);
+            });
+            bindAction(card, '[data-action="delete"]', () => {
+                this.app.modals.confirm("Delete Clip", "Are you sure you want to delete this clip?", () => {
+                    this.app.storage.deleteTimestamp(t.id);
+                    this.renderCollectionView();
+                });
+            });
+
             grid.appendChild(card);
         });
     }
@@ -2074,40 +2650,129 @@ class ModalManager {
 
         list.innerHTML = '';
 
-        // Populate collections
+        // Populate collections - Separated Categories (User Request)
         const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId);
+        const topLevel = cols.filter(c => !c.parentId);
+        const subFolders = cols.filter(c => c.parentId);
 
-        cols.forEach(c => {
-            if (c.id === timestamp.collectionId) return; // Skip current
+        // Clear default class from container to remove single-box style
+        list.className = '';
+        list.style.cssText = 'display: flex; flex-direction: column; gap: 4px; max-height: 400px; overflow-y: auto; padding-right: 4px;';
 
+        // Helper to create list item
+        const createItem = (c) => {
+            const isCurrent = c.id === timestamp.collectionId;
             const div = document.createElement('div');
             div.className = 'folder-select-item';
-            div.style.borderLeft = `3px solid ${c.color}`;
+            if (isCurrent) div.classList.add('current-folder');
+
             div.innerHTML = `
-                <i class="ph-bold ph-folder"></i>
+                <i class="ph-fill ph-folder" style="color: ${c.color || 'var(--text-secondary)'}"></i>
                 <span>${c.name}</span>
             `;
 
-            div.onclick = (e) => {
-                e.stopPropagation();
-                // Confirm move
-                console.log("Moving timestamp", timestamp.id, "to collection", c.id);
-                this.app.storage.updateTimestamp(timestamp.id, { collectionId: c.id });
+            if (isCurrent) {
+                div.innerHTML += `<span class="folder-path-context">Current</span>`;
+            } else {
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    this.app.storage.updateTimestamp(timestamp.id, { collectionId: c.id });
+                    this.close();
+                    this.app.player.exitCollectionMode();
+                    this.app.player.close();
+                    this.app.router.openCollection(c.id);
+                };
+            }
+            return div;
+        };
 
-                // Close modal and exit collection view
-                this.close();
-                this.app.player.exitCollectionMode();
-                this.app.player.close();
+        // Helper to create a section
+        const createSection = (title, items) => {
+            if (items.length === 0) return;
 
-                // Go to the new collection
-                this.app.router.openCollection(c.id);
-            };
+            // Header (Outside box)
+            const header = document.createElement('div');
+            header.className = 'context-label'; // Re-use existing label style
+            header.style.marginTop = '16px';
+            header.style.marginBottom = '8px';
+            header.textContent = title;
+            list.appendChild(header);
 
-            list.appendChild(div);
-        });
+            // Box (The list)
+            const box = document.createElement('div');
+            box.className = 'folder-select-list'; // Re-use the box style
+            box.style.margin = '0'; // Reset margin since we handle spacing via gap/header
 
-        if (cols.length <= 1) {
-            list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No other collections available.</div>';
+            items.forEach(item => {
+                box.appendChild(createItem(item));
+            });
+
+            list.appendChild(box);
+        };
+
+        if (cols.length === 0) {
+            list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No collections found.</div>';
+        } else {
+            createSection('Collections', topLevel);
+            createSection('Sub-folders', subFolders);
+        }
+
+        btnCancel.onclick = () => this.close();
+
+        if (this.backdrop) this.backdrop.classList.remove('hidden');
+        modal.classList.remove('hidden');
+    }
+
+    openFileSelector(callback) {
+        // Create a reusable modal for selecting video files
+        let modal = document.getElementById('modal-file-selector');
+
+        // Create modal if it doesn't exist
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'modal-file-selector';
+            modal.className = 'modal hidden';
+            modal.innerHTML = `
+                <div class="modal-header">
+                    <h2>Select a Video</h2>
+                </div>
+                <div id="file-selector-list" class="folder-select-list" style="max-height: 400px; overflow-y: auto;"></div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="btn-cancel-file-selector">Cancel</button>
+                </div>
+            `;
+            // Append inside the backdrop, not body
+            this.backdrop.appendChild(modal);
+        }
+
+        const list = document.getElementById('file-selector-list');
+        const btnCancel = document.getElementById('btn-cancel-file-selector');
+
+        list.innerHTML = '';
+
+        // Get all video files from the current project
+        const files = this.app.state.files.filter(f =>
+            f.projectId === this.app.state.activeProjectId && f.type !== 'folder'
+        );
+
+        if (files.length === 0) {
+            list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No video files in this project. Add videos from the Storage page first.</div>';
+        } else {
+            files.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'folder-select-item';
+                div.innerHTML = `
+                    <i class="ph-bold ph-film-strip"></i>
+                    <span>${f.name}</span>
+                `;
+
+                div.onclick = () => {
+                    this.close();
+                    if (callback) callback(f);
+                };
+
+                list.appendChild(div);
+            });
         }
 
         btnCancel.onclick = () => this.close();
@@ -2312,13 +2977,15 @@ class ModalManager {
         const folders = allItems.filter(f => f.type === 'folder');
 
         // Add "Root" option
-        const createItem = (id, name, isCurrent) => {
+        const createItem = (id, name, isCurrent, color) => {
             const el = document.createElement('div');
             el.className = 'folder-select-item';
             if (isCurrent) el.classList.add('current-folder');
 
+            // Use passed color or fallback to accent
+            const itemColor = color || 'var(--accent)';
             el.innerHTML = `
-                <i class="ph-fill ph-folder"></i>
+                <i class="ph-fill ph-folder" style="color: ${itemColor}"></i>
                 <span>${name}</span>
             `;
 
@@ -2337,13 +3004,13 @@ class ModalManager {
         };
 
         // Root
-        list.appendChild(createItem(null, "Root Storage", file.parentId === null));
+        list.appendChild(createItem(null, "Root Storage", file.parentId === null, 'var(--accent)'));
 
         // Folders
         folders.forEach(f => {
             // Prevent moving into itself if it's a folder (not applicable here since we move files, but safety check)
             if (file.id === f.id) return;
-            list.appendChild(createItem(f.id, f.name, file.parentId === f.id));
+            list.appendChild(createItem(f.id, f.name, file.parentId === f.id, f.color));
         });
     }
 

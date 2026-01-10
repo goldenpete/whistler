@@ -1408,9 +1408,50 @@ button {
 
 .time-display {
     font-size: 14px;
-    color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.pdf-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(30, 30, 35, 0.95);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 6px 12px;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.pdf-controls.hidden {
+    display: none;
+}
+
+.pdf-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+}
+
+/* Hide bottom bar completely in PDF mode */
+.player-bottom-bar.pdf-slim-bar {
+    display: none !important;
+}
+
+#pdf-zoom-controls {
+    display: none;
+}
+
+#pdf-zoom-controls.hidden {
+    display: none;
 }
 
 .ctrl-btn-text {
@@ -2330,7 +2371,8 @@ input[type="color"]::-webkit-color-swatch {
     margin-right: 10px;
 }
 
-#search-input {
+#search-input,
+#collection-search-input {
     background: transparent;
     border: none;
     color: var(--text-primary);
@@ -2340,7 +2382,8 @@ input[type="color"]::-webkit-color-swatch {
     outline: none;
 }
 
-#search-input::placeholder {
+#search-input::placeholder,
+#collection-search-input::placeholder {
     color: var(--text-muted);
 }
 
@@ -3299,4 +3342,90 @@ input[type="color"]::-webkit-color-swatch {
     width: 100%;
     height: 100%;
     text-align: center;
+}
+
+/* Collection View Actions - Rebuilt Ground Up */
+.collection-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    /* Taller touch target area */
+    display: flex !important;
+    align-items: flex-end;
+    /* Align buttons to bottom */
+    justify-content: center;
+    padding-bottom: 12px;
+    gap: 12px;
+
+    /* Visibility & Layering */
+    z-index: 1000;
+    /* Extremely high to sit on top of everything */
+    opacity: 0;
+    /* Hidden by default */
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 30%, transparent);
+
+    /* Interaction */
+    pointer-events: none;
+    /* Let clicks pass through empty areas */
+    transition: opacity 0.2s ease-out;
+}
+
+/* Show on hover of parent card */
+.card-folder:hover .collection-actions,
+.collection-card:hover .collection-actions {
+    opacity: 1;
+}
+
+/* Button Styling */
+.collection-actions .card-action-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+
+    /* Visuals */
+    background: #1e1e24;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e4e4e7;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+
+    /* Layout */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+
+    /* Interaction */
+    pointer-events: auto;
+    /* Re-enable clicks on buttons */
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s;
+}
+
+.collection-actions .card-action-btn:hover {
+    transform: scale(1.15) translateY(-2px);
+    background: #27272a;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+.collection-actions .card-action-danger:hover {
+    background: rgba(220, 38, 38, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* Search Container Animation Removed - Replaced by Shared Styles */
+.search-container.collapsed {
+    /* Deprecated */
+}
+
+.search-container input {
+    /* Deprecated */
+}
+
+.search-container input:focus {
+    /* Deprecated */
 }
