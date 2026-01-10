@@ -117,12 +117,12 @@ class StorageManager {
         return c;
     }
 
-    addTimestamp(collectionId, fileId, start, end, note) {
+    addTimestamp(collectionId, fileId, start, end, note, text = null) {
         const t = {
             id: crypto.randomUUID(),
             collectionId,
             fileId,
-            start, end, note,
+            start, end, note, text,
             created: Date.now()
         };
         this.app.state.timestamps.push(t);
@@ -194,6 +194,295 @@ class StorageManager {
         } else {
             console.error("Timestamp not found for update:", id);
         }
+    }
+}
+
+// ============================================
+// PDF Controller - Handles all PDF operations
+// ============================================
+class PDFController {
+    constructor(player) {
+        this.player = player;
+        this.doc = null;
+        this.currentPage = 1;
+        this.zoomLevel = 1.0;
+        this.isLoading = false;
+
+        // Highlight state - single source of truth
+        this.highlightState = {
+            isolate: false,
+            targetText: null,
+            targetPage: null
+        };
+
+        // DOM elements
+        this.els = {
+            stage: document.getElementById('pdf-stage'),
+            container: document.getElementById('pdf-page-container'),
+            canvas: document.getElementById('pdf-render'),
+            textLayer: document.getElementById('pdf-text-layer'),
+            pageNum: document.getElementById('pdf-page-num'),
+            controls: document.getElementById('pdf-controls'),
+            btnSave: document.getElementById('btn-pdf-save-highlight')
+        };
+
+        // Current selection for saving
+        this.currentSelection = null;
+    }
+
+    // ============================================
+    // Core Loading
+    // ============================================
+
+    async load(url, options = {}) {
+        this.isLoading = true;
+
+        // Set target page/highlight if provided (from loadTimestamp)
+        if (options.targetPage) {
+            this.highlightState.targetPage = options.targetPage;
+            this.highlightState.targetText = options.targetText || null;
+            this.highlightState.isolate = !!options.targetText;
+            this.currentPage = options.targetPage;
+        } else {
+            // Reset for fresh load
+            this.currentPage = 1;
+            this.highlightState = { isolate: false, targetText: null, targetPage: null };
+        }
+
+        this.zoomLevel = 1.0;
+        this.els.textLayer.innerHTML = '';
+
+        try {
+            const loadingTask = pdfjsLib.getDocument(url);
+            this.doc = await loadingTask.promise;
+
+            // Clamp page to valid range
+            if (this.currentPage > this.doc.numPages) {
+                this.currentPage = this.doc.numPages;
+            }
+            if (this.currentPage < 1) {
+                this.currentPage = 1;
+            }
+
+            await this.renderCurrentPage(false); // No animation on initial load
+        } catch (err) {
+            console.error('PDF load error:', err);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ============================================
+    // Page Navigation
+    // ============================================
+
+    async goToPage(pageNum, animate = true) {
+        if (!this.doc || pageNum < 1 || pageNum > this.doc.numPages) return;
+        if (pageNum === this.currentPage && !this.highlightState.isolate) return;
+
+        this.currentPage = pageNum;
+        await this.renderCurrentPage(animate);
+    }
+
+    async prevPage() {
+        // Clear isolation when manually navigating
+        this.clearHighlightTarget();
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            await this.renderCurrentPage(true);
+        }
+    }
+
+    async nextPage() {
+        this.clearHighlightTarget();
+        if (this.doc && this.currentPage < this.doc.numPages) {
+            this.currentPage++;
+            await this.renderCurrentPage(true);
+        }
+    }
+
+    async jumpToHighlight(page, text) {
+        this.setHighlightTarget(page, text);
+        this.currentPage = page;
+        await this.renderCurrentPage(true);
+    }
+
+    // ============================================
+    // Zoom
+    // ============================================
+
+    async zoomIn() {
+        await this.changeZoom(0.25);
+    }
+
+    async zoomOut() {
+        await this.changeZoom(-0.25);
+    }
+
+    async changeZoom(delta) {
+        const newZoom = Math.max(0.5, Math.min(3.0, this.zoomLevel + delta));
+        if (newZoom === this.zoomLevel) return;
+
+        this.zoomLevel = newZoom;
+        // Standard render with existing fade transition
+        await this.renderCurrentPage(true);
+    }
+
+    // ============================================
+    // Rendering
+    // ============================================
+
+    async renderCurrentPage(animate = true) {
+        if (!this.doc) return;
+
+        const container = this.els.container;
+
+        // Animate out
+        if (animate) {
+            container.classList.add('pdf-transitioning');
+            await this.sleep(150);
+        }
+
+        // Render
+        const page = await this.doc.getPage(this.currentPage);
+        const availableWidth = this.els.stage.clientWidth - 80;
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = (availableWidth / viewport.width) * this.zoomLevel;
+        const finalViewport = page.getViewport({ scale });
+
+        const canvas = this.els.canvas;
+        const context = canvas.getContext('2d');
+        canvas.height = finalViewport.height;
+        canvas.width = finalViewport.width;
+
+        await page.render({ canvasContext: context, viewport: finalViewport }).promise;
+
+        // Render text layer
+        this.els.textLayer.innerHTML = '';
+        this.els.textLayer.style.height = canvas.height + 'px';
+        this.els.textLayer.style.width = canvas.width + 'px';
+        this.els.textLayer.style.setProperty('--scale-factor', scale);
+
+        const textContent = await page.getTextContent();
+        await pdfjsLib.renderTextLayer({
+            textContentSource: textContent,
+            container: this.els.textLayer,
+            viewport: finalViewport,
+            textDivs: []
+        }).promise;
+
+        // Apply highlights
+        this.renderHighlights();
+
+        // Update page display
+        this.els.pageNum.textContent = `${this.currentPage} / ${this.doc.numPages}`;
+
+        // Animate in
+        if (animate) {
+            container.classList.remove('pdf-transitioning');
+        }
+    }
+
+    // ============================================
+    // Highlighting
+    // ============================================
+
+    setHighlightTarget(page, text) {
+        this.highlightState = {
+            isolate: true,
+            targetText: text,
+            targetPage: page
+        };
+    }
+
+    clearHighlightTarget() {
+        this.highlightState = {
+            isolate: false,
+            targetText: null,
+            targetPage: null
+        };
+    }
+
+    renderHighlights() {
+        const pageNum = this.currentPage;
+        let highlightTexts = [];
+
+        if (this.highlightState.isolate && this.highlightState.targetText) {
+            // Show ONLY the target highlight
+            highlightTexts = [this.highlightState.targetText];
+        } else {
+            // Show all highlights for this page
+            const fileId = this.player.currentFile?.id;
+            if (fileId) {
+                highlightTexts = this.player.app.state.timestamps
+                    .filter(t => t.fileId === fileId && t.start === pageNum && t.text)
+                    .map(t => t.text);
+            }
+        }
+
+        if (highlightTexts.length === 0) return;
+
+        const normalize = (str) => str.replace(/\s+/g, ' ').trim();
+        const spans = Array.from(this.els.textLayer.children);
+
+        spans.forEach(span => {
+            const content = span.textContent;
+            const normContent = normalize(content);
+            if (!normContent) return;
+
+            const matched = highlightTexts.some(h => {
+                const normH = normalize(h);
+                return normH && (normH.includes(normContent) || normContent.includes(normH));
+            });
+
+            if (matched) {
+                span.classList.add('highlighted-text');
+                span.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+                span.style.borderRadius = '2px';
+            }
+        });
+    }
+
+    // ============================================
+    // Text Selection
+    // ============================================
+
+    handleTextSelection() {
+        const selection = window.getSelection();
+        const text = selection.toString().trim();
+
+        if (this.els.btnSave) {
+            if (text.length > 0) {
+                this.currentSelection = text;
+                this.els.btnSave.disabled = false;
+                this.els.btnSave.classList.remove('btn-disabled');
+                this.els.btnSave.classList.remove('inactive'); // cleanup old class
+            } else {
+                this.currentSelection = null;
+                this.els.btnSave.disabled = true;
+                this.els.btnSave.classList.add('btn-disabled');
+            }
+        }
+    }
+
+    getSelectedText() {
+        return this.currentSelection;
+    }
+
+    isTextSelected() {
+        return !!this.currentSelection;
+    }
+
+    // ============================================
+    // Utilities
+    // ============================================
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    get numPages() {
+        return this.doc ? this.doc.numPages : 0;
     }
 }
 
@@ -321,27 +610,26 @@ class Player {
 
         this.currentFile = null;
         this.lastVolume = 1;
-        this.showRemainingTime = false; // Toggle state
-        this.pdfZoomLevel = 1.0;
+        this.showRemainingTime = false;
 
-        // Bind PDF Zoom
+        // Initialize PDF Controller
+        this.pdf = new PDFController(this);
+
+        // Bind PDF Zoom to controller
         if (this.els.btnPdfZoomIn) {
-            this.els.btnPdfZoomIn.onclick = () => this.changeZoom(0.25);
+            this.els.btnPdfZoomIn.onclick = () => this.pdf.zoomIn();
         }
         if (this.els.btnPdfZoomOut) {
-            this.els.btnPdfZoomOut.onclick = () => this.changeZoom(-0.25);
+            this.els.btnPdfZoomOut.onclick = () => this.pdf.zoomOut();
         }
 
-        // PDF State
-        this.pdfDoc = null;
-        this.pdfPageNum = 1;
-        this.pdfScale = 1.5;
+        // Legacy PDF State
         this.isPdf = false;
 
         // Collection Mode State
         this.isCollectionMode = false;
         this.currentTimestamp = null;
-        this.playbackRange = null; // { start, end }
+        this.playbackRange = null;
         this.currentCollection = null;
 
         this.setupListeners();
@@ -714,62 +1002,52 @@ class Player {
     }
 
     setupPDFListeners() {
-        if (this.els.btnPdfPrev) this.els.btnPdfPrev.onclick = () => this.prevPage();
-        if (this.els.btnPdfNext) this.els.btnPdfNext.onclick = () => this.nextPage();
+        // Navigation uses PDFController
+        if (this.els.btnPdfPrev) this.els.btnPdfPrev.onclick = () => this.pdf.prevPage();
+        if (this.els.btnPdfNext) this.els.btnPdfNext.onclick = () => this.pdf.nextPage();
 
-        // Text Selection for Marking
+        // Text Selection uses PDFController
         if (this.els.pdfTextLayer) {
-            this.els.pdfTextLayer.addEventListener('mouseup', () => this.handleTextSelection());
+            this.els.pdfTextLayer.addEventListener('mouseup', () => this.pdf.handleTextSelection());
         }
 
-        if (this.els.btnAddMark) {
-            this.els.btnAddMark.onclick = () => {
-                const selection = window.getSelection();
-                const text = selection.toString();
-                this.openMarkModal(this.pdfPageNum, text);
-                if (this.els.pdfPopover) this.els.pdfPopover.classList.add('hidden');
-                selection.removeAllRanges();
+        // Save Highlight Button
+        const btnSave = document.getElementById('btn-pdf-save-highlight');
+        if (btnSave) {
+            this.els.btnPdfSave = btnSave;
+            btnSave.onclick = () => {
+                const text = this.pdf.getSelectedText();
+                if (text) {
+                    this.openMarkModal(this.pdf.currentPage, text);
+                }
             };
         }
-
-        // Hide popover on click elsewhere
-        document.addEventListener('mousedown', (e) => {
-            if (!this.els.pdfPopover || !this.els.pdfTextLayer) return;
-            if (!this.els.pdfPopover.contains(e.target) && !this.els.pdfTextLayer.contains(e.target)) {
-                this.els.pdfPopover.classList.add('hidden');
-            }
-        });
     }
 
     handleTextSelection() {
         const selection = window.getSelection();
         const text = selection.toString().trim();
 
-        if (text.length > 0) {
-            // Position popover
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-
-            this.els.pdfPopover.style.top = (rect.bottom + window.scrollY + 10) + 'px';
-            this.els.pdfPopover.style.left = (rect.left + rect.width / 2) + 'px'; // center but simple
-            this.els.pdfPopover.classList.remove('hidden');
-        } else {
-            this.els.pdfPopover.classList.add('hidden');
+        if (this.els.btnPdfSave) {
+            if (text.length > 0) {
+                this.currentPdfSelection = text;
+                this.els.btnPdfSave.disabled = false;
+                this.els.btnPdfSave.classList.remove('inactive');
+            } else {
+                this.currentPdfSelection = null;
+                this.els.btnPdfSave.disabled = true;
+                this.els.btnPdfSave.classList.add('inactive');
+            }
         }
     }
 
     openMarkModal(page, text) {
-        // reuse timestamp modal logic but slightly different?
-        // Actually we can reuse "Add Timestamp" modal but repurpose fields
-        // Since modal logic is separate, let's call a specific method on Modals if needed
-        // Or just create a new specialized one. For now, reuse.
-        this.app.modals.openTimestamp(page, text, true); // true = isPdf
+        this.app.modals.openTimestamp(page, null, text, true); // true = isPdf
     }
 
-    load(file) {
+    load(file, pdfOptions = null) {
         this.currentFile = file;
         this.els.filename.textContent = file.name;
-        // document.getElementById('player-link').textContent = file.url; // Removed for button style
 
         const descEl = document.getElementById('player-description');
         const descText = file.description || "Click to add description";
@@ -777,7 +1055,6 @@ class Player {
 
         descEl.textContent = truncated;
         descEl.style.fontStyle = file.description ? 'normal' : 'italic';
-        // descEl.title = file.description || ""; // Removed default tooltip
         descEl.dataset.fullDescription = file.description || "";
 
         // Custom Tooltip Logic
@@ -789,7 +1066,6 @@ class Player {
             tooltip.textContent = text;
             tooltip.classList.remove('hidden');
 
-            // Position it
             const rect = descEl.getBoundingClientRect();
             tooltip.style.top = (rect.bottom + 10) + 'px';
             tooltip.style.left = rect.left + 'px';
@@ -814,7 +1090,8 @@ class Player {
         if (file.url.toLowerCase().split('.').pop() === 'pdf') {
             this.isPdf = true;
             this.togglePDFMode(true);
-            this.renderPDF(file.url);
+            // Use PDFController with optional target page/highlight
+            this.pdf.load(file.url, pdfOptions || {});
         } else if (file.type === 'youtube' || file.type === 'drive') {
             this.isPdf = false;
             this.togglePDFMode(false);
@@ -854,8 +1131,10 @@ class Player {
     togglePDFMode(active) {
         const bottomBar = document.querySelector('.player-bottom-bar');
         const controlsLeft = document.querySelector('.controls-left');
+        const headerIcon = document.querySelector('.player-info i');
 
         if (active) {
+            if (headerIcon) headerIcon.className = 'ph-bold ph-file-pdf';
             document.getElementById('main-video').classList.add('hidden');
             document.getElementById('youtube-placeholder').classList.add('hidden');
             this.els.pdfStage.classList.remove('hidden');
@@ -872,9 +1151,15 @@ class Player {
             this.els.pdfControls.classList.remove('hidden');
             this.els.btnPip.classList.add('hidden');
 
+
+
+            const sidebarTitle = document.getElementById('sidebar-main-title');
+            if (sidebarTitle) sidebarTitle.textContent = "Highlights";
+
             // Slim Bar Class
             if (bottomBar) bottomBar.classList.add('pdf-slim-bar');
         } else {
+            if (headerIcon) headerIcon.className = 'ph-bold ph-film-strip';
             document.getElementById('main-video').classList.remove('hidden');
             this.els.pdfStage.classList.add('hidden');
 
@@ -886,74 +1171,18 @@ class Player {
             document.getElementById('btn-speed').classList.remove('hidden');
 
             this.els.pdfControls.classList.add('hidden');
+
+
+
+            const sidebarTitle = document.getElementById('sidebar-main-title');
+            if (sidebarTitle) sidebarTitle.textContent = "Timestamps";
             this.els.btnPip.classList.remove('hidden');
 
             if (bottomBar) bottomBar.classList.remove('pdf-slim-bar');
         }
     }
 
-    async renderPDF(url) {
-        this.pdfPageNum = 1;
-        this.pdfZoomLevel = 1.0; // Reset zoom on new file
-        this.els.pdfTextLayer.innerHTML = '';
-        const loadingTask = pdfjsLib.getDocument(url);
-        this.pdfDoc = await loadingTask.promise;
-        this.els.pdfPageNum.textContent = `${this.pdfPageNum} / ${this.pdfDoc.numPages}`;
-        this.renderPage(this.pdfPageNum);
-    }
 
-    async renderPage(num) {
-        const page = await this.pdfDoc.getPage(num);
-        const availableWidth = this.els.pdfStage.clientWidth - 80;
-        const viewport = page.getViewport({ scale: 1 });
-        const scale = (availableWidth / viewport.width) * this.pdfZoomLevel;
-        const finalViewport = page.getViewport({ scale: scale });
-
-        const canvas = this.els.pdfRender;
-        const context = canvas.getContext('2d');
-        canvas.height = finalViewport.height;
-        canvas.width = finalViewport.width;
-
-        await page.render({ canvasContext: context, viewport: finalViewport }).promise;
-
-        this.els.pdfTextLayer.innerHTML = '';
-        this.els.pdfTextLayer.style.height = canvas.height + 'px';
-        this.els.pdfTextLayer.style.width = canvas.width + 'px';
-        this.els.pdfTextLayer.style.setProperty('--scale-factor', scale);
-
-        const textContent = await page.getTextContent();
-        pdfjsLib.renderTextLayer({
-            textContentSource: textContent,
-            container: this.els.pdfTextLayer,
-            viewport: finalViewport,
-            textDivs: []
-        });
-
-        this.els.pdfPageNum.textContent = `${num} / ${this.pdfDoc.numPages}`;
-    }
-
-    prevPage() {
-        if (this.pdfPageNum > 1) {
-            this.pdfPageNum--;
-            this.renderPage(this.pdfPageNum);
-        }
-    }
-
-    nextPage() {
-        if (this.pdfPageNum < this.pdfDoc.numPages) {
-            this.pdfPageNum++;
-            this.renderPage(this.pdfPageNum);
-        }
-    }
-
-    changeZoom(delta) {
-        const newZoom = this.pdfZoomLevel + delta;
-        // Clamp zoom between 0.5x and 3.0x
-        if (newZoom >= 0.5 && newZoom <= 3.0) {
-            this.pdfZoomLevel = newZoom;
-            this.renderPage(this.pdfPageNum);
-        }
-    }
 
     toggleFullscreen() {
         if (!document.fullscreenElement) {
@@ -1109,7 +1338,9 @@ class Player {
             el.innerHTML = `
                 <div class="ts-header">
                     <div class="ts-meta-group">
-                        <span class="ts-time" style="color:${color}">${this.fmt(t.start)} - ${this.fmt(t.end)}</span>
+                        <span class="ts-time" style="color:${color}">
+                            ${t.text ? `Page ${t.start}` : `${this.fmt(t.start)} - ${this.fmt(t.end)}`}
+                        </span>
                         <span class="ts-collection" style="color:${color}">${colName}</span>
                     </div>
                     <div class="ts-actions">
@@ -1153,8 +1384,12 @@ class Player {
                 }
 
                 // Seek if main card clicked
-                this.els.video.currentTime = t.start;
-                this.els.video.play();
+                if (t.text) {
+                    this.pdf.jumpToHighlight(t.start, t.text);
+                } else {
+                    this.els.video.currentTime = t.start;
+                    this.els.video.play();
+                }
             };
             list.appendChild(el);
         });
@@ -1311,14 +1546,28 @@ class Player {
         this.playbackRange = { start: timestamp.start, end: timestamp.end };
         this.currentCollection = collection;
 
-        // Load the file but in collection mode
-        this.load(file);
+        // Check if this is a PDF highlight - Robust check
+        const urlExt = file.url ? file.url.toLowerCase().split('.').pop() : '';
+        const isPdf = file.type === 'pdf' ||
+            file.name.toLowerCase().endsWith('.pdf') ||
+            urlExt === 'pdf' ||
+            (timestamp.text && timestamp.text.length > 0);
 
-        // Set video to start time after a brief delay for load
-        setTimeout(() => {
-            this.els.video.currentTime = timestamp.start;
-            this.els.video.play();
-        }, 100);
+        if (isPdf) {
+            // Pass target page and highlight text to PDFController via load()
+            this.load(file, {
+                targetPage: timestamp.start,
+                targetText: timestamp.text
+            });
+        } else {
+            // Load video normally
+            this.load(file);
+            // Set video to start time after a brief delay for load
+            setTimeout(() => {
+                this.els.video.currentTime = timestamp.start;
+                this.els.video.play();
+            }, 100);
+        }
 
         // Switch to collection mode UI
         this.enterCollectionMode(timestamp, collection);
@@ -1332,11 +1581,14 @@ class Player {
 
         // Populate info sidebar
         const file = this.app.state.files.find(f => f.id === timestamp.fileId);
-        document.getElementById('info-time-range').textContent =
-            `${this.fmt(timestamp.start)} - ${this.fmt(timestamp.end)}`;
+        const isPdfTs = timestamp.text != null; // Heuristic
+        document.getElementById('info-time-range').textContent = isPdfTs ?
+            `Page ${timestamp.start}` : `${this.fmt(timestamp.start)} - ${this.fmt(timestamp.end)}`;
         document.getElementById('info-note').textContent = timestamp.note || 'No note';
+
+        const fileIcon = (file && (file.type === 'pdf' || file.name.endsWith('.pdf'))) ? 'ph-file-pdf' : 'ph-film-strip';
         document.getElementById('info-file').innerHTML =
-            `<i class="ph-bold ph-film-strip"></i> ${file?.name || 'Unknown'}`;
+            `<i class="ph-bold ${fileIcon}"></i> ${file?.name || 'Unknown'}`;
         // Populate file description
         const descEl = document.getElementById('info-file-desc');
         if (descEl) {
@@ -1438,79 +1690,63 @@ class UIManager {
             }
         });
 
-        // Source Switcher Logic
-        this.setupCustomDropdown('source-dropdown', (value) => {
-            const triggerText = document.getElementById('source-trigger-text');
-            const map = {
-                'catbox': 'Catbox',
-                'youtube': 'YouTube',
-                'dropbox': 'Dropbox',
-                'drive': 'Drive'
-            };
-            if (map[value]) triggerText.textContent = map[value];
-            document.getElementById('source-dropdown').dataset.value = value;
-        });
-
-        // Default source value
-        document.getElementById('source-dropdown').dataset.value = 'catbox';
-
         document.getElementById('btn-add-collection').onclick = () => this.app.modals.openCollection();
 
-        // Expandable Add Bar Logic
+        // Add Menu Dropdown Logic
         const btnExpand = document.getElementById('btn-expand-add');
-        const quickBar = document.getElementById('quick-add-bar');
+        const addMenu = document.getElementById('add-menu');
 
-        const toggleAddBar = (show) => {
+        const toggleAddMenu = (show) => {
             if (show) {
                 document.getElementById('search-bar-container').classList.add('hidden'); // Close search
-                quickBar.classList.remove('hidden');
-                document.getElementById('input-add-url').focus();
+                addMenu.classList.remove('hidden');
             } else {
-                quickBar.classList.add('hidden');
+                addMenu.classList.add('hidden');
             }
         };
 
         btnExpand.onclick = (e) => {
             e.stopPropagation();
-            const isHidden = quickBar.classList.contains('hidden');
-            toggleAddBar(isHidden);
+            const isHidden = addMenu.classList.contains('hidden');
+            toggleAddMenu(isHidden);
         };
 
         // Close on click outside
         document.addEventListener('click', (e) => {
-            if (!quickBar.contains(e.target) && !btnExpand.contains(e.target) && !quickBar.classList.contains('hidden')) {
-                // Check if we are clicking a dropdown inside
-                if (!e.target.closest('.custom-select-menu')) {
-                    toggleAddBar(false);
-                }
+            if (!addMenu.contains(e.target) && !btnExpand.contains(e.target) && !addMenu.classList.contains('hidden')) {
+                toggleAddMenu(false);
             }
         });
 
-
-        // New Folder
-        document.getElementById('btn-add-folder').onclick = () => {
+        // Add File - Prompt for URL and add file
+        document.getElementById('add-menu-file').onclick = () => {
             if (!this.app.state.activeProjectId) return;
-            this.app.modals.prompt("New Folder", "New Folder", (name) => {
+            toggleAddMenu(false);
+            this.app.modals.prompt("Add File", "", (url) => {
+                if (url && url.trim()) {
+                    const name = "New File " + Math.floor(Math.random() * 1000);
+                    this.app.storage.addFile(name, url.trim(), 'catbox', this.app.state.currentFolderId);
+                    this.renderStorage();
+                }
+            }, false, "Paste URL here...");
+        };
+
+        // Add Folder - Open folder prompt
+        document.getElementById('add-menu-folder').onclick = () => {
+            if (!this.app.state.activeProjectId) return;
+            toggleAddMenu(false);
+            this.app.modals.prompt("New Folder", "", (name) => {
                 if (name) {
                     this.app.storage.addFolder(name, this.app.state.currentFolderId);
                     this.renderStorage();
-                    toggleAddBar(false);
                 }
-            });
+            }, false, "Folder Name");
         };
 
-        document.getElementById('btn-add-media').onclick = () => {
-            if (!this.app.state.activeProjectId) return;
-
-            const type = document.getElementById('source-dropdown').dataset.value || 'catbox';
-            const url = document.getElementById('input-add-url').value;
-            if (!url) return;
-
-            const name = "New File " + Math.floor(Math.random() * 1000);
-            this.app.storage.addFile(name, url, type, this.app.state.currentFolderId);
-            document.getElementById('input-add-url').value = '';
-            this.renderStorage();
-            toggleAddBar(false);
+        // Upload File - Open catbox.moe
+        document.getElementById('add-menu-upload').onclick = () => {
+            toggleAddMenu(false);
+            window.open('https://catbox.moe/', '_blank');
         };
 
         // Add Folder button in Collection View
@@ -1541,16 +1777,17 @@ class UIManager {
         const input = document.getElementById('search-input');
         // const results = document.getElementById('search-results'); // No longer using dropdown results
 
-        // Exclusive toggling
-        const closeAddBar = () => {
-            document.getElementById('quick-add-bar').classList.add('hidden');
+        // Exclusive toggling - close add menu when search opens
+        const closeAddMenu = () => {
+            const addMenu = document.getElementById('add-menu');
+            if (addMenu) addMenu.classList.add('hidden');
         };
 
         toggleBtn.onclick = (e) => {
             e.stopPropagation();
             const isHidden = container.classList.contains('hidden');
             if (isHidden) {
-                closeAddBar();
+                closeAddMenu();
                 container.classList.remove('hidden');
                 input.focus();
             } else {
@@ -2759,10 +2996,14 @@ class ModalManager {
             list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No video files in this project. Add videos from the Storage page first.</div>';
         } else {
             files.forEach(f => {
+                // Determine icon based on file type
+                const isPdf = f.type === 'pdf' || f.name.toLowerCase().endsWith('.pdf');
+                const iconClass = isPdf ? 'ph-file-pdf' : 'ph-film-strip';
+
                 const div = document.createElement('div');
                 div.className = 'folder-select-item';
                 div.innerHTML = `
-                    <i class="ph-bold ph-film-strip"></i>
+                    <i class="ph-bold ${iconClass}"></i>
                     <span>${f.name}</span>
                 `;
 
@@ -2858,7 +3099,10 @@ class ModalManager {
                 this.app.storage.deleteTimestamp(this.currentTimestampId);
             }
 
-            const newTs = this.app.storage.addTimestamp(colId, this.app.player.currentFile.id, start, end, note);
+            const text = this.pendingPdfText || null;
+            const newTs = this.app.storage.addTimestamp(colId, this.app.player.currentFile.id, start, end, note, text);
+
+            this.pendingPdfText = null; // Clear
 
             // Update player current timestamp if it matches the one we just edited/deleted
             if (this.app.player.currentTimestamp && this.app.player.currentTimestamp.id === this.currentTimestampId) {
@@ -2936,7 +3180,7 @@ class ModalManager {
         this.onConfirmCallback = callback;
     }
 
-    prompt(title, value, callback, isTextarea = false) {
+    prompt(title, value, callback, isTextarea = false, placeholder = '') {
         this.backdrop.classList.remove('hidden');
         const m = document.getElementById('modal-prompt');
         m.classList.remove('hidden');
@@ -2951,12 +3195,14 @@ class ModalManager {
             inp.classList.add('hidden');
             area.classList.remove('hidden');
             area.value = value;
+            area.placeholder = placeholder;
             area.focus();
             m.style.width = '450px'; // Make it wider
         } else {
             area.classList.add('hidden');
             inp.classList.remove('hidden');
             inp.value = value;
+            inp.placeholder = placeholder;
             inp.focus();
             m.style.width = ''; // Reset width
         }
@@ -3026,14 +3272,40 @@ class ModalManager {
         document.getElementById('modal-collection').classList.remove('hidden');
     }
 
-    openTimestamp(currentTime, existingTs = null) {
+    openTimestamp(currentTime, existingTs = null, prefilledNote = null, isPdf = false) {
+        if (existingTs && existingTs.text) isPdf = true;
+
         const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId);
         if (cols.length === 0) return alert("Create a collection first!");
+
+        this.pendingPdfText = isPdf ? (prefilledNote || (existingTs ? existingTs.text : null)) : null;
 
         this.close();
         this.backdrop.classList.remove('hidden');
         const m = document.getElementById('modal-timestamp');
         m.classList.remove('hidden');
+
+        // Handle PDF vs Video Context
+        const timeGroup = m.querySelector('.form-row');
+        const textGroup = document.getElementById('group-selected-text');
+        const textDisplay = document.getElementById('display-selected-text');
+        const confirmBtn = document.getElementById('confirm-timestamp');
+        const title = document.getElementById('ts-modal-title');
+
+        if (isPdf) {
+            if (timeGroup) timeGroup.classList.add('hidden');
+            if (textGroup) textGroup.classList.remove('hidden');
+            if (textDisplay) textDisplay.textContent = existingTs ? existingTs.text : (this.pendingPdfText || "");
+
+            title.textContent = existingTs ? "Edit Highlight" : "Save Highlight";
+            confirmBtn.textContent = existingTs ? "Update Highlight" : "Save Highlight";
+        } else {
+            if (timeGroup) timeGroup.classList.remove('hidden');
+            if (textGroup) textGroup.classList.add('hidden');
+
+            title.textContent = existingTs ? "Edit Timestamp" : "New Timestamp";
+            confirmBtn.textContent = existingTs ? "Update Timestamp" : "Save Timestamp";
+        }
 
         // Populate Custom Dropdown logic repeated to ensure clean state
         const menu = document.getElementById('menu-ts-collection');
@@ -3071,12 +3343,11 @@ class ModalManager {
             else if (cols.length > 0) selectCol(cols[0]); // Fallback
         } else {
             this.currentTimestampId = null;
-            document.getElementById('ts-modal-title').textContent = "New Timestamp";
             document.getElementById('btn-delete-ts').classList.add('hidden');
 
             document.getElementById('input-ts-start').value = this.app.player.fmt(currentTime);
             document.getElementById('input-ts-end').value = this.app.player.fmt(currentTime);
-            document.getElementById('input-ts-note').value = '';
+            document.getElementById('input-ts-note').value = isPdf ? "" : (prefilledNote || "");
 
             // Default select first
             if (cols.length > 0) selectCol(cols[0]);

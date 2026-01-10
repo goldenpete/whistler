@@ -693,6 +693,49 @@ button {
     color: var(--text-muted);
 }
 
+/* Add Menu Dropdown */
+.add-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    min-width: 160px;
+    z-index: 100;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px);
+}
+
+.add-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+    transition: all 0.2s var(--ease-out);
+}
+
+.add-menu-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.add-menu-item i {
+    font-size: 16px;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.add-menu-item:hover i {
+    color: var(--accent);
+}
+
 .grid-layout {
     padding: 40px;
     display: grid;
@@ -1056,6 +1099,13 @@ button {
     transition: 0.2s;
 }
 
+.btn-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
+
 .btn-ghost:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
@@ -1413,6 +1463,63 @@ button {
     color: var(--text-secondary);
 }
 
+/* PDF Styles */
+.pdf-stage {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: #333;
+    overflow: auto;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+}
+
+#pdf-page-container {
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    background: white;
+    /* Avoid transparency issues */
+}
+
+#pdf-render {
+    display: block;
+    pointer-events: none;
+}
+
+.textLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.5;
+    /* Keeping a bit of opacity helps debug if alignment is off, usually 0.2 */
+    line-height: 1.0;
+    z-index: 2;
+    pointer-events: auto;
+    user-select: text;
+    -webkit-user-select: text;
+    /* Ensure it captures clicks */
+}
+
+.textLayer>span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+
+.textLayer ::selection {
+    background: rgba(var(--accent-rgb), 0.4);
+    background: rgba(100, 100, 255, 0.4);
+    /* Fallback */
+}
+
 .pdf-controls {
     display: flex;
     align-items: center;
@@ -1427,6 +1534,60 @@ button {
     transform: translateX(-50%);
     z-index: 100;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* PDF Page Container Animations */
+#pdf-page-container {
+    transition: opacity 0.15s ease-out, transform 0.2s ease-out;
+    transform-origin: top center;
+}
+
+#pdf-page-container.pdf-transitioning {
+    opacity: 0;
+    transform: scale(0.98);
+}
+
+#pdf-page-container.pdf-zooming {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Highlighted text pulse animation */
+.highlighted-text {
+    animation: highlightPulse 0.5s ease-out;
+}
+
+@keyframes highlightPulse {
+    0% {
+        background-color: rgba(255, 255, 0, 0.6);
+    }
+
+    100% {
+        background-color: rgba(255, 255, 0, 0.3);
+    }
+}
+
+.timestamp-text-preview {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
+    max-height: 100px;
+    overflow-y: auto;
+    font-style: italic;
+    margin-bottom: 16px;
+}
+
+.ctrl-btn-filled:disabled,
+.ctrl-btn-filled.inactive {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.05);
+    /* Dim background */
+    color: var(--text-muted);
 }
 
 .pdf-controls.hidden {

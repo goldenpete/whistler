@@ -85,26 +85,20 @@
                     </div>
                     <div class="header-actions">
                         <!-- Bars (appear to the left) -->
-                        <div id="quick-add-bar" class="quick-add-bar hidden">
-                            <div class="custom-select" id="source-dropdown" style="width: 130px;">
-                                <div class="custom-select-trigger" id="source-trigger">
-                                    <span id="source-trigger-text">Catbox</span>
-                                    <i class="ph-bold ph-caret-down"></i>
-                                </div>
-                                <div class="custom-select-menu hidden" id="source-menu">
-                                    <div class="custom-select-item" data-value="catbox">Catbox</div>
-                                    <div class="custom-select-item" data-value="youtube">YouTube</div>
-                                    <div class="custom-select-item" data-value="dropbox">Dropbox</div>
-                                    <div class="custom-select-item" data-value="drive">Drive</div>
-                                </div>
+                        <!-- Add Menu Dropdown -->
+                        <div id="add-menu" class="add-menu-dropdown hidden">
+                            <div class="add-menu-item" id="add-menu-file">
+                                <i class="ph-bold ph-link"></i>
+                                <span>Add File</span>
                             </div>
-                            <input type="text" id="input-add-url" class="input-light" placeholder="Paste URL..."
-                                style="width: 200px;">
-                            <button class="btn-primary" id="btn-add-media">Add</button>
-                            <div class="vr"></div>
-                            <button class="btn-secondary" id="btn-add-folder" title="New Folder">
+                            <div class="add-menu-item" id="add-menu-folder">
                                 <i class="ph-bold ph-folder-plus"></i>
-                            </button>
+                                <span>Add Folder</span>
+                            </div>
+                            <div class="add-menu-item" id="add-menu-upload">
+                                <i class="ph-bold ph-upload-simple"></i>
+                                <span>Upload File</span>
+                            </div>
                         </div>
 
                         <div id="search-bar-container" class="search-bar-container hidden">
@@ -298,6 +292,7 @@
                             <div class="controls-right">
                                 <button class="ctrl-btn-text" id="btn-speed"
                                     data-tooltip="Playback Speed">1.00x</button>
+
                                 <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
                                         class="ph-bold ph-picture-in-picture"></i></button>
                                 <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
@@ -310,6 +305,8 @@
 
                     <!-- PDF Controls (Floating, inside player-stage) -->
                     <div id="pdf-controls" class="pdf-controls hidden">
+
+                        <div class="divider-vertical" style="height: 16px; margin: 0 4px;"></div>
                         <button class="ctrl-btn-filled" id="btn-pdf-zoom-out" data-tooltip="Zoom Out"><i
                                 class="ph-bold ph-minus"></i></button>
                         <button class="ctrl-btn-filled" id="btn-pdf-zoom-in" data-tooltip="Zoom In"><i
@@ -322,6 +319,8 @@
                                     class="ph-bold ph-caret-right"></i></button>
                         </div>
                         <div class="pdf-nav-group">
+                            <button class="ctrl-btn-filled" id="btn-pdf-save-highlight" disabled
+                                data-tooltip="Save Highlight"><i class="ph-bold ph-floppy-disk"></i></button>
                             <button class="ctrl-btn-filled" id="btn-pdf-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
                                     class="ph-bold ph-sidebar-simple"></i></button>
                             <button class="ctrl-btn-filled" id="btn-pdf-fullscreen" data-tooltip="Fullscreen"><i
@@ -336,7 +335,7 @@
                 <!-- Timestamp Sidebar (Moved inside player-content) -->
                 <aside class="player-sidebar" id="player-sidebar">
                     <div class="sidebar-header">
-                        <h3>Timestamps</h3>
+                        <h3 id="sidebar-main-title">Timestamps</h3>
                         <button class="btn-small-primary" id="btn-add-timestamp">
                             <i class="ph-bold ph-note-pencil"></i> Add
                         </button>
@@ -480,6 +479,11 @@
                     </button>
                     <div class="dropdown-menu hidden" id="menu-ts-collection"></div>
                 </div>
+            </div>
+
+            <div class="form-group hidden" id="group-selected-text">
+                <label class="form-label">Selected Text</label>
+                <div id="display-selected-text" class="timestamp-text-preview"></div>
             </div>
 
             <div class="form-row">
