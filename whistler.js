@@ -617,10 +617,16 @@ class Player {
 
         // Bind PDF Zoom to controller
         if (this.els.btnPdfZoomIn) {
-            this.els.btnPdfZoomIn.onclick = () => this.pdf.zoomIn();
+            this.els.btnPdfZoomIn.onclick = () => {
+                if (this.isImage) this.changeImageZoom(0.25);
+                else this.pdf.zoomIn();
+            };
         }
         if (this.els.btnPdfZoomOut) {
-            this.els.btnPdfZoomOut.onclick = () => this.pdf.zoomOut();
+            this.els.btnPdfZoomOut.onclick = () => {
+                if (this.isImage) this.changeImageZoom(-0.25);
+                else this.pdf.zoomOut();
+            };
         }
 
         // Legacy PDF State
@@ -635,6 +641,22 @@ class Player {
         this.setupListeners();
         this.setupPDFListeners();
         this.setupCollectionModeListeners();
+    }
+
+    changeImageZoom(delta) {
+        const img = this.els.youtubePlace.querySelector('img');
+        if (!img) return;
+
+        // simple zoom state tracking on the element or class property
+        if (!this.imageZoomLevel) this.imageZoomLevel = 1;
+
+        let newZoom = this.imageZoomLevel + delta;
+        newZoom = Math.max(0.1, Math.min(newZoom, 5.0));
+
+        this.imageZoomLevel = newZoom;
+        img.style.transform = `scale(${newZoom})`;
+        img.style.transformOrigin = 'center center';
+        img.style.transition = 'transform 0.2s ease';
     }
 
     setupListeners() {
@@ -1087,14 +1109,77 @@ class Player {
             this.closePiP();
         }
 
-        if (file.url.toLowerCase().split('.').pop() === 'pdf') {
+        const ext = file.url.toLowerCase().split('.').pop();
+        const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext);
+        const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(ext);
+
+        if (isImg) {
+            this.isPdf = false;
+            this.isImage = true;
+            this.togglePDFMode(true); // Reuse PDF UI layout
+            document.getElementById('pdf-controls').classList.add('image-mode');
+
+            // Render Image via youtubePlace (reused as generic content container)
+            this.els.pdfStage.classList.add('hidden');
+            this.els.video.classList.add('hidden');
+            this.els.youtubePlace.classList.remove('hidden');
+            this.els.youtubePlace.innerHTML = `<img src="${file.url}" draggable="false" style="width:100%; height:100%; object-fit:contain;">`;
+
+            // Update Sidebar Title
+            document.getElementById('sidebar-main-title').textContent = "Marking";
+
+            // Set Header Icon
+            const headerIcon = document.querySelector('.player-info i');
+            if (headerIcon) headerIcon.className = 'ph-bold ph-image';
+
+        } else if (isAudio) {
+            this.isPdf = false;
+            this.isImage = false;
+            this.isAudio = true;
+            this.togglePDFMode(false);
+            document.getElementById('pdf-controls').classList.remove('image-mode');
+            document.getElementById('sidebar-main-title').textContent = "Timestamps";
+
+            // Audio Playback Setup
+            // Hide video visually(handled in togglePDFMode or here) 
+            this.els.video.classList.add('hidden');
+            this.els.youtubePlace.classList.remove('hidden');
+
+            this.els.youtubePlace.innerHTML = `
+                <div class="audio-placeholder" style="display:flex; justify-content:center; align-items:center; height:100%; width:100%; color:var(--text-muted); flex-direction:column; gap:16px;">
+                    <i class="ph-fill ph-music-note" style="font-size: 80px; color: var(--accent); opacity: 0.8;"></i>
+                    <span style="font-size:16px; font-weight:500; opacity:0.6; letter-spacing:0.5px;">AUDIO PLAYBACK</span>
+                </div>
+            `;
+
+            let src = file.url;
+            if (file.type === 'dropbox') src = src.replace('dl=0', 'raw=1');
+            this.els.video.src = src;
+            this.els.video.play().catch(e => console.log("Autoplay blocked"));
+            this.els.btnPlay.innerHTML = '<i class="ph-fill ph-pause"></i>';
+
+            // Icon
+            const headerIcon = document.querySelector('.player-info i');
+            if (headerIcon) headerIcon.className = 'ph-bold ph-music-note';
+
+        } else if (ext === 'pdf') {
             this.isPdf = true;
+            this.isImage = false;
+            this.isAudio = false;
             this.togglePDFMode(true);
+            document.getElementById('pdf-controls').classList.remove('image-mode');
+            document.getElementById('sidebar-main-title').textContent = "Timestamps";
+
             // Use PDFController with optional target page/highlight
             this.pdf.load(file.url, pdfOptions || {});
         } else if (file.type === 'youtube' || file.type === 'drive') {
             this.isPdf = false;
+            this.isImage = false;
+            this.isAudio = false;
             this.togglePDFMode(false);
+            document.getElementById('pdf-controls').classList.remove('image-mode');
+            document.getElementById('sidebar-main-title').textContent = "Timestamps";
+
             this.els.video.classList.add('hidden');
             this.els.youtubePlace.classList.remove('hidden');
 
@@ -1113,7 +1198,12 @@ class Player {
             this.els.youtubePlace.appendChild(iframe);
         } else {
             this.isPdf = false;
+            this.isImage = false;
+            this.isAudio = false;
             this.togglePDFMode(false);
+            document.getElementById('pdf-controls').classList.remove('image-mode');
+            document.getElementById('sidebar-main-title').textContent = "Timestamps";
+
             let src = file.url;
             if (file.type === 'dropbox') {
                 src = src.replace('dl=0', 'raw=1');
@@ -1159,8 +1249,13 @@ class Player {
             // Slim Bar Class
             if (bottomBar) bottomBar.classList.add('pdf-slim-bar');
         } else {
-            if (headerIcon) headerIcon.className = 'ph-bold ph-film-strip';
-            document.getElementById('main-video').classList.remove('hidden');
+            if (headerIcon) {
+                if (this.isAudio) headerIcon.className = 'ph-bold ph-music-note';
+                else headerIcon.className = 'ph-bold ph-film-strip';
+            }
+            if (!this.isAudio) document.getElementById('main-video').classList.remove('hidden');
+            else document.getElementById('main-video').classList.add('hidden'); // Ensure hidden for Audio
+
             this.els.pdfStage.classList.add('hidden');
 
             this.els.seekContainer.classList.remove('hidden');
@@ -1592,7 +1687,13 @@ class Player {
             file.name.toLowerCase().endsWith('.pdf') ||
             urlExt === 'pdf'
         );
-        const fileIcon = isPdfFile ? 'ph-file-pdf' : 'ph-film-strip';
+        const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(urlExt);
+        const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(urlExt);
+
+        let fileIcon = 'ph-film-strip';
+        if (isPdfFile) fileIcon = 'ph-file-pdf';
+        else if (isImage) fileIcon = 'ph-image';
+        else if (isAudio) fileIcon = 'ph-music-note';
 
         document.getElementById('info-file').innerHTML =
             `<i class="ph-bold ${fileIcon}"></i> ${file?.name || 'Unknown'}`;
@@ -2132,11 +2233,11 @@ class UIManager {
             else if (f.type === 'dropbox') icon = 'ph-dropbox-logo';
             else if (f.type === 'drive') icon = 'ph-google-drive-logo';
             else if (f.type === 'catbox') {
-                if (f.url && f.url.toLowerCase().split('.').pop() === 'pdf') {
-                    icon = 'ph-file-pdf';
-                } else {
-                    icon = 'ph-film-strip';
-                }
+                const ext = f.url ? f.url.toLowerCase().split('.').pop() : '';
+                if (ext === 'pdf') icon = 'ph-file-pdf';
+                else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) icon = 'ph-image';
+                else if (['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(ext)) icon = 'ph-music-note';
+                else icon = 'ph-film-strip';
             }
             else if (f.type === 'folder') {
                 icon = 'ph-folder-simple';
@@ -2172,6 +2273,22 @@ class UIManager {
             }
 
 
+            // Determine Type Text
+            let typeText = 'File';
+            let typeColor = 'var(--text-muted)'; // Default grey
+
+            if (f.type === 'catbox') {
+                const ext = f.url ? f.url.toLowerCase().split('.').pop() : '';
+                if (ext === 'pdf') { typeText = 'PDF'; typeColor = '#f43f5e'; }
+                else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) { typeText = 'IMAGE'; typeColor = '#a855f7'; }
+                else if (['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(ext)) { typeText = 'AUDIO'; typeColor = '#06b6d4'; }
+                else { typeText = 'VIDEO'; typeColor = '#818cf8'; }
+            }
+            else if (f.type === 'folder') { typeText = 'Folder'; }
+            else if (f.type === 'youtube') { typeText = 'YouTube'; typeColor = '#ef4444'; }
+            else if (f.type === 'dropbox') { typeText = 'Dropbox'; typeColor = '#3b82f6'; }
+            else if (f.type === 'drive') { typeText = 'Drive'; typeColor = '#10b981'; }
+
             // Different layout for folder vs file? reusing same for consistency
             card.innerHTML = `
                 <div class="card-thumbnail">
@@ -2182,7 +2299,10 @@ class UIManager {
                     <span class="card-title">${f.name}</span>
                     <span class="card-description">${isFolder ? 'Folder' : (truncDesc || 'No description')}</span>
                 </div>
-                <span class="card-meta">${new Date(f.created).toLocaleDateString()}</span>
+                <div class="card-meta-group">
+                    <span class="card-type-chip" style="color: ${typeColor}">${typeText}</span>
+                    <span class="card-meta">${new Date(f.created).toLocaleDateString()}</span>
+                </div>
                 <div class="card-actions">
                     ${!isFolder ? `
                     <button class="card-action-btn" data-action="open" data-tooltip="Open Link"><i class="ph-bold ph-arrow-square-out"></i></button>
@@ -2827,16 +2947,25 @@ class UIManager {
             card.dataset.id = t.id;
             card.dataset.type = 'timestamp';
 
-            // Check PDF status
+            // Check PDF/Image status
             const urlExt = file && file.url ? file.url.toLowerCase().split('.').pop() : '';
             const isPdf = file && (
                 file.type === 'pdf' ||
                 file.name.toLowerCase().endsWith('.pdf') ||
-                urlExt === 'pdf' ||
-                (t.text && t.text.length > 0)
+                urlExt === 'pdf'
             );
-            const typeIcon = isPdf ? 'ph-file-pdf' : 'ph-film-strip';
-            const timeDisplay = isPdf ? `Page ${t.start}` : this.app.player.fmt(t.start);
+            const isImage = file && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(urlExt);
+            const isAudio = file && ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(urlExt);
+
+            let typeIcon = 'ph-film-strip';
+            if (isPdf) typeIcon = 'ph-file-pdf';
+            if (isImage) typeIcon = 'ph-image';
+            if (isAudio) typeIcon = 'ph-music-note';
+
+            let timeDisplay = this.app.player.fmt(t.start);
+            if (isPdf) timeDisplay = `Page ${t.start}`;
+            if (isImage) timeDisplay = 'Image';
+            if (isAudio) timeDisplay = 'Audio';
 
             // Type Indicator
             const typeInd = document.createElement('div');
@@ -2852,6 +2981,15 @@ class UIManager {
             if (file && file.url) {
                 if (isPdf) {
                     this.generatePDFThumbnail(file.url, bg, t.start);
+                } else if (isImage) {
+                    bg.style.backgroundColor = '#0f0f11';
+                    bg.innerHTML = `<img src="${file.url}" style="width:100%; height:100%; object-fit:cover; opacity: 0.3;">`;
+                } else if (isAudio) {
+                    bg.style.display = 'flex';
+                    bg.style.justifyContent = 'center';
+                    bg.style.alignItems = 'center';
+                    bg.style.backgroundColor = '#0f0f11';
+                    bg.innerHTML = '<i class="ph-fill ph-music-note" style="font-size:48px; color: var(--accent); opacity:0.5;"></i>';
                 } else {
                     this.generateVideoThumbnail(file.url, bg, t.start);
                 }
@@ -3366,6 +3504,8 @@ class ModalManager {
         const confirmBtn = document.getElementById('confirm-timestamp');
         const title = document.getElementById('ts-modal-title');
 
+        const isImage = this.app.player.isImage;
+
         if (isPdf) {
             if (timeGroup) timeGroup.classList.add('hidden');
             if (textGroup) textGroup.classList.remove('hidden');
@@ -3373,6 +3513,12 @@ class ModalManager {
 
             title.textContent = existingTs ? "Edit Highlight" : "Save Highlight";
             confirmBtn.textContent = existingTs ? "Update Highlight" : "Save Highlight";
+        } else if (isImage) {
+            if (timeGroup) timeGroup.classList.add('hidden');
+            if (textGroup) textGroup.classList.add('hidden');
+
+            title.textContent = existingTs ? "Edit Marking" : "New Marking";
+            confirmBtn.textContent = existingTs ? "Update Marking" : "Save Marking";
         } else {
             if (timeGroup) timeGroup.classList.remove('hidden');
             if (textGroup) textGroup.classList.add('hidden');
@@ -3405,7 +3551,8 @@ class ModalManager {
         // Initialize State
         if (existingTs) {
             this.currentTimestampId = existingTs.id;
-            document.getElementById('ts-modal-title').textContent = "Edit Timestamp";
+            // Title already set above but verifying:
+            // document.getElementById('ts-modal-title').textContent = "Edit Timestamp"; // REMOVED to respect context
             document.getElementById('btn-delete-ts').classList.remove('hidden');
 
             document.getElementById('input-ts-start').value = this.app.player.fmt(existingTs.start);
