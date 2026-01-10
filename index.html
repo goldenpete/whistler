@@ -44,6 +44,10 @@
                         <i class="ph-bold ph-hard-drives"></i>
                         <span>Storage</span>
                     </button>
+                    <button class="nav-item" id="nav-docs">
+                        <i class="ph-bold ph-note-pencil"></i>
+                        <span>Docs</span>
+                    </button>
 
                     <div class="nav-divider"></div>
 
@@ -57,7 +61,7 @@
                 </div>
             </nav>
 
-            <div class="spacer"></div>
+
 
             <!-- Sidebar PiP -->
             <div id="pip-container" class="pip-container hidden">
@@ -153,7 +157,54 @@
                     <!-- Timestamp Cards -->
                 </div>
             </section>
+
+            <!-- Docs View -->
+            <section id="view-docs" class="view-section hidden">
+                <div id="docs-toolbar">
+                    <button class="docs-toolbar-btn" id="btn-docs-undo" data-tooltip="Undo (Ctrl+Z)"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
+                    <button class="docs-toolbar-btn" id="btn-docs-redo" data-tooltip="Redo (Ctrl+Y)"><i class="ph-bold ph-arrow-clockwise"></i></button>
+
+                    <!-- Text Size Dropdown -->
+                    <div class="docs-dropdown" id="docs-size-dropdown">
+                        <button class="docs-toolbar-btn docs-dropdown-trigger">
+                            <span id="docs-size-label">14px</span>
+                            <i class="ph-bold ph-caret-down"></i>
+                        </button>
+                        <div class="docs-dropdown-menu hidden">
+                            <div data-size="10" class="docs-format-item"><span style="font-size:10px;">Small (10px)</span></div>
+                            <div data-size="12" class="docs-format-item"><span style="font-size:12px;">Normal (12px)</span></div>
+                            <div data-size="14" class="docs-format-item active"><span style="font-size:14px;">Default (14px)</span></div>
+                            <div data-size="16" class="docs-format-item"><span style="font-size:16px;">Large (16px)</span></div>
+                            <div data-size="18" class="docs-format-item"><span style="font-size:18px;">XL (18px)</span></div>
+                            <div data-size="20" class="docs-format-item"><span style="font-size:20px;">XXL (20px)</span></div>
+                            <div data-size="24" class="docs-format-item"><span style="font-size:24px;">XXL (24px)</span></div>
+                        </div>
+                    </div>
+                    <div class="docs-toolbar-divider"></div>
+                    <button class="docs-toolbar-btn" id="btn-docs-bold" data-tooltip="Bold (Ctrl+B)"><i
+                            class="ph-bold ph-text-b"></i></button>
+                    <button class="docs-toolbar-btn" id="btn-docs-italic" data-tooltip="Italic (Ctrl+I)"><i
+                            class="ph-bold ph-text-italic"></i></button>
+                    <button class="docs-toolbar-btn" id="btn-docs-underline" data-tooltip="Underline (Ctrl+U)"><i
+                            class="ph-bold ph-text-t"></i></button>
+                    <div class="docs-toolbar-divider"></div>
+                    <button class="docs-toolbar-btn" id="btn-docs-text-color" data-tooltip="Text Color"><i
+                            class="ph-bold ph-palette"></i></button>
+                    <button class="docs-toolbar-btn" id="btn-docs-highlight" data-tooltip="Highlight"><i
+                            class="ph-bold ph-pen"></i></button>
+                    <div class="docs-toolbar-divider"></div>
+                    <button class="docs-toolbar-btn" id="btn-docs-link" data-tooltip="Insert Link (Ctrl+K)"><i
+                            class="ph-bold ph-link"></i></button>
+                </div>
+                <div id="docs-editor" contenteditable="true" spellcheck="true" placeholder="Start writing..."></div>
+            </section>
         </main>
+
+        <!-- Debug Panel (temporary, shows JS runtime errors) -->
+        <div id="debug-errors" style="position:fixed;z-index:99999;right:12px;bottom:12px;max-width:420px;max-height:240px;overflow:auto;background:rgba(255,255,255,0.98);border:1px solid rgba(0,0,0,0.08);padding:8px;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,0.2);font-size:12px;color:#111;display:none;">
+            <strong style="display:block;margin-bottom:6px">Runtime Errors</strong>
+            <div id="debug-errors-body" style="white-space:pre-wrap;font-family:monospace;font-size:11px;color:#900;"></div>
+        </div>
 
         <!-- Player Overlay -->
         <div id="player-overlay" class="player-overlay hidden">
@@ -595,6 +646,48 @@
                 </div>
             </div>
         </div>
+
+        <!-- Docs Link Modal -->
+        <div class="modal hidden" id="modal-docs-link" style="width: 400px;">
+            <h3 class="modal-title">Insert Link</h3>
+            <div class="docs-link-tabs">
+                <button class="docs-link-tab active" data-tab="external">External URL</button>
+                <button class="docs-link-tab" data-tab="internal">Internal Link</button>
+            </div>
+            <div id="docs-link-external" class="docs-link-panel">
+                <input type="text" class="input" id="input-docs-link-url" placeholder="https://...">
+            </div>
+            <div id="docs-link-internal" class="docs-link-panel hidden">
+                <!-- Type Select -->
+                <div class="custom-select" id="docs-link-type-dropdown">
+                    <div class="custom-select-trigger" id="docs-link-type-trigger">
+                        <span id="docs-link-type-text">Storage File</span>
+                        <i class="ph-bold ph-caret-down"></i>
+                    </div>
+                    <div class="custom-select-menu hidden" id="docs-link-type-menu">
+                        <div class="custom-select-item" data-value="file">Storage File</div>
+                        <div class="custom-select-item" data-value="collection">Collection</div>
+                        <div class="custom-select-item" data-value="timestamp">Timestamp / Highlight / Marking</div>
+                    </div>
+                </div>
+
+                <!-- Item Select -->
+                <div class="custom-select" id="docs-link-item-dropdown" style="margin-top: 12px;">
+                    <div class="custom-select-trigger" id="docs-link-item-trigger">
+                        <span id="docs-link-item-text">Select item...</span>
+                        <i class="ph-bold ph-caret-down"></i>
+                    </div>
+                    <div class="custom-select-menu hidden" id="docs-link-item-menu">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" id="btn-docs-link-cancel">Cancel</button>
+                <button class="btn-primary" id="btn-docs-link-confirm">Insert Link</button>
+            </div>
+        </div>
+
 
     </div>
 

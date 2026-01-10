@@ -327,6 +327,12 @@ button {
     margin: 20px 0;
 }
 
+.nav-menu {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .nav-section-header {
     display: flex;
     justify-content: space-between;
@@ -3629,4 +3635,316 @@ input[type="color"]::-webkit-color-swatch {
 
 .search-container input:focus {
     /* Deprecated */
+}
+
+/* =============================================
+   DOCS TAB STYLES
+   ============================================= */
+
+#view-docs {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-app);
+}
+
+/* Docs Toolbar - Thinner than other headers */
+#docs-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border);
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.docs-toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.docs-toolbar-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.docs-toolbar-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+.docs-toolbar-btn i {
+    font-size: 16px;
+}
+
+.docs-toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 8px;
+}
+
+
+
+/* Floating pill shown when caret is inside a link in the docs editor */
+.docs-link-pill {
+    position: fixed;
+    z-index: 3100;
+    background: rgba(15,15,18,0.98);
+    border: 1px solid rgba(99,102,241,0.12);
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    border-radius: 999px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    pointer-events: auto;
+    font-size: 13px;
+}
+.docs-link-pill.hidden { display: none; }
+.docs-link-pill .docs-link-pill-url {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+.docs-link-pill .docs-link-pill-open {
+    background: linear-gradient(90deg, #7c3aed, #6366f1);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+/* edit / delete icon buttons */
+.docs-link-pill .docs-link-pill-edit,
+.docs-link-pill .docs-link-pill-delete {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.docs-link-pill .docs-link-pill-edit:hover,
+.docs-link-pill .docs-link-pill-delete:hover {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-primary);
+}
+
+/* Docs Dropdowns */
+.docs-dropdown {
+    position: relative;
+}
+
+.docs-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px;
+    min-width: 160px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.docs-format-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+}
+
+.docs-format-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.docs-format-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+/* Docs Editor */
+#docs-editor {
+    flex: 1;
+    padding: 32px 48px;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    background: var(--bg-app);
+    outline: none;
+}
+
+#docs-editor:empty::before {
+    content: attr(placeholder);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+#docs-editor h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+#docs-editor h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--text-primary);
+}
+
+#docs-editor h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+#docs-editor h4 {
+    font-size: 17px;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+#docs-editor h5 {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+#docs-editor h6 {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+}
+
+#docs-editor p {
+    margin-bottom: 12px;
+}
+
+#docs-editor ul,
+#docs-editor ol {
+    margin-left: 24px;
+    margin-bottom: 12px;
+}
+
+#docs-editor a {
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#docs-editor a:hover {
+    color: var(--accent-hover);
+}
+
+/* Docs Link Modal */
+.docs-link-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.docs-link-tab {
+    flex: 1;
+    padding: 10px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.docs-link-tab:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.docs-link-tab.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.docs-link-panel {
+    margin-bottom: 16px;
+}
+
+.docs-link-panel .input,
+.docs-link-panel input,
+.docs-link-panel select {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.docs-link-panel input:focus,
+.docs-link-panel select:focus {
+    border-color: var(--accent);
+}
+
+.docs-link-panel select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1aa' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.docs-link-panel select option {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+/* Sidebar nav container - fill remaining height */
+#project-nav-items {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }

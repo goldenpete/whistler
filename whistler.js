@@ -491,12 +491,14 @@ class Router {
         this.app = app;
         this.views = {
             storage: document.getElementById('view-storage'),
-            collection: document.getElementById('view-collection')
+            collection: document.getElementById('view-collection'),
+            docs: document.getElementById('view-docs')
         };
     }
 
     init() {
         document.getElementById('nav-storage').onclick = () => this.goTo('storage');
+        document.getElementById('nav-docs').onclick = () => this.goTo('docs');
     }
 
     goTo(viewName) {
@@ -521,6 +523,7 @@ class Router {
 
             // Ensure sidebar state
             document.getElementById('nav-storage').classList.add('active');
+            document.getElementById('nav-docs').classList.remove('active');
             this.app.ui.renderCollectionsList(); // Re-render to clear active collections
 
             this.views.storage.classList.remove('hidden');
@@ -530,7 +533,22 @@ class Router {
 
             // Update sidebar state
             document.getElementById('nav-storage').classList.remove('active');
+            document.getElementById('nav-docs').classList.remove('active');
             this.app.ui.renderCollectionsList(); // Re-render to highlight active collection
+        } else if (viewName === 'docs') {
+            if (!this.app.state.activeProjectId) return;
+
+            this.app.state.activeCollectionId = null;
+
+            // Update nav state
+            document.getElementById('nav-storage').classList.remove('active');
+            document.getElementById('nav-docs').classList.add('active');
+            this.app.ui.renderCollectionsList();
+
+            // Load and render docs
+            this.app.ui.renderDocs();
+
+            this.views.docs.classList.remove('hidden');
         }
     }
 
@@ -542,6 +560,10 @@ class Router {
     openCollection(id) {
         this.app.state.activeCollectionId = id;
         this.goTo('collection');
+    }
+
+    openDocs() {
+        this.goTo('docs');
     }
 }
 
@@ -3078,6 +3100,1054 @@ class UIManager {
             grid.appendChild(card);
         });
     }
+
+    // =============================================
+    // DOCS TAB
+    // =============================================
+
+    // Helper to get friendly text for internal links
+    getInternalLinkFriendlyText(href) {
+        if (!href || !href.startsWith('whistler://')) {
+            return null;
+        }
+
+        const itemValue = href.replace('whistler://', '');
+        try {
+            const [type, id] = itemValue.split(':');
+            if (type === 'file') {
+                const file = this.app.state.files.find(f => f.id === id);
+                return file?.name || null;
+            } else if (type === 'collection') {
+                const col = this.app.state.collections.find(c => c.id === id);
+                return col?.name || null;
+            } else if (type === 'timestamp') {
+                const ts = this.app.state.timestamps.find(t => t.id === id);
+                return ts?.note || null;
+            }
+        } catch (err) {
+            // Ignore parsing errors
+        }
+        return null;
+    }
+
+    // Process all internal links in editor to show friendly names
+    updateInternalLinkTexts(editor) {
+        const links = editor.querySelectorAll('a[href^="whistler://"]');
+        links.forEach(link => {
+            const friendlyText = this.getInternalLinkFriendlyText(link.href);
+            if (friendlyText && link.textContent !== friendlyText) {
+                // Only update if text is still the raw code or doesn't match friendly name
+                const currentText = link.textContent.trim();
+                const hrefValue = link.href.replace('whistler://', '');
+                // Check if current text looks like raw code (contains the ID pattern)
+                if (currentText === hrefValue || currentText.match(/^(file|collection|timestamp):[a-f0-9-]+$/i)) {
+                    link.textContent = friendlyText;
+                }
+            }
+        });
+    }
+
+    renderDocs() {
+        const editor = document.getElementById('docs-editor');
+        if (!editor) return;
+
+        // Load content for current project
+        const projectId = this.app.state.activeProjectId;
+        const project = this.app.state.projects.find(p => p.id === projectId);
+        editor.innerHTML = project?.docContent || '';
+
+        // Update all internal links to show friendly names instead of raw codes
+        this.updateInternalLinkTexts(editor);
+
+        // Focus editor
+        editor.focus();
+
+        // Setup auto-save on input
+        if (!editor.dataset.initialized) {
+            editor.dataset.initialized = 'true';
+
+            editor.addEventListener('input', () => {
+                this.saveDocsContent();
+            });
+
+            // Setup toolbar
+            this.setupDocsToolbar();
+        }
+    }
+
+    saveDocsContent() {
+        const editor = document.getElementById('docs-editor');
+        const projectId = this.app.state.activeProjectId;
+        if (!editor || !projectId) return;
+
+        const project = this.app.state.projects.find(p => p.id === projectId);
+        if (project) {
+            project.docContent = editor.innerHTML;
+            this.app.storage.save();
+        }
+    }
+
+    setupDocsToolbar() {
+        // Undo / Redo
+        document.getElementById('btn-docs-undo').onclick = () => {
+            document.execCommand('undo', false, null);
+            document.getElementById('docs-editor').focus();
+            updateButtonStates();
+        };
+        document.getElementById('btn-docs-redo').onclick = () => {
+            document.execCommand('redo', false, null);
+            document.getElementById('docs-editor').focus();
+            updateButtonStates();
+        };
+
+        const editor = document.getElementById('docs-editor');
+
+        // Bold
+        document.getElementById('btn-docs-bold').onclick = () => {
+            const sel = window.getSelection();
+
+            // If collapsed caret inside bold/strong, remove formatting at caret (deterministic)
+            if (sel && sel.rangeCount > 0 && sel.isCollapsed) {
+                const node = sel.anchorNode;
+                const el = node && node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+                const boldEl = el && el.closest ? el.closest('b, strong') : null;
+                if (boldEl) {
+                    const did = removeFormattingAtCaret();
+                    if (did) { updateButtonStates(); return; }
+                }
+            }
+
+            // Otherwise, toggle bold normally
+            document.execCommand('bold', false, null);
+            editor.focus();
+            updateButtonStates();
+        };
+
+        // Italic
+        document.getElementById('btn-docs-italic').onclick = () => {
+            document.execCommand('italic', false, null);
+            document.getElementById('docs-editor').focus();
+            updateButtonStates();
+        };
+
+        // Helpers for robust clear formatting
+        const escapeHTML = (str) => {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        };
+
+        const sanitizeHTMLToPlainText = (html) => {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html || '';
+
+            // Normalize <br> to newline
+            tmp.querySelectorAll('br').forEach(b => b.replaceWith('\n'));
+
+            // Add newline after block elements
+            tmp.querySelectorAll('p,div,li,h1,h2,h3,h4,h5,h6').forEach(el => {
+                if (el.nextSibling && el.nextSibling.nodeType === Node.TEXT_NODE) {
+                    el.after(document.createTextNode('\n'));
+                } else if (!el.nextSibling) {
+                    el.appendChild(document.createTextNode('\n'));
+                } else {
+                    el.after(document.createTextNode('\n'));
+                }
+            });
+
+            let text = tmp.textContent || '';
+
+            // Collapse multiple line breaks to max two and trim
+            text = text.replace(/\n{3,}/g, '\n\n');
+            // Trim leading/trailing whitespace on each line
+            text = text.split('\n').map(l => l.trim()).join('\n');
+            // Trim overall
+            text = text.replace(/^\s+|\s+$/g, '');
+
+            return text;
+        };
+
+        // Caret & formatting helpers
+        const getCaretCharacterOffsetWithin = (containerEl) => {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return null;
+            const range = sel.getRangeAt(0).cloneRange();
+            const preRange = document.createRange();
+            preRange.selectNodeContents(containerEl);
+            preRange.setEnd(range.startContainer, range.startOffset);
+            return preRange.toString().length;
+        };
+
+        const setCaretCharacterOffsetWithin = (containerEl, chars) => {
+            if (chars == null) return;
+            const nodeStack = [containerEl];
+            let node, found = false, count = 0;
+            while (nodeStack.length && !found) {
+                node = nodeStack.shift();
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const nextCount = count + node.textContent.length;
+                    if (chars <= nextCount) {
+                        const range = document.createRange();
+                        const sel = window.getSelection();
+                        range.setStart(node, Math.max(0, chars - count));
+                        range.collapse(true);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                        found = true;
+                        break;
+                    }
+                    count = nextCount;
+                } else {
+                    // push children in order
+                    for (let i = 0; i < node.childNodes.length; i++) nodeStack.push(node.childNodes[i]);
+                }
+            }
+            if (!found) {
+                // Fallback: place caret at end
+                const range = document.createRange();
+                range.selectNodeContents(containerEl);
+                range.collapse(false);
+                const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+            }
+        };
+
+        const removeFormattingAtCaret = () => {
+            const editor = document.getElementById('docs-editor');
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return false;
+
+            const offset = getCaretCharacterOffsetWithin(editor);
+            if (offset == null) return false;
+
+            // Find text node and ancestor at offset
+            let remaining = offset;
+            const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
+            let textNode = null;
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (remaining <= node.textContent.length) { textNode = node; break; }
+                remaining -= node.textContent.length;
+            }
+            if (!textNode) return false;
+
+            // Find nearest formatting ancestor
+            let anc = textNode.parentElement;
+            const inlineTags = ['a','b','strong','i','em','u','span','font','s','strike','mark','h1','h2','h3','h4','h5','h6'];
+            const classTags = ['docs-title','docs-subtitle'];
+            while (anc && anc !== editor) {
+                if (inlineTags.includes(anc.tagName.toLowerCase()) || classTags.some(cls => anc.classList && anc.classList.contains(cls))) break;
+                // also detect heading-like by computed style
+                try {
+                    const cs = window.getComputedStyle(anc);
+                    const fs = parseFloat(cs.fontSize) || 0;
+                    const fw = parseInt(cs.fontWeight) || 0;
+                    if (fs >= 18 || fw >= 600) break;
+                } catch (e) {}
+                anc = anc.parentElement;
+            }
+            if (!anc || anc === editor) return false;
+
+            // Replace ancestor with its plain text
+            const text = anc.textContent || '';
+            const txtNode = document.createTextNode(text);
+            anc.parentNode.replaceChild(txtNode, anc);
+
+            // Restore caret at original offset
+            setCaretCharacterOffsetWithin(editor, offset);
+            this.saveDocsContent();
+            return true;
+        };
+
+
+        // Clear Formatting removed — button deleted from UI. Use Bold/unwrapping or selection sanitization for clearing.
+
+
+        // Text Size Dropdown
+        const sizeDropdown = document.getElementById('docs-size-dropdown');
+        if (sizeDropdown) {
+            const sizeTrigger = sizeDropdown.querySelector('.docs-dropdown-trigger');
+            const sizeMenu = sizeDropdown.querySelector('.docs-dropdown-menu');
+            const sizeLabel = document.getElementById('docs-size-label');
+
+            sizeTrigger.onclick = (e) => {
+                e.stopPropagation();
+                sizeMenu.classList.toggle('hidden');
+            };
+
+            const applySizeToSelection = (sizePx) => {
+                const sel = window.getSelection();
+                if (!sel || sel.rangeCount === 0) return;
+                const size = parseFloat(sizePx);
+                const lineHeight = Math.max(Math.round(size * 1.3), Math.round(size + 2));
+
+                if (!sel.isCollapsed) {
+                    const range = sel.getRangeAt(0);
+                    const frag = range.cloneContents();
+                    const tmp = document.createElement('div'); tmp.appendChild(frag);
+                    const inner = tmp.innerHTML || '';
+                    const wrapped = `<span style="font-size:${size}px;line-height:${lineHeight}px">${inner}</span>`;
+                    try {
+                        document.execCommand('insertHTML', false, wrapped);
+                    } catch (e) {
+                        // Fallback: replace with text and wrap
+                        try { document.execCommand('insertText', false, tmp.textContent || ''); } catch (e2) {}
+                    }
+                } else {
+                    // Collapsed caret: insert a temporary styled span with zero-width marker and place caret inside
+                    const span = document.createElement('span');
+                    span.style.fontSize = size + 'px';
+                    span.style.lineHeight = lineHeight + 'px';
+                    span.setAttribute('data-docs-size-placeholder', 'true');
+                    span.appendChild(document.createTextNode('\u200B'));
+                    const range = sel.getRangeAt(0);
+                    range.insertNode(span);
+                    const r = document.createRange(); r.setStart(span, span.childNodes.length); r.collapse(true);
+                    sel.removeAllRanges(); sel.addRange(r);
+                }
+
+                updateButtonStates();
+                this.saveDocsContent();
+            };
+
+            sizeMenu.querySelectorAll('[data-size]').forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    const value = item.dataset.size;
+                    applySizeToSelection(value);
+
+                    // Update labels and active state
+                    sizeMenu.querySelectorAll('.docs-format-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    sizeLabel.textContent = item.textContent.trim();
+
+                    sizeMenu.classList.add('hidden');
+                    document.getElementById('docs-editor').focus();
+                };
+            });
+        }
+
+        // Duplicate size dropdown handler removed — initial size dropdown is already initialized above
+
+
+
+
+        // Underline button
+        document.getElementById('btn-docs-underline').onclick = () => {
+            document.execCommand('underline', false, null);
+            document.getElementById('docs-editor').focus();
+            updateButtonStates();
+        };
+
+        // Text Color button
+        document.getElementById('btn-docs-text-color').onclick = () => {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+                // If no selection, just set color for next typed text
+                this.docsSavedRange = null;
+            } else {
+                this.docsSavedRange = sel.getRangeAt(0).cloneRange();
+            }
+            this.docsColorType = 'foreColor';
+            this.app.modals.openColorPicker('#000000', (color) => {
+                if (color) {
+                    const editor = document.getElementById('docs-editor');
+                    let range = null;
+                    if (this.docsSavedRange) {
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(this.docsSavedRange);
+                        range = this.docsSavedRange;
+                    } else {
+                        const sel = window.getSelection();
+                        if (sel.rangeCount > 0) {
+                            range = sel.getRangeAt(0);
+                        }
+                    }
+                    if (range) {
+                        if (!range.collapsed) {
+                            document.execCommand('foreColor', false, color);
+                        } else {
+                            // Set color for future typing
+                            document.execCommand('foreColor', false, color);
+                        }
+                    }
+                    editor.focus();
+                    updateButtonStates();
+                    this.saveDocsContent();
+                }
+                this.docsSavedRange = null;
+            });
+        };
+
+        // Highlighter button
+        document.getElementById('btn-docs-highlight').onclick = () => {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+                this.docsSavedRange = null;
+            } else {
+                this.docsSavedRange = sel.getRangeAt(0).cloneRange();
+            }
+            this.docsColorType = 'backColor';
+            this.app.modals.openColorPicker('#ffff00', (color) => {
+                if (color) {
+                    const editor = document.getElementById('docs-editor');
+                    let range = null;
+                    if (this.docsSavedRange) {
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(this.docsSavedRange);
+                        range = this.docsSavedRange;
+                    } else {
+                        const sel = window.getSelection();
+                        if (sel.rangeCount > 0) {
+                            range = sel.getRangeAt(0);
+                        }
+                    }
+                    if (range) {
+                        if (!range.collapsed) {
+                            document.execCommand('backColor', false, color);
+                        } else {
+                            document.execCommand('backColor', false, color);
+                        }
+                    }
+                    editor.focus();
+                    updateButtonStates();
+                    this.saveDocsContent();
+                }
+                this.docsSavedRange = null;
+            });
+        };
+
+
+
+        // Link button
+        document.getElementById('btn-docs-link').onclick = () => {
+            this.openDocsLinkModal();
+        };
+
+        // Prevent image paste - only allow Catbox links
+        editor.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    this.app.modals.alert('Image Paste Not Allowed', 'Image paste is not supported. Please insert links to images instead.');
+                    return;
+                }
+            }
+        });
+
+        // Prevent image drag & drop
+        editor.addEventListener('drop', (e) => {
+            const items = e.dataTransfer.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    this.app.modals.alert('Image Drop Not Allowed', 'Image drag & drop is not supported. Please insert links to images instead.');
+                    return;
+                }
+            }
+        });
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', () => {
+            const heading = document.getElementById('docs-heading-dropdown'); if (heading) heading.querySelector('.docs-dropdown-menu')?.classList.add('hidden');
+            const list = document.getElementById('docs-list-dropdown'); if (list) list.querySelector('.docs-dropdown-menu')?.classList.add('hidden');
+            const size = document.getElementById('docs-size-dropdown'); if (size) size.querySelector('.docs-dropdown-menu')?.classList.add('hidden');
+        });
+
+        // Setup Link Modal Dropdowns
+        // Type Dropdown
+        this.setupCustomDropdown('docs-link-type-dropdown', (value) => {
+            this.docsLinkType = value;
+            const textMap = {
+                'file': 'Storage File',
+                'collection': 'Collection',
+                'timestamp': 'Timestamp / Highlight / Marking'
+            };
+            document.getElementById('docs-link-type-text').textContent = textMap[value] || 'Select Type';
+            this.populateDocsLinkItems();
+        });
+
+        // Item Dropdown
+        this.setupCustomDropdown('docs-link-item-dropdown', (value) => {
+            this.docsLinkItemValue = value;
+            // Find label
+            const menu = document.getElementById('docs-link-item-menu');
+            const item = Array.from(menu.children).find(el => el.dataset.value === value);
+            if (item) {
+                document.getElementById('docs-link-item-text').textContent = item.textContent;
+            }
+        });
+
+        // Link pill helpers (shows a floating pill above a link when caret is inside it)
+        let docsLinkPill = document.getElementById('docs-link-pill');
+        let currAnchor = null;
+        const uiManager = this; // Store reference for use in nested functions
+        const ensureLinkPill = () => {
+            if (!docsLinkPill) {
+                docsLinkPill = document.createElement('div');
+                docsLinkPill.id = 'docs-link-pill';
+                docsLinkPill.className = 'docs-link-pill hidden';
+                docsLinkPill.innerHTML = `<span class="docs-link-pill-url" id="docs-link-pill-url"></span><div style="display:flex;gap:8px"><button class="docs-link-pill-open" id="docs-link-pill-open">Open</button><button class="docs-link-pill-edit" id="docs-link-pill-edit" title="Edit"><i class="ph-bold ph-pencil-simple"></i></button><button class="docs-link-pill-delete" id="docs-link-pill-delete" title="Delete"><i class="ph-bold ph-trash"></i></button></div>`;
+                document.body.appendChild(docsLinkPill);
+
+                // Open action
+                const openBtn = document.getElementById('docs-link-pill-open');
+                openBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (!currAnchor) return;
+                    const hrefAttr = currAnchor.getAttribute('href') || '';
+
+                    // Internal whistler:// links should open in-app
+                    if (hrefAttr.startsWith('whistler://')) {
+                        const itemValue = hrefAttr.replace('whistler://','');
+                        const [type, id] = itemValue.split(':');
+
+                        if (type === 'file') {
+                            const file = this.app.state.files.find(f => f.id === id);
+                            if (file) {
+                                // Ensure project context if available
+                                if (file.projectId) this.app.state.activeProjectId = file.projectId;
+                                this.app.player.load(file);
+                            } else {
+                                this.app.modals.alert('Error', 'File not found.');
+                            }
+                        } else if (type === 'collection') {
+                            const col = this.app.state.collections.find(c => c.id === id);
+                            if (col) {
+                                this.app.router.openCollection(col.id);
+                            } else {
+                                this.app.modals.alert('Error', 'Collection not found.');
+                            }
+                        } else if (type === 'timestamp') {
+                            const ts = this.app.state.timestamps.find(t => t.id === id);
+                            if (ts) {
+                                const col = this.app.state.collections.find(c => c.id === ts.collectionId) || null;
+                                this.app.player.loadTimestamp(ts, col);
+                            } else {
+                                this.app.modals.alert('Error', 'Timestamp not found.');
+                            }
+                        } else {
+                            // Unknown internal type, fallback to trying to open
+                            try { window.open(hrefAttr, '_blank'); } catch (err) { /* ignore */ }
+                        }
+
+                        hideDocsLinkPill();
+                        return;
+                    }
+
+                    // External URL fallback
+                    if (currAnchor.href) {
+                        try { window.open(currAnchor.href, '_blank'); } catch (err) { /* ignore */ }
+                    }
+                };
+
+                // Edit action - open the link modal prefilled for this anchor
+                const editBtn = document.getElementById('docs-link-pill-edit');
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (!currAnchor) return;
+
+                    // Select the anchor content so the link modal can operate on it
+                    try {
+                        const range = document.createRange();
+                        range.selectNodeContents(currAnchor);
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                        this.docsSavedRange = range.cloneRange();
+                        this.docsEditingAnchor = currAnchor; // mark for edit
+
+                        // Open the modal
+                        this.openDocsLinkModal();
+
+                        // Prefill fields depending on link type
+                        const href = currAnchor.getAttribute('href') || currAnchor.href || '';
+                        if (/^https?:\/\//i.test(href)) {
+                            // External
+                            document.querySelectorAll('.docs-link-tab').forEach(t => t.classList.remove('active'));
+                            const extTab = document.querySelector('.docs-link-tab[data-tab="external"]');
+                            if (extTab) extTab.classList.add('active');
+                            document.getElementById('docs-link-external').classList.remove('hidden');
+                            document.getElementById('docs-link-internal').classList.add('hidden');
+                            document.getElementById('input-docs-link-url').value = href;
+                        } else if (href.startsWith('whistler://')) {
+                            // Internal
+                            const itemValue = href.replace('whistler://','');
+                            document.querySelectorAll('.docs-link-tab').forEach(t => t.classList.remove('active'));
+                            const intTab = document.querySelector('.docs-link-tab[data-tab="internal"]');
+                            if (intTab) intTab.classList.add('active');
+                            document.getElementById('docs-link-external').classList.add('hidden');
+                            document.getElementById('docs-link-internal').classList.remove('hidden');
+
+                            // Set type & populate items, then set selected item
+                            const [type, id] = itemValue.split(':');
+                            this.docsLinkType = type || this.docsLinkType;
+                            this.populateDocsLinkItems();
+                            this.docsLinkItemValue = itemValue;
+
+                            const menu = document.getElementById('docs-link-item-menu');
+                            const item = Array.from(menu.children).find(el => el.dataset.value === itemValue);
+                            if (item) document.getElementById('docs-link-item-text').textContent = item.textContent;
+                        }
+                    } catch (err) {
+                        console.error('Failed to open link editor', err);
+                    }
+                };
+
+                // Delete action - remove the anchor but keep the text
+                const deleteBtn = document.getElementById('docs-link-pill-delete');
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (!currAnchor) return;
+                    try {
+                        const text = document.createTextNode(currAnchor.textContent || '');
+                        currAnchor.parentNode.replaceChild(text, currAnchor);
+                        this.saveDocsContent();
+                        hideDocsLinkPill();
+                        currAnchor = null;
+                    } catch (err) { console.error('Failed to delete link', err); }
+                };
+
+                // Clicking the pill should not remove focus from editor (prevent side-effects)
+                docsLinkPill.onclick = (e) => e.stopPropagation();
+            }
+        };
+
+        const hideDocsLinkPill = () => {
+            if (docsLinkPill) docsLinkPill.classList.add('hidden');
+        };
+
+        // Update toolbar button states based on current selection/caret
+        function updateButtonStates() {
+            const btnBold = document.getElementById('btn-docs-bold');
+            const btnItalic = document.getElementById('btn-docs-italic');
+            const btnUnderline = document.getElementById('btn-docs-underline');
+            const btnLink = document.getElementById('btn-docs-link');
+
+            try {
+                const isBold = document.queryCommandState('bold');
+                const isItalic = document.queryCommandState('italic');
+                const isUnderline = document.queryCommandState('underline');
+
+                if (isBold) btnBold.classList.add('active'); else btnBold.classList.remove('active');
+                if (isItalic) btnItalic.classList.add('active'); else btnItalic.classList.remove('active');
+                if (isUnderline) btnUnderline.classList.add('active'); else btnUnderline.classList.remove('active');
+            } catch (e) {
+                // queryCommandState may throw in some contexts — ignore
+            }
+
+            // Detect if caret/selection is inside a link
+            const sel = window.getSelection();
+            let node = sel && sel.anchorNode ? sel.anchorNode : null;
+            let anchorEl = null;
+            while (node) {
+                if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'A') { anchorEl = node; break; }
+                node = node.parentNode;
+            }
+
+            if (anchorEl) btnLink.classList.add('active'); else btnLink.classList.remove('active');
+
+            // Update size dropdown active state based on computed font-size at caret
+            try {
+                const sizeDropdownEl = document.getElementById('docs-size-dropdown');
+                const sizeLabel = document.getElementById('docs-size-label');
+                if (sizeDropdownEl && sizeLabel) {
+                    let n = sel && sel.anchorNode ? sel.anchorNode : null;
+                    if (n && n.nodeType === Node.TEXT_NODE) n = n.parentElement;
+                    let found = null;
+                    while (n && n !== document.getElementById('docs-editor')) {
+                        if (n.nodeType === Node.ELEMENT_NODE) {
+                            const cs = window.getComputedStyle(n);
+                            const fs = parseFloat(cs.fontSize) || 0;
+                            if (fs) { found = fs; break; }
+                        }
+                        n = n.parentElement;
+                    }
+                    const menuItems = sizeDropdownEl.querySelectorAll('[data-size]');
+                    let matched = null;
+                    if (found) {
+                        // Match to closest size option
+                        menuItems.forEach(mi => {
+                            const v = parseFloat(mi.dataset.size) || 0;
+                            // choose the smallest size >= found, or closest
+                            if (!matched || Math.abs(v - found) < Math.abs(parseFloat(matched.dataset.size) - found)) matched = mi;
+                        });
+                    }
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    if (matched) { matched.classList.add('active'); sizeLabel.textContent = matched.textContent.trim(); }
+                    else { sizeLabel.textContent = 'Normal'; }
+                }
+            } catch (e) {}
+
+
+            // Show a floating pill when caret is inside a link and selection is collapsed
+            if (sel && sel.isCollapsed && anchorEl) {
+                currAnchor = anchorEl;
+                ensureLinkPill();
+                const urlEl = document.getElementById('docs-link-pill-url');
+
+                // If external link, show the full URL (allow wrapping); if internal, show friendly title
+                // Use getAttribute to get the raw href value (browser might expand href property)
+                const href = currAnchor.getAttribute('href') || '';
+                if (/^https?:\/\//i.test(href)) {
+                    urlEl.textContent = href;
+                    urlEl.style.whiteSpace = 'normal';
+                    // Allow the pill to grow across most of the viewport
+                    docsLinkPill.style.maxWidth = 'calc(100% - 48px)';
+                } else if (href && href.startsWith('whistler://')) {
+                    // Derive friendly text from internal link
+                    const itemValue = href.replace('whistler://', '');
+                    let friendly = itemValue; // Default to itemValue
+                    
+                    try {
+                        const [type, id] = itemValue.split(':');
+                        if (uiManager && uiManager.app && uiManager.app.state) {
+                            if (type === 'file') {
+                                const file = uiManager.app.state.files.find(f => f.id === id);
+                                friendly = file?.name || friendly;
+                            } else if (type === 'collection') {
+                                const col = uiManager.app.state.collections.find(c => c.id === id);
+                                friendly = col?.name || friendly;
+                            } else if (type === 'timestamp') {
+                                const ts = uiManager.app.state.timestamps.find(t => t.id === id);
+                                friendly = ts?.note || friendly;
+                            }
+                        }
+                    } catch (err) {
+                        // Keep default friendly value if parsing fails
+                    }
+                    
+                    urlEl.textContent = friendly;
+                    urlEl.style.whiteSpace = 'nowrap';
+                    docsLinkPill.style.maxWidth = '520px';
+                } else {
+                    urlEl.textContent = href || '';
+                    urlEl.style.whiteSpace = 'normal';
+                    docsLinkPill.style.maxWidth = 'calc(100% - 48px)';
+                }
+
+                // Compute a rect to position the pill
+                let rect = null;
+                if (sel.rangeCount > 0) {
+                    const r = sel.getRangeAt(0).cloneRange();
+                    r.collapse(true);
+                    rect = r.getBoundingClientRect();
+                }
+                if (!rect || (rect.width === 0 && rect.height === 0)) {
+                    rect = currAnchor.getBoundingClientRect();
+                }
+
+                // Position the pill centered above the rect; fall back below if not enough space
+                docsLinkPill.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    const pillW = docsLinkPill.offsetWidth;
+                    const pillH = docsLinkPill.offsetHeight;
+                    let left = rect.left + (rect.width / 2) - (pillW / 2);
+                    left = Math.max(8, Math.min(left, window.innerWidth - pillW - 8));
+                    let top = rect.top - pillH - 8;
+                    if (top < 8) top = rect.bottom + 8; // place below if not enough room above
+                    docsLinkPill.style.left = left + 'px';
+                    docsLinkPill.style.top = top + 'px';
+                });
+            } else {
+                currAnchor = null;
+                hideDocsLinkPill();
+            }
+        };
+
+        // Update on selection changes and editor interactions
+        document.addEventListener('selectionchange', updateButtonStates);
+        editor.addEventListener('keyup', updateButtonStates);
+        editor.addEventListener('mouseup', updateButtonStates);
+        editor.addEventListener('blur', hideDocsLinkPill);
+        window.addEventListener('scroll', hideDocsLinkPill);
+        window.addEventListener('resize', hideDocsLinkPill);
+
+        // Update on input: refresh toolbar state, cleanup placeholders, and autosave
+        editor.addEventListener('input', () => {
+            try {
+                // Remove size placeholders when user types into them
+                const placeholders = editor.querySelectorAll('span[data-docs-size-placeholder]');
+                placeholders.forEach(ph => {
+                    // If placeholder still has only the zero-width char, keep it until user types; otherwise remove attribute
+                    if ((ph.textContent || '') !== '\u200B') {
+                        ph.removeAttribute('data-docs-size-placeholder');
+                    }
+                });
+            } catch (e) {}
+
+            try { updateButtonStates(); } catch (e) {}
+            try { this.saveDocsContent(); } catch (e) {}
+        });
+
+        // Shift+Space handler: insert non-breaking space and keep spacing consistent
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && e.shiftKey) {
+                e.preventDefault();
+                try {
+                    document.execCommand('insertText', false, '\u00A0');
+                } catch (ex) {
+                    document.execCommand('insertHTML', false, '&nbsp;');
+                }
+                updateButtonStates();
+            }
+
+            // Ensure Shift+Enter inserts a <br> (soft break) which preserves spacing
+            if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
+                try { document.execCommand('insertHTML', false, '<br>'); } catch (ex) {}
+                updateButtonStates();
+            }
+        });
+
+        // Initialize
+        updateButtonStates();
+        
+
+
+    }
+
+    openDocsLinkModal() {
+        // Save current selection
+        const selection = window.getSelection();
+        this.docsSavedRange = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+
+        const modal = document.getElementById('modal-docs-link');
+        const backdrop = document.getElementById('modal-backdrop');
+
+        // Ensure modal is inside the backdrop container so it receives pointer events reliably
+        if (backdrop && modal && modal.parentNode !== backdrop) backdrop.appendChild(modal);
+
+        backdrop.classList.remove('hidden');
+        modal.classList.remove('hidden');
+
+        // Reset state
+        document.getElementById('input-docs-link-url').value = '';
+        document.getElementById('docs-link-external').classList.remove('hidden');
+        document.getElementById('docs-link-internal').classList.add('hidden');
+        document.querySelectorAll('.docs-link-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.docs-link-tab[data-tab="external"]').classList.add('active');
+
+        // Tab switching
+        document.querySelectorAll('.docs-link-tab').forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll('.docs-link-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                if (tab.dataset.tab === 'external') {
+                    document.getElementById('docs-link-external').classList.remove('hidden');
+                    document.getElementById('docs-link-internal').classList.add('hidden');
+                } else {
+                    document.getElementById('docs-link-external').classList.add('hidden');
+                    document.getElementById('docs-link-internal').classList.remove('hidden');
+                    this.populateDocsLinkItems();
+                }
+            };
+        });
+
+        // Type change (safe-guard in case element isn't present)
+        const selTypeEl = document.getElementById('select-docs-link-type');
+        if (selTypeEl) {
+            selTypeEl.onchange = () => {
+                this.populateDocsLinkItems();
+            };
+        }
+
+        // Cancel
+        document.getElementById('btn-docs-link-cancel').onclick = () => {
+            this.closeDocsLinkModal();
+        };
+
+        // Confirm
+        document.getElementById('btn-docs-link-confirm').onclick = () => {
+            this.insertDocsLink();
+        };
+    }
+
+    populateDocsLinkItems() {
+        const type = this.docsLinkType || 'file'; // Default
+        const menu = document.getElementById('docs-link-item-menu');
+        menu.innerHTML = ''; // Clear
+
+        // Reset selection state
+        this.docsLinkItemValue = null;
+        document.getElementById('docs-link-item-text').textContent = 'Select item...';
+
+        let items = [];
+
+        if (type === 'file') {
+            this.app.state.files
+                .filter(f => f.projectId === this.app.state.activeProjectId && f.type !== 'folder')
+                .forEach(f => {
+                    items.push({ value: `file:${f.id}`, label: f.name });
+                });
+        } else if (type === 'collection') {
+            this.app.state.collections
+                .filter(c => c.projectId === this.app.state.activeProjectId)
+                .forEach(c => {
+                    items.push({ value: `collection:${c.id}`, label: c.name });
+                });
+        } else if (type === 'timestamp') {
+            this.app.state.timestamps.forEach(t => {
+                const file = this.app.state.files.find(f => f.id === t.fileId);
+                const col = this.app.state.collections.find(c => c.id === t.collectionId);
+                if (file && col && col.projectId === this.app.state.activeProjectId) {
+                    const label = `${t.note || 'Untitled'} (${file.name})`;
+                    items.push({ value: `timestamp:${t.id}`, label: label });
+                }
+            });
+        }
+
+        if (items.length === 0) {
+            menu.innerHTML = '<div class="custom-select-item" style="pointer-events:none; color:var(--text-muted)">No items found</div>';
+        } else {
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'custom-select-item';
+                el.dataset.value = item.value;
+                el.textContent = item.label;
+                menu.appendChild(el);
+            });
+        }
+    }
+
+
+    insertDocsLink() {
+        const activeTab = document.querySelector('.docs-link-tab.active').dataset.tab;
+        let url = '';
+        let text = '';
+
+        if (activeTab === 'external') {
+            url = document.getElementById('input-docs-link-url').value.trim();
+            if (!url) {
+                this.app.modals.alert("Error", "Please enter a URL");
+                return;
+            }
+            text = url;
+            // Prepend https if missing
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'https://' + url;
+            }
+        } else {
+            const itemValue = this.docsLinkItemValue;
+            if (!itemValue) {
+                this.app.modals.alert("Error", "Please select an item");
+                return;
+            }
+            url = `whistler://${itemValue}`;
+
+            // Get display text
+            const [itemType, itemId] = itemValue.split(':');
+            if (itemType === 'file') {
+                const file = this.app.state.files.find(f => f.id === itemId);
+                text = file?.name || 'File';
+            } else if (itemType === 'collection') {
+                const col = this.app.state.collections.find(c => c.id === itemId);
+                text = col?.name || 'Collection';
+            } else if (itemType === 'timestamp') {
+                const ts = this.app.state.timestamps.find(t => t.id === itemId);
+                text = ts?.note || 'Timestamp';
+            }
+        }
+
+        // If we are editing an existing anchor, update it directly
+        if (this.docsEditingAnchor) {
+            try {
+                const a = this.docsEditingAnchor;
+                a.href = url;
+                // Update visible text to a friendly label
+                if (activeTab === 'external') a.textContent = url; else a.textContent = text;
+            } catch (err) {
+                console.error('Failed to update link', err);
+            }
+            this.docsEditingAnchor = null;
+            this.closeDocsLinkModal();
+            this.saveDocsContent();
+            return;
+        }
+
+        // Restore selection and insert link
+        const editor = document.getElementById('docs-editor');
+        editor.focus();
+
+        // If saved range disappeared, try to use current selection as fallback
+        if (!this.docsSavedRange) {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) this.docsSavedRange = sel.getRangeAt(0).cloneRange();
+        }
+
+        if (this.docsSavedRange) {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(this.docsSavedRange);
+
+            // If text is selected, use it; otherwise insert link text
+            if (selection.toString().trim()) {
+                const selectedText = selection.toString().trim();
+                document.execCommand('createLink', false, url);
+                
+                // After createLink, if it's an internal link, check if we should update the text
+                if (url.startsWith('whistler://')) {
+                    // Find the link in the current selection
+                    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+                    if (range) {
+                        // Try to find the link in or near the selection
+                        let link = range.commonAncestorContainer;
+                        if (link.nodeType !== Node.ELEMENT_NODE) {
+                            link = link.parentElement;
+                        }
+                        link = link.closest('a');
+                        
+                        // If no link found, try finding by URL
+                        if (!link || link.href !== url) {
+                            link = editor.querySelector(`a[href="${CSS.escape(url)}"]`);
+                        }
+                        
+                        if (link) {
+                            const friendlyText = this.getInternalLinkFriendlyText(url);
+                            // Only replace text if it looks like raw code
+                            const currentText = link.textContent.trim();
+                            const itemValue = url.replace('whistler://', '');
+                            if (friendlyText && (currentText === itemValue || currentText === selectedText && selectedText.match(/^(file|collection|timestamp):[a-f0-9-]+$/i))) {
+                                link.textContent = friendlyText;
+                            }
+                        }
+                    }
+                }
+            } else {
+                const link = document.createElement('a');
+                link.href = url;
+                link.textContent = text;
+                this.docsSavedRange.insertNode(link);
+            }
+        }
+
+        // After link insertion, update all internal links to ensure they show friendly names
+        // This handles cases where createLink was used and the text might be raw code
+        setTimeout(() => {
+            this.updateInternalLinkTexts(editor);
+        }, 0);
+
+        this.closeDocsLinkModal();
+        this.saveDocsContent();
+    }
+
+
+    closeDocsLinkModal() {
+        document.getElementById('modal-docs-link').classList.add('hidden');
+        document.getElementById('modal-backdrop').classList.add('hidden');
+    }
+
+
+
+
+
+
 }
 
 class ModalManager {
@@ -3575,6 +4645,34 @@ class ModalManager {
         }
     }
 
+    alert(title, message) {
+        // Simple alert using confirm modal but only showing OK button
+        const modal = document.getElementById('modal-confirm');
+        const titleEl = document.getElementById('confirm-title');
+        const messageEl = document.getElementById('confirm-message');
+        const btnYes = document.getElementById('btn-confirm-yes');
+        
+        if (modal && titleEl && messageEl && btnYes) {
+            titleEl.textContent = title || 'Alert';
+            messageEl.textContent = message || '';
+            
+            // Store original onclick
+            const originalOnClick = btnYes.onclick;
+            const newBtn = btnYes.cloneNode(true);
+            btnYes.parentNode.replaceChild(newBtn, btnYes);
+            document.getElementById('btn-confirm-yes').onclick = () => {
+                this.close();
+            };
+            document.getElementById('btn-confirm-yes').textContent = 'OK';
+            
+            this.backdrop.classList.remove('hidden');
+            modal.classList.remove('hidden');
+        } else {
+            // Fallback to browser alert
+            window.alert(`${title || 'Alert'}: ${message || ''}`);
+        }
+    }
+
     close() {
         this.backdrop.classList.add('hidden');
         document.querySelectorAll('.modal').forEach(el => el.classList.add('hidden'));
@@ -3641,9 +4739,11 @@ class ModalManager {
         // Confirm
         document.getElementById('btn-cp-confirm').onclick = () => {
             const reopenModalId = this.reopenModalAfterColorPick;
-            if (this.onColorPickCallback) this.onColorPickCallback(this.pickerColor);
+            if (this.onColorPickCallback) {
+                this.onColorPickCallback(this.pickerColor);
+            }
             this.close();
-            // Reopen a modal if one was specified
+            // Reopen a modal if one was specified (for nested modals)
             if (reopenModalId) {
                 this.backdrop.classList.remove('hidden');
                 document.getElementById(reopenModalId).classList.remove('hidden');
@@ -3842,3 +4942,29 @@ class ModalManager {
 
 // Start
 const app = new WhistlerApp();
+
+// Dev: capture runtime errors and show in debug panel (temporary)
+window.addEventListener('error', function(ev) {
+    try {
+        const panel = document.getElementById('debug-errors');
+        const body = document.getElementById('debug-errors-body');
+        if (panel && body) {
+            panel.style.display = 'block';
+            const msg = `[Error] ${ev.message} at ${ev.filename}:${ev.lineno}:${ev.colno}\n${ev.error ? ev.error.stack : ''}`;
+            body.textContent = (body.textContent || '') + msg + '\n\n';
+        }
+    } catch (e) {}
+    console.error(ev);
+});
+window.addEventListener('unhandledrejection', function(ev) {
+    try {
+        const panel = document.getElementById('debug-errors');
+        const body = document.getElementById('debug-errors-body');
+        if (panel && body) {
+            panel.style.display = 'block';
+            const msg = `[UnhandledRejection] ${ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)}\n${ev.reason && ev.reason.stack ? ev.reason.stack : ''}`;
+            body.textContent = (body.textContent || '') + msg + '\n\n';
+        }
+    } catch (e) {}
+    console.error(ev);
+});
