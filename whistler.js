@@ -1586,7 +1586,14 @@ class Player {
             `Page ${timestamp.start}` : `${this.fmt(timestamp.start)} - ${this.fmt(timestamp.end)}`;
         document.getElementById('info-note').textContent = timestamp.note || 'No note';
 
-        const fileIcon = (file && (file.type === 'pdf' || file.name.endsWith('.pdf'))) ? 'ph-file-pdf' : 'ph-film-strip';
+        const urlExt = file && file.url ? file.url.toLowerCase().split('.').pop() : '';
+        const isPdfFile = file && (
+            file.type === 'pdf' ||
+            file.name.toLowerCase().endsWith('.pdf') ||
+            urlExt === 'pdf'
+        );
+        const fileIcon = isPdfFile ? 'ph-file-pdf' : 'ph-film-strip';
+
         document.getElementById('info-file').innerHTML =
             `<i class="ph-bold ${fileIcon}"></i> ${file?.name || 'Unknown'}`;
         // Populate file description
@@ -2461,6 +2468,52 @@ class UIManager {
         video.src = safeUrl;
     }
 
+    generatePDFThumbnail(url, container, pageNum = 1) {
+        // Normalize URL for local files
+        let safeUrl = url;
+        if (typeof safeUrl === 'string' && !safeUrl.startsWith('file:') && !safeUrl.startsWith('http') && safeUrl.match(/^[a-zA-Z]:/)) {
+            safeUrl = 'file:///' + safeUrl.replace(/\\/g, '/');
+        }
+
+        try {
+            // Using global pdfjsLib
+            const loadingTask = pdfjsLib.getDocument(safeUrl);
+            loadingTask.promise.then(pdf => {
+                // Determine page (1-based)
+                const targetPage = Math.max(1, Math.min(pageNum || 1, pdf.numPages));
+
+                pdf.getPage(targetPage).then(page => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+
+                    // Render small thumbnail (width ~320px like video)
+                    const viewport = page.getViewport({ scale: 1.0 });
+                    const scale = 320 / viewport.width;
+                    const scaledViewport = page.getViewport({ scale: scale });
+
+                    canvas.width = scaledViewport.width;
+                    canvas.height = scaledViewport.height;
+                    canvas.className = 'card-thumb-img';
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: scaledViewport
+                    };
+
+                    page.render(renderContext).promise.then(() => {
+                        container.innerHTML = '';
+                        container.appendChild(canvas);
+                    });
+                });
+            }).catch(err => {
+                console.error('Error loading PDF for thumbnail:', err);
+            });
+        } catch (e) {
+            console.error('Error generating PDF thumbnail:', e);
+        }
+    }
+
+
     initCollectionSearch() {
         const btnSearch = document.getElementById('btn-collection-search');
         const container = document.getElementById('collection-search-container');
@@ -2774,13 +2827,34 @@ class UIManager {
             card.dataset.id = t.id;
             card.dataset.type = 'timestamp';
 
+            // Check PDF status
+            const urlExt = file && file.url ? file.url.toLowerCase().split('.').pop() : '';
+            const isPdf = file && (
+                file.type === 'pdf' ||
+                file.name.toLowerCase().endsWith('.pdf') ||
+                urlExt === 'pdf' ||
+                (t.text && t.text.length > 0)
+            );
+            const typeIcon = isPdf ? 'ph-file-pdf' : 'ph-film-strip';
+            const timeDisplay = isPdf ? `Page ${t.start}` : this.app.player.fmt(t.start);
+
+            // Type Indicator
+            const typeInd = document.createElement('div');
+            typeInd.className = 'card-type-indicator';
+            typeInd.innerHTML = `<i class="ph-bold ${typeIcon}"></i>`;
+            card.appendChild(typeInd);
+
             // Background Preview
             const bg = document.createElement('div');
             bg.className = 'card-bg-preview';
             card.appendChild(bg);
 
             if (file && file.url) {
-                this.generateVideoThumbnail(file.url, bg, t.start);
+                if (isPdf) {
+                    this.generatePDFThumbnail(file.url, bg, t.start);
+                } else {
+                    this.generateVideoThumbnail(file.url, bg, t.start);
+                }
             }
 
             // Content
@@ -2796,7 +2870,7 @@ class UIManager {
             content.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     ${contextHtml}
-                    <span class="card-meta" style="color:${displayColor}">${this.app.player.fmt(t.start)}</span>
+                    <span class="card-meta" style="color:${displayColor}">${timeDisplay}</span>
                 </div>
                 <span class="card-title" style="font-size:14px; margin-top:4px;">"${t.note}"</span>
                 <span class="card-meta">${file ? file.name : 'Unknown File'}</span>
