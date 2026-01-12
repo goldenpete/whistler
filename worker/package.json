@@ -1,0 +1,16 @@
+{
+  "name": "whistler-sync-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for Whistler anonymous sync",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create whistler-sync-db",
+    "db:init": "wrangler d1 execute whistler-sync-db --file=./schema.sql",
+    "db:init:local": "wrangler d1 execute whistler-sync-db --local --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

@@ -23,6 +23,7 @@ class WhistlerApp {
         this.ui = new UIManager(this);
         this.modals = new ModalManager(this);
         this.exportImport = new ExportImportManager(this);
+        this.sync = new SyncManager(this);
 
         this.init();
     }
@@ -32,6 +33,7 @@ class WhistlerApp {
         this.router.init();
         this.modals.init(); // Restore Modals
         this.exportImport.init(); // Initialize export/import
+        this.sync.init(); // Initialize cloud sync
         this.ui.setupNavigation();
         this.ui.renderProjectDropdown(); // Initialize Dropdown & Auto-select
         
@@ -60,6 +62,11 @@ class StorageManager {
             timestamps: this.app.state.timestamps
         };
         localStorage.setItem(this.KEY, JSON.stringify(data));
+        
+        // Trigger cloud sync on data change
+        if (this.app.sync) {
+            this.app.sync.onDataChange();
+        }
     }
 
     load() {
@@ -4711,6 +4718,18 @@ class ModalManager {
         document.querySelectorAll('.modal').forEach(el => el.classList.add('hidden'));
     }
 
+    /**
+     * Generic show method for modals
+     */
+    show(type) {
+        this.close();
+        this.backdrop.classList.remove('hidden');
+        const modal = document.getElementById(`modal-${type}`);
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+
     // --- Color Picker ---
     openColorPicker(initialColor, callback) {
         this.close();
@@ -4970,6 +4989,562 @@ class ModalManager {
             return val.length === 1 ? '0' + val : val;
         };
         return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+}
+
+// ============================================
+// SyncManager - Anonymous Cloud Sync
+// ============================================
+class SyncManager {
+    constructor(app) {
+        this.app = app;
+        
+        // Configuration
+        this.API_URL = 'https://whistler-sync.peteawesome.workers.dev';
+        
+        // Local storage keys
+        this.ACCOUNT_KEY = 'whistler_account_id';
+        this.TOKEN_KEY = 'whistler_session_token';
+        this.LAST_SYNC_KEY = 'whistler_last_sync';
+        
+        // State
+        this.accountId = null;
+        this.sessionToken = null;
+        this.lastSync = null;
+        this.isSyncing = false;
+        
+        // Auto-sync interval (5 minutes)
+        this.syncInterval = null;
+        this.SYNC_INTERVAL_MS = 5 * 60 * 1000;
+    }
+    
+    init() {
+        // Load stored credentials
+        this.accountId = localStorage.getItem(this.ACCOUNT_KEY);
+        this.sessionToken = localStorage.getItem(this.TOKEN_KEY);
+        this.lastSync = localStorage.getItem(this.LAST_SYNC_KEY);
+        
+        // Setup UI
+        this.setupUI();
+        
+        // Auto-login if we have credentials
+        if (this.accountId && this.sessionToken) {
+            this.updateUIState(true);
+            // Start auto-sync
+            this.startAutoSync();
+            // Sync on startup (delayed to let app initialize)
+            setTimeout(() => this.syncFromCloud(), 1000);
+        }
+    }
+    
+    setupUI() {
+        // Cloud sync button in sidebar
+        const btnCloudSync = document.getElementById('btn-cloud-sync');
+        if (btnCloudSync) {
+            btnCloudSync.onclick = () => this.openSyncModal();
+        }
+        
+        // Generate account ID button
+        const btnGenerate = document.getElementById('btn-generate-account-id');
+        if (btnGenerate) {
+            btnGenerate.onclick = () => this.generateAccountId();
+        }
+        
+        // Login button
+        const btnLogin = document.getElementById('btn-sync-login');
+        if (btnLogin) {
+            btnLogin.onclick = () => this.login();
+        }
+        
+        // Logout button
+        const btnLogout = document.getElementById('btn-sync-logout');
+        if (btnLogout) {
+            btnLogout.onclick = () => this.logout();
+        }
+        
+        // Sync now button
+        const btnSyncNow = document.getElementById('btn-sync-now');
+        if (btnSyncNow) {
+            btnSyncNow.onclick = () => this.syncToCloud();
+        }
+        
+        // Copy account ID button
+        const btnCopyId = document.getElementById('btn-copy-account-id');
+        if (btnCopyId) {
+            btnCopyId.onclick = () => this.copyAccountId();
+        }
+        
+        // Account ID input formatting
+        const inputAccountId = document.getElementById('input-account-id');
+        if (inputAccountId) {
+            inputAccountId.addEventListener('input', (e) => this.formatAccountIdInput(e));
+        }
+    }
+    
+    openSyncModal() {
+        this.app.modals.show('sync');
+        this.updateUIState(!!this.accountId && !!this.sessionToken);
+    }
+    
+    updateUIState(isLoggedIn) {
+        const loggedOutDiv = document.getElementById('sync-logged-out');
+        const loggedInDiv = document.getElementById('sync-logged-in');
+        const displayId = document.getElementById('display-account-id');
+        const syncStatus = document.getElementById('sync-status');
+        const syncIcon = document.getElementById('sync-icon');
+        
+        if (isLoggedIn) {
+            loggedOutDiv?.classList.add('hidden');
+            loggedInDiv?.classList.remove('hidden');
+            
+            if (displayId) {
+                displayId.textContent = this.formatAccountId(this.accountId);
+            }
+            
+            if (syncStatus) {
+                if (this.lastSync) {
+                    const date = new Date(this.lastSync);
+                    syncStatus.textContent = `Last synced: ${date.toLocaleString()}`;
+                } else {
+                    syncStatus.textContent = 'Last synced: Never';
+                }
+            }
+            
+            // Update sidebar icon
+            if (syncIcon) {
+                syncIcon.className = 'ph-fill ph-cloud-check';
+            }
+        } else {
+            loggedOutDiv?.classList.remove('hidden');
+            loggedInDiv?.classList.add('hidden');
+            
+            // Reset sidebar icon
+            if (syncIcon) {
+                syncIcon.className = 'ph-bold ph-cloud';
+            }
+        }
+    }
+    
+    /**
+     * Generate a cryptographically random 16-digit account ID
+     */
+    generateAccountId() {
+        const array = new Uint8Array(8);
+        crypto.getRandomValues(array);
+        
+        // Convert to 16-digit number string
+        let id = '';
+        for (let i = 0; i < 8; i++) {
+            // Each byte contributes 2 digits (00-99)
+            const digits = (array[i] % 100).toString().padStart(2, '0');
+            id += digits;
+        }
+        
+        const inputAccountId = document.getElementById('input-account-id');
+        if (inputAccountId) {
+            inputAccountId.value = this.formatAccountId(id);
+        }
+    }
+    
+    /**
+     * Format account ID as XXXX-XXXX-XXXX-XXXX
+     */
+    formatAccountId(id) {
+        if (!id) return '';
+        const clean = id.replace(/\D/g, '').slice(0, 16);
+        const parts = [];
+        for (let i = 0; i < clean.length; i += 4) {
+            parts.push(clean.slice(i, i + 4));
+        }
+        return parts.join('-');
+    }
+    
+    /**
+     * Format the input field as user types
+     */
+    formatAccountIdInput(e) {
+        const input = e.target;
+        const cursorPos = input.selectionStart;
+        const oldValue = input.value;
+        
+        // Get just digits
+        const digits = oldValue.replace(/\D/g, '').slice(0, 16);
+        
+        // Format with dashes
+        const formatted = this.formatAccountId(digits);
+        
+        // Only update if changed
+        if (formatted !== oldValue) {
+            input.value = formatted;
+            
+            // Try to preserve cursor position
+            const digitsBeforeCursor = oldValue.slice(0, cursorPos).replace(/\D/g, '').length;
+            let newCursorPos = 0;
+            let digitCount = 0;
+            for (let i = 0; i < formatted.length && digitCount < digitsBeforeCursor; i++) {
+                if (formatted[i] !== '-') digitCount++;
+                newCursorPos = i + 1;
+            }
+            input.setSelectionRange(newCursorPos, newCursorPos);
+        }
+    }
+    
+    /**
+     * Get clean 16-digit ID from input
+     */
+    getCleanAccountId() {
+        const input = document.getElementById('input-account-id');
+        if (!input) return null;
+        return input.value.replace(/\D/g, '');
+    }
+    
+    /**
+     * Login or register with account ID
+     */
+    async login() {
+        const accountId = this.getCleanAccountId();
+        
+        if (!accountId || accountId.length !== 16) {
+            this.showError('Please enter a valid 16-digit account ID');
+            return;
+        }
+        
+        try {
+            this.setLoading(true);
+            
+            const response = await fetch(`${this.API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ account_id: accountId })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Login failed');
+            }
+            
+            // Store credentials
+            this.accountId = accountId;
+            this.sessionToken = data.token;
+            
+            localStorage.setItem(this.ACCOUNT_KEY, this.accountId);
+            localStorage.setItem(this.TOKEN_KEY, this.sessionToken);
+            
+            // Update UI
+            this.updateUIState(true);
+            this.hideError();
+            
+            // Start auto-sync
+            this.startAutoSync();
+            
+            // If new account, sync local data to cloud
+            if (data.is_new) {
+                await this.syncToCloud();
+            } else {
+                // Existing account - sync from cloud
+                await this.syncFromCloud();
+            }
+            
+        } catch (err) {
+            console.error('Login error:', err);
+            this.showError(err.message || 'Failed to connect to sync server');
+        } finally {
+            this.setLoading(false);
+        }
+    }
+    
+    /**
+     * Logout and clear credentials
+     */
+    logout() {
+        this.accountId = null;
+        this.sessionToken = null;
+        this.lastSync = null;
+        
+        localStorage.removeItem(this.ACCOUNT_KEY);
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.LAST_SYNC_KEY);
+        
+        this.stopAutoSync();
+        this.updateUIState(false);
+        
+        // Clear the input
+        const input = document.getElementById('input-account-id');
+        if (input) input.value = '';
+    }
+    
+    /**
+     * Sync local data to cloud
+     */
+    async syncToCloud() {
+        if (!this.sessionToken || this.isSyncing) return;
+        
+        try {
+            this.isSyncing = true;
+            this.setSyncingState(true);
+            
+            // Get all local data
+            const data = {
+                projects: this.app.state.projects,
+                files: this.app.state.files,
+                collections: this.app.state.collections,
+                timestamps: this.app.state.timestamps
+            };
+            
+            // Save as a single key
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.sessionToken}`
+                },
+                body: JSON.stringify({
+                    key: 'whistler_data',
+                    value: data
+                })
+            });
+            
+            if (response.status === 401) {
+                // Token expired, try to re-login
+                await this.reLogin();
+                return;
+            }
+            
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Sync failed');
+            }
+            
+            // Update last sync time
+            this.lastSync = new Date().toISOString();
+            localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+            this.updateUIState(true);
+            
+        } catch (err) {
+            console.error('Sync to cloud error:', err);
+        } finally {
+            this.isSyncing = false;
+            this.setSyncingState(false);
+        }
+    }
+    
+    /**
+     * Sync from cloud to local
+     */
+    async syncFromCloud() {
+        if (!this.sessionToken || this.isSyncing) return;
+        
+        try {
+            this.isSyncing = true;
+            this.setSyncingState(true);
+            
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+            
+            if (response.status === 401) {
+                // Token expired, try to re-login
+                await this.reLogin();
+                return;
+            }
+            
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Sync failed');
+            }
+            
+            const result = await response.json();
+            
+            // Find the whistler_data key
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+            
+            if (dataRow && dataRow.value) {
+                const cloudData = JSON.parse(dataRow.value);
+                
+                // Merge or replace local data
+                // For now, we'll replace if cloud has data
+                if (cloudData.projects?.length > 0 || cloudData.files?.length > 0) {
+                    this.app.state.projects = cloudData.projects || [];
+                    this.app.state.files = cloudData.files || [];
+                    this.app.state.collections = cloudData.collections || [];
+                    this.app.state.timestamps = cloudData.timestamps || [];
+                    
+                    // Save to local storage
+                    this.app.storage.save();
+                    
+                    // Refresh UI
+                    this.app.ui.renderProjectDropdown();
+                    
+                    // If we have projects, open the first one
+                    if (this.app.state.projects.length > 0) {
+                        if (!this.app.state.activeProjectId) {
+                            this.app.router.openProject(this.app.state.projects[0].id);
+                        } else {
+                            this.app.router.openProject(this.app.state.activeProjectId);
+                        }
+                    }
+                }
+            }
+            
+            // Update last sync time
+            this.lastSync = new Date().toISOString();
+            localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+            this.updateUIState(true);
+            
+        } catch (err) {
+            console.error('Sync from cloud error:', err);
+        } finally {
+            this.isSyncing = false;
+            this.setSyncingState(false);
+        }
+    }
+    
+    /**
+     * Re-login when token expires
+     */
+    async reLogin() {
+        if (!this.accountId) {
+            this.logout();
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${this.API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ account_id: this.accountId })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Re-login failed');
+            }
+            
+            this.sessionToken = data.token;
+            localStorage.setItem(this.TOKEN_KEY, this.sessionToken);
+            
+        } catch (err) {
+            console.error('Re-login failed:', err);
+            this.logout();
+        }
+    }
+    
+    /**
+     * Start auto-sync interval
+     */
+    startAutoSync() {
+        this.stopAutoSync();
+        this.syncInterval = setInterval(() => {
+            this.syncToCloud();
+        }, this.SYNC_INTERVAL_MS);
+    }
+    
+    /**
+     * Stop auto-sync interval
+     */
+    stopAutoSync() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+    }
+    
+    /**
+     * Trigger sync when data changes
+     */
+    onDataChange() {
+        // Debounced sync on data change
+        if (this.sessionToken) {
+            clearTimeout(this.syncDebounce);
+            this.syncDebounce = setTimeout(() => {
+                this.syncToCloud();
+            }, 2000); // Wait 2 seconds after last change
+        }
+    }
+    
+    /**
+     * Copy account ID to clipboard
+     */
+    copyAccountId() {
+        if (!this.accountId) return;
+        
+        const formatted = this.formatAccountId(this.accountId);
+        navigator.clipboard.writeText(formatted).then(() => {
+            const btn = document.getElementById('btn-copy-account-id');
+            if (btn) {
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="ph-bold ph-check"></i><span>Copied!</span>';
+                setTimeout(() => {
+                    btn.innerHTML = original;
+                }, 2000);
+            }
+        });
+    }
+    
+    /**
+     * Show error message
+     */
+    showError(message) {
+        const errorDiv = document.getElementById('sync-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+    
+    /**
+     * Hide error message
+     */
+    hideError() {
+        const errorDiv = document.getElementById('sync-error');
+        if (errorDiv) {
+            errorDiv.classList.add('hidden');
+        }
+    }
+    
+    /**
+     * Set loading state for login button
+     */
+    setLoading(isLoading) {
+        const btn = document.getElementById('btn-sync-login');
+        if (btn) {
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i><span>Connecting...</span>';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph-bold ph-sign-in"></i><span>Login / Register</span>';
+            }
+        }
+    }
+    
+    /**
+     * Set syncing state for sync button
+     */
+    setSyncingState(isSyncing) {
+        const btn = document.getElementById('btn-sync-now');
+        const icon = document.getElementById('sync-icon');
+        
+        if (btn) {
+            if (isSyncing) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph-bold ph-arrows-clockwise" style="animation: spin 1s linear infinite;"></i><span>Syncing...</span>';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph-bold ph-arrows-clockwise"></i><span>Sync Now</span>';
+            }
+        }
+        
+        if (icon && isSyncing) {
+            icon.style.animation = 'spin 1s linear infinite';
+        } else if (icon) {
+            icon.style.animation = '';
+        }
     }
 }
 

@@ -1,0 +1,15 @@
+name = "whistler-sync"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "whistler-sync-db"
+database_id = "fc1b5077-44f4-49b8-a48a-c75aae166b72"
+
+[vars]
+# JWT secret for signing tokens
+JWT_SECRET = "8c37d6d90a8feb570dcb22954e4bbad934b371556b5dedd59ba9c24c5cb1fd94"
+# Token expiry in seconds (24 hours)
+TOKEN_EXPIRY = "86400"
