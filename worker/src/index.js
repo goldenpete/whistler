@@ -225,14 +225,20 @@ async function verifyTurnstile(token, secret, ip) {
     }
     
     try {
+        // Build body - remoteip is optional and can cause issues
+        const bodyParams = {
+            secret: secret,
+            response: token
+        };
+        // Only include remoteip if available
+        if (ip && ip !== 'unknown') {
+            bodyParams.remoteip = ip;
+        }
+        
         const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                secret: secret,
-                response: token,
-                remoteip: ip
-            })
+            body: new URLSearchParams(bodyParams)
         });
         
         const result = await response.json();
