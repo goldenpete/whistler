@@ -1888,17 +1888,17 @@ class UIManager {
             }
         });
 
-        // Add File - Prompt for URL and add file
+        // Add File - Open dedicated modal with hosting help
         document.getElementById('add-menu-file').onclick = () => {
             if (!this.app.state.activeProjectId) return;
             toggleAddMenu(false);
-            this.app.modals.prompt("Add File", "", (url) => {
-                if (url && url.trim()) {
+            this.app.modals.openAddFile((url) => {
+                if (url) {
                     const name = "New File " + Math.floor(Math.random() * 1000);
-                    this.app.storage.addFile(name, url.trim(), 'catbox', this.app.state.currentFolderId);
+                    this.app.storage.addFile(name, url, 'catbox', this.app.state.currentFolderId);
                     this.renderStorage();
                 }
-            }, false, "Paste URL here...");
+            });
         };
 
         // Add Folder - Open folder prompt
@@ -1911,12 +1911,6 @@ class UIManager {
                     this.renderStorage();
                 }
             }, false, "Folder Name");
-        };
-
-        // Upload File - Open catbox.moe
-        document.getElementById('add-menu-upload').onclick = () => {
-            toggleAddMenu(false);
-            window.open('https://catbox.moe/', '_blank');
         };
 
         // Add Folder button in Collection View
@@ -4862,6 +4856,38 @@ class ModalManager {
             // Fallback to browser alert
             window.alert(`${title || 'Alert'}: ${message || ''}`);
         }
+    }
+
+    openAddFile(callback) {
+        this.backdrop.classList.remove('hidden');
+        const modal = document.getElementById('modal-add-file');
+        modal.classList.remove('hidden');
+        
+        const input = document.getElementById('input-add-file-url');
+        input.value = '';
+        input.focus();
+        
+        this.onAddFileCallback = callback;
+        
+        // Set up button handlers
+        document.getElementById('btn-add-file-ok').onclick = () => {
+            const url = input.value.trim();
+            if (url && this.onAddFileCallback) {
+                this.onAddFileCallback(url);
+            }
+            this.close();
+        };
+        
+        // Handle Enter key
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                const url = input.value.trim();
+                if (url && this.onAddFileCallback) {
+                    this.onAddFileCallback(url);
+                }
+                this.close();
+            }
+        };
     }
 
     close() {

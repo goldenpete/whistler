@@ -114,10 +114,6 @@
                                 <i class="ph-bold ph-folder-plus"></i>
                                 <span>Add Folder</span>
                             </div>
-                            <div class="add-menu-item" id="add-menu-upload">
-                                <i class="ph-bold ph-upload-simple"></i>
-                                <span>Upload File</span>
-                            </div>
                         </div>
 
                         <div id="search-bar-container" class="search-bar-container hidden">
@@ -541,6 +537,42 @@
             <div class="modal-actions">
                 <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
                 <button class="btn-primary" id="btn-confirm-yes">Delete</button>
+            </div>
+        </div>
+
+        <!-- Add File Modal -->
+        <div class="modal hidden" id="modal-add-file" style="width: 420px;">
+            <h3 class="modal-title">Add File</h3>
+            <div class="form-group">
+                <input type="text" class="form-input" id="input-add-file-url" placeholder="Paste URL here...">
+            </div>
+            
+            <div class="add-file-help">
+                <p class="add-file-help-intro">Upload your file to a hosting service and paste the direct URL above:</p>
+                
+                <div class="add-file-services">
+                    <div class="service-group">
+                        <span class="service-label">Permanent</span>
+                        <div class="service-links">
+                            <a href="https://catbox.moe/" target="_blank">catbox.moe</a>
+                            <a href="https://pomf2.lain.la/" target="_blank">pomf2.lain.la</a>
+                        </div>
+                    </div>
+                    <div class="service-group">
+                        <span class="service-label">Temporary</span>
+                        <div class="service-links">
+                            <a href="https://litterbox.catbox.moe/" target="_blank">litterbox.catbox.moe</a>
+                            <a href="https://uguu.se/" target="_blank">uguu.se</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="add-file-extra">Discord file links also work here. Any raw video file from the web can be imported.</p>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>
+                <button class="btn-primary" id="btn-add-file-ok">Add</button>
             </div>
         </div>
 

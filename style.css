@@ -2150,6 +2150,68 @@ button {
     border-top: 1px solid var(--border);
 }
 
+/* Add File Modal Help */
+.add-file-help {
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--bg-app);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.add-file-help-intro {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.add-file-services {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.service-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.service-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 70px;
+}
+
+.service-links {
+    display: flex;
+    gap: 12px;
+}
+
+.service-links a {
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.service-links a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.add-file-extra {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 12px;
+    line-height: 1.5;
+    font-style: italic;
+}
+
 /* Color Picker Custom */
 .color-picker-wrapper {
     display: flex;
