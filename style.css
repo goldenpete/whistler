@@ -441,6 +441,25 @@ button {
     color: #ef4444;
 }
 
+/* Drag-drop reordering for collections */
+.sidebar-collection-item.dragging {
+    opacity: 0.5;
+    background: var(--bg-hover);
+}
+
+.sidebar-collection-item.drag-over {
+    border-top: 2px solid var(--accent);
+    margin-top: -2px;
+}
+
+.sidebar-collection-item[draggable="true"] {
+    cursor: grab;
+}
+
+.sidebar-collection-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
 .spacer {
     flex: 1;
 }

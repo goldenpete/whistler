@@ -768,8 +768,13 @@
                         <span style="font-weight: 600; color: var(--text-primary);">Connected</span>
                     </div>
                     <div id="display-account-name" class="hidden" style="font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 6px;"></div>
-                    <div style="font-family: monospace; font-size: 14px; letter-spacing: 1px; color: var(--text-muted); word-break: break-all;" id="display-account-id">
-                        XXXX-XXXX-XXXX-XXXX
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="font-family: monospace; font-size: 14px; letter-spacing: 1px; color: var(--text-muted); word-break: break-all; flex: 1;" id="display-account-id">
+                            ••••-••••-••••-••••
+                        </div>
+                        <button id="btn-reveal-id" class="btn-ghost" style="padding: 4px 8px; font-size: 11px; min-width: auto;">
+                            <i class="ph-bold ph-eye"></i>
+                        </button>
                     </div>
                 </div>
                 

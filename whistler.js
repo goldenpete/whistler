@@ -2121,8 +2121,10 @@ class UIManager {
     renderCollectionsList() {
         const list = document.getElementById('collections-list');
         list.innerHTML = '';
-        // Only show top-level collections (no parentId) in sidebar
-        const cols = this.app.state.collections.filter(c => c.projectId === this.app.state.activeProjectId && !c.parentId);
+        // Only show top-level collections (no parentId) in sidebar, sorted by order
+        const cols = this.app.state.collections
+            .filter(c => c.projectId === this.app.state.activeProjectId && !c.parentId)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
 
         cols.forEach(c => {
             const item = document.createElement('div');
@@ -2148,10 +2150,58 @@ class UIManager {
             const actions = document.createElement('div');
             actions.className = 'sidebar-actions';
             actions.innerHTML = `
+                <button class="sidebar-action-btn" title="Color"><i class="ph-bold ph-palette"></i></button>
                 <button class="sidebar-action-btn" title="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
                 <button class="sidebar-action-btn sidebar-action-danger" title="Delete"><i class="ph-bold ph-trash"></i></button>
             `;
             item.appendChild(actions);
+            
+            // Drag-drop reordering
+            item.setAttribute('draggable', 'true');
+            item.dataset.collectionId = c.id;
+            
+            item.ondragstart = (e) => {
+                // Don't start drag from action buttons
+                if (e.target.closest('.sidebar-actions')) {
+                    e.preventDefault();
+                    return;
+                }
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', c.id);
+                setTimeout(() => item.classList.add('dragging'), 0);
+            };
+            
+            item.ondragend = () => {
+                item.classList.remove('dragging');
+                // Clean up any lingering drag-over states
+                list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            };
+            
+            item.ondragover = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const dragging = list.querySelector('.dragging');
+                if (dragging && dragging !== item) {
+                    item.classList.add('drag-over');
+                }
+            };
+            
+            item.ondragleave = (e) => {
+                // Only remove if actually leaving the item (not entering a child)
+                if (!item.contains(e.relatedTarget)) {
+                    item.classList.remove('drag-over');
+                }
+            };
+            
+            item.ondrop = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                item.classList.remove('drag-over');
+                const draggedId = e.dataTransfer.getData('text/plain');
+                if (draggedId && draggedId !== c.id) {
+                    this.reorderCollection(draggedId, c.id);
+                }
+            };
 
             // Click behavior
             item.onclick = (e) => {
@@ -2160,6 +2210,20 @@ class UIManager {
 
                 this.app.router.openCollection(c.id);
                 this.renderCollectionsList();
+            };
+            
+            // Bind color picker
+            const colorBtn = actions.querySelector('[title="Color"]');
+            colorBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.openColorPicker(c.color || '#6366f1', (newColor) => {
+                    c.color = newColor;
+                    this.app.storage.save();
+                    this.renderCollectionsList();
+                    if (this.app.state.activeCollectionId === c.id) {
+                        this.renderCollectionView();
+                    }
+                });
             };
 
             // Bind actions
@@ -2208,6 +2272,33 @@ class UIManager {
 
             list.appendChild(item);
         });
+    }
+    
+    reorderCollection(draggedId, targetId) {
+        const collections = this.app.state.collections;
+        const projectId = this.app.state.activeProjectId;
+        
+        // Get top-level collections for this project (sorted by current order)
+        const topLevel = collections
+            .filter(c => c.projectId === projectId && !c.parentId)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        const draggedIdx = topLevel.findIndex(c => c.id === draggedId);
+        const targetIdx = topLevel.findIndex(c => c.id === targetId);
+        
+        if (draggedIdx === -1 || targetIdx === -1 || draggedIdx === targetIdx) return;
+        
+        // Remove dragged item and insert at target position
+        const [dragged] = topLevel.splice(draggedIdx, 1);
+        topLevel.splice(targetIdx, 0, dragged);
+        
+        // Update order values on the actual collection objects
+        topLevel.forEach((c, i) => {
+            c.order = i;
+        });
+        
+        this.app.storage.save();
+        this.renderCollectionsList();
     }
 
     renderStorage(searchQuery = '') {
@@ -5104,6 +5195,12 @@ class SyncManager {
             btnCopyId.onclick = () => this.copyAccountId();
         }
         
+        // Reveal/hide account ID button
+        const btnRevealId = document.getElementById('btn-reveal-id');
+        if (btnRevealId) {
+            btnRevealId.onclick = () => this.toggleRevealAccountId();
+        }
+        
         // Account ID input formatting
         const inputAccountId = document.getElementById('input-account-id');
         if (inputAccountId) {
@@ -5218,7 +5315,10 @@ class SyncManager {
             }
             const displayId = document.getElementById('display-account-id');
             if (displayId) {
-                displayId.textContent = this.formatAccountId(this.accountId);
+                // Show censored by default
+                displayId.textContent = '••••-••••-••••-••••';
+                displayId.dataset.revealed = 'false';
+                displayId.dataset.actualId = this.formatAccountId(this.accountId);
             }
             this.updateSyncStatus();
             this.update2FAStatusUI();
@@ -6086,6 +6186,29 @@ class SyncManager {
                 }, 2000);
             }
         });
+    }
+    
+    /**
+     * Toggle reveal/hide account ID
+     */
+    toggleRevealAccountId() {
+        const displayId = document.getElementById('display-account-id');
+        const btn = document.getElementById('btn-reveal-id');
+        if (!displayId || !btn) return;
+        
+        const isRevealed = displayId.dataset.revealed === 'true';
+        
+        if (isRevealed) {
+            // Hide it
+            displayId.textContent = '••••-••••-••••-••••';
+            displayId.dataset.revealed = 'false';
+            btn.innerHTML = '<i class="ph-bold ph-eye"></i>';
+        } else {
+            // Reveal it
+            displayId.textContent = displayId.dataset.actualId || this.formatAccountId(this.accountId);
+            displayId.dataset.revealed = 'true';
+            btn.innerHTML = '<i class="ph-bold ph-eye-slash"></i>';
+        }
     }
     
     /**
