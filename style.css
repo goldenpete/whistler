@@ -394,6 +394,53 @@ button {
     gap: 4px;
 }
 
+/* Collection item in sidebar */
+.sidebar-collection-item {
+    position: relative;
+}
+
+.sidebar-collection-item .sidebar-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.sidebar-collection-item:hover .sidebar-actions {
+    opacity: 1;
+}
+
+.sidebar-collection-item .sidebar-actions .sidebar-action-btn {
+    padding: 4px 6px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    flex: none;
+    font-size: 12px;
+}
+
+.sidebar-collection-item .sidebar-actions .sidebar-action-btn:hover {
+    background: var(--bg-hover);
+}
+
+.sidebar-collection-item .sidebar-actions .sidebar-action-btn i {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.sidebar-collection-item .sidebar-actions .sidebar-action-btn:hover i {
+    color: var(--text-primary);
+}
+
+.sidebar-collection-item .sidebar-actions .sidebar-action-danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.sidebar-collection-item .sidebar-actions .sidebar-action-danger:hover i {
+    color: #ef4444;
+}
+
 .spacer {
     flex: 1;
 }
