@@ -1,7 +1,7 @@
 /**
  * Whistler Sync Worker
  * Anonymous 16-digit login + cloud sync using Cloudflare Workers + D1
- * With rate limiting and Turnstile captcha protection
+ * With rate limiting, Turnstile captcha, and TOTP 2FA protection
  */
 
 // CORS headers for all responses
@@ -16,15 +16,15 @@ const corsHeaders = {
 // Rate Limiting Configuration (STRICT)
 // ============================================
 const RATE_LIMITS = {
-    login: { windowSeconds: 60, maxRequests: 3 },      // 3 logins per minute
+    login: { windowSeconds: 60, maxRequests: 5 },      // 5 logins per minute (increased for 2FA flow)
     data_read: { windowSeconds: 60, maxRequests: 30 }, // 30 reads per minute
     data_write: { windowSeconds: 60, maxRequests: 10 }, // 10 writes per minute
+    totp: { windowSeconds: 60, maxRequests: 5 },       // 5 TOTP attempts per minute
     global: { windowSeconds: 60, maxRequests: 60 }      // 60 total requests per minute
 };
 
 /**
  * Check and update rate limit
- * Returns true if request should be allowed, false if rate limited
  */
 async function checkRateLimit(db, ip, endpoint) {
     const config = RATE_LIMITS[endpoint] || RATE_LIMITS.global;
@@ -32,7 +32,6 @@ async function checkRateLimit(db, ip, endpoint) {
     const windowStart = now - (now % config.windowSeconds);
     
     try {
-        // Get current count for this window
         const existing = await db.prepare(
             'SELECT request_count FROM rate_limits WHERE ip = ? AND endpoint = ? AND window_start = ?'
         ).bind(ip, endpoint, windowStart).first();
@@ -42,14 +41,12 @@ async function checkRateLimit(db, ip, endpoint) {
                 return { allowed: false, remaining: 0, resetIn: config.windowSeconds - (now % config.windowSeconds) };
             }
             
-            // Increment count
             await db.prepare(
                 'UPDATE rate_limits SET request_count = request_count + 1 WHERE ip = ? AND endpoint = ? AND window_start = ?'
             ).bind(ip, endpoint, windowStart).run();
             
             return { allowed: true, remaining: config.maxRequests - existing.request_count - 1 };
         } else {
-            // Create new entry
             await db.prepare(
                 'INSERT INTO rate_limits (ip, endpoint, window_start, request_count) VALUES (?, ?, ?, 1)'
             ).bind(ip, endpoint, windowStart).run();
@@ -58,16 +55,12 @@ async function checkRateLimit(db, ip, endpoint) {
         }
     } catch (e) {
         console.error('Rate limit check error:', e);
-        // On error, allow the request but log it
         return { allowed: true, remaining: 0 };
     }
 }
 
-/**
- * Clean up old rate limit entries (run periodically)
- */
 async function cleanupRateLimits(db) {
-    const cutoff = Math.floor(Date.now() / 1000) - 3600; // Remove entries older than 1 hour
+    const cutoff = Math.floor(Date.now() / 1000) - 3600;
     try {
         await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(cutoff).run();
     } catch (e) {
@@ -76,12 +69,123 @@ async function cleanupRateLimits(db) {
 }
 
 // ============================================
-// Turnstile Captcha Verification
+// TOTP (Time-based One-Time Password) Functions
 // ============================================
 
 /**
- * Verify Turnstile captcha token
+ * Generate a random base32 secret for TOTP
  */
+function generateTOTPSecret() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const array = new Uint8Array(20);
+    crypto.getRandomValues(array);
+    let secret = '';
+    for (let i = 0; i < 20; i++) {
+        secret += chars[array[i] % 32];
+    }
+    return secret;
+}
+
+/**
+ * Decode base32 string to bytes
+ */
+function base32Decode(str) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    str = str.toUpperCase().replace(/[^A-Z2-7]/g, '');
+    
+    let bits = '';
+    for (const char of str) {
+        const val = chars.indexOf(char);
+        bits += val.toString(2).padStart(5, '0');
+    }
+    
+    const bytes = [];
+    for (let i = 0; i + 8 <= bits.length; i += 8) {
+        bytes.push(parseInt(bits.substr(i, 8), 2));
+    }
+    
+    return new Uint8Array(bytes);
+}
+
+/**
+ * Generate HMAC-SHA1 (required for TOTP)
+ */
+async function hmacSha1(key, message) {
+    const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        key,
+        { name: 'HMAC', hash: 'SHA-1' },
+        false,
+        ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, message);
+    return new Uint8Array(signature);
+}
+
+/**
+ * Generate TOTP code for a given secret and time
+ */
+async function generateTOTP(secret, timeStep = 30, digits = 6) {
+    const key = base32Decode(secret);
+    const time = Math.floor(Date.now() / 1000 / timeStep);
+    
+    // Convert time to 8-byte big-endian buffer
+    const timeBuffer = new ArrayBuffer(8);
+    const timeView = new DataView(timeBuffer);
+    timeView.setUint32(4, time, false); // Big-endian
+    
+    const hmac = await hmacSha1(key, new Uint8Array(timeBuffer));
+    
+    // Dynamic truncation
+    const offset = hmac[hmac.length - 1] & 0x0f;
+    const code = (
+        ((hmac[offset] & 0x7f) << 24) |
+        ((hmac[offset + 1] & 0xff) << 16) |
+        ((hmac[offset + 2] & 0xff) << 8) |
+        (hmac[offset + 3] & 0xff)
+    ) % Math.pow(10, digits);
+    
+    return code.toString().padStart(digits, '0');
+}
+
+/**
+ * Verify TOTP code (allows for 1 step drift in either direction)
+ */
+async function verifyTOTP(secret, code, timeStep = 30) {
+    const normalizedCode = code.replace(/\s/g, '');
+    
+    // Check current time and ±1 window for clock drift
+    for (const offset of [0, -1, 1]) {
+        const time = Math.floor(Date.now() / 1000 / timeStep) + offset;
+        
+        const timeBuffer = new ArrayBuffer(8);
+        const timeView = new DataView(timeBuffer);
+        timeView.setUint32(4, time, false);
+        
+        const key = base32Decode(secret);
+        const hmac = await hmacSha1(key, new Uint8Array(timeBuffer));
+        
+        const hmacOffset = hmac[hmac.length - 1] & 0x0f;
+        const generatedCode = (
+            ((hmac[hmacOffset] & 0x7f) << 24) |
+            ((hmac[hmacOffset + 1] & 0xff) << 16) |
+            ((hmac[hmacOffset + 2] & 0xff) << 8) |
+            (hmac[hmacOffset + 3] & 0xff)
+        ) % 1000000;
+        
+        if (generatedCode.toString().padStart(6, '0') === normalizedCode) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// ============================================
+// Turnstile Captcha Verification
+// ============================================
+
 async function verifyTurnstile(token, secret, ip) {
     if (!token) {
         return { success: false, error: 'Captcha token required' };
@@ -116,20 +220,16 @@ async function verifyTurnstile(token, secret, ip) {
 // JWT Token Functions
 // ============================================
 
-/**
- * Generate a simple JWT-like token
- * Format: base64(payload).base64(signature)
- */
-async function generateToken(accountId, secret, expirySeconds) {
+async function generateToken(accountId, secret, expirySeconds, pendingTotp = false) {
     const payload = {
         sub: accountId,
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + parseInt(expirySeconds)
+        exp: Math.floor(Date.now() / 1000) + parseInt(expirySeconds),
+        pending_totp: pendingTotp // If true, user still needs to verify TOTP
     };
     
     const payloadB64 = btoa(JSON.stringify(payload));
     
-    // Create signature using HMAC-SHA256
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
         'raw',
@@ -139,26 +239,17 @@ async function generateToken(accountId, secret, expirySeconds) {
         ['sign']
     );
     
-    const signature = await crypto.subtle.sign(
-        'HMAC',
-        key,
-        encoder.encode(payloadB64)
-    );
-    
+    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadB64));
     const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
     
     return `${payloadB64}.${signatureB64}`;
 }
 
-/**
- * Verify token and extract account_id
- */
-async function verifyToken(token, secret) {
+async function verifyToken(token, secret, allowPendingTotp = false) {
     try {
         const [payloadB64, signatureB64] = token.split('.');
         if (!payloadB64 || !signatureB64) return null;
         
-        // Verify signature
         const encoder = new TextEncoder();
         const key = await crypto.subtle.importKey(
             'raw',
@@ -169,92 +260,79 @@ async function verifyToken(token, secret) {
         );
         
         const signature = Uint8Array.from(atob(signatureB64), c => c.charCodeAt(0));
-        const valid = await crypto.subtle.verify(
-            'HMAC',
-            key,
-            signature,
-            encoder.encode(payloadB64)
-        );
+        const valid = await crypto.subtle.verify('HMAC', key, signature, encoder.encode(payloadB64));
         
         if (!valid) return null;
         
-        // Parse and check expiry
         const payload = JSON.parse(atob(payloadB64));
         if (payload.exp < Math.floor(Date.now() / 1000)) {
-            return null; // Token expired
+            return null;
         }
         
-        return payload.sub; // Return account_id
+        // If token is pending TOTP and we don't allow it, reject
+        if (payload.pending_totp && !allowPendingTotp) {
+            return null;
+        }
+        
+        return payload.sub;
     } catch (e) {
         return null;
     }
 }
 
-/**
- * Validate 16-digit account ID format
- */
 function isValidAccountId(id) {
     return typeof id === 'string' && /^\d{16}$/.test(id);
 }
 
-/**
- * JSON response helper
- */
 function jsonResponse(data, status = 200, extraHeaders = {}) {
     return new Response(JSON.stringify(data), {
         status,
-        headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders,
-            ...extraHeaders
-        }
+        headers: { 'Content-Type': 'application/json', ...corsHeaders, ...extraHeaders }
     });
 }
 
-/**
- * Error response helper
- */
 function errorResponse(message, status = 400, extraHeaders = {}) {
     return jsonResponse({ error: message }, status, extraHeaders);
 }
 
-/**
- * Rate limit error response
- */
 function rateLimitResponse(resetIn) {
-    return errorResponse(
-        `Too many requests. Try again in ${resetIn} seconds.`,
-        429,
-        { 'Retry-After': String(resetIn) }
-    );
+    return errorResponse(`Too many requests. Try again in ${resetIn} seconds.`, 429, { 'Retry-After': String(resetIn) });
 }
 
-/**
- * Handle OPTIONS preflight requests
- */
 function handleOptions() {
-    return new Response(null, {
-        status: 204,
-        headers: corsHeaders
-    });
+    return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-/**
- * Get client IP from request
- */
 function getClientIP(request) {
     return request.headers.get('CF-Connecting-IP') || 
            request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
            'unknown';
 }
 
+// ============================================
+// Authentication Helpers
+// ============================================
+
+async function getAuthenticatedAccountId(request, env, allowPendingTotp = false) {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return null;
+    }
+    
+    const token = authHeader.slice(7);
+    return await verifyToken(token, env.JWT_SECRET, allowPendingTotp);
+}
+
+// ============================================
+// Endpoint Handlers
+// ============================================
+
 /**
- * POST /login - Authenticate or create account (requires captcha)
+ * POST /login - Authenticate or create account
  */
 async function handleLogin(request, env) {
     const ip = getClientIP(request);
     
-    // Check rate limit
     const rateCheck = await checkRateLimit(env.DB, ip, 'login');
     if (!rateCheck.allowed) {
         return rateLimitResponse(rateCheck.resetIn);
@@ -264,7 +342,6 @@ async function handleLogin(request, env) {
         const body = await request.json();
         const { account_id, captcha_token } = body;
         
-        // Verify captcha first
         const captchaResult = await verifyTurnstile(captcha_token, env.TURNSTILE_SECRET, ip);
         if (!captchaResult.success) {
             return errorResponse(captchaResult.error || 'Captcha verification failed', 400);
@@ -274,31 +351,46 @@ async function handleLogin(request, env) {
             return errorResponse('Invalid account ID format. Must be 16 digits.', 400);
         }
         
-        // Check if account exists
+        // Check if account exists and get 2FA status
         const existing = await env.DB.prepare(
-            'SELECT id FROM accounts WHERE id = ?'
+            'SELECT id, totp_enabled FROM accounts WHERE id = ?'
         ).bind(account_id).first();
+        
+        let isNew = false;
+        let totpEnabled = false;
         
         if (!existing) {
             // Create new account
             const now = new Date().toISOString();
             await env.DB.prepare(
-                'INSERT INTO accounts (id, created_at) VALUES (?, ?)'
+                'INSERT INTO accounts (id, created_at, totp_enabled) VALUES (?, ?, 0)'
             ).bind(account_id, now).run();
+            isNew = true;
+        } else {
+            totpEnabled = existing.totp_enabled === 1;
         }
         
-        // Generate session token
-        const token = await generateToken(
-            account_id,
-            env.JWT_SECRET,
-            env.TOKEN_EXPIRY
-        );
+        // If 2FA is enabled, return a pending token
+        if (totpEnabled) {
+            const pendingToken = await generateToken(account_id, env.JWT_SECRET, 300, true); // 5 min expiry
+            return jsonResponse({
+                success: true,
+                requires_totp: true,
+                pending_token: pendingToken,
+                account_id,
+                is_new: isNew
+            });
+        }
+        
+        // No 2FA, generate full token
+        const token = await generateToken(account_id, env.JWT_SECRET, env.TOKEN_EXPIRY, false);
         
         return jsonResponse({
             success: true,
+            requires_totp: false,
             token,
             account_id,
-            is_new: !existing
+            is_new: isNew
         });
         
     } catch (e) {
@@ -308,16 +400,225 @@ async function handleLogin(request, env) {
 }
 
 /**
- * Extract and verify token from Authorization header
+ * POST /login/totp - Verify TOTP and get full token
  */
-async function getAuthenticatedAccountId(request, env) {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return null;
+async function handleLoginTotp(request, env) {
+    const ip = getClientIP(request);
+    
+    const rateCheck = await checkRateLimit(env.DB, ip, 'totp');
+    if (!rateCheck.allowed) {
+        return rateLimitResponse(rateCheck.resetIn);
     }
     
-    const token = authHeader.slice(7);
-    return await verifyToken(token, env.JWT_SECRET);
+    try {
+        const body = await request.json();
+        const { pending_token, totp_code } = body;
+        
+        if (!pending_token || !totp_code) {
+            return errorResponse('Missing pending token or TOTP code', 400);
+        }
+        
+        // Verify pending token (allow pending TOTP tokens)
+        const accountId = await verifyToken(pending_token, env.JWT_SECRET, true);
+        if (!accountId) {
+            return errorResponse('Invalid or expired token', 401);
+        }
+        
+        // Get the TOTP secret
+        const account = await env.DB.prepare(
+            'SELECT totp_secret FROM accounts WHERE id = ? AND totp_enabled = 1'
+        ).bind(accountId).first();
+        
+        if (!account || !account.totp_secret) {
+            return errorResponse('2FA not enabled for this account', 400);
+        }
+        
+        // Verify TOTP code
+        const isValid = await verifyTOTP(account.totp_secret, totp_code);
+        if (!isValid) {
+            return errorResponse('Invalid 2FA code', 401);
+        }
+        
+        // Generate full access token
+        const token = await generateToken(accountId, env.JWT_SECRET, env.TOKEN_EXPIRY, false);
+        
+        return jsonResponse({
+            success: true,
+            token,
+            account_id: accountId
+        });
+        
+    } catch (e) {
+        console.error('TOTP verify error:', e);
+        return errorResponse('Verification failed', 500);
+    }
+}
+
+/**
+ * POST /2fa/setup - Generate TOTP secret for setup
+ */
+async function handle2FASetup(request, env) {
+    const accountId = await getAuthenticatedAccountId(request, env);
+    if (!accountId) {
+        return errorResponse('Unauthorized', 401);
+    }
+    
+    try {
+        // Check if already enabled
+        const account = await env.DB.prepare(
+            'SELECT totp_enabled FROM accounts WHERE id = ?'
+        ).bind(accountId).first();
+        
+        if (account && account.totp_enabled === 1) {
+            return errorResponse('2FA is already enabled', 400);
+        }
+        
+        // Generate new secret
+        const secret = generateTOTPSecret();
+        
+        // Store secret (not enabled yet until verified)
+        await env.DB.prepare(
+            'UPDATE accounts SET totp_secret = ? WHERE id = ?'
+        ).bind(secret, accountId).run();
+        
+        // Generate otpauth URL for QR code
+        const otpauthUrl = `otpauth://totp/Whistler:${accountId}?secret=${secret}&issuer=Whistler&digits=6&period=30`;
+        
+        return jsonResponse({
+            success: true,
+            secret,
+            otpauth_url: otpauthUrl
+        });
+        
+    } catch (e) {
+        console.error('2FA setup error:', e);
+        return errorResponse('Setup failed', 500);
+    }
+}
+
+/**
+ * POST /2fa/enable - Verify code and enable 2FA
+ */
+async function handle2FAEnable(request, env) {
+    const accountId = await getAuthenticatedAccountId(request, env);
+    if (!accountId) {
+        return errorResponse('Unauthorized', 401);
+    }
+    
+    try {
+        const body = await request.json();
+        const { totp_code } = body;
+        
+        if (!totp_code) {
+            return errorResponse('TOTP code required', 400);
+        }
+        
+        // Get the pending secret
+        const account = await env.DB.prepare(
+            'SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?'
+        ).bind(accountId).first();
+        
+        if (!account || !account.totp_secret) {
+            return errorResponse('Please run setup first', 400);
+        }
+        
+        if (account.totp_enabled === 1) {
+            return errorResponse('2FA is already enabled', 400);
+        }
+        
+        // Verify the code
+        const isValid = await verifyTOTP(account.totp_secret, totp_code);
+        if (!isValid) {
+            return errorResponse('Invalid code. Please try again.', 400);
+        }
+        
+        // Enable 2FA
+        await env.DB.prepare(
+            'UPDATE accounts SET totp_enabled = 1 WHERE id = ?'
+        ).bind(accountId).run();
+        
+        return jsonResponse({
+            success: true,
+            message: '2FA enabled successfully'
+        });
+        
+    } catch (e) {
+        console.error('2FA enable error:', e);
+        return errorResponse('Failed to enable 2FA', 500);
+    }
+}
+
+/**
+ * POST /2fa/disable - Disable 2FA
+ */
+async function handle2FADisable(request, env) {
+    const accountId = await getAuthenticatedAccountId(request, env);
+    if (!accountId) {
+        return errorResponse('Unauthorized', 401);
+    }
+    
+    try {
+        const body = await request.json();
+        const { totp_code } = body;
+        
+        if (!totp_code) {
+            return errorResponse('TOTP code required to disable 2FA', 400);
+        }
+        
+        // Get the secret
+        const account = await env.DB.prepare(
+            'SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?'
+        ).bind(accountId).first();
+        
+        if (!account || account.totp_enabled !== 1) {
+            return errorResponse('2FA is not enabled', 400);
+        }
+        
+        // Verify the code
+        const isValid = await verifyTOTP(account.totp_secret, totp_code);
+        if (!isValid) {
+            return errorResponse('Invalid code', 400);
+        }
+        
+        // Disable 2FA
+        await env.DB.prepare(
+            'UPDATE accounts SET totp_enabled = 0, totp_secret = NULL WHERE id = ?'
+        ).bind(accountId).run();
+        
+        return jsonResponse({
+            success: true,
+            message: '2FA disabled successfully'
+        });
+        
+    } catch (e) {
+        console.error('2FA disable error:', e);
+        return errorResponse('Failed to disable 2FA', 500);
+    }
+}
+
+/**
+ * GET /2fa/status - Get 2FA status
+ */
+async function handle2FAStatus(request, env) {
+    const accountId = await getAuthenticatedAccountId(request, env);
+    if (!accountId) {
+        return errorResponse('Unauthorized', 401);
+    }
+    
+    try {
+        const account = await env.DB.prepare(
+            'SELECT totp_enabled FROM accounts WHERE id = ?'
+        ).bind(accountId).first();
+        
+        return jsonResponse({
+            success: true,
+            totp_enabled: account ? account.totp_enabled === 1 : false
+        });
+        
+    } catch (e) {
+        console.error('2FA status error:', e);
+        return errorResponse('Failed to get status', 500);
+    }
 }
 
 /**
@@ -326,7 +627,6 @@ async function getAuthenticatedAccountId(request, env) {
 async function handleGetData(request, env) {
     const ip = getClientIP(request);
     
-    // Check rate limit
     const rateCheck = await checkRateLimit(env.DB, ip, 'data_read');
     if (!rateCheck.allowed) {
         return rateLimitResponse(rateCheck.resetIn);
@@ -359,7 +659,6 @@ async function handleGetData(request, env) {
 async function handlePutData(request, env) {
     const ip = getClientIP(request);
     
-    // Check rate limit
     const rateCheck = await checkRateLimit(env.DB, ip, 'data_write');
     if (!rateCheck.allowed) {
         return rateLimitResponse(rateCheck.resetIn);
@@ -382,7 +681,6 @@ async function handlePutData(request, env) {
             return errorResponse('Value is required', 400);
         }
         
-        // Limit value size (500KB max)
         const valueStr = JSON.stringify(value);
         if (valueStr.length > 500000) {
             return errorResponse('Data too large. Maximum 500KB allowed.', 400);
@@ -390,16 +688,11 @@ async function handlePutData(request, env) {
         
         const now = new Date().toISOString();
         
-        // Upsert using INSERT OR REPLACE
         await env.DB.prepare(
             'INSERT OR REPLACE INTO user_data (account_id, key, value, updated_at) VALUES (?, ?, ?, ?)'
         ).bind(accountId, key, valueStr, now).run();
         
-        return jsonResponse({
-            success: true,
-            key,
-            updated_at: now
-        });
+        return jsonResponse({ success: true, key, updated_at: now });
         
     } catch (e) {
         console.error('Put data error:', e);
@@ -413,7 +706,6 @@ async function handlePutData(request, env) {
 async function handleDeleteData(request, env) {
     const ip = getClientIP(request);
     
-    // Check rate limit
     const rateCheck = await checkRateLimit(env.DB, ip, 'data_write');
     if (!rateCheck.allowed) {
         return rateLimitResponse(rateCheck.resetIn);
@@ -436,10 +728,7 @@ async function handleDeleteData(request, env) {
             'DELETE FROM user_data WHERE account_id = ? AND key = ?'
         ).bind(accountId, key).run();
         
-        return jsonResponse({
-            success: true,
-            key
-        });
+        return jsonResponse({ success: true, key });
         
     } catch (e) {
         console.error('Delete data error:', e);
@@ -447,65 +736,71 @@ async function handleDeleteData(request, env) {
     }
 }
 
-/**
- * GET /health - Health check endpoint
- */
 function handleHealth() {
-    return jsonResponse({
-        status: 'ok',
-        timestamp: new Date().toISOString()
-    });
+    return jsonResponse({ status: 'ok', timestamp: new Date().toISOString() });
 }
 
-/**
- * Main request handler
- */
+// ============================================
+// Main Router
+// ============================================
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
         const path = url.pathname;
         const method = request.method;
         
-        // Handle CORS preflight
         if (method === 'OPTIONS') {
             return handleOptions();
         }
         
-        // Periodically cleanup old rate limit entries (1% chance per request)
+        // Cleanup old rate limits occasionally
         if (Math.random() < 0.01) {
             cleanupRateLimits(env.DB);
         }
         
-        // Global rate limit check
+        // Global rate limit
         const ip = getClientIP(request);
         const globalCheck = await checkRateLimit(env.DB, ip, 'global');
         if (!globalCheck.allowed) {
             return rateLimitResponse(globalCheck.resetIn);
         }
         
-        // Route requests
+        // Routes
         if (path === '/login' && method === 'POST') {
             return handleLogin(request, env);
         }
         
+        if (path === '/login/totp' && method === 'POST') {
+            return handleLoginTotp(request, env);
+        }
+        
+        if (path === '/2fa/setup' && method === 'POST') {
+            return handle2FASetup(request, env);
+        }
+        
+        if (path === '/2fa/enable' && method === 'POST') {
+            return handle2FAEnable(request, env);
+        }
+        
+        if (path === '/2fa/disable' && method === 'POST') {
+            return handle2FADisable(request, env);
+        }
+        
+        if (path === '/2fa/status' && method === 'GET') {
+            return handle2FAStatus(request, env);
+        }
+        
         if (path === '/data') {
-            if (method === 'GET') {
-                return handleGetData(request, env);
-            }
-            if (method === 'PUT') {
-                return handlePutData(request, env);
-            }
-            if (method === 'DELETE') {
-                return handleDeleteData(request, env);
-            }
+            if (method === 'GET') return handleGetData(request, env);
+            if (method === 'PUT') return handlePutData(request, env);
+            if (method === 'DELETE') return handleDeleteData(request, env);
         }
         
         if (path === '/health' && method === 'GET') {
             return handleHealth();
         }
         
-        // 404 for unknown routes
         return errorResponse('Not found', 404);
     }
 };
-

@@ -4,7 +4,9 @@
 -- Accounts table: stores anonymous 16-digit account IDs
 CREATE TABLE IF NOT EXISTS accounts (
     id TEXT PRIMARY KEY,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    totp_secret TEXT DEFAULT NULL,
+    totp_enabled INTEGER DEFAULT 0
 );
 
 -- User data table: stores key-value pairs per account

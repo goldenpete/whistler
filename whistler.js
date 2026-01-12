@@ -5016,6 +5016,9 @@ class SyncManager {
         this.lastSync = null;
         this.isSyncing = false;
         this.captchaToken = null;
+        this.totpEnabled = false;
+        this.pendingTotpToken = null;
+        this.totpSecret = null;
         
         // Auto-sync interval (5 minutes)
         this.syncInterval = null;
@@ -5051,8 +5054,11 @@ class SyncManager {
             this.updateUIState(true);
             // Start auto-sync
             this.startAutoSync();
-            // Sync on startup (delayed to let app initialize)
-            setTimeout(() => this.syncFromCloud(), 1000);
+            // Check 2FA status and sync on startup
+            setTimeout(async () => {
+                await this.check2FAStatus();
+                await this.syncFromCloud();
+            }, 1000);
         }
     }
     
@@ -5100,11 +5106,77 @@ class SyncManager {
         if (inputAccountId) {
             inputAccountId.addEventListener('input', (e) => this.formatAccountIdInput(e));
         }
+        
+        // 2FA TOTP Verification (during login)
+        const btnTotpVerifySubmit = document.getElementById('btn-totp-verify-submit');
+        if (btnTotpVerifySubmit) {
+            btnTotpVerifySubmit.onclick = () => this.verifyTotpLogin();
+        }
+        
+        const btnTotpVerifyCancel = document.getElementById('btn-totp-verify-cancel');
+        if (btnTotpVerifyCancel) {
+            btnTotpVerifyCancel.onclick = () => this.cancelTotpVerify();
+        }
+        
+        const inputTotpVerify = document.getElementById('input-totp-verify');
+        if (inputTotpVerify) {
+            inputTotpVerify.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.verifyTotpLogin();
+            });
+        }
+        
+        // 2FA Setup button
+        const btnTotpSetup = document.getElementById('btn-totp-setup');
+        if (btnTotpSetup) {
+            btnTotpSetup.onclick = () => this.startTotpSetup();
+        }
+        
+        // 2FA Setup confirmation
+        const btnTotpSetupConfirm = document.getElementById('btn-totp-setup-confirm');
+        if (btnTotpSetupConfirm) {
+            btnTotpSetupConfirm.onclick = () => this.confirmTotpSetup();
+        }
+        
+        const btnTotpSetupCancel = document.getElementById('btn-totp-setup-cancel');
+        if (btnTotpSetupCancel) {
+            btnTotpSetupCancel.onclick = () => this.cancelTotpSetup();
+        }
+        
+        const inputTotpSetup = document.getElementById('input-totp-setup');
+        if (inputTotpSetup) {
+            inputTotpSetup.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.confirmTotpSetup();
+            });
+        }
+        
+        // 2FA Disable button
+        const btnTotpDisable = document.getElementById('btn-totp-disable');
+        if (btnTotpDisable) {
+            btnTotpDisable.onclick = () => this.showTotpDisable();
+        }
+        
+        // 2FA Disable confirmation
+        const btnTotpDisableConfirm = document.getElementById('btn-totp-disable-confirm');
+        if (btnTotpDisableConfirm) {
+            btnTotpDisableConfirm.onclick = () => this.confirmTotpDisable();
+        }
+        
+        const btnTotpDisableCancel = document.getElementById('btn-totp-disable-cancel');
+        if (btnTotpDisableCancel) {
+            btnTotpDisableCancel.onclick = () => this.cancelTotpDisable();
+        }
+        
+        const inputTotpDisable = document.getElementById('input-totp-disable');
+        if (inputTotpDisable) {
+            inputTotpDisable.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.confirmTotpDisable();
+            });
+        }
     }
     
     openSyncModal() {
         this.app.modals.show('sync');
-        this.updateUIState(!!this.accountId && !!this.sessionToken);
+        this.showMainSyncView();
         
         // Reset Turnstile when modal opens (if logged out)
         if (!this.accountId && typeof turnstile !== 'undefined') {
@@ -5119,44 +5191,83 @@ class SyncManager {
                 // Widget might not be ready yet
             }
         }
+        
+        // Update 2FA status if logged in
+        if (this.sessionToken) {
+            this.check2FAStatus();
+        }
     }
     
-    updateUIState(isLoggedIn) {
-        const loggedOutDiv = document.getElementById('sync-logged-out');
-        const loggedInDiv = document.getElementById('sync-logged-in');
-        const displayId = document.getElementById('display-account-id');
-        const syncStatus = document.getElementById('sync-status');
-        const syncIcon = document.getElementById('sync-icon');
+    showMainSyncView() {
+        const isLoggedIn = !!this.accountId && !!this.sessionToken;
+        
+        document.getElementById('sync-logged-out')?.classList.toggle('hidden', isLoggedIn);
+        document.getElementById('sync-logged-in')?.classList.toggle('hidden', !isLoggedIn);
+        document.getElementById('sync-totp-verify')?.classList.add('hidden');
+        document.getElementById('sync-totp-setup')?.classList.add('hidden');
+        document.getElementById('sync-totp-disable')?.classList.add('hidden');
         
         if (isLoggedIn) {
-            loggedOutDiv?.classList.add('hidden');
-            loggedInDiv?.classList.remove('hidden');
-            
+            const displayId = document.getElementById('display-account-id');
             if (displayId) {
                 displayId.textContent = this.formatAccountId(this.accountId);
             }
-            
-            if (syncStatus) {
-                if (this.lastSync) {
-                    const date = new Date(this.lastSync);
-                    syncStatus.textContent = `Last synced: ${date.toLocaleString()}`;
-                } else {
-                    syncStatus.textContent = 'Last synced: Never';
-                }
-            }
-            
+            this.updateSyncStatus();
+            this.update2FAStatusUI();
+        }
+    }
+    
+    updateUIState(isLoggedIn) {
+        const syncIcon = document.getElementById('sync-icon');
+        
+        if (isLoggedIn) {
             // Update sidebar icon
             if (syncIcon) {
                 syncIcon.className = 'ph-fill ph-cloud-check';
             }
         } else {
-            loggedOutDiv?.classList.remove('hidden');
-            loggedInDiv?.classList.add('hidden');
-            
             // Reset sidebar icon
             if (syncIcon) {
                 syncIcon.className = 'ph-bold ph-cloud';
             }
+        }
+        
+        this.showMainSyncView();
+    }
+    
+    updateSyncStatus() {
+        const syncStatus = document.getElementById('sync-status');
+        if (syncStatus) {
+            if (this.lastSync) {
+                const date = new Date(this.lastSync);
+                syncStatus.textContent = `Last synced: ${date.toLocaleString()}`;
+            } else {
+                syncStatus.textContent = 'Last synced: Never';
+            }
+        }
+    }
+    
+    update2FAStatusUI() {
+        const badge = document.getElementById('totp-status-badge');
+        const btnSetup = document.getElementById('btn-totp-setup');
+        const btnDisable = document.getElementById('btn-totp-disable');
+        
+        if (this.totpEnabled) {
+            if (badge) {
+                badge.textContent = 'On';
+                badge.style.background = 'rgba(34, 197, 94, 0.2)';
+                badge.style.color = '#22c55e';
+            }
+            btnSetup?.classList.add('hidden');
+            btnDisable?.classList.remove('hidden');
+        } else {
+            if (badge) {
+                badge.textContent = 'Off';
+                badge.style.background = 'rgba(239, 68, 68, 0.2)';
+                badge.style.color = '#ef4444';
+            }
+            btnSetup?.classList.remove('hidden');
+            btnDisable?.classList.add('hidden');
         }
     }
     
@@ -5269,36 +5380,440 @@ class SyncManager {
                 throw new Error(data.error || 'Login failed');
             }
             
-            // Store credentials
-            this.accountId = accountId;
-            this.sessionToken = data.token;
-            
-            localStorage.setItem(this.ACCOUNT_KEY, this.accountId);
-            localStorage.setItem(this.TOKEN_KEY, this.sessionToken);
-            
-            // Update UI
-            this.updateUIState(true);
-            this.hideError();
-            
             // Clear captcha token after successful login
             this.captchaToken = null;
             
-            // Start auto-sync
-            this.startAutoSync();
-            
-            // If new account, sync local data to cloud
-            if (data.is_new) {
-                await this.syncToCloud();
-            } else {
-                // Existing account - sync from cloud
-                await this.syncFromCloud();
+            // Check if 2FA is required
+            if (data.requires_totp) {
+                // Store pending state
+                this.pendingTotpToken = data.pending_token;
+                this.accountId = accountId;
+                
+                // Show TOTP verification screen
+                this.showTotpVerify();
+                return;
             }
+            
+            // No 2FA - complete login
+            await this.completeLogin(accountId, data.token, data.is_new);
             
         } catch (err) {
             console.error('Login error:', err);
             this.showError(err.message || 'Failed to connect to sync server');
         } finally {
             this.setLoading(false);
+        }
+    }
+    
+    /**
+     * Show TOTP verification screen
+     */
+    showTotpVerify() {
+        document.getElementById('sync-logged-out')?.classList.add('hidden');
+        document.getElementById('sync-logged-in')?.classList.add('hidden');
+        document.getElementById('sync-totp-verify')?.classList.remove('hidden');
+        document.getElementById('sync-totp-setup')?.classList.add('hidden');
+        document.getElementById('sync-totp-disable')?.classList.add('hidden');
+        
+        // Clear and focus the input
+        const input = document.getElementById('input-totp-verify');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        
+        // Hide any previous error
+        document.getElementById('totp-verify-error')?.classList.add('hidden');
+    }
+    
+    /**
+     * Verify TOTP code during login
+     */
+    async verifyTotpLogin() {
+        const input = document.getElementById('input-totp-verify');
+        const code = input?.value?.replace(/\s/g, '');
+        
+        if (!code || code.length !== 6) {
+            this.showTotpVerifyError('Please enter a 6-digit code');
+            return;
+        }
+        
+        try {
+            const btn = document.getElementById('btn-totp-verify-submit');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i><span>Verifying...</span>';
+            }
+            
+            const response = await fetch(`${this.API_URL}/login/totp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pending_token: this.pendingTotpToken,
+                    totp_code: code
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Verification failed');
+            }
+            
+            // Complete login
+            this.pendingTotpToken = null;
+            await this.completeLogin(this.accountId, data.token, false);
+            
+        } catch (err) {
+            console.error('TOTP verify error:', err);
+            this.showTotpVerifyError(err.message || 'Invalid code');
+            
+            // Reset button
+            const btn = document.getElementById('btn-totp-verify-submit');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph-bold ph-check"></i><span>Verify</span>';
+            }
+        }
+    }
+    
+    /**
+     * Cancel TOTP verification and go back to login
+     */
+    cancelTotpVerify() {
+        this.pendingTotpToken = null;
+        this.accountId = null;
+        this.showMainSyncView();
+        this.resetCaptcha();
+    }
+    
+    showTotpVerifyError(message) {
+        const errorDiv = document.getElementById('totp-verify-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+    
+    /**
+     * Complete login after credentials are verified
+     */
+    async completeLogin(accountId, token, isNew) {
+        this.accountId = accountId;
+        this.sessionToken = token;
+        this.totpEnabled = false; // Will be updated by check2FAStatus
+        
+        localStorage.setItem(this.ACCOUNT_KEY, this.accountId);
+        localStorage.setItem(this.TOKEN_KEY, this.sessionToken);
+        
+        // Update UI
+        this.updateUIState(true);
+        this.hideError();
+        
+        // Start auto-sync
+        this.startAutoSync();
+        
+        // Check 2FA status
+        await this.check2FAStatus();
+        
+        // If new account, sync local data to cloud
+        if (isNew) {
+            await this.syncToCloud();
+        } else {
+            // Existing account - sync from cloud
+            await this.syncFromCloud();
+        }
+    }
+    
+    /**
+     * Check 2FA status from server
+     */
+    async check2FAStatus() {
+        if (!this.sessionToken) return;
+        
+        try {
+            const response = await fetch(`${this.API_URL}/2fa/status`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.totpEnabled = data.totp_enabled;
+                this.update2FAStatusUI();
+            }
+        } catch (e) {
+            console.error('Failed to check 2FA status:', e);
+        }
+    }
+    
+    /**
+     * Start TOTP setup process
+     */
+    async startTotpSetup() {
+        try {
+            const btn = document.getElementById('btn-totp-setup');
+            if (btn) btn.disabled = true;
+            
+            const response = await fetch(`${this.API_URL}/2fa/setup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Setup failed');
+            }
+            
+            // Store secret for confirmation
+            this.totpSecret = data.secret;
+            
+            // Show setup screen
+            document.getElementById('sync-logged-in')?.classList.add('hidden');
+            document.getElementById('sync-totp-setup')?.classList.remove('hidden');
+            
+            // Display secret
+            const secretDisplay = document.getElementById('totp-secret-display');
+            if (secretDisplay) {
+                // Format with spaces for readability
+                secretDisplay.textContent = data.secret.match(/.{1,4}/g)?.join(' ') || data.secret;
+            }
+            
+            // Generate QR code
+            this.generateQRCode(data.otpauth_url);
+            
+            // Clear and focus input
+            const input = document.getElementById('input-totp-setup');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            
+            // Hide error
+            document.getElementById('totp-setup-error')?.classList.add('hidden');
+            
+        } catch (err) {
+            console.error('TOTP setup error:', err);
+            alert(err.message || 'Failed to start 2FA setup');
+        } finally {
+            const btn = document.getElementById('btn-totp-setup');
+            if (btn) btn.disabled = false;
+        }
+    }
+    
+    /**
+     * Generate QR code for TOTP
+     */
+    generateQRCode(otpauthUrl) {
+        const canvas = document.getElementById('totp-qr-canvas');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const size = 180;
+        
+        // Simple QR code generation using a basic encoder
+        // For production, you'd want to use a library like qrcode-generator
+        // But we can create a URL that Google Charts can render as a backup
+        
+        // First, let's try to generate it ourselves using a simple approach
+        // We'll use a minimal QR code implementation
+        
+        try {
+            // Create a simple visual representation
+            // Since we don't have a QR library, show the URL in an alternative way
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw a placeholder with instructions
+            ctx.fillStyle = '#333';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            
+            // For a proper QR code, we'll create an image from an API
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            // Use QR Server API (free, no-signup needed)
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(otpauthUrl)}`;
+            
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, size, size);
+            };
+            
+            img.onerror = () => {
+                // Fallback - show manual entry text
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = '#666';
+                ctx.font = '11px sans-serif';
+                ctx.fillText('QR code unavailable', size/2, size/2 - 10);
+                ctx.fillText('Use manual entry below', size/2, size/2 + 10);
+            };
+            
+            img.src = qrApiUrl;
+            
+        } catch (e) {
+            console.error('QR generation error:', e);
+        }
+    }
+    
+    /**
+     * Confirm TOTP setup with verification code
+     */
+    async confirmTotpSetup() {
+        const input = document.getElementById('input-totp-setup');
+        const code = input?.value?.replace(/\s/g, '');
+        
+        if (!code || code.length !== 6) {
+            this.showTotpSetupError('Please enter the 6-digit code from your authenticator');
+            return;
+        }
+        
+        try {
+            const btn = document.getElementById('btn-totp-setup-confirm');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i><span>Enabling...</span>';
+            }
+            
+            const response = await fetch(`${this.API_URL}/2fa/enable`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.sessionToken}`
+                },
+                body: JSON.stringify({ totp_code: code })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Verification failed');
+            }
+            
+            // Success!
+            this.totpEnabled = true;
+            this.totpSecret = null;
+            
+            // Go back to main view
+            this.showMainSyncView();
+            
+        } catch (err) {
+            console.error('TOTP enable error:', err);
+            this.showTotpSetupError(err.message || 'Invalid code. Please try again.');
+        } finally {
+            const btn = document.getElementById('btn-totp-setup-confirm');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph-bold ph-check"></i><span>Enable 2FA</span>';
+            }
+        }
+    }
+    
+    /**
+     * Cancel TOTP setup
+     */
+    cancelTotpSetup() {
+        this.totpSecret = null;
+        this.showMainSyncView();
+    }
+    
+    showTotpSetupError(message) {
+        const errorDiv = document.getElementById('totp-setup-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+    
+    /**
+     * Show TOTP disable confirmation
+     */
+    showTotpDisable() {
+        document.getElementById('sync-logged-in')?.classList.add('hidden');
+        document.getElementById('sync-totp-disable')?.classList.remove('hidden');
+        
+        // Clear and focus input
+        const input = document.getElementById('input-totp-disable');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        
+        // Hide error
+        document.getElementById('totp-disable-error')?.classList.add('hidden');
+    }
+    
+    /**
+     * Confirm TOTP disable
+     */
+    async confirmTotpDisable() {
+        const input = document.getElementById('input-totp-disable');
+        const code = input?.value?.replace(/\s/g, '');
+        
+        if (!code || code.length !== 6) {
+            this.showTotpDisableError('Please enter your current 6-digit code');
+            return;
+        }
+        
+        try {
+            const btn = document.getElementById('btn-totp-disable-confirm');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i><span>Disabling...</span>';
+            }
+            
+            const response = await fetch(`${this.API_URL}/2fa/disable`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.sessionToken}`
+                },
+                body: JSON.stringify({ totp_code: code })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to disable 2FA');
+            }
+            
+            // Success!
+            this.totpEnabled = false;
+            
+            // Go back to main view
+            this.showMainSyncView();
+            
+        } catch (err) {
+            console.error('TOTP disable error:', err);
+            this.showTotpDisableError(err.message || 'Invalid code');
+        } finally {
+            const btn = document.getElementById('btn-totp-disable-confirm');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph-bold ph-trash"></i><span>Disable 2FA</span>';
+            }
+        }
+    }
+    
+    /**
+     * Cancel TOTP disable
+     */
+    cancelTotpDisable() {
+        this.showMainSyncView();
+    }
+    
+    showTotpDisableError(message) {
+        const errorDiv = document.getElementById('totp-disable-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
     }
     
@@ -5326,6 +5841,7 @@ class SyncManager {
         this.accountId = null;
         this.sessionToken = null;
         this.lastSync = null;
+        this.totpEnabled = false;
         
         localStorage.removeItem(this.ACCOUNT_KEY);
         localStorage.removeItem(this.TOKEN_KEY);

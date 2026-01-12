@@ -823,6 +823,31 @@
                 </div>
             </div>
             
+            <!-- 2FA Verification state (during login) -->
+            <div id="sync-totp-verify" class="hidden">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="ph-bold ph-shield-check" style="font-size: 48px; color: var(--accent);"></i>
+                    <p style="margin-top: 12px; color: var(--text-secondary);">This account has 2FA enabled.<br>Enter the 6-digit code from your authenticator app.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Authentication Code</label>
+                    <input type="text" class="form-input" id="input-totp-verify" 
+                        placeholder="000000" 
+                        maxlength="6"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        style="font-family: monospace; font-size: 24px; letter-spacing: 8px; text-align: center;">
+                </div>
+                <div id="totp-verify-error" class="hidden" style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;"></div>
+                <div class="modal-actions">
+                    <button class="btn-ghost" id="btn-totp-verify-cancel">Cancel</button>
+                    <button class="btn-primary" id="btn-totp-verify-submit">
+                        <i class="ph-bold ph-check"></i>
+                        <span>Verify</span>
+                    </button>
+                </div>
+            </div>
+            
             <!-- Logged in state -->
             <div id="sync-logged-in" class="hidden">
                 <div style="background: var(--bg-hover); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px;">
@@ -850,12 +875,88 @@
                     Last synced: Never
                 </div>
                 
+                <!-- 2FA Settings Section -->
+                <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="ph-bold ph-shield-check" style="color: var(--accent);"></i>
+                            <span style="font-weight: 500;">Two-Factor Authentication</span>
+                        </div>
+                        <span id="totp-status-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #ef4444;">Off</span>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+                        Add extra security with an authenticator app like Google Authenticator or Authy.
+                    </p>
+                    <button class="btn-ghost" id="btn-totp-setup" style="width: 100%; justify-content: center;">
+                        <i class="ph-bold ph-plus"></i>
+                        <span>Enable 2FA</span>
+                    </button>
+                    <button class="btn-ghost hidden" id="btn-totp-disable" style="width: 100%; justify-content: center; color: #ef4444;">
+                        <i class="ph-bold ph-trash"></i>
+                        <span>Disable 2FA</span>
+                    </button>
+                </div>
+                
                 <div class="modal-actions" style="justify-content: space-between;">
                     <button class="btn-ghost" id="btn-sync-logout" style="color: #ef4444;">
                         <i class="ph-bold ph-sign-out"></i>
                         <span>Logout</span>
                     </button>
                     <button class="btn-ghost" onclick="app.modals.close()">Close</button>
+                </div>
+            </div>
+            
+            <!-- 2FA Setup state -->
+            <div id="sync-totp-setup" class="hidden">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Scan this QR code with your authenticator app:</p>
+                    <div id="totp-qr-container" style="background: white; padding: 16px; border-radius: var(--radius-sm); display: inline-block; margin-bottom: 16px;">
+                        <canvas id="totp-qr-canvas" width="180" height="180"></canvas>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Or enter this secret manually:</p>
+                        <code id="totp-secret-display" style="font-family: monospace; font-size: 14px; background: var(--bg-hover); padding: 8px 12px; border-radius: var(--radius-sm); display: inline-block; letter-spacing: 2px; word-break: break-all;"></code>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Enter Code to Confirm</label>
+                    <input type="text" class="form-input" id="input-totp-setup" 
+                        placeholder="000000" 
+                        maxlength="6"
+                        inputmode="numeric"
+                        style="font-family: monospace; font-size: 24px; letter-spacing: 8px; text-align: center;">
+                </div>
+                <div id="totp-setup-error" class="hidden" style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;"></div>
+                <div class="modal-actions">
+                    <button class="btn-ghost" id="btn-totp-setup-cancel">Cancel</button>
+                    <button class="btn-primary" id="btn-totp-setup-confirm">
+                        <i class="ph-bold ph-check"></i>
+                        <span>Enable 2FA</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 2FA Disable confirmation state -->
+            <div id="sync-totp-disable" class="hidden">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="ph-bold ph-warning" style="font-size: 48px; color: #ef4444;"></i>
+                    <p style="margin-top: 12px; color: var(--text-secondary);">Enter your current 2FA code to disable two-factor authentication.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Authentication Code</label>
+                    <input type="text" class="form-input" id="input-totp-disable" 
+                        placeholder="000000" 
+                        maxlength="6"
+                        inputmode="numeric"
+                        style="font-family: monospace; font-size: 24px; letter-spacing: 8px; text-align: center;">
+                </div>
+                <div id="totp-disable-error" class="hidden" style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;"></div>
+                <div class="modal-actions">
+                    <button class="btn-ghost" id="btn-totp-disable-cancel">Cancel</button>
+                    <button class="btn-primary" id="btn-totp-disable-confirm" style="background: #ef4444;">
+                        <i class="ph-bold ph-trash"></i>
+                        <span>Disable 2FA</span>
+                    </button>
                 </div>
             </div>
         </div>
