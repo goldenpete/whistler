@@ -221,6 +221,34 @@ button {
     margin-left: 8px;
 }
 
+/* Sidebar action buttons */
+.sidebar-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.sidebar-action-btn:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+}
+
+.sidebar-action-btn i {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
 .custom-select-menu {
     position: absolute;
     top: 100%;

@@ -6139,12 +6139,12 @@ class ExportImportManager {
         const btnExportImport = document.getElementById('btn-export-import');
         if (btnExportImport) {
             btnExportImport.onclick = () => {
-                this.app.router.goTo('exportImport');
+                this.openModal();
             };
         }
 
         // Setup tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        document.querySelectorAll('#modal-export-import .tab-btn').forEach(btn => {
             btn.onclick = () => {
                 const tab = btn.dataset.tab;
                 this.switchTab(tab);
@@ -6190,6 +6190,13 @@ class ExportImportManager {
         }
 
         // Welcome page buttons
+        const btnWelcomeSignin = document.getElementById('btn-welcome-signin');
+        if (btnWelcomeSignin) {
+            btnWelcomeSignin.onclick = () => {
+                this.app.sync.openSyncModal();
+            };
+        }
+        
         const btnWelcomeCreate = document.getElementById('btn-welcome-create-project');
         if (btnWelcomeCreate) {
             btnWelcomeCreate.onclick = () => {
@@ -6200,13 +6207,18 @@ class ExportImportManager {
         const btnWelcomeImport = document.getElementById('btn-welcome-import');
         if (btnWelcomeImport) {
             btnWelcomeImport.onclick = () => {
-                this.app.router.goTo('exportImport');
-                this.switchTab('import');
+                this.openModal('import');
             };
         }
 
         // Handle URL import on page load
         this.checkURLImport();
+    }
+
+    openModal(tab = 'export') {
+        this.app.modals.show('export-import');
+        this.initTabs();
+        this.switchTab(tab);
     }
 
     initTabs() {
@@ -6215,17 +6227,28 @@ class ExportImportManager {
         // Hide URL result
         const urlResult = document.getElementById('export-url-result');
         if (urlResult) urlResult.classList.add('hidden');
-        // Clear import errors
+        // Clear import errors/success
         const importError = document.getElementById('import-error');
         if (importError) {
             importError.classList.add('hidden');
             importError.textContent = '';
         }
+        const importSuccess = document.getElementById('import-success');
+        if (importSuccess) {
+            importSuccess.classList.add('hidden');
+            importSuccess.textContent = '';
+        }
+        // Clear file name
+        const fileName = document.getElementById('import-file-name');
+        if (fileName) fileName.textContent = '';
     }
 
     switchTab(tab) {
+        const modal = document.getElementById('modal-export-import');
+        if (!modal) return;
+        
         // Update tab buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        modal.querySelectorAll('.tab-btn').forEach(btn => {
             if (btn.dataset.tab === tab) {
                 btn.classList.add('active');
             } else {
@@ -6234,7 +6257,7 @@ class ExportImportManager {
         });
 
         // Update tab panels
-        document.querySelectorAll('.tab-panel').forEach(panel => {
+        modal.querySelectorAll('.tab-panel').forEach(panel => {
             if (panel.id === `tab-${tab}`) {
                 panel.classList.remove('hidden');
                 panel.classList.add('active');
@@ -6345,9 +6368,6 @@ class ExportImportManager {
                 // Show confirmation before importing
                 if (confirm('Import data from URL? This will replace all existing data.')) {
                     this.importData(data);
-                    // Navigate to export/import tab to show success
-                    this.app.router.goTo('exportImport');
-                    this.switchTab('import');
                 }
             } catch (err) {
                 console.error('URL import error:', err);
@@ -6380,6 +6400,9 @@ class ExportImportManager {
             // Refresh UI
             this.app.ui.renderProjectDropdown();
             
+            // Close modal
+            this.app.modals.close();
+            
             // Show welcome page if no projects, otherwise go to storage
             if (this.app.state.projects.length === 0) {
                 this.app.router.goTo('welcome');
@@ -6387,18 +6410,20 @@ class ExportImportManager {
                 this.app.router.openProject(this.app.state.projects[0].id);
             }
 
-            // Show success
-            alert('Data imported successfully!');
+            // Show success notification
+            this.showImportSuccess('Data imported successfully!');
             
-            // Clear errors
-            const importError = document.getElementById('import-error');
-            if (importError) {
-                importError.classList.add('hidden');
-                importError.textContent = '';
-            }
         } catch (err) {
             this.showImportError('Failed to import data. The file may be corrupted or in an incompatible format.');
             console.error('Import error:', err);
+        }
+    }
+
+    showImportSuccess(message) {
+        const successDiv = document.getElementById('import-success');
+        if (successDiv) {
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
         }
     }
 
