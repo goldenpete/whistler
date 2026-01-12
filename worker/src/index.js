@@ -219,6 +219,11 @@ async function verifyTurnstile(token, secret, ip) {
         return { success: false, error: 'Captcha token required' };
     }
     
+    if (!secret) {
+        console.error('TURNSTILE_SECRET is not set');
+        return { success: false, error: 'Server configuration error' };
+    }
+    
     try {
         const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
             method: 'POST',
@@ -231,9 +236,17 @@ async function verifyTurnstile(token, secret, ip) {
         });
         
         const result = await response.json();
+        console.log('Turnstile response:', JSON.stringify(result));
         
         if (!result.success) {
             console.error('Turnstile verification failed:', result['error-codes']);
+            const errorCodes = result['error-codes'] || [];
+            if (errorCodes.includes('invalid-input-secret')) {
+                return { success: false, error: 'Server configuration error (invalid secret)' };
+            }
+            if (errorCodes.includes('timeout-or-duplicate')) {
+                return { success: false, error: 'Captcha expired, please try again' };
+            }
             return { success: false, error: 'Captcha verification failed' };
         }
         
