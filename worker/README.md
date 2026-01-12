@@ -8,6 +8,8 @@ Anonymous 16-digit login + cloud sync using Cloudflare Workers + D1.
 - **Cloud Sync**: Sync Whistler data across devices
 - **Secure Tokens**: JWT-like session tokens with 24-hour expiry
 - **Stateless**: All data stored in Cloudflare D1 SQLite database
+- **Rate Limiting**: Strict per-IP rate limits to prevent abuse
+- **Captcha Protection**: Cloudflare Turnstile to prevent automated attacks
 
 ## Deployment Instructions
 
@@ -46,36 +48,43 @@ database_name = "whistler-sync-db"
 database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
 
-### Step 4: Update wrangler.toml
+### Step 4: Create Turnstile Widget
 
-Edit `wrangler.toml` and replace `YOUR_DATABASE_ID_HERE` with the actual database ID:
+1. Go to [Cloudflare Dashboard → Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
+2. Click "Add Widget"
+3. Enter a name (e.g., "Whistler Sync")
+4. Add your domain (e.g., `whistlerbox.com`)
+5. Choose "Managed" mode
+6. Click "Create"
+7. **Copy the Site Key** (for frontend) and **Secret Key** (for worker)
+
+### Step 5: Update wrangler.toml
+
+Edit `wrangler.toml` and configure:
 
 ```toml
 [[d1_databases]]
 binding = "DB"
 database_name = "whistler-sync-db"
 database_id = "YOUR_ACTUAL_DATABASE_ID"
-```
 
-Also, **change the JWT_SECRET** to a secure random string:
-
-```toml
 [vars]
 JWT_SECRET = "your-secure-random-string-here"
+TURNSTILE_SECRET = "your-turnstile-secret-key"
 ```
 
-You can generate one with:
+Generate a JWT secret with:
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Step 5: Initialize the Database
+### Step 6: Initialize the Database
 
 ```bash
-npx wrangler d1 execute whistler-sync-db --file=./schema.sql
+npx wrangler d1 execute whistler-sync-db --remote --file=./schema.sql
 ```
 
-### Step 6: Deploy the Worker
+### Step 7: Deploy the Worker
 
 ```bash
 npx wrangler deploy

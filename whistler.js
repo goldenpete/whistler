@@ -5002,6 +5002,9 @@ class SyncManager {
         // Configuration
         this.API_URL = 'https://whistler-sync.peteawesome.workers.dev';
         
+        // Turnstile site key
+        this.TURNSTILE_SITE_KEY = '0x4AAAAAACL9Ojn2jXAFNaw_';
+        
         // Local storage keys
         this.ACCOUNT_KEY = 'whistler_account_id';
         this.TOKEN_KEY = 'whistler_session_token';
@@ -5012,6 +5015,7 @@ class SyncManager {
         this.sessionToken = null;
         this.lastSync = null;
         this.isSyncing = false;
+        this.captchaToken = null;
         
         // Auto-sync interval (5 minutes)
         this.syncInterval = null;
@@ -5026,6 +5030,21 @@ class SyncManager {
         
         // Setup UI
         this.setupUI();
+        
+        // Setup global Turnstile callbacks
+        window.onTurnstileSuccess = (token) => {
+            this.captchaToken = token;
+            // Enable login button
+            const btn = document.getElementById('btn-sync-login');
+            if (btn) btn.disabled = false;
+        };
+        
+        window.onTurnstileExpired = () => {
+            this.captchaToken = null;
+            // Disable login button
+            const btn = document.getElementById('btn-sync-login');
+            if (btn) btn.disabled = true;
+        };
         
         // Auto-login if we have credentials
         if (this.accountId && this.sessionToken) {
@@ -5054,6 +5073,8 @@ class SyncManager {
         const btnLogin = document.getElementById('btn-sync-login');
         if (btnLogin) {
             btnLogin.onclick = () => this.login();
+            // Initially disabled until captcha is solved
+            btnLogin.disabled = true;
         }
         
         // Logout button
@@ -5084,6 +5105,20 @@ class SyncManager {
     openSyncModal() {
         this.app.modals.show('sync');
         this.updateUIState(!!this.accountId && !!this.sessionToken);
+        
+        // Reset Turnstile when modal opens (if logged out)
+        if (!this.accountId && typeof turnstile !== 'undefined') {
+            this.captchaToken = null;
+            const btn = document.getElementById('btn-sync-login');
+            if (btn) btn.disabled = true;
+            
+            // Reset the widget
+            try {
+                turnstile.reset('#turnstile-widget');
+            } catch (e) {
+                // Widget might not be ready yet
+            }
+        }
     }
     
     updateUIState(isLoggedIn) {
@@ -5209,18 +5244,28 @@ class SyncManager {
             return;
         }
         
+        if (!this.captchaToken) {
+            this.showError('Please complete the captcha verification');
+            return;
+        }
+        
         try {
             this.setLoading(true);
             
             const response = await fetch(`${this.API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ account_id: accountId })
+                body: JSON.stringify({ 
+                    account_id: accountId,
+                    captcha_token: this.captchaToken
+                })
             });
             
             const data = await response.json();
             
             if (!response.ok) {
+                // Reset captcha on error
+                this.resetCaptcha();
                 throw new Error(data.error || 'Login failed');
             }
             
@@ -5234,6 +5279,9 @@ class SyncManager {
             // Update UI
             this.updateUIState(true);
             this.hideError();
+            
+            // Clear captcha token after successful login
+            this.captchaToken = null;
             
             // Start auto-sync
             this.startAutoSync();
@@ -5251,6 +5299,23 @@ class SyncManager {
             this.showError(err.message || 'Failed to connect to sync server');
         } finally {
             this.setLoading(false);
+        }
+    }
+    
+    /**
+     * Reset the Turnstile captcha widget
+     */
+    resetCaptcha() {
+        this.captchaToken = null;
+        const btn = document.getElementById('btn-sync-login');
+        if (btn) btn.disabled = true;
+        
+        if (typeof turnstile !== 'undefined') {
+            try {
+                turnstile.reset('#turnstile-widget');
+            } catch (e) {
+                console.error('Failed to reset captcha:', e);
+            }
         }
     }
     

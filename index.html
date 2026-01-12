@@ -12,6 +12,8 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 
 <body>
@@ -800,6 +802,17 @@
                     <i class="ph-bold ph-shuffle"></i>
                     <span>Generate New Account ID</span>
                 </button>
+                
+                <!-- Turnstile Captcha Widget -->
+                <div id="turnstile-container" style="display: flex; justify-content: center; margin-bottom: 16px;">
+                    <div class="cf-turnstile" 
+                         data-sitekey="0x4AAAAAACL9Ojn2jXAFNaw_"
+                         data-theme="dark"
+                         data-callback="onTurnstileSuccess"
+                         data-expired-callback="onTurnstileExpired"
+                         id="turnstile-widget"></div>
+                </div>
+                
                 <div id="sync-error" class="hidden" style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;"></div>
                 <div class="modal-actions">
                     <button class="btn-ghost" onclick="app.modals.close()">Cancel</button>

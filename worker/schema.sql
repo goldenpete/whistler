@@ -19,3 +19,15 @@ CREATE TABLE IF NOT EXISTS user_data (
 
 -- Index for faster lookups by account_id
 CREATE INDEX IF NOT EXISTS idx_user_data_account ON user_data(account_id);
+
+-- Rate limiting table: tracks requests per IP
+CREATE TABLE IF NOT EXISTS rate_limits (
+    ip TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    window_start INTEGER NOT NULL,
+    request_count INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (ip, endpoint, window_start)
+);
+
+-- Index for cleanup of old rate limit entries
+CREATE INDEX IF NOT EXISTS idx_rate_limits_window ON rate_limits(window_start);

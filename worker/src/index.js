@@ -1,6 +1,7 @@
 /**
  * Whistler Sync Worker
  * Anonymous 16-digit login + cloud sync using Cloudflare Workers + D1
+ * With rate limiting and Turnstile captcha protection
  */
 
 // CORS headers for all responses
@@ -10,6 +11,110 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
 };
+
+// ============================================
+// Rate Limiting Configuration (STRICT)
+// ============================================
+const RATE_LIMITS = {
+    login: { windowSeconds: 60, maxRequests: 3 },      // 3 logins per minute
+    data_read: { windowSeconds: 60, maxRequests: 30 }, // 30 reads per minute
+    data_write: { windowSeconds: 60, maxRequests: 10 }, // 10 writes per minute
+    global: { windowSeconds: 60, maxRequests: 60 }      // 60 total requests per minute
+};
+
+/**
+ * Check and update rate limit
+ * Returns true if request should be allowed, false if rate limited
+ */
+async function checkRateLimit(db, ip, endpoint) {
+    const config = RATE_LIMITS[endpoint] || RATE_LIMITS.global;
+    const now = Math.floor(Date.now() / 1000);
+    const windowStart = now - (now % config.windowSeconds);
+    
+    try {
+        // Get current count for this window
+        const existing = await db.prepare(
+            'SELECT request_count FROM rate_limits WHERE ip = ? AND endpoint = ? AND window_start = ?'
+        ).bind(ip, endpoint, windowStart).first();
+        
+        if (existing) {
+            if (existing.request_count >= config.maxRequests) {
+                return { allowed: false, remaining: 0, resetIn: config.windowSeconds - (now % config.windowSeconds) };
+            }
+            
+            // Increment count
+            await db.prepare(
+                'UPDATE rate_limits SET request_count = request_count + 1 WHERE ip = ? AND endpoint = ? AND window_start = ?'
+            ).bind(ip, endpoint, windowStart).run();
+            
+            return { allowed: true, remaining: config.maxRequests - existing.request_count - 1 };
+        } else {
+            // Create new entry
+            await db.prepare(
+                'INSERT INTO rate_limits (ip, endpoint, window_start, request_count) VALUES (?, ?, ?, 1)'
+            ).bind(ip, endpoint, windowStart).run();
+            
+            return { allowed: true, remaining: config.maxRequests - 1 };
+        }
+    } catch (e) {
+        console.error('Rate limit check error:', e);
+        // On error, allow the request but log it
+        return { allowed: true, remaining: 0 };
+    }
+}
+
+/**
+ * Clean up old rate limit entries (run periodically)
+ */
+async function cleanupRateLimits(db) {
+    const cutoff = Math.floor(Date.now() / 1000) - 3600; // Remove entries older than 1 hour
+    try {
+        await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(cutoff).run();
+    } catch (e) {
+        console.error('Rate limit cleanup error:', e);
+    }
+}
+
+// ============================================
+// Turnstile Captcha Verification
+// ============================================
+
+/**
+ * Verify Turnstile captcha token
+ */
+async function verifyTurnstile(token, secret, ip) {
+    if (!token) {
+        return { success: false, error: 'Captcha token required' };
+    }
+    
+    try {
+        const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                secret: secret,
+                response: token,
+                remoteip: ip
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            console.error('Turnstile verification failed:', result['error-codes']);
+            return { success: false, error: 'Captcha verification failed' };
+        }
+        
+        return { success: true };
+    } catch (e) {
+        console.error('Turnstile verification error:', e);
+        return { success: false, error: 'Captcha verification error' };
+    }
+}
+
+// ============================================
+// JWT Token Functions
+// ============================================
 
 /**
  * Generate a simple JWT-like token
@@ -95,12 +200,13 @@ function isValidAccountId(id) {
 /**
  * JSON response helper
  */
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status = 200, extraHeaders = {}) {
     return new Response(JSON.stringify(data), {
         status,
         headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders
+            ...corsHeaders,
+            ...extraHeaders
         }
     });
 }
@@ -108,8 +214,19 @@ function jsonResponse(data, status = 200) {
 /**
  * Error response helper
  */
-function errorResponse(message, status = 400) {
-    return jsonResponse({ error: message }, status);
+function errorResponse(message, status = 400, extraHeaders = {}) {
+    return jsonResponse({ error: message }, status, extraHeaders);
+}
+
+/**
+ * Rate limit error response
+ */
+function rateLimitResponse(resetIn) {
+    return errorResponse(
+        `Too many requests. Try again in ${resetIn} seconds.`,
+        429,
+        { 'Retry-After': String(resetIn) }
+    );
 }
 
 /**
@@ -123,12 +240,35 @@ function handleOptions() {
 }
 
 /**
- * POST /login - Authenticate or create account
+ * Get client IP from request
+ */
+function getClientIP(request) {
+    return request.headers.get('CF-Connecting-IP') || 
+           request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
+           'unknown';
+}
+
+/**
+ * POST /login - Authenticate or create account (requires captcha)
  */
 async function handleLogin(request, env) {
+    const ip = getClientIP(request);
+    
+    // Check rate limit
+    const rateCheck = await checkRateLimit(env.DB, ip, 'login');
+    if (!rateCheck.allowed) {
+        return rateLimitResponse(rateCheck.resetIn);
+    }
+    
     try {
         const body = await request.json();
-        const { account_id } = body;
+        const { account_id, captcha_token } = body;
+        
+        // Verify captcha first
+        const captchaResult = await verifyTurnstile(captcha_token, env.TURNSTILE_SECRET, ip);
+        if (!captchaResult.success) {
+            return errorResponse(captchaResult.error || 'Captcha verification failed', 400);
+        }
         
         if (!isValidAccountId(account_id)) {
             return errorResponse('Invalid account ID format. Must be 16 digits.', 400);
@@ -184,6 +324,14 @@ async function getAuthenticatedAccountId(request, env) {
  * GET /data - Get all data for authenticated account
  */
 async function handleGetData(request, env) {
+    const ip = getClientIP(request);
+    
+    // Check rate limit
+    const rateCheck = await checkRateLimit(env.DB, ip, 'data_read');
+    if (!rateCheck.allowed) {
+        return rateLimitResponse(rateCheck.resetIn);
+    }
+    
     const accountId = await getAuthenticatedAccountId(request, env);
     if (!accountId) {
         return errorResponse('Unauthorized', 401);
@@ -209,6 +357,14 @@ async function handleGetData(request, env) {
  * PUT /data - Upsert a key-value pair
  */
 async function handlePutData(request, env) {
+    const ip = getClientIP(request);
+    
+    // Check rate limit
+    const rateCheck = await checkRateLimit(env.DB, ip, 'data_write');
+    if (!rateCheck.allowed) {
+        return rateLimitResponse(rateCheck.resetIn);
+    }
+    
     const accountId = await getAuthenticatedAccountId(request, env);
     if (!accountId) {
         return errorResponse('Unauthorized', 401);
@@ -226,12 +382,18 @@ async function handlePutData(request, env) {
             return errorResponse('Value is required', 400);
         }
         
+        // Limit value size (500KB max)
+        const valueStr = JSON.stringify(value);
+        if (valueStr.length > 500000) {
+            return errorResponse('Data too large. Maximum 500KB allowed.', 400);
+        }
+        
         const now = new Date().toISOString();
         
         // Upsert using INSERT OR REPLACE
         await env.DB.prepare(
             'INSERT OR REPLACE INTO user_data (account_id, key, value, updated_at) VALUES (?, ?, ?, ?)'
-        ).bind(accountId, key, JSON.stringify(value), now).run();
+        ).bind(accountId, key, valueStr, now).run();
         
         return jsonResponse({
             success: true,
@@ -249,6 +411,14 @@ async function handlePutData(request, env) {
  * DELETE /data - Delete a key-value pair
  */
 async function handleDeleteData(request, env) {
+    const ip = getClientIP(request);
+    
+    // Check rate limit
+    const rateCheck = await checkRateLimit(env.DB, ip, 'data_write');
+    if (!rateCheck.allowed) {
+        return rateLimitResponse(rateCheck.resetIn);
+    }
+    
     const accountId = await getAuthenticatedAccountId(request, env);
     if (!accountId) {
         return errorResponse('Unauthorized', 401);
@@ -301,6 +471,18 @@ export default {
             return handleOptions();
         }
         
+        // Periodically cleanup old rate limit entries (1% chance per request)
+        if (Math.random() < 0.01) {
+            cleanupRateLimits(env.DB);
+        }
+        
+        // Global rate limit check
+        const ip = getClientIP(request);
+        const globalCheck = await checkRateLimit(env.DB, ip, 'global');
+        if (!globalCheck.allowed) {
+            return rateLimitResponse(globalCheck.resetIn);
+        }
+        
         // Route requests
         if (path === '/login' && method === 'POST') {
             return handleLogin(request, env);
@@ -326,3 +508,4 @@ export default {
         return errorResponse('Not found', 404);
     }
 };
+
