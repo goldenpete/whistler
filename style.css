@@ -353,7 +353,7 @@ button {
 .nav-divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, var(--border), transparent);
-    margin: 20px 0;
+    margin: 10px 0;
 }
 
 .nav-menu {
