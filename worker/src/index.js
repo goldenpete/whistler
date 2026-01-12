@@ -87,6 +87,34 @@ function generateTOTPSecret() {
 }
 
 /**
+ * Generate a unique display name (adjective + animal)
+ */
+function generateDisplayName() {
+    const adjectives = [
+        'Swift', 'Brave', 'Calm', 'Daring', 'Eager', 'Fierce', 'Gentle', 'Happy',
+        'Jolly', 'Kind', 'Lucky', 'Mighty', 'Noble', 'Proud', 'Quick', 'Royal',
+        'Silent', 'Steady', 'Clever', 'Cosmic', 'Crystal', 'Dancing', 'Dreamy',
+        'Electric', 'Frozen', 'Golden', 'Hidden', 'Iron', 'Jade', 'Keen',
+        'Lunar', 'Misty', 'Neon', 'Ocean', 'Phantom', 'Quantum', 'Radiant',
+        'Sapphire', 'Shadow', 'Solar', 'Stellar', 'Thunder', 'Velvet', 'Wild',
+        'Amber', 'Arctic', 'Blazing', 'Coral', 'Crimson', 'Dusk', 'Ember'
+    ];
+    const animals = [
+        'Fox', 'Wolf', 'Bear', 'Eagle', 'Hawk', 'Owl', 'Tiger', 'Lion',
+        'Panther', 'Falcon', 'Raven', 'Shark', 'Dragon', 'Phoenix', 'Viper',
+        'Cobra', 'Jaguar', 'Lynx', 'Puma', 'Orca', 'Badger', 'Crane',
+        'Dolphin', 'Elephant', 'Gazelle', 'Heron', 'Ibis', 'Jackal', 'Koala',
+        'Lemur', 'Mantis', 'Narwhal', 'Osprey', 'Panda', 'Quail', 'Raccoon',
+        'Sparrow', 'Turtle', 'Unicorn', 'Vulture', 'Walrus', 'Yak', 'Zebra',
+        'Otter', 'Seal', 'Stag', 'Moth', 'Bison', 'Coyote', 'Ferret'
+    ];
+    
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const animal = animals[Math.floor(Math.random() * animals.length)];
+    return `${adj} ${animal}`;
+}
+
+/**
  * Decode base32 string to bytes
  */
 function base32Decode(str) {
@@ -353,21 +381,24 @@ async function handleLogin(request, env) {
         
         // Check if account exists and get 2FA status
         const existing = await env.DB.prepare(
-            'SELECT id, totp_enabled FROM accounts WHERE id = ?'
+            'SELECT id, totp_enabled, display_name FROM accounts WHERE id = ?'
         ).bind(account_id).first();
         
         let isNew = false;
         let totpEnabled = false;
+        let displayName = null;
         
         if (!existing) {
-            // Create new account
+            // Create new account with generated display name
             const now = new Date().toISOString();
+            displayName = generateDisplayName();
             await env.DB.prepare(
-                'INSERT INTO accounts (id, created_at, totp_enabled) VALUES (?, ?, 0)'
-            ).bind(account_id, now).run();
+                'INSERT INTO accounts (id, created_at, totp_enabled, display_name) VALUES (?, ?, 0, ?)'
+            ).bind(account_id, now, displayName).run();
             isNew = true;
         } else {
             totpEnabled = existing.totp_enabled === 1;
+            displayName = existing.display_name;
         }
         
         // If 2FA is enabled, return a pending token
@@ -378,6 +409,7 @@ async function handleLogin(request, env) {
                 requires_totp: true,
                 pending_token: pendingToken,
                 account_id,
+                display_name: displayName,
                 is_new: isNew
             });
         }
@@ -390,6 +422,7 @@ async function handleLogin(request, env) {
             requires_totp: false,
             token,
             account_id,
+            display_name: displayName,
             is_new: isNew
         });
         
@@ -424,9 +457,9 @@ async function handleLoginTotp(request, env) {
             return errorResponse('Invalid or expired token', 401);
         }
         
-        // Get the TOTP secret
+        // Get the TOTP secret and display name
         const account = await env.DB.prepare(
-            'SELECT totp_secret FROM accounts WHERE id = ? AND totp_enabled = 1'
+            'SELECT totp_secret, display_name FROM accounts WHERE id = ? AND totp_enabled = 1'
         ).bind(accountId).first();
         
         if (!account || !account.totp_secret) {
@@ -445,7 +478,8 @@ async function handleLoginTotp(request, env) {
         return jsonResponse({
             success: true,
             token,
-            account_id: accountId
+            account_id: accountId,
+            display_name: account.display_name
         });
         
     } catch (e) {

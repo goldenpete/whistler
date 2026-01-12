@@ -6,8 +6,12 @@ CREATE TABLE IF NOT EXISTS accounts (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL,
     totp_secret TEXT DEFAULT NULL,
-    totp_enabled INTEGER DEFAULT 0
+    totp_enabled INTEGER DEFAULT 0,
+    display_name TEXT DEFAULT NULL
 );
+
+-- Add display_name column if it doesn't exist (for existing tables)
+ALTER TABLE accounts ADD COLUMN display_name TEXT DEFAULT NULL;
 
 -- User data table: stores key-value pairs per account
 CREATE TABLE IF NOT EXISTS user_data (

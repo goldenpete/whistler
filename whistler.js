@@ -5009,10 +5009,12 @@ class SyncManager {
         this.ACCOUNT_KEY = 'whistler_account_id';
         this.TOKEN_KEY = 'whistler_session_token';
         this.LAST_SYNC_KEY = 'whistler_last_sync';
+        this.DISPLAY_NAME_KEY = 'whistler_display_name';
         
         // State
         this.accountId = null;
         this.sessionToken = null;
+        this.displayName = null;
         this.lastSync = null;
         this.isSyncing = false;
         this.captchaToken = null;
@@ -5030,6 +5032,7 @@ class SyncManager {
         this.accountId = localStorage.getItem(this.ACCOUNT_KEY);
         this.sessionToken = localStorage.getItem(this.TOKEN_KEY);
         this.lastSync = localStorage.getItem(this.LAST_SYNC_KEY);
+        this.displayName = localStorage.getItem(this.DISPLAY_NAME_KEY);
         
         // Setup UI
         this.setupUI();
@@ -5208,6 +5211,11 @@ class SyncManager {
         document.getElementById('sync-totp-disable')?.classList.add('hidden');
         
         if (isLoggedIn) {
+            const displayName = document.getElementById('display-account-name');
+            if (displayName && this.displayName) {
+                displayName.textContent = this.displayName;
+                displayName.classList.remove('hidden');
+            }
             const displayId = document.getElementById('display-account-id');
             if (displayId) {
                 displayId.textContent = this.formatAccountId(this.accountId);
@@ -5388,6 +5396,7 @@ class SyncManager {
                 // Store pending state
                 this.pendingTotpToken = data.pending_token;
                 this.accountId = accountId;
+                this.pendingDisplayName = data.display_name;
                 
                 // Show TOTP verification screen
                 this.showTotpVerify();
@@ -5395,7 +5404,7 @@ class SyncManager {
             }
             
             // No 2FA - complete login
-            await this.completeLogin(accountId, data.token, data.is_new);
+            await this.completeLogin(accountId, data.token, data.is_new, data.display_name);
             
         } catch (err) {
             console.error('Login error:', err);
@@ -5462,7 +5471,9 @@ class SyncManager {
             
             // Complete login
             this.pendingTotpToken = null;
-            await this.completeLogin(this.accountId, data.token, false);
+            const displayName = data.display_name || this.pendingDisplayName;
+            this.pendingDisplayName = null;
+            await this.completeLogin(this.accountId, data.token, false, displayName);
             
         } catch (err) {
             console.error('TOTP verify error:', err);
@@ -5498,13 +5509,17 @@ class SyncManager {
     /**
      * Complete login after credentials are verified
      */
-    async completeLogin(accountId, token, isNew) {
+    async completeLogin(accountId, token, isNew, displayName = null) {
         this.accountId = accountId;
         this.sessionToken = token;
+        this.displayName = displayName;
         this.totpEnabled = false; // Will be updated by check2FAStatus
         
         localStorage.setItem(this.ACCOUNT_KEY, this.accountId);
         localStorage.setItem(this.TOKEN_KEY, this.sessionToken);
+        if (displayName) {
+            localStorage.setItem(this.DISPLAY_NAME_KEY, displayName);
+        }
         
         // Update UI
         this.updateUIState(true);
@@ -5840,11 +5855,13 @@ class SyncManager {
     logout() {
         this.accountId = null;
         this.sessionToken = null;
+        this.displayName = null;
         this.lastSync = null;
         this.totpEnabled = false;
         
         localStorage.removeItem(this.ACCOUNT_KEY);
         localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.DISPLAY_NAME_KEY);
         localStorage.removeItem(this.LAST_SYNC_KEY);
         
         this.stopAutoSync();
@@ -5853,6 +5870,10 @@ class SyncManager {
         // Clear the input
         const input = document.getElementById('input-account-id');
         if (input) input.value = '';
+        
+        // Hide account name
+        const displayName = document.getElementById('display-account-name');
+        if (displayName) displayName.classList.add('hidden');
     }
     
     /**
