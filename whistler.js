@@ -2087,10 +2087,70 @@ class UIManager {
 
         this.app.state.projects.forEach(p => {
             const item = document.createElement('div');
-            item.className = 'custom-select-item';
+            item.className = 'custom-select-item project-item';
             if (p.id === currentId) item.classList.add('selected');
             item.dataset.value = p.id;
-            item.textContent = p.name;
+            
+            // Project name
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'project-item-name';
+            nameSpan.textContent = p.name;
+            item.appendChild(nameSpan);
+            
+            // Action buttons container
+            const actions = document.createElement('div');
+            actions.className = 'project-item-actions';
+            actions.innerHTML = `
+                <button class="project-action-btn" data-action="edit" title="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="project-action-btn project-action-danger" data-action="delete" title="Delete"><i class="ph-bold ph-trash"></i></button>
+            `;
+            item.appendChild(actions);
+            
+            // Handle action button clicks
+            actions.onclick = (e) => {
+                e.stopPropagation();
+                const btn = e.target.closest('.project-action-btn');
+                if (!btn) return;
+                
+                const action = btn.dataset.action;
+                if (action === 'edit') {
+                    this.app.modals.prompt("Rename Project", p.name, (newName) => {
+                        if (newName && newName.trim()) {
+                            p.name = newName.trim();
+                            this.app.storage.save();
+                            this.renderProjectDropdown();
+                        }
+                    });
+                } else if (action === 'delete') {
+                    this.app.modals.confirm("Delete Project", `Delete "${p.name}"? All files, collections, and timestamps will be removed.`, () => {
+                        // Remove all data associated with this project
+                        this.app.state.files = this.app.state.files.filter(f => f.projectId !== p.id);
+                        this.app.state.collections = this.app.state.collections.filter(c => c.projectId !== p.id);
+                        this.app.state.timestamps = this.app.state.timestamps.filter(t => {
+                            const file = this.app.state.files.find(f => f.id === t.fileId);
+                            return file; // Only keep timestamps whose files still exist
+                        });
+                        this.app.state.projects = this.app.state.projects.filter(x => x.id !== p.id);
+                        
+                        this.app.storage.save();
+                        
+                        // If deleting active project, switch to another or go to welcome
+                        if (this.app.state.activeProjectId === p.id) {
+                            this.app.state.activeProjectId = null;
+                            if (this.app.state.projects.length > 0) {
+                                this.app.router.openProject(this.app.state.projects[0].id);
+                            } else {
+                                // No projects left, show welcome screen
+                                this.app.router.goTo('welcome');
+                                this.renderProjectDropdown();
+                            }
+                        } else {
+                            this.renderProjectDropdown();
+                        }
+                    });
+                }
+            };
+            
             menu.appendChild(item);
         });
 
