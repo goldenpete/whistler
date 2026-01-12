@@ -418,6 +418,14 @@ async function handleLogin(request, env) {
         } else {
             totpEnabled = existing.totp_enabled === 1;
             displayName = existing.display_name;
+            
+            // Generate name for existing accounts that don't have one
+            if (!displayName) {
+                displayName = generateDisplayName();
+                await env.DB.prepare(
+                    'UPDATE accounts SET display_name = ? WHERE id = ?'
+                ).bind(displayName, account_id).run();
+            }
         }
         
         // If 2FA is enabled, return a pending token
