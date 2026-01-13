@@ -791,6 +791,9 @@ class Router {
         
         // Setup sidebar collapse button
         this.setupSidebarCollapse();
+        
+        // Setup spotlight search
+        this.setupSpotlightSearch();
     }
 
     setupSidebarCollapse() {
@@ -805,10 +808,28 @@ class Router {
             sidebar.classList.add('collapsed');
         }
         
+        // Sidebar collapse button (in sidebar)
         collapseBtn.onclick = () => {
-            const collapsed = sidebar.classList.toggle('collapsed');
-            localStorage.setItem('whistler-sidebar-collapsed', collapsed);
+            sidebar.classList.add('collapsed');
+            localStorage.setItem('whistler-sidebar-collapsed', 'true');
         };
+        
+        // All topbar expand buttons (in main view headers)
+        document.querySelectorAll('[data-sidebar-toggle]').forEach(btn => {
+            btn.onclick = () => {
+                sidebar.classList.remove('collapsed');
+                localStorage.setItem('whistler-sidebar-collapsed', 'false');
+            };
+        });
+        
+        // Keyboard shortcut: Ctrl+B to toggle sidebar
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                const collapsed = sidebar.classList.toggle('collapsed');
+                localStorage.setItem('whistler-sidebar-collapsed', collapsed);
+            }
+        });
     }
 
     setupCollapsibleSections() {
@@ -838,6 +859,336 @@ class Router {
                 localStorage.setItem(key, collapsed);
             };
         });
+    }
+
+    setupSpotlightSearch() {
+        const backdrop = document.getElementById('spotlight-backdrop');
+        const input = document.getElementById('spotlight-input');
+        const results = document.getElementById('spotlight-results');
+        const searchBtn = document.getElementById('global-search-btn');
+        
+        if (!backdrop || !input || !results) return;
+        
+        let selectedIndex = -1;
+        let currentResults = [];
+        
+        const openSpotlight = () => {
+            backdrop.classList.remove('hidden');
+            input.value = '';
+            results.innerHTML = '';
+            results.classList.remove('has-results');
+            selectedIndex = -1;
+            currentResults = [];
+            setTimeout(() => input.focus(), 50);
+        };
+        
+        const closeSpotlight = () => {
+            backdrop.classList.add('hidden');
+            input.blur();
+        };
+        
+        // Search button click
+        if (searchBtn) {
+            searchBtn.onclick = openSpotlight;
+        }
+        
+        // Keyboard shortcut: Ctrl+K to open spotlight
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                if (backdrop.classList.contains('hidden')) {
+                    openSpotlight();
+                } else {
+                    closeSpotlight();
+                }
+            }
+        });
+        
+        // Close on backdrop click
+        backdrop.onclick = (e) => {
+            if (e.target === backdrop) {
+                closeSpotlight();
+            }
+        };
+        
+        // Close on ESC
+        input.onkeydown = (e) => {
+            if (e.key === 'Escape') {
+                closeSpotlight();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (currentResults.length > 0) {
+                    selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+                    this.updateSpotlightSelection(results, selectedIndex);
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (currentResults.length > 0) {
+                    selectedIndex = Math.max(selectedIndex - 1, 0);
+                    this.updateSpotlightSelection(results, selectedIndex);
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0 && currentResults[selectedIndex]) {
+                    this.navigateToSpotlightResult(currentResults[selectedIndex]);
+                    closeSpotlight();
+                }
+            }
+        };
+        
+        // Search input
+        input.oninput = () => {
+            const query = input.value.trim().toLowerCase();
+            if (query.length < 1) {
+                results.innerHTML = '';
+                results.classList.remove('has-results');
+                currentResults = [];
+                selectedIndex = -1;
+                return;
+            }
+            
+            currentResults = this.searchProject(query);
+            selectedIndex = currentResults.length > 0 ? 0 : -1;
+            this.renderSpotlightResults(results, currentResults, selectedIndex, closeSpotlight);
+        };
+    }
+    
+    searchProject(query) {
+        const results = [];
+        const project = this.app.state.currentProject;
+        
+        if (!project) return results;
+        
+        // Search storages
+        if (project.storages) {
+            project.storages.forEach(storage => {
+                if (storage.name.toLowerCase().includes(query)) {
+                    results.push({
+                        type: 'storage',
+                        icon: 'ph-bold ph-hard-drives',
+                        title: storage.name,
+                        meta: 'Storage',
+                        data: { storageId: storage.id }
+                    });
+                }
+                
+                // Search files in storage
+                const searchFiles = (files, path = '') => {
+                    files.forEach(file => {
+                        if (file.type === 'folder') {
+                            if (file.name.toLowerCase().includes(query)) {
+                                results.push({
+                                    type: 'folder',
+                                    icon: 'ph-bold ph-folder',
+                                    title: file.name,
+                                    meta: `Folder in ${storage.name}${path}`,
+                                    data: { storageId: storage.id, folderId: file.id }
+                                });
+                            }
+                            searchFiles(file.children || [], `${path}/${file.name}`);
+                        } else {
+                            if (file.name.toLowerCase().includes(query)) {
+                                results.push({
+                                    type: 'file',
+                                    icon: this.getFileIcon(file),
+                                    title: file.name,
+                                    meta: `${storage.name}${path}`,
+                                    data: { storageId: storage.id, fileId: file.id }
+                                });
+                            }
+                        }
+                    });
+                };
+                searchFiles(storage.files || []);
+            });
+        }
+        
+        // Search collections
+        if (project.collections) {
+            project.collections.forEach(collection => {
+                if (collection.name.toLowerCase().includes(query)) {
+                    results.push({
+                        type: 'collection',
+                        icon: 'ph-bold ph-playlist',
+                        title: collection.name,
+                        meta: `Collection • ${(collection.timestamps || []).length} clips`,
+                        data: { collectionId: collection.id }
+                    });
+                }
+                
+                // Search timestamps in collection
+                (collection.timestamps || []).forEach(ts => {
+                    const tsTitle = ts.title || 'Untitled';
+                    const tsNote = ts.note || '';
+                    if (tsTitle.toLowerCase().includes(query) || tsNote.toLowerCase().includes(query)) {
+                        results.push({
+                            type: 'timestamp',
+                            icon: 'ph-bold ph-clock',
+                            title: tsTitle,
+                            meta: `${collection.name} • ${this.formatTime(ts.time)}`,
+                            data: { collectionId: collection.id, timestampId: ts.id }
+                        });
+                    }
+                });
+            });
+        }
+        
+        // Search docs
+        if (project.docs) {
+            project.docs.forEach(doc => {
+                if (doc.name.toLowerCase().includes(query)) {
+                    results.push({
+                        type: 'doc',
+                        icon: 'ph-bold ph-note-pencil',
+                        title: doc.name,
+                        meta: 'Document',
+                        data: { docId: doc.id }
+                    });
+                }
+            });
+        }
+        
+        // Search graphs
+        if (project.graphs) {
+            project.graphs.forEach(graph => {
+                if (graph.name.toLowerCase().includes(query)) {
+                    results.push({
+                        type: 'graph',
+                        icon: 'ph-bold ph-graph',
+                        title: graph.name,
+                        meta: 'Graph',
+                        data: { graphId: graph.id }
+                    });
+                }
+            });
+        }
+        
+        return results.slice(0, 20); // Limit to 20 results
+    }
+    
+    getFileIcon(file) {
+        const ext = (file.name || '').split('.').pop().toLowerCase();
+        if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) return 'ph-bold ph-video';
+        if (['mp3', 'wav', 'ogg', 'flac'].includes(ext)) return 'ph-bold ph-music-note';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'ph-bold ph-image';
+        if (['pdf'].includes(ext)) return 'ph-bold ph-file-pdf';
+        return 'ph-bold ph-file';
+    }
+    
+    formatTime(seconds) {
+        if (!seconds && seconds !== 0) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    renderSpotlightResults(container, results, selectedIndex, closeCallback) {
+        if (results.length === 0) {
+            container.innerHTML = '<div class="spotlight-no-results">No results found</div>';
+            container.classList.add('has-results');
+            return;
+        }
+        
+        // Group results by type
+        const groups = {};
+        const typeLabels = {
+            storage: 'Storages',
+            folder: 'Folders',
+            file: 'Files',
+            collection: 'Collections',
+            timestamp: 'Timestamps',
+            doc: 'Documents',
+            graph: 'Graphs'
+        };
+        
+        results.forEach((r, i) => {
+            r._index = i;
+            if (!groups[r.type]) groups[r.type] = [];
+            groups[r.type].push(r);
+        });
+        
+        let html = '';
+        for (const type of Object.keys(groups)) {
+            html += `<div class="spotlight-results-section">`;
+            html += `<div class="spotlight-section-title">${typeLabels[type] || type}</div>`;
+            groups[type].forEach(r => {
+                const selected = r._index === selectedIndex ? 'selected' : '';
+                html += `
+                    <div class="spotlight-result-item ${selected}" data-index="${r._index}">
+                        <i class="${r.icon}"></i>
+                        <div class="spotlight-result-info">
+                            <div class="spotlight-result-title">${this.escapeHtml(r.title)}</div>
+                            <div class="spotlight-result-meta">${this.escapeHtml(r.meta)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        
+        container.innerHTML = html;
+        container.classList.add('has-results');
+        
+        // Add click handlers
+        container.querySelectorAll('.spotlight-result-item').forEach(item => {
+            item.onclick = () => {
+                const idx = parseInt(item.dataset.index);
+                if (results[idx]) {
+                    this.navigateToSpotlightResult(results[idx]);
+                    closeCallback();
+                }
+            };
+        });
+    }
+    
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    updateSpotlightSelection(container, selectedIndex) {
+        container.querySelectorAll('.spotlight-result-item').forEach(item => {
+            const idx = parseInt(item.dataset.index);
+            item.classList.toggle('selected', idx === selectedIndex);
+            if (idx === selectedIndex) {
+                item.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    }
+    
+    navigateToSpotlightResult(result) {
+        switch (result.type) {
+            case 'storage':
+            case 'folder':
+            case 'file':
+                this.app.state.currentStorageId = result.data.storageId;
+                this.goTo('storage');
+                // If folder or file, navigate to it
+                if (result.data.folderId) {
+                    this.app.navigateToFolder?.(result.data.folderId);
+                } else if (result.data.fileId) {
+                    this.app.openFile?.(result.data.fileId);
+                }
+                break;
+            case 'collection':
+                this.app.state.currentCollectionId = result.data.collectionId;
+                this.goTo('collection');
+                break;
+            case 'timestamp':
+                this.app.state.currentCollectionId = result.data.collectionId;
+                this.goTo('collection');
+                // Optionally scroll to or highlight the timestamp
+                break;
+            case 'doc':
+                this.app.state.currentDocId = result.data.docId;
+                this.goTo('docs');
+                break;
+            case 'graph':
+                this.app.state.currentGraphId = result.data.graphId;
+                this.goTo('graph');
+                break;
+        }
     }
 
     goTo(viewName) {

@@ -27,6 +27,9 @@
                 </button>
                 <i class="ph-fill ph-wave-sine logo-icon"></i>
                 <span class="brand-name">Whistlerbox</span>
+                <button class="sidebar-search-btn" id="global-search-btn" title="Search (Ctrl+K)">
+                    <i class="ph-bold ph-magnifying-glass"></i>
+                </button>
             </div>
 
             <!-- Project Dropdown -->
@@ -115,6 +118,12 @@
             <!-- Storage View (Default) -->
             <section id="view-storage" class="view-section">
                 <header class="view-header" id="storage-header-normal">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
                     <div class="header-breadcrumb">
                         <!-- Storage Switcher -->
                         <div class="asset-switcher" id="storage-switcher">
@@ -206,6 +215,12 @@
             <!-- Collection View -->
             <section id="view-collection" class="view-section hidden">
                 <header class="view-header" id="collection-header-normal">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
                     <div class="header-breadcrumb">
                         <h1 id="collection-title">Collection</h1>
                     </div>
@@ -260,6 +275,11 @@
 
             <!-- Welcome View (shown when no projects) -->
             <section id="view-welcome" class="view-section hidden">
+                <div class="welcome-sidebar-toggle">
+                    <button class="sidebar-expand-btn" data-sidebar-toggle>
+                        <i class="ph-bold ph-sidebar-simple"></i>
+                    </button>
+                </div>
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 40px; text-align: center;">
                     <div style="margin-bottom: 32px;">
                         <i class="ph-fill ph-wave-sine logo-icon" style="font-size: 80px; filter: drop-shadow(0 0 20px var(--accent-glow));"></i>
@@ -288,6 +308,12 @@
             <!-- Docs View -->
             <section id="view-docs" class="view-section hidden">
                 <div id="docs-toolbar">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
                     <!-- Docs Switcher -->
                     <div class="asset-switcher" id="docs-switcher">
                         <button class="asset-switcher-trigger" id="docs-switcher-trigger" data-tooltip="Switch Document">
@@ -346,6 +372,12 @@
             <!-- Graph View -->
             <section id="view-graph" class="view-section hidden">
                 <header class="view-header">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
                     <!-- Graph Switcher -->
                     <div class="asset-switcher" id="graph-switcher">
                         <button class="asset-switcher-trigger" id="graph-switcher-trigger" data-tooltip="Switch Graph">
@@ -417,6 +449,12 @@
             <!-- Assets Overview View -->
             <section id="view-assets" class="view-section hidden">
                 <header class="view-header">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
                     <div class="header-breadcrumb">
                         <h1>Assets</h1>
                     </div>
@@ -429,6 +467,12 @@
             <!-- Collections Grid View -->
             <section id="view-collections-grid" class="view-section hidden">
                 <header class="view-header">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
                     <div class="header-breadcrumb">
                         <h1>Collections</h1>
                     </div>
@@ -754,6 +798,20 @@
 
         </div> <!-- End player-overlay -->
     </div> <!-- End app -->
+
+    <!-- Spotlight Search -->
+    <div class="spotlight-backdrop hidden" id="spotlight-backdrop">
+        <div class="spotlight-container">
+            <div class="spotlight-search-box">
+                <i class="ph-bold ph-magnifying-glass spotlight-icon"></i>
+                <input type="text" id="spotlight-input" placeholder="Search files, collections, timestamps..." autocomplete="off">
+                <span class="spotlight-shortcut">ESC</span>
+            </div>
+            <div class="spotlight-results" id="spotlight-results">
+                <!-- Results will be injected here -->
+            </div>
+        </div>
+    </div>
 
     <!-- Modals -->
     <div id="video-desc-tooltip" class="desc-tooltip hidden"></div>
