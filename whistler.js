@@ -962,13 +962,28 @@ class Router {
     searchProject(query) {
         const results = [];
         const projectId = this.app.state.activeProjectId;
-        
-        if (!projectId) return results;
-        
+        const q = query.toLowerCase();
+
+        // Allow searching projects globally
+        const projects = this.app.state.projects || [];
+        projects.forEach(p => {
+            if (p.name.toLowerCase().includes(q)) {
+                results.push({
+                    type: 'project',
+                    icon: 'ph-bold ph-briefcase',
+                    title: p.name,
+                    meta: 'Project',
+                    data: { projectId: p.id }
+                });
+            }
+        });
+
+        if (!projectId) return results.slice(0, 20);
+
         // Search storages for this project
         const storages = this.app.state.storages.filter(s => s.projectId === projectId);
         storages.forEach(storage => {
-            if (storage.name.toLowerCase().includes(query)) {
+            if (storage.name.toLowerCase().includes(q)) {
                 results.push({
                     type: 'storage',
                     icon: 'ph-bold ph-hard-drives',
@@ -978,11 +993,11 @@ class Router {
                 });
             }
         });
-        
+
         // Search files for this project
         const files = this.app.state.files.filter(f => f.projectId === projectId);
         files.forEach(file => {
-            if (file.name.toLowerCase().includes(query)) {
+            if (file.name.toLowerCase().includes(q)) {
                 const storage = storages.find(s => s.id === file.storageId);
                 const storageName = storage ? storage.name : '';
                 results.push({
@@ -990,15 +1005,15 @@ class Router {
                     icon: file.type === 'folder' ? 'ph-bold ph-folder' : this.getFileIcon(file),
                     title: file.name,
                     meta: storageName,
-                    data: { storageId: file.storageId, fileId: file.id, folderId: file.type === 'folder' ? file.id : null }
+                    data: { storageId: file.storageId, fileId: file.id, parentId: file.parentId || null }
                 });
             }
         });
-        
+
         // Search collections for this project
         const collections = this.app.state.collections.filter(c => c.projectId === projectId);
         collections.forEach(collection => {
-            if (collection.name.toLowerCase().includes(query)) {
+            if (collection.name.toLowerCase().includes(q)) {
                 const tsCount = this.app.state.timestamps.filter(t => t.collectionId === collection.id).length;
                 results.push({
                     type: 'collection',
@@ -1009,14 +1024,14 @@ class Router {
                 });
             }
         });
-        
+
         // Search timestamps for this project's collections
         const collectionIds = collections.map(c => c.id);
         const timestamps = this.app.state.timestamps.filter(t => collectionIds.includes(t.collectionId));
         timestamps.forEach(ts => {
             const tsTitle = ts.title || 'Untitled';
             const tsNote = ts.note || '';
-            if (tsTitle.toLowerCase().includes(query) || tsNote.toLowerCase().includes(query)) {
+            if (tsTitle.toLowerCase().includes(q) || tsNote.toLowerCase().includes(q)) {
                 const collection = collections.find(c => c.id === ts.collectionId);
                 results.push({
                     type: 'timestamp',
@@ -1027,11 +1042,11 @@ class Router {
                 });
             }
         });
-        
+
         // Search docs for this project
         const docs = this.app.state.docs.filter(d => d.projectId === projectId);
         docs.forEach(doc => {
-            if (doc.name.toLowerCase().includes(query)) {
+            if (doc.name.toLowerCase().includes(q)) {
                 results.push({
                     type: 'doc',
                     icon: 'ph-bold ph-note-pencil',
@@ -1041,11 +1056,11 @@ class Router {
                 });
             }
         });
-        
+
         // Search graphs for this project
         const graphs = this.app.state.graphs.filter(g => g.projectId === projectId);
         graphs.forEach(graph => {
-            if (graph.name.toLowerCase().includes(query)) {
+            if (graph.name.toLowerCase().includes(q)) {
                 results.push({
                     type: 'graph',
                     icon: 'ph-bold ph-graph',
@@ -1055,16 +1070,16 @@ class Router {
                 });
             }
         });
-        
+
         // Search navigation pages
         const pages = [
             { name: 'Assets', icon: 'ph-bold ph-package', view: 'assets', keywords: ['assets', 'overview', 'storage', 'docs', 'graph'] },
             { name: 'Collections', icon: 'ph-bold ph-folders', view: 'collectionsGrid', keywords: ['collections', 'all collections', 'clips', 'timestamps'] }
         ];
-        
+
         pages.forEach(page => {
-            const matches = page.name.toLowerCase().includes(query) || 
-                           page.keywords.some(k => k.includes(query));
+            const matches = page.name.toLowerCase().includes(q) || 
+                           page.keywords.some(k => k.includes(q));
             if (matches) {
                 results.push({
                     type: 'page',
@@ -1075,7 +1090,26 @@ class Router {
                 });
             }
         });
-        
+
+        // Search sidebar actions (sync / load)
+        const actions = [
+            { name: 'Sync', id: 'sync', icon: 'ph-bold ph-cloud', elementId: 'btn-cloud-sync', keywords: ['sync', 'cloud', 'upload', 'download'] },
+            { name: 'Load', id: 'load', icon: 'ph-bold ph-arrows-clockwise', elementId: 'btn-export-import', keywords: ['load', 'import', 'open', 'restore'] }
+        ];
+
+        actions.forEach(a => {
+            const matches = a.name.toLowerCase().includes(q) || a.keywords.some(k => k.includes(q));
+            if (matches) {
+                results.push({
+                    type: 'action',
+                    icon: a.icon,
+                    title: a.name,
+                    meta: a.keywords.join(', '),
+                    data: { actionId: a.id, elementId: a.elementId }
+                });
+            }
+        });
+
         return results.slice(0, 20); // Limit to 20 results
     }
     
@@ -1105,7 +1139,9 @@ class Router {
         // Group results by type
         const groups = {};
         const typeLabels = {
+            project: 'Projects',
             page: 'Pages',
+            action: 'Actions',
             storage: 'Storages',
             folder: 'Folders',
             file: 'Files',
@@ -1127,6 +1163,9 @@ class Router {
             html += `<div class="spotlight-section-title">${typeLabels[type] || type}</div>`;
             groups[type].forEach(r => {
                 const selected = r._index === selectedIndex ? 'selected' : '';
+                const folderButton = (r.type === 'file' && r.data && r.data.parentId) ?
+                    `<button class="spotlight-result-action" data-index="${r._index}" data-action="open-folder" data-folder-id="${r.data.parentId}" title="Open containing folder"><i class="ph-bold ph-folder"></i></button>` : '';
+
                 html += `
                     <div class="spotlight-result-item ${selected}" data-index="${r._index}">
                         <i class="${r.icon}"></i>
@@ -1134,6 +1173,7 @@ class Router {
                             <div class="spotlight-result-title">${this.escapeHtml(r.title)}</div>
                             <div class="spotlight-result-meta">${this.escapeHtml(r.meta)}</div>
                         </div>
+                        ${folderButton}
                     </div>
                 `;
             });
@@ -1143,12 +1183,29 @@ class Router {
         container.innerHTML = html;
         container.classList.add('has-results');
         
-        // Add click handlers
+        // Add click handlers for items
         container.querySelectorAll('.spotlight-result-item').forEach(item => {
             item.onclick = () => {
                 const idx = parseInt(item.dataset.index);
                 if (results[idx]) {
                     this.navigateToSpotlightResult(results[idx]);
+                    closeCallback();
+                }
+            };
+        });
+
+        // Add handlers for result actions (e.g., open folder)
+        container.querySelectorAll('.spotlight-result-action').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.index);
+                const folderId = btn.dataset.folderId;
+                if (results[idx]) {
+                    const res = results[idx];
+                    // Navigate to the folder inside the storage
+                    this.app.state.currentStorageId = res.data.storageId;
+                    this.goTo('storage');
+                    this.app.navigateToFolder?.(folderId);
                     closeCallback();
                 }
             };
@@ -1174,15 +1231,36 @@ class Router {
     navigateToSpotlightResult(result) {
         switch (result.type) {
             case 'storage':
-            case 'folder':
-            case 'file':
                 this.app.state.currentStorageId = result.data.storageId;
                 this.goTo('storage');
-                // If folder or file, navigate to it
-                if (result.data.folderId) {
-                    this.app.navigateToFolder?.(result.data.folderId);
-                } else if (result.data.fileId) {
-                    this.app.openFile?.(result.data.fileId);
+                break;
+            case 'folder':
+                this.app.state.currentStorageId = result.data.storageId;
+                this.goTo('storage');
+                if (result.data && result.data.parentId) {
+                    this.app.navigateToFolder?.(result.data.parentId);
+                }
+                break;
+            case 'file':
+                // Open the file directly if possible
+                if (result.data && result.data.fileId) {
+                    // Find file object
+                    const file = this.app.state.files.find(f => f.id === result.data.fileId);
+                    if (file) {
+                        // Set active context
+                        this.app.state.activeFileId = file.id;
+                        this.app.state.activeStorageId = file.storageId || result.data.storageId || null;
+
+                        // Load via player and show overlay/player UI
+                        this.app.player.load(file);
+                        if (this.app.player.els && this.app.player.els.overlay) {
+                            this.app.player.els.overlay.classList.remove('hidden');
+                        }
+                    }
+                } else {
+                    // Fallback: navigate to storage
+                    this.app.state.currentStorageId = result.data.storageId;
+                    this.goTo('storage');
                 }
                 break;
             case 'collection':
@@ -1204,6 +1282,19 @@ class Router {
                 break;
             case 'page':
                 this.goTo(result.data.view);
+                break;
+            case 'project':
+                // Open the selected project
+                if (result.data && result.data.projectId) {
+                    this.app.router.openProject(result.data.projectId);
+                }
+                break;
+            case 'action':
+                // Trigger a sidebar action (e.g., sync, load)
+                if (result.data && result.data.elementId) {
+                    const el = document.getElementById(result.data.elementId);
+                    if (el) el.click();
+                }
                 break;
         }
     }
