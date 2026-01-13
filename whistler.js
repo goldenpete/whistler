@@ -8298,22 +8298,27 @@ class SyncManager {
     }
     
     /**
-     * Setup sync button tooltips with proper positioning
+     * Setup sync button tooltips
      */
     setupSyncTooltips() {
         const wrappers = document.querySelectorAll('.sync-btn-wrapper');
+        const tooltipText = document.getElementById('sync-tooltip-text');
+        
+        if (!tooltipText) return;
         
         wrappers.forEach(wrapper => {
-            const tooltip = wrapper.querySelector('.sync-tooltip');
-            if (!tooltip) return;
+            const tooltip = wrapper.dataset.tooltip;
+            const isPull = wrapper.querySelector('.btn-sync-pull');
             
             wrapper.addEventListener('mouseenter', () => {
-                const btn = wrapper.querySelector('button');
-                if (!btn) return;
-                
-                const rect = btn.getBoundingClientRect();
-                tooltip.style.left = `${rect.left + rect.width / 2 - 110}px`; // 110 = half of 220px width
-                tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
+                tooltipText.textContent = tooltip;
+                tooltipText.classList.add('active');
+                tooltipText.classList.remove('pull-active', 'push-active');
+                tooltipText.classList.add(isPull ? 'pull-active' : 'push-active');
+            });
+            
+            wrapper.addEventListener('mouseleave', () => {
+                tooltipText.classList.remove('active', 'pull-active', 'push-active');
             });
         });
     }

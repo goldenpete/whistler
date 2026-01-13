@@ -1151,26 +1151,21 @@
                 
                 <div class="sync-actions-group">
                     <div class="sync-actions-row">
-                        <div class="sync-btn-wrapper">
+                        <div class="sync-btn-wrapper" data-tooltip="Merges cloud data into local. Your local data stays, cloud items are added.">
                             <button class="btn-sync-pull" id="btn-sync-from-cloud">
                                 <i class="ph-bold ph-cloud-arrow-down"></i>
                                 <span>Pull</span>
                             </button>
-                            <div class="sync-tooltip sync-tooltip-pull">
-                                <i class="ph-bold ph-warning"></i>
-                                <span>Merges cloud data into local. Your local data stays, cloud items are added.</span>
-                            </div>
                         </div>
-                        <div class="sync-btn-wrapper">
+                        <div class="sync-btn-wrapper" data-tooltip="Overwrites cloud with your local data. Cloud-only items will be lost.">
                             <button class="btn-sync-push" id="btn-sync-to-cloud">
                                 <i class="ph-bold ph-cloud-arrow-up"></i>
                                 <span>Push</span>
                             </button>
-                            <div class="sync-tooltip sync-tooltip-push">
-                                <i class="ph-bold ph-warning"></i>
-                                <span>Overwrites cloud with your local data. Cloud-only items will be lost.</span>
-                            </div>
                         </div>
+                    </div>
+                    <div class="sync-tooltip-container">
+                        <div class="sync-tooltip-text" id="sync-tooltip-text"></div>
                     </div>
                 </div>
                 
