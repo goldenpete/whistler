@@ -52,7 +52,7 @@
 
             <nav class="nav-menu">
                 <div id="project-nav-items">
-                    <div class="nav-section-header">
+                    <div class="nav-section-header nav-section-clickable" id="nav-assets-header">
                         <span>Assets</span>
                     </div>
                     <button class="nav-item active" id="nav-storage">
@@ -63,10 +63,14 @@
                         <i class="ph-bold ph-note-pencil"></i>
                         <span>Docs</span>
                     </button>
+                    <button class="nav-item" id="nav-graph">
+                        <i class="ph-bold ph-graph"></i>
+                        <span>Graph</span>
+                    </button>
 
                     <div class="nav-divider"></div>
 
-                    <div class="nav-section-header">
+                    <div class="nav-section-header nav-section-clickable" id="nav-collections-header">
                         <span>Collections</span>
                         <button class="icon-btn-small" id="btn-add-collection"><i class="ph-bold ph-plus"></i></button>
                     </div>
@@ -97,8 +101,23 @@
         <main class="main-view">
             <!-- Storage View (Default) -->
             <section id="view-storage" class="view-section">
-                <header class="view-header">
+                <header class="view-header" id="storage-header-normal">
                     <div class="header-breadcrumb">
+                        <!-- Storage Switcher -->
+                        <div class="asset-switcher" id="storage-switcher">
+                            <button class="asset-switcher-trigger" id="storage-switcher-trigger" data-tooltip="Switch Storage">
+                                <i class="ph-bold ph-list"></i>
+                            </button>
+                            <div class="asset-switcher-menu hidden" id="storage-switcher-menu">
+                                <div class="asset-switcher-header">
+                                    <span>Storages</span>
+                                    <button class="icon-btn-small" id="btn-add-storage"><i class="ph-bold ph-plus"></i></button>
+                                </div>
+                                <div class="asset-switcher-list" id="storages-list">
+                                    <!-- Storage items injected by JS -->
+                                </div>
+                            </div>
+                        </div>
                         <!-- Breadcrumbs injected by JS -->
                         <div id="breadcrumb-list" class="breadcrumb-list"></div>
                     </div>
@@ -123,16 +142,46 @@
                             <div id="search-results" class="search-results hidden"></div>
                         </div>
 
-                        <!-- Connected Pill Buttons -->
-                        <div class="header-action-group">
-                            <button id="btn-search-toggle" class="btn-action-segment">
+                        <!-- Modern Toolbar Buttons -->
+                        <div class="header-toolbar">
+                            <button id="btn-select-mode" class="header-toolbar-btn" data-tooltip="Select">
+                                <i class="ph-bold ph-check-square"></i>
+                            </button>
+                            <div class="header-toolbar-divider"></div>
+                            <button id="btn-search-toggle" class="header-toolbar-btn" data-tooltip="Search">
                                 <i class="ph-bold ph-magnifying-glass"></i>
                             </button>
-                            <div class="action-divider"></div>
-                            <button id="btn-expand-add" class="btn-action-segment">
+                            <div class="header-toolbar-divider"></div>
+                            <button id="btn-expand-add" class="header-toolbar-btn" data-tooltip="Add">
                                 <i class="ph-bold ph-plus"></i>
                             </button>
                         </div>
+                    </div>
+                </header>
+
+                <!-- Selection Mode Header -->
+                <header class="view-header selection-header hidden" id="storage-header-select">
+                    <div class="selection-info">
+                        <button class="header-toolbar-btn" id="btn-cancel-select" data-tooltip="Cancel">
+                            <i class="ph-bold ph-x"></i>
+                        </button>
+                        <span class="selection-count" id="selection-count">0 selected</span>
+                    </div>
+                    <div class="selection-actions">
+                        <button class="header-toolbar-btn" id="btn-select-all" data-tooltip="Select All">
+                            <i class="ph-bold ph-checks"></i>
+                        </button>
+                        <div class="header-toolbar-divider"></div>
+                        <button class="header-toolbar-btn" id="btn-selection-move" data-tooltip="Move">
+                            <i class="ph-bold ph-folder-notch-plus"></i>
+                        </button>
+                        <button class="header-toolbar-btn" id="btn-selection-color" data-tooltip="Color">
+                            <i class="ph-bold ph-palette"></i>
+                        </button>
+                        <div class="header-toolbar-divider"></div>
+                        <button class="header-toolbar-btn header-toolbar-btn-danger" id="btn-selection-delete" data-tooltip="Delete">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
                     </div>
                 </header>
 
@@ -143,7 +192,7 @@
 
             <!-- Collection View -->
             <section id="view-collection" class="view-section hidden">
-                <header class="view-header">
+                <header class="view-header" id="collection-header-normal">
                     <div class="header-breadcrumb">
                         <h1 id="collection-title">Collection</h1>
                     </div>
@@ -153,15 +202,42 @@
                             <input type="text" id="collection-search-input" placeholder="Search collection..."
                                 autocomplete="off">
                         </div>
-                        <div class="header-action-group">
-                            <button id="btn-collection-search" class="btn-action-segment" title="Toggle Search">
+                        <div class="header-toolbar">
+                            <button id="btn-collection-select-mode" class="header-toolbar-btn" data-tooltip="Select">
+                                <i class="ph-bold ph-check-square"></i>
+                            </button>
+                            <div class="header-toolbar-divider"></div>
+                            <button id="btn-collection-search" class="header-toolbar-btn" data-tooltip="Search">
                                 <i class="ph-bold ph-magnifying-glass"></i>
                             </button>
-                            <div class="action-divider"></div>
-                            <button id="btn-add-clip" class="btn-action-segment" title="Add Clip from Video">
+                            <div class="header-toolbar-divider"></div>
+                            <button id="btn-add-clip" class="header-toolbar-btn" data-tooltip="Add Clip">
                                 <i class="ph-bold ph-plus"></i>
                             </button>
                         </div>
+                    </div>
+                </header>
+
+                <!-- Collection Selection Mode Header -->
+                <header class="view-header selection-header hidden" id="collection-header-select">
+                    <div class="selection-info">
+                        <button class="header-toolbar-btn" id="btn-collection-cancel-select" data-tooltip="Cancel">
+                            <i class="ph-bold ph-x"></i>
+                        </button>
+                        <span class="selection-count" id="collection-selection-count">0 selected</span>
+                    </div>
+                    <div class="selection-actions">
+                        <button class="header-toolbar-btn" id="btn-collection-select-all" data-tooltip="Select All">
+                            <i class="ph-bold ph-checks"></i>
+                        </button>
+                        <div class="header-toolbar-divider"></div>
+                        <button class="header-toolbar-btn" id="btn-collection-selection-move" data-tooltip="Move">
+                            <i class="ph-bold ph-folder-notch-plus"></i>
+                        </button>
+                        <div class="header-toolbar-divider"></div>
+                        <button class="header-toolbar-btn header-toolbar-btn-danger" id="btn-collection-selection-delete" data-tooltip="Delete">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
                     </div>
                 </header>
                 <div class="grid-layout" id="collection-items-grid">
@@ -199,12 +275,29 @@
             <!-- Docs View -->
             <section id="view-docs" class="view-section hidden">
                 <div id="docs-toolbar">
+                    <!-- Docs Switcher -->
+                    <div class="asset-switcher" id="docs-switcher">
+                        <button class="asset-switcher-trigger" id="docs-switcher-trigger" data-tooltip="Switch Document">
+                            <i class="ph-bold ph-list"></i>
+                        </button>
+                        <div class="asset-switcher-menu hidden" id="docs-switcher-menu">
+                            <div class="asset-switcher-header">
+                                <span>Documents</span>
+                                <button class="icon-btn-small" id="btn-add-doc"><i class="ph-bold ph-plus"></i></button>
+                            </div>
+                            <div class="asset-switcher-list" id="docs-list">
+                                <!-- Docs items injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <span class="asset-title" id="docs-title" data-tooltip="Rename">Untitled Doc <i class="ph ph-pencil-simple asset-title-edit"></i></span>
+                    <div class="docs-toolbar-divider"></div>
                     <button class="docs-toolbar-btn" id="btn-docs-undo" data-tooltip="Undo (Ctrl+Z)"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
                     <button class="docs-toolbar-btn" id="btn-docs-redo" data-tooltip="Redo (Ctrl+Y)"><i class="ph-bold ph-arrow-clockwise"></i></button>
 
                     <!-- Text Size Dropdown -->
                     <div class="docs-dropdown" id="docs-size-dropdown">
-                        <button class="docs-toolbar-btn docs-dropdown-trigger">
+                        <button class="docs-toolbar-btn docs-dropdown-trigger" data-tooltip="Text Size">
                             <span id="docs-size-label">14px</span>
                             <i class="ph-bold ph-caret-down"></i>
                         </button>
@@ -236,7 +329,167 @@
                 </div>
                 <div id="docs-editor" contenteditable="true" spellcheck="true" placeholder="Start writing..."></div>
             </section>
+
+            <!-- Graph View -->
+            <section id="view-graph" class="view-section hidden">
+                <header class="view-header">
+                    <!-- Graph Switcher -->
+                    <div class="asset-switcher" id="graph-switcher">
+                        <button class="asset-switcher-trigger" id="graph-switcher-trigger" data-tooltip="Switch Graph">
+                            <i class="ph-bold ph-list"></i>
+                        </button>
+                        <div class="asset-switcher-menu hidden" id="graph-switcher-menu">
+                            <div class="asset-switcher-header">
+                                <span>Graphs</span>
+                                <button class="icon-btn-small" id="btn-add-graph"><i class="ph-bold ph-plus"></i></button>
+                            </div>
+                            <div class="asset-switcher-list" id="graphs-list">
+                                <!-- Graph items injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <span class="asset-title" id="graph-title" data-tooltip="Rename">Untitled Graph <i class="ph ph-pencil-simple asset-title-edit"></i></span>
+                    <div class="view-actions">
+                        <div class="graph-toolbar">
+                            <div class="graph-toolbar-group">
+                                <button class="graph-toolbar-btn" id="btn-graph-add" data-tooltip="Add Node">
+                                    <i class="ph-bold ph-plus-circle"></i>
+                                </button>
+                                <div class="graph-add-menu hidden" id="graph-add-menu">
+                                    <div class="graph-add-item" data-type="note">
+                                        <i class="ph-bold ph-note"></i>
+                                        <span>Note</span>
+                                    </div>
+                                    <div class="graph-add-item" data-type="file">
+                                        <i class="ph-bold ph-film-strip"></i>
+                                        <span>File</span>
+                                    </div>
+                                    <div class="graph-add-item" data-type="collection">
+                                        <i class="ph-bold ph-folder"></i>
+                                        <span>Collection</span>
+                                    </div>
+                                    <div class="graph-add-item" data-type="timestamp">
+                                        <i class="ph-bold ph-clock"></i>
+                                        <span>Timestamp</span>
+                                    </div>
+                                    <div class="graph-add-item" data-type="link">
+                                        <i class="ph-bold ph-link"></i>
+                                        <span>External Link</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="graph-toolbar-divider"></div>
+                            <button class="graph-toolbar-btn" id="btn-graph-zoom-in" data-tooltip="Zoom In">
+                                <i class="ph-bold ph-magnifying-glass-plus"></i>
+                            </button>
+                            <button class="graph-toolbar-btn" id="btn-graph-zoom-out" data-tooltip="Zoom Out">
+                                <i class="ph-bold ph-magnifying-glass-minus"></i>
+                            </button>
+                            <button class="graph-toolbar-btn" id="btn-graph-fit" data-tooltip="Fit View">
+                                <i class="ph-bold ph-arrows-out-cardinal"></i>
+                            </button>
+                            <div class="graph-toolbar-divider"></div>
+                            <button class="graph-toolbar-btn" id="btn-graph-auto-arrange" data-tooltip="Auto Arrange">
+                                <i class="ph-bold ph-tree-structure"></i>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+                <div class="graph-container">
+                    <canvas id="graph-canvas"></canvas>
+                    <div class="graph-zoom-indicator" id="graph-zoom-indicator">100%</div>
+                </div>
+            </section>
+
+            <!-- Assets Overview View -->
+            <section id="view-assets" class="view-section hidden">
+                <header class="view-header">
+                    <div class="header-breadcrumb">
+                        <h1>Assets</h1>
+                    </div>
+                </header>
+                <div class="assets-overview" id="assets-overview">
+                    <!-- Assets categories injected by JS -->
+                </div>
+            </section>
+
+            <!-- Collections Grid View -->
+            <section id="view-collections-grid" class="view-section hidden">
+                <header class="view-header">
+                    <div class="header-breadcrumb">
+                        <h1>Collections</h1>
+                    </div>
+                    <div class="header-actions">
+                        <div class="header-toolbar">
+                            <button id="btn-add-collection-grid" class="header-toolbar-btn" data-tooltip="New Collection">
+                                <i class="ph-bold ph-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+                <div class="grid-layout" id="collections-grid">
+                    <!-- Collection cards injected by JS -->
+                </div>
+            </section>
         </main>
+
+        <!-- Graph Node Editor Panel -->
+        <div class="graph-node-editor hidden" id="graph-node-editor">
+            <div class="graph-node-editor-header">
+                <span>Edit Node</span>
+                <button class="icon-btn-small" id="btn-node-editor-close"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div class="graph-node-editor-body">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" class="form-input" id="input-node-title" placeholder="Node title...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-picker-wrapper">
+                        <div class="color-preview" id="node-color-preview"></div>
+                        <input type="hidden" id="input-node-color" value="#6366f1">
+                        <button class="btn-ghost" id="btn-node-color-trigger">Change</button>
+                    </div>
+                </div>
+                <div class="form-group" id="node-link-group">
+                    <label class="form-label">Link</label>
+                    <div class="link-selector-wrapper">
+                        <span class="link-selector-display" id="node-link-display">None</span>
+                        <button class="btn-ghost" id="btn-node-link-change">Change</button>
+                    </div>
+                    <input type="hidden" id="select-node-link" value="">
+                </div>
+                <div class="form-group hidden" id="node-url-group">
+                    <label class="form-label">URL</label>
+                    <input type="text" class="form-input" id="input-node-url" placeholder="https://...">
+                </div>
+            </div>
+            <div class="graph-node-editor-actions">
+                <button class="btn-ghost" id="btn-node-delete"><i class="ph-bold ph-trash"></i> Delete</button>
+                <button class="btn-primary" id="btn-node-save">Save</button>
+            </div>
+        </div>
+
+        <!-- Graph Context Menu -->
+        <div class="graph-context-menu hidden" id="graph-context-menu">
+            <div class="graph-context-item" id="ctx-node-edit">
+                <i class="ph-bold ph-pencil-simple"></i>
+                <span>Edit</span>
+            </div>
+            <div class="graph-context-item" id="ctx-node-connect">
+                <i class="ph-bold ph-arrows-split"></i>
+                <span>Connect</span>
+            </div>
+            <div class="graph-context-item" id="ctx-node-open">
+                <i class="ph-bold ph-arrow-square-out"></i>
+                <span>Open</span>
+            </div>
+            <div class="graph-context-item danger" id="ctx-node-delete">
+                <i class="ph-bold ph-trash"></i>
+                <span>Delete</span>
+            </div>
+        </div>
 
         <!-- Debug Panel (temporary, shows JS runtime errors) -->
         <div id="debug-errors" style="position:fixed;z-index:99999;right:12px;bottom:12px;max-width:420px;max-height:240px;overflow:auto;background:rgba(255,255,255,0.98);border:1px solid rgba(0,0,0,0.08);padding:8px;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,0.2);font-size:12px;color:#111;display:none;">
@@ -671,6 +924,18 @@
             </div>
             <div class="modal-actions">
                 <button class="btn-ghost" id="btn-cancel-move-timestamp">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Node Link Selector Modal -->
+        <div class="modal hidden" id="modal-node-link" style="width: 400px;">
+            <h3 class="modal-title" id="modal-node-link-title">Select File</h3>
+            <div id="node-link-list" class="folder-select-list">
+                <!-- Javascript will populate this -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" id="btn-node-link-cancel">Cancel</button>
+                <button class="btn-ghost" id="btn-node-link-clear">Clear Link</button>
             </div>
         </div>
 

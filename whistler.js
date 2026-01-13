@@ -10,9 +10,17 @@ class WhistlerApp {
             files: [],
             collections: [],
             timestamps: [],
+            graphs: [],
+            graphNodes: [],
+            graphEdges: [],
+            docs: [],
+            storages: [],
             activeProjectId: null,
             activeFileId: null,
             activeCollectionId: null,
+            activeGraphId: null,
+            activeDocId: null,
+            activeStorageId: null,
             isPipActive: false
         };
 
@@ -24,6 +32,7 @@ class WhistlerApp {
         this.modals = new ModalManager(this);
         this.exportImport = new ExportImportManager(this);
         this.sync = new SyncManager(this);
+        this.graph = new GraphController(this);
 
         this.init();
     }
@@ -59,7 +68,12 @@ class StorageManager {
             projects: this.app.state.projects,
             files: this.app.state.files,
             collections: this.app.state.collections,
-            timestamps: this.app.state.timestamps
+            timestamps: this.app.state.timestamps,
+            graphs: this.app.state.graphs,
+            graphNodes: this.app.state.graphNodes,
+            graphEdges: this.app.state.graphEdges,
+            docs: this.app.state.docs,
+            storages: this.app.state.storages
         };
         localStorage.setItem(this.KEY, JSON.stringify(data));
         
@@ -79,10 +93,173 @@ class StorageManager {
                 // Ensure legacy or new structure compatibility if needed (none for rebuild)
                 this.app.state.collections = data.collections || [];
                 this.app.state.timestamps = data.timestamps || [];
+                this.app.state.graphs = data.graphs || [];
+                this.app.state.graphNodes = data.graphNodes || [];
+                this.app.state.graphEdges = data.graphEdges || [];
+                this.app.state.docs = data.docs || [];
+                this.app.state.storages = data.storages || [];
+                
+                // Migrate legacy: project.docContent -> docs array
+                this.app.state.projects.forEach(project => {
+                    if (project.docContent && !this.app.state.docs.some(d => d.projectId === project.id)) {
+                        this.app.state.docs.push({
+                            id: crypto.randomUUID(),
+                            projectId: project.id,
+                            name: 'Main Doc',
+                            content: project.docContent,
+                            created: Date.now()
+                        });
+                        delete project.docContent;
+                    }
+                });
+                
+                // Migrate legacy: project-level graphNodes -> graph asset
+                const projectsWithNodes = [...new Set(this.app.state.graphNodes.map(n => n.projectId).filter(Boolean))];
+                projectsWithNodes.forEach(projectId => {
+                    if (!this.app.state.graphs.some(g => g.projectId === projectId)) {
+                        const newGraph = {
+                            id: crypto.randomUUID(),
+                            projectId: projectId,
+                            name: 'Main Graph',
+                            created: Date.now()
+                        };
+                        this.app.state.graphs.push(newGraph);
+                        // Migrate nodes to this graph
+                        this.app.state.graphNodes.filter(n => n.projectId === projectId).forEach(node => {
+                            node.graphId = newGraph.id;
+                            delete node.projectId;
+                        });
+                        // Migrate edges to this graph
+                        this.app.state.graphEdges.filter(e => e.projectId === projectId).forEach(edge => {
+                            edge.graphId = newGraph.id;
+                            delete edge.projectId;
+                        });
+                    }
+                });
+
+                // Migrate legacy: files without storageId -> create default storage per project
+                const projectsWithFiles = [...new Set(this.app.state.files.filter(f => !f.storageId).map(f => f.projectId).filter(Boolean))];
+                projectsWithFiles.forEach(projectId => {
+                    // Create a default storage for this project if none exists
+                    let defaultStorage = this.app.state.storages.find(s => s.projectId === projectId);
+                    if (!defaultStorage) {
+                        defaultStorage = {
+                            id: crypto.randomUUID(),
+                            projectId: projectId,
+                            name: 'Storage',
+                            created: Date.now()
+                        };
+                        this.app.state.storages.push(defaultStorage);
+                    }
+                    // Migrate files to this storage
+                    this.app.state.files.filter(f => f.projectId === projectId && !f.storageId).forEach(file => {
+                        file.storageId = defaultStorage.id;
+                    });
+                });
             }
         } catch (e) {
             console.error("Load failed", e);
         }
+    }
+
+    // Graph Asset CRUD
+    addGraph(name) {
+        if (!this.app.state.activeProjectId) return null;
+        const graph = {
+            id: crypto.randomUUID(),
+            projectId: this.app.state.activeProjectId,
+            name,
+            created: Date.now()
+        };
+        this.app.state.graphs.push(graph);
+        this.save();
+        return graph;
+    }
+
+    updateGraph(id, updates) {
+        const graph = this.app.state.graphs.find(g => g.id === id);
+        if (graph) {
+            Object.assign(graph, updates);
+            this.save();
+        }
+    }
+
+    deleteGraph(id) {
+        this.app.state.graphs = this.app.state.graphs.filter(g => g.id !== id);
+        // Delete associated nodes and edges
+        this.app.state.graphNodes = this.app.state.graphNodes.filter(n => n.graphId !== id);
+        this.app.state.graphEdges = this.app.state.graphEdges.filter(e => e.graphId !== id);
+        this.save();
+    }
+
+    getGraphs(projectId) {
+        return this.app.state.graphs.filter(g => g.projectId === projectId);
+    }
+
+    // Doc Asset CRUD
+    addDoc(name) {
+        if (!this.app.state.activeProjectId) return null;
+        const doc = {
+            id: crypto.randomUUID(),
+            projectId: this.app.state.activeProjectId,
+            name,
+            content: '',
+            created: Date.now()
+        };
+        this.app.state.docs.push(doc);
+        this.save();
+        return doc;
+    }
+
+    updateDoc(id, updates) {
+        const doc = this.app.state.docs.find(d => d.id === id);
+        if (doc) {
+            Object.assign(doc, updates);
+            this.save();
+        }
+    }
+
+    deleteDoc(id) {
+        this.app.state.docs = this.app.state.docs.filter(d => d.id !== id);
+        this.save();
+    }
+
+    getDocs(projectId) {
+        return this.app.state.docs.filter(d => d.projectId === projectId);
+    }
+
+    // Storage Asset CRUD
+    addStorage(name) {
+        if (!this.app.state.activeProjectId) return null;
+        const storage = {
+            id: crypto.randomUUID(),
+            projectId: this.app.state.activeProjectId,
+            name,
+            created: Date.now()
+        };
+        this.app.state.storages.push(storage);
+        this.save();
+        return storage;
+    }
+
+    updateStorage(id, updates) {
+        const storage = this.app.state.storages.find(s => s.id === id);
+        if (storage) {
+            Object.assign(storage, updates);
+            this.save();
+        }
+    }
+
+    deleteStorage(id) {
+        // Delete all files in this storage
+        this.app.state.files = this.app.state.files.filter(f => f.storageId !== id);
+        // Delete the storage
+        this.app.state.storages = this.app.state.storages.filter(s => s.id !== id);
+        this.save();
+    }
+
+    getStorages(projectId) {
+        return this.app.state.storages.filter(s => s.projectId === projectId);
     }
 
     // CRUD
@@ -95,7 +272,7 @@ class StorageManager {
     }
 
     addFile(name, url, type, parentId = null) {
-        if (!this.app.state.activeProjectId) return;
+        if (!this.app.state.activeProjectId || !this.app.state.activeStorageId) return;
 
         // Get max order
         const siblings = this.getItems(this.app.state.activeProjectId, parentId);
@@ -104,7 +281,8 @@ class StorageManager {
         const f = {
             id: crypto.randomUUID(),
             projectId: this.app.state.activeProjectId,
-            parentId: parentId, // null = root
+            storageId: this.app.state.activeStorageId,
+            parentId: parentId, // null = root of this storage
             name,
             url,
             type, // 'catbox', 'youtube', 'dropbox', 'drive', 'folder'
@@ -194,7 +372,12 @@ class StorageManager {
     }
 
     getItems(projectId, parentId = null) {
-        let items = this.app.state.files.filter(f => f.projectId === projectId && (f.parentId === parentId || (!f.parentId && parentId === null)));
+        const storageId = this.app.state.activeStorageId;
+        let items = this.app.state.files.filter(f => 
+            f.projectId === projectId && 
+            f.storageId === storageId &&
+            (f.parentId === parentId || (!f.parentId && parentId === null))
+        );
         // Sort by order
         return items.sort((a, b) => (a.order || 0) - (b.order || 0));
     }
@@ -212,6 +395,78 @@ class StorageManager {
         } else {
             console.error("Timestamp not found for update:", id);
         }
+    }
+
+    // Graph Node CRUD
+    addGraphNode(type, title, color, x, y, linkedId = null, url = null) {
+        if (!this.app.state.activeGraphId) return null;
+        const node = {
+            id: crypto.randomUUID(),
+            graphId: this.app.state.activeGraphId,
+            type, // 'file', 'collection', 'timestamp', 'link', 'note'
+            title,
+            color: color || '#6366f1',
+            x,
+            y,
+            linkedId, // ID of linked file/collection/timestamp
+            url, // For external links
+            created: Date.now()
+        };
+        this.app.state.graphNodes.push(node);
+        this.save();
+        return node;
+    }
+
+    updateGraphNode(id, updates) {
+        const node = this.app.state.graphNodes.find(n => n.id === id);
+        if (node) {
+            Object.assign(node, updates);
+            this.save();
+        }
+    }
+
+    deleteGraphNode(id) {
+        this.app.state.graphNodes = this.app.state.graphNodes.filter(n => n.id !== id);
+        // Also delete connected edges
+        this.app.state.graphEdges = this.app.state.graphEdges.filter(
+            e => e.fromId !== id && e.toId !== id
+        );
+        this.save();
+    }
+
+    getGraphNodes(graphId) {
+        return this.app.state.graphNodes.filter(n => n.graphId === graphId);
+    }
+
+    // Graph Edge CRUD
+    addGraphEdge(fromId, toId) {
+        if (!this.app.state.activeGraphId) return null;
+        // Check if edge already exists
+        const exists = this.app.state.graphEdges.some(
+            e => (e.fromId === fromId && e.toId === toId) || 
+                 (e.fromId === toId && e.toId === fromId)
+        );
+        if (exists) return null;
+
+        const edge = {
+            id: crypto.randomUUID(),
+            graphId: this.app.state.activeGraphId,
+            fromId,
+            toId,
+            created: Date.now()
+        };
+        this.app.state.graphEdges.push(edge);
+        this.save();
+        return edge;
+    }
+
+    deleteGraphEdge(id) {
+        this.app.state.graphEdges = this.app.state.graphEdges.filter(e => e.id !== id);
+        this.save();
+    }
+
+    getGraphEdges(graphId) {
+        return this.app.state.graphEdges.filter(e => e.graphId === graphId);
     }
 }
 
@@ -511,14 +766,25 @@ class Router {
             storage: document.getElementById('view-storage'),
             collection: document.getElementById('view-collection'),
             docs: document.getElementById('view-docs'),
+            graph: document.getElementById('view-graph'),
             exportImport: document.getElementById('view-export-import'),
-            welcome: document.getElementById('view-welcome')
+            welcome: document.getElementById('view-welcome'),
+            assets: document.getElementById('view-assets'),
+            collectionsGrid: document.getElementById('view-collections-grid')
         };
     }
 
     init() {
         document.getElementById('nav-storage').onclick = () => this.goTo('storage');
         document.getElementById('nav-docs').onclick = () => this.goTo('docs');
+        document.getElementById('nav-graph').onclick = () => this.goTo('graph');
+        
+        // Category header clicks
+        document.getElementById('nav-assets-header').querySelector('span').onclick = () => this.goTo('assets');
+        document.getElementById('nav-collections-header').querySelector('span').onclick = () => this.goTo('collectionsGrid');
+        
+        // Add collection button on grid view
+        document.getElementById('btn-add-collection-grid').onclick = () => this.app.modals.openCollection();
     }
 
     goTo(viewName) {
@@ -527,8 +793,12 @@ class Router {
             if (el) el.classList.add('hidden');
         });
 
+        // Hide graph editor panel when leaving graph view
+        document.getElementById('graph-node-editor')?.classList.add('hidden');
+        document.getElementById('graph-context-menu')?.classList.add('hidden');
+
         // Check if we should show welcome page instead (only for certain views)
-        if (viewName === 'storage' || viewName === 'docs' || viewName === 'collection') {
+        if (viewName === 'storage' || viewName === 'docs' || viewName === 'collection' || viewName === 'graph') {
             if (this.app.state.projects.length === 0) {
                 this.goTo('welcome');
                 return;
@@ -548,12 +818,16 @@ class Router {
             }
             this.app.state.activeCollectionId = null; // Clear active collection
 
+            // Ensure a storage is selected or create one
+            this.app.ui.ensureActiveStorage();
+
             this.app.ui.updateSidebarForProject();
             this.app.ui.renderStorage();
 
             // Ensure sidebar state
             document.getElementById('nav-storage').classList.add('active');
             document.getElementById('nav-docs').classList.remove('active');
+            document.getElementById('nav-graph').classList.remove('active');
             this.app.ui.renderCollectionsList(); // Re-render to clear active collections
 
             this.views.storage.classList.remove('hidden');
@@ -564,6 +838,7 @@ class Router {
             // Update sidebar state
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.remove('active');
+            document.getElementById('nav-graph').classList.remove('active');
             this.app.ui.renderCollectionsList(); // Re-render to highlight active collection
         } else if (viewName === 'docs') {
             if (!this.app.state.activeProjectId) return;
@@ -573,12 +848,37 @@ class Router {
             // Update nav state
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.add('active');
+            document.getElementById('nav-graph').classList.remove('active');
             this.app.ui.renderCollectionsList();
+
+            // Ensure a doc is selected or create one
+            this.app.ui.ensureActiveDoc();
 
             // Load and render docs
             this.app.ui.renderDocs();
 
             this.views.docs.classList.remove('hidden');
+        } else if (viewName === 'graph') {
+            if (!this.app.state.activeProjectId) return;
+
+            this.app.state.activeCollectionId = null;
+
+            // Update nav state
+            document.getElementById('nav-storage').classList.remove('active');
+            document.getElementById('nav-docs').classList.remove('active');
+            document.getElementById('nav-graph').classList.add('active');
+            this.app.ui.renderCollectionsList();
+
+            // Ensure a graph is selected or create one
+            this.app.ui.ensureActiveGraph();
+
+            this.views.graph.classList.remove('hidden');
+
+            // Initialize graph if needed
+            if (this.app.graph) {
+                this.app.graph.init();
+                this.app.graph.resizeCanvas();
+            }
         } else if (viewName === 'exportImport') {
             if (this.views.exportImport) {
                 this.views.exportImport.classList.remove('hidden');
@@ -589,11 +889,43 @@ class Router {
             if (this.views.welcome) {
                 this.views.welcome.classList.remove('hidden');
             }
+        } else if (viewName === 'assets') {
+            if (!this.app.state.activeProjectId) return;
+
+            this.app.state.activeCollectionId = null;
+
+            // Update nav state - no specific item active
+            document.getElementById('nav-storage').classList.remove('active');
+            document.getElementById('nav-docs').classList.remove('active');
+            document.getElementById('nav-graph').classList.remove('active');
+            this.app.ui.renderCollectionsList();
+
+            // Render assets overview
+            this.app.ui.renderAssetsOverview();
+
+            this.views.assets.classList.remove('hidden');
+        } else if (viewName === 'collectionsGrid') {
+            if (!this.app.state.activeProjectId) return;
+
+            this.app.state.activeCollectionId = null;
+
+            // Update nav state - no specific item active
+            document.getElementById('nav-storage').classList.remove('active');
+            document.getElementById('nav-docs').classList.remove('active');
+            document.getElementById('nav-graph').classList.remove('active');
+            this.app.ui.renderCollectionsList();
+
+            // Render collections grid
+            this.app.ui.renderCollectionsGrid();
+
+            this.views.collectionsGrid.classList.remove('hidden');
         }
     }
 
     openProject(id) {
         this.app.state.activeProjectId = id;
+        this.app.state.activeStorageId = null; // Reset storage for new project
+        this.app.state.currentFolderId = null; // Reset folder navigation
         this.goTo('storage');
     }
 
@@ -604,6 +936,10 @@ class Router {
 
     openDocs() {
         this.goTo('docs');
+    }
+
+    openGraph() {
+        this.goTo('graph');
     }
 }
 
@@ -1734,7 +2070,8 @@ class Player {
         this.els.overlay.classList.add('collection-mode');
 
         // Set collection color
-        this.els.overlay.style.setProperty('--collection-color', collection.color);
+        const color = collection ? collection.color : '#6366f1';
+        this.els.overlay.style.setProperty('--collection-color', color);
 
         // Populate info sidebar
         const file = this.app.state.files.find(f => f.id === timestamp.fileId);
@@ -1844,12 +2181,21 @@ class Player {
 class UIManager {
     constructor(app) {
         this.app = app;
+        this.selectionMode = false;
+        this.selectedItems = new Set();
+        this.collectionSelectionMode = false;
+        this.selectedCollectionItems = new Set();
     }
 
     setupNavigation() {
         // this.setupColorPicker(); // Removed custom nav setup for picker
         this.setupSearch();
         this.initCollectionSearch();
+        this.setupDocsSwitcher();
+        this.setupGraphSwitcher();
+        this.setupStorageSwitcher();
+        this.setupSelectionMode();
+        this.setupCollectionSelectionMode();
 
         // Project Dropdown Logic
         this.setupCustomDropdown('project-dropdown', (value) => {
@@ -2355,6 +2701,189 @@ class UIManager {
         this.renderCollectionsList();
     }
 
+    // =============================================
+    // ASSETS OVERVIEW PAGE
+    // =============================================
+
+    renderAssetsOverview() {
+        const container = document.getElementById('assets-overview');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const projectId = this.app.state.activeProjectId;
+
+        // Storage category
+        const storages = this.app.storage.getStorages(projectId);
+        const storageCategory = this.createAssetCategory('Storage', 'ph-hard-drives', storages.map(s => ({
+            id: s.id,
+            name: s.name,
+            icon: 'ph-hard-drives',
+            type: 'storage'
+        })), () => this.app.router.goTo('storage'));
+        container.appendChild(storageCategory);
+
+        // Docs category
+        const docs = this.app.storage.getDocs(projectId);
+        const docsCategory = this.createAssetCategory('Documents', 'ph-note-pencil', docs.slice(0, 6).map(d => ({
+            id: d.id,
+            name: d.name,
+            icon: 'ph-file-text',
+            type: 'doc'
+        })), () => this.app.router.goTo('docs'));
+        container.appendChild(docsCategory);
+
+        // Graphs category
+        const graphs = this.app.storage.getGraphs(projectId);
+        const graphsCategory = this.createAssetCategory('Graphs', 'ph-graph', graphs.slice(0, 6).map(g => ({
+            id: g.id,
+            name: g.name,
+            icon: 'ph-graph',
+            type: 'graph'
+        })), () => this.app.router.goTo('graph'));
+        container.appendChild(graphsCategory);
+    }
+
+    createAssetCategory(title, icon, items, onTitleClick) {
+        const category = document.createElement('div');
+        category.className = 'asset-category';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'asset-category-header';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'asset-category-title';
+        titleEl.innerHTML = `<i class="ph-bold ${icon}"></i><span>${title}</span>`;
+        titleEl.onclick = onTitleClick;
+
+        header.appendChild(titleEl);
+        category.appendChild(header);
+
+        // Items
+        const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'asset-category-items';
+
+        if (items.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'asset-empty-state';
+            emptyState.textContent = `No ${title.toLowerCase()} yet`;
+            itemsContainer.appendChild(emptyState);
+        } else {
+            items.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'asset-recent-item';
+                itemEl.innerHTML = `<i class="ph-bold ${item.icon}"></i><span>${item.name}</span>`;
+                itemEl.onclick = () => this.openAssetItem(item);
+                itemsContainer.appendChild(itemEl);
+            });
+        }
+
+        category.appendChild(itemsContainer);
+        return category;
+    }
+
+    openAssetItem(item) {
+        if (item.type === 'storage') {
+            this.app.state.activeStorageId = item.id;
+            this.app.state.currentFolderId = null;
+            this.app.router.goTo('storage');
+        } else if (item.type === 'doc') {
+            this.app.state.activeDocId = item.id;
+            this.app.router.goTo('docs');
+        } else if (item.type === 'graph') {
+            this.app.state.activeGraphId = item.id;
+            this.app.router.goTo('graph');
+        }
+    }
+
+    // =============================================
+    // COLLECTIONS GRID PAGE
+    // =============================================
+
+    renderCollectionsGrid() {
+        const grid = document.getElementById('collections-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const projectId = this.app.state.activeProjectId;
+        const collections = this.app.state.collections.filter(c => c.projectId === projectId && !c.parentId);
+
+        if (collections.length === 0) {
+            grid.innerHTML = `<div class="asset-empty-state" style="grid-column: 1/-1;">No collections yet. Click + to create one.</div>`;
+            return;
+        }
+
+        collections.forEach(col => {
+            const card = document.createElement('div');
+            card.className = 'card card-folder';
+            card.style.setProperty('--card-accent', col.color || '#6366f1');
+
+            const timestampCount = this.app.state.timestamps.filter(t => t.collectionId === col.id).length;
+            const subColCount = this.app.state.collections.filter(c => c.parentId === col.id).length;
+
+            card.innerHTML = `
+                <div class="card-select-checkbox"><i class="ph-bold ph-check"></i></div>
+                <div class="card-thumbnail">
+                    <i class="ph-bold ph-folder card-thumb-icon"></i>
+                </div>
+                <span class="card-title">${col.name}</span>
+                <span class="card-meta">${timestampCount} clips${subColCount > 0 ? ` · ${subColCount} folders` : ''}</span>
+                <div class="collection-actions">
+                    <button class="card-action-btn" data-action="edit-title" data-tooltip="Rename"><i class="ph-bold ph-pencil-simple"></i></button>
+                    <button class="card-action-btn" data-action="color" data-tooltip="Color"><i class="ph-bold ph-palette"></i></button>
+                    <button class="card-action-btn card-action-danger" data-action="delete" data-tooltip="Delete"><i class="ph-bold ph-trash"></i></button>
+                </div>
+            `;
+
+            card.onclick = (e) => {
+                if (e.target.closest('.collection-actions')) return;
+                this.app.router.openCollection(col.id);
+            };
+
+            // Action button handlers
+            const bindAction = (sel, fn) => {
+                const el = card.querySelector(sel);
+                if (el) el.onclick = (e) => { e.stopPropagation(); fn(e); };
+            };
+
+            bindAction('[data-action="edit-title"]', () => {
+                this.app.modals.prompt("Rename Collection", col.name, (newName) => {
+                    if (newName) {
+                        col.name = newName;
+                        this.app.storage.save();
+                        this.renderCollectionsGrid();
+                        this.renderCollectionsList();
+                    }
+                });
+            });
+
+            bindAction('[data-action="color"]', () => {
+                this.app.modals.openColorPicker(col.color || '#6366f1', (newColor) => {
+                    col.color = newColor;
+                    this.app.storage.save();
+                    this.renderCollectionsGrid();
+                    this.renderCollectionsList();
+                });
+            });
+
+            bindAction('[data-action="delete"]', () => {
+                this.app.modals.confirm("Delete Collection", "This will delete the collection and all clips inside. Are you sure?", () => {
+                    // Delete all timestamps in this collection
+                    this.app.state.timestamps = this.app.state.timestamps.filter(t => t.collectionId !== col.id);
+                    // Delete sub-collections
+                    this.app.state.collections = this.app.state.collections.filter(c => c.parentId !== col.id);
+                    // Delete the collection itself
+                    this.app.state.collections = this.app.state.collections.filter(c => c.id !== col.id);
+                    this.app.storage.save();
+                    this.renderCollectionsGrid();
+                    this.renderCollectionsList();
+                });
+            });
+
+            grid.appendChild(card);
+        });
+    }
+
     renderStorage(searchQuery = '') {
         const grid = document.getElementById('storage-grid');
         grid.innerHTML = '';
@@ -2496,8 +3025,17 @@ class UIManager {
             else if (f.type === 'dropbox') { typeText = 'Dropbox'; typeColor = '#3b82f6'; }
             else if (f.type === 'drive') { typeText = 'Drive'; typeColor = '#10b981'; }
 
+            // Selection mode checkbox
+            const isSelected = this.selectionMode && this.selectedItems.has(f.id);
+            const checkboxHtml = this.selectionMode ? `
+                <div class="card-select-checkbox">
+                    <i class="ph-bold ph-check"></i>
+                </div>
+            ` : '';
+
             // Different layout for folder vs file? reusing same for consistency
             card.innerHTML = `
+                ${checkboxHtml}
                 <div class="card-thumbnail">
                     <i class="ph-duotone ${icon} card-thumb-icon" style="${isFolder ? `color: ${f.color || 'var(--accent)'};` : ''}"></i>
                 </div>
@@ -2524,9 +3062,25 @@ class UIManager {
                 </div>
              `;
 
+            // Add selection class
+            if (this.selectionMode) {
+                card.classList.add('selectable');
+                if (isSelected) {
+                    card.classList.add('selected');
+                }
+            }
+
             // Main card click
             card.onclick = (e) => {
                 if (e.target.closest('.card-actions')) return;
+                
+                // Selection mode handling
+                if (this.selectionMode) {
+                    this.toggleItemSelection(f.id);
+                    card.classList.toggle('selected');
+                    return;
+                }
+                
                 if (isFolder) {
                     this.app.state.currentFolderId = f.id;
                     this.renderStorage();
@@ -2535,8 +3089,10 @@ class UIManager {
                 }
             };
 
-            // DnD Handlers (Card Source)
+            // DnD Handlers (Card Source) - disabled in selection mode
+            card.draggable = !this.selectionMode;
             card.ondragstart = (e) => {
+                if (this.selectionMode) return e.preventDefault();
                 e.dataTransfer.setData('text/plain', f.id);
                 e.dataTransfer.effectAllowed = 'move';
                 card.classList.add('dragging');
@@ -2638,6 +3194,283 @@ class UIManager {
         });
     }
 
+    // Selection Mode Methods
+    setupSelectionMode() {
+        const btnSelectMode = document.getElementById('btn-select-mode');
+        const btnCancelSelect = document.getElementById('btn-cancel-select');
+        const btnSelectAll = document.getElementById('btn-select-all');
+        const btnSelectionMove = document.getElementById('btn-selection-move');
+        const btnSelectionColor = document.getElementById('btn-selection-color');
+        const btnSelectionDelete = document.getElementById('btn-selection-delete');
+
+        if (btnSelectMode) {
+            btnSelectMode.onclick = () => this.enterSelectionMode();
+        }
+
+        if (btnCancelSelect) {
+            btnCancelSelect.onclick = () => this.exitSelectionMode();
+        }
+
+        if (btnSelectAll) {
+            btnSelectAll.onclick = () => this.selectAllItems();
+        }
+
+        if (btnSelectionMove) {
+            btnSelectionMove.onclick = () => this.moveSelectedItems();
+        }
+
+        if (btnSelectionColor) {
+            btnSelectionColor.onclick = () => this.colorSelectedItems();
+        }
+
+        if (btnSelectionDelete) {
+            btnSelectionDelete.onclick = () => this.deleteSelectedItems();
+        }
+    }
+
+    enterSelectionMode() {
+        this.selectionMode = true;
+        this.selectedItems.clear();
+        document.getElementById('storage-header-normal')?.classList.add('hidden');
+        document.getElementById('storage-header-select')?.classList.remove('hidden');
+        this.updateSelectionCount();
+        this.renderStorage();
+    }
+
+    exitSelectionMode() {
+        this.selectionMode = false;
+        this.selectedItems.clear();
+        document.getElementById('storage-header-normal')?.classList.remove('hidden');
+        document.getElementById('storage-header-select')?.classList.add('hidden');
+        this.renderStorage();
+    }
+
+    toggleItemSelection(id) {
+        if (this.selectedItems.has(id)) {
+            this.selectedItems.delete(id);
+        } else {
+            this.selectedItems.add(id);
+        }
+        this.updateSelectionCount();
+    }
+
+    selectAllItems() {
+        const files = this.app.storage.getItems(this.app.state.activeProjectId, this.app.state.currentFolderId);
+        files.forEach(f => this.selectedItems.add(f.id));
+        this.updateSelectionCount();
+        this.renderStorage();
+    }
+
+    updateSelectionCount() {
+        const countEl = document.getElementById('selection-count');
+        if (countEl) {
+            const count = this.selectedItems.size;
+            countEl.textContent = `${count} selected`;
+        }
+    }
+
+    moveSelectedItems() {
+        if (this.selectedItems.size === 0) return;
+        
+        // Show move modal for first item, apply to all
+        const firstId = Array.from(this.selectedItems)[0];
+        const firstFile = this.app.state.files.find(f => f.id === firstId);
+        if (!firstFile) return;
+
+        // Custom multi-move modal
+        this.app.modals.openMoveFile(firstFile, (targetFolderId) => {
+            this.selectedItems.forEach(id => {
+                this.app.storage.moveFile(id, targetFolderId);
+            });
+            this.exitSelectionMode();
+        });
+    }
+
+    colorSelectedItems() {
+        if (this.selectedItems.size === 0) return;
+        
+        this.app.modals.openColorPicker('#6366f1', (color) => {
+            this.selectedItems.forEach(id => {
+                this.app.storage.updateFile(id, { color });
+            });
+            this.exitSelectionMode();
+        });
+    }
+
+    deleteSelectedItems() {
+        if (this.selectedItems.size === 0) return;
+        
+        const count = this.selectedItems.size;
+        this.app.modals.confirm(
+            'Delete Items',
+            `Delete ${count} item${count > 1 ? 's' : ''}? This cannot be undone.`,
+            () => {
+                this.selectedItems.forEach(id => {
+                    this.app.storage.deleteFile(id);
+                });
+                this.exitSelectionMode();
+            }
+        );
+    }
+
+    // =============================================
+    // COLLECTION SELECTION MODE
+    // =============================================
+
+    setupCollectionSelectionMode() {
+        const btnSelectMode = document.getElementById('btn-collection-select-mode');
+        const btnCancelSelect = document.getElementById('btn-collection-cancel-select');
+        const btnSelectAll = document.getElementById('btn-collection-select-all');
+        const btnSelectionMove = document.getElementById('btn-collection-selection-move');
+        const btnSelectionDelete = document.getElementById('btn-collection-selection-delete');
+
+        if (btnSelectMode) {
+            btnSelectMode.onclick = () => this.enterCollectionSelectionMode();
+        }
+
+        if (btnCancelSelect) {
+            btnCancelSelect.onclick = () => this.exitCollectionSelectionMode();
+        }
+
+        if (btnSelectAll) {
+            btnSelectAll.onclick = () => this.selectAllCollectionItems();
+        }
+
+        if (btnSelectionMove) {
+            btnSelectionMove.onclick = () => this.moveSelectedCollectionItems();
+        }
+
+        if (btnSelectionDelete) {
+            btnSelectionDelete.onclick = () => this.deleteSelectedCollectionItems();
+        }
+    }
+
+    enterCollectionSelectionMode() {
+        this.collectionSelectionMode = true;
+        this.selectedCollectionItems.clear();
+        document.getElementById('collection-header-normal')?.classList.add('hidden');
+        document.getElementById('collection-header-select')?.classList.remove('hidden');
+        this.updateCollectionSelectionCount();
+        this.renderCollectionView();
+    }
+
+    exitCollectionSelectionMode() {
+        this.collectionSelectionMode = false;
+        this.selectedCollectionItems.clear();
+        document.getElementById('collection-header-normal')?.classList.remove('hidden');
+        document.getElementById('collection-header-select')?.classList.add('hidden');
+        this.renderCollectionView();
+    }
+
+    toggleCollectionItemSelection(id, type) {
+        const key = `${type}:${id}`;
+        if (this.selectedCollectionItems.has(key)) {
+            this.selectedCollectionItems.delete(key);
+        } else {
+            this.selectedCollectionItems.add(key);
+        }
+        this.updateCollectionSelectionCount();
+    }
+
+    selectAllCollectionItems() {
+        const col = this.app.state.collections.find(c => c.id === this.app.state.activeCollectionId);
+        if (!col) return;
+
+        // Select all sub-collections
+        const subCols = this.app.state.collections.filter(c => c.parentId === col.id);
+        subCols.forEach(c => this.selectedCollectionItems.add(`collection:${c.id}`));
+
+        // Select all timestamps
+        const timestamps = this.app.state.timestamps.filter(t => t.collectionId === col.id);
+        timestamps.forEach(t => this.selectedCollectionItems.add(`timestamp:${t.id}`));
+
+        this.updateCollectionSelectionCount();
+        this.renderCollectionView();
+    }
+
+    updateCollectionSelectionCount() {
+        const countEl = document.getElementById('collection-selection-count');
+        if (countEl) {
+            const count = this.selectedCollectionItems.size;
+            countEl.textContent = `${count} selected`;
+        }
+    }
+
+    moveSelectedCollectionItems() {
+        if (this.selectedCollectionItems.size === 0) return;
+
+        // Get first timestamp for the move modal context
+        const firstKey = Array.from(this.selectedCollectionItems)[0];
+        const [type, id] = firstKey.split(':');
+
+        if (type === 'timestamp') {
+            const firstTimestamp = this.app.state.timestamps.find(t => t.id === id);
+            if (!firstTimestamp) return;
+
+            this.app.modals.openMoveTimestamp(firstTimestamp, (targetCollectionId) => {
+                this.selectedCollectionItems.forEach(key => {
+                    const [itemType, itemId] = key.split(':');
+                    if (itemType === 'timestamp') {
+                        this.app.storage.updateTimestamp(itemId, { collectionId: targetCollectionId });
+                    } else if (itemType === 'collection') {
+                        const col = this.app.state.collections.find(c => c.id === itemId);
+                        if (col) {
+                            col.parentId = targetCollectionId;
+                            this.app.storage.save();
+                        }
+                    }
+                });
+                this.exitCollectionSelectionMode();
+            });
+        } else {
+            // For collections, use same approach
+            const firstCol = this.app.state.collections.find(c => c.id === id);
+            if (!firstCol) return;
+
+            // Create a fake timestamp to use the move modal
+            const fakeTs = { id: 'temp', collectionId: firstCol.parentId };
+            this.app.modals.openMoveTimestamp(fakeTs, (targetCollectionId) => {
+                this.selectedCollectionItems.forEach(key => {
+                    const [itemType, itemId] = key.split(':');
+                    if (itemType === 'timestamp') {
+                        this.app.storage.updateTimestamp(itemId, { collectionId: targetCollectionId });
+                    } else if (itemType === 'collection') {
+                        const col = this.app.state.collections.find(c => c.id === itemId);
+                        if (col && col.id !== targetCollectionId) {
+                            col.parentId = targetCollectionId;
+                            this.app.storage.save();
+                        }
+                    }
+                });
+                this.exitCollectionSelectionMode();
+            });
+        }
+    }
+
+    deleteSelectedCollectionItems() {
+        if (this.selectedCollectionItems.size === 0) return;
+        
+        const count = this.selectedCollectionItems.size;
+        this.app.modals.confirm(
+            'Delete Items',
+            `Delete ${count} item${count > 1 ? 's' : ''}? This cannot be undone.`,
+            () => {
+                this.selectedCollectionItems.forEach(key => {
+                    const [type, id] = key.split(':');
+                    if (type === 'timestamp') {
+                        this.app.storage.deleteTimestamp(id);
+                    } else if (type === 'collection') {
+                        // Delete collection and its timestamps
+                        this.app.state.timestamps = this.app.state.timestamps.filter(t => t.collectionId !== id);
+                        this.app.state.collections = this.app.state.collections.filter(c => c.id !== id);
+                        this.app.storage.save();
+                    }
+                });
+                this.exitCollectionSelectionMode();
+            }
+        );
+    }
+
     renderBreadcrumbs() {
         const container = document.getElementById('breadcrumb-list');
         container.innerHTML = '';
@@ -2648,16 +3481,12 @@ class UIManager {
 
         const path = [];
 
-        // 1. Root "Storage"
-        path.push({ type: 'storage', name: 'Storage', id: 'ROOT' });
+        // 1. Root - Storage name (from activeStorageId)
+        const activeStorage = this.app.state.storages.find(s => s.id === this.app.state.activeStorageId);
+        const storageName = activeStorage ? activeStorage.name : 'Storage';
+        path.push({ type: 'storage', name: storageName, id: 'ROOT' });
 
-        // 2. Project Root
-        if (this.app.state.activeProjectId) {
-            const proj = this.app.state.projects.find(p => p.id === this.app.state.activeProjectId);
-            path.push({ type: 'project', name: proj ? proj.name : 'Unknown Project', id: null });
-        }
-
-        // 3. Folders
+        // 2. Folders
         let curr = this.app.state.currentFolderId;
         const tempStack = [];
         while (curr) {
@@ -2677,7 +3506,6 @@ class UIManager {
 
             const el = document.createElement('div');
             el.className = isLast ? 'breadcrumb-current' : 'breadcrumb-link';
-            el.textContent = item.name;
 
             // Apply Styles matching renderCollectionBreadcrumbs
             el.style.fontSize = isLast ? '24px' : '14px';
@@ -2685,17 +3513,33 @@ class UIManager {
             el.style.color = isLast ? 'var(--text-primary)' : 'var(--text-secondary)';
             if (!isLast) el.style.cursor = 'pointer';
 
+            // Add edit icon for storage root when it's the last item
+            if (isLast && item.type === 'storage') {
+                el.innerHTML = `${item.name} <i class="ph ph-pencil-simple asset-title-edit"></i>`;
+                el.style.cursor = 'pointer';
+                el.onclick = () => {
+                    const storage = this.app.state.storages.find(s => s.id === this.app.state.activeStorageId);
+                    if (storage) {
+                        this.app.modals.prompt('Rename Storage', storage.name, (newName) => {
+                            if (newName && newName.trim()) {
+                                this.app.storage.updateStorage(storage.id, { name: newName.trim() });
+                                this.renderBreadcrumbs();
+                                this.renderStoragesList();
+                            }
+                        });
+                    }
+                };
+            } else {
+                el.textContent = item.name;
+            }
+
             if (!isLast) {
                 el.onclick = () => {
                     if (item.type === 'storage') {
-                        // Go back to "No Project" / Project Selection?
-                        this.app.state.activeProjectId = null;
-                        this.app.state.currentFolderId = null;
-                        this.app.ui.renderProjectDropdown(); // Update dropdown UI
-                        this.renderStorage();
-                    } else if (item.type === 'project') {
+                        // Go back to storage root (clear folder navigation)
                         this.app.state.currentFolderId = null;
                         this.renderStorage();
+                        this.renderBreadcrumbs();
                     } else {
                         this.app.state.currentFolderId = item.id;
                         this.renderStorage();
@@ -2917,18 +3761,8 @@ class UIManager {
             if (!isLast) {
                 el.onclick = () => {
                     if (item.id === null) {
-                        // Go back to main storage or specific root view? 
-                        // For now, maybe just do nothing or close collection view?
-                        // Actually, if we are in collection view, "Collections" root might mean top level
-                        // But we don't have a "Root Collection View".
-                        // So let's make the FIRST actual collection the root of this view effectively 
-                        // or provide a way to go to "All Collections" (which is effectively Storage view filtered?)
-
-                        // User request: "port breadcrumb system over". 
-                        // If item.id is null, it's the virtual root.
-                        // Let's just navigate to the top-most parent of the current chain?
-                        // Or if I click "Collections", maybe it should close the viewer?
-                        // Let's leave it non-clickable for virtual root for now unless we have a "Root Collection" concept.
+                        // Navigate to collections grid page
+                        this.app.router.goTo('collectionsGrid');
                     } else {
                         this.app.router.openCollection(item.id);
                     }
@@ -3041,11 +3875,20 @@ class UIManager {
             const card = document.createElement('div');
             card.className = 'card card-folder';
             card.style.setProperty('--card-accent', subCol.color);
-            card.draggable = true;
+            card.draggable = !this.collectionSelectionMode;
             card.dataset.id = subCol.id;
             card.dataset.type = 'collection';
 
+            // Selection mode support
+            if (this.collectionSelectionMode) {
+                card.classList.add('selectable');
+                if (this.selectedCollectionItems.has(`collection:${subCol.id}`)) {
+                    card.classList.add('selected');
+                }
+            }
+
             card.innerHTML = `
+                <div class="card-select-checkbox"><i class="ph-bold ph-check"></i></div>
                 <div class="card-thumbnail">
                     <i class="ph-bold ph-folder card-thumb-icon"></i>
                 </div>
@@ -3066,6 +3909,11 @@ class UIManager {
 
             card.onclick = (e) => {
                 if (e.target.closest('.collection-actions')) return;
+                if (this.collectionSelectionMode) {
+                    this.toggleCollectionItemSelection(subCol.id, 'collection');
+                    card.classList.toggle('selected');
+                    return;
+                }
                 this.app.router.openCollection(subCol.id);
             };
 
@@ -3150,9 +3998,23 @@ class UIManager {
             const card = document.createElement('div');
             card.className = 'card collection-card';
             card.style.borderColor = displayColor;
-            card.draggable = true;
+            card.draggable = !this.collectionSelectionMode;
             card.dataset.id = t.id;
             card.dataset.type = 'timestamp';
+
+            // Selection mode support
+            if (this.collectionSelectionMode) {
+                card.classList.add('selectable');
+                if (this.selectedCollectionItems.has(`timestamp:${t.id}`)) {
+                    card.classList.add('selected');
+                }
+            }
+
+            // Add checkbox
+            const checkbox = document.createElement('div');
+            checkbox.className = 'card-select-checkbox';
+            checkbox.innerHTML = '<i class="ph-bold ph-check"></i>';
+            card.appendChild(checkbox);
 
             // Check PDF/Image status
             const urlExt = file && file.url ? file.url.toLowerCase().split('.').pop() : '';
@@ -3234,6 +4096,11 @@ class UIManager {
 
             card.onclick = (e) => {
                 if (e.target.closest('.collection-actions')) return;
+                if (this.collectionSelectionMode) {
+                    this.toggleCollectionItemSelection(t.id, 'timestamp');
+                    card.classList.toggle('selected');
+                    return;
+                }
                 if (file) {
                     this.app.player.loadTimestamp(t, col);
                 }
@@ -3332,14 +4199,423 @@ class UIManager {
         });
     }
 
+    // ============================================
+    // Docs Asset Management
+    // ============================================
+
+    ensureActiveDoc() {
+        const projectId = this.app.state.activeProjectId;
+        const docs = this.app.storage.getDocs(projectId);
+        
+        // If no active doc or active doc doesn't belong to project, select/create one
+        if (!this.app.state.activeDocId || !docs.find(d => d.id === this.app.state.activeDocId)) {
+            if (docs.length > 0) {
+                this.app.state.activeDocId = docs[0].id;
+            } else {
+                // Create default doc
+                const newDoc = this.app.storage.addDoc('Untitled Doc');
+                this.app.state.activeDocId = newDoc.id;
+            }
+        }
+        
+        this.renderDocsList();
+        this.updateDocTitle();
+    }
+
+    renderDocsList() {
+        const list = document.getElementById('docs-list');
+        if (!list) return;
+
+        const projectId = this.app.state.activeProjectId;
+        const docs = this.app.storage.getDocs(projectId);
+
+        list.innerHTML = docs.map(doc => `
+            <div class="asset-switcher-item ${doc.id === this.app.state.activeDocId ? 'active' : ''}" data-id="${doc.id}">
+                <i class="ph-bold ph-file-text"></i>
+                <span class="asset-name">${doc.name}</span>
+                <button class="asset-delete" data-id="${doc.id}"><i class="ph-bold ph-trash"></i></button>
+            </div>
+        `).join('');
+
+        // Item click handlers
+        list.querySelectorAll('.asset-switcher-item').forEach(item => {
+            item.onclick = (e) => {
+                if (e.target.closest('.asset-delete')) return;
+                const id = item.dataset.id;
+                this.switchDoc(id);
+                document.getElementById('docs-switcher-menu').classList.add('hidden');
+            };
+        });
+
+        // Delete handlers
+        list.querySelectorAll('.asset-delete').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                this.deleteDocWithConfirm(id);
+            };
+        });
+    }
+
+    switchDoc(docId) {
+        this.app.state.activeDocId = docId;
+        this.updateDocTitle();
+        this.renderDocsList();
+        this.renderDocs();
+    }
+
+    updateDocTitle() {
+        const titleEl = document.getElementById('docs-title');
+        if (!titleEl) return;
+        
+        const doc = this.app.state.docs.find(d => d.id === this.app.state.activeDocId);
+        const name = doc ? doc.name : 'Untitled Doc';
+        titleEl.innerHTML = `${name} <i class="ph ph-pencil-simple asset-title-edit"></i>`;
+    }
+
+    deleteDocWithConfirm(id) {
+        const doc = this.app.state.docs.find(d => d.id === id);
+        if (!doc) return;
+        
+        this.app.modals.confirm('Delete Document', `Delete "${doc.name}"? This cannot be undone.`, () => {
+            this.app.storage.deleteDoc(id);
+            
+            // If deleted the active doc, switch to another
+            if (this.app.state.activeDocId === id) {
+                this.app.state.activeDocId = null;
+                this.ensureActiveDoc();
+            } else {
+                this.renderDocsList();
+            }
+        });
+    }
+
+    setupDocsSwitcher() {
+        const trigger = document.getElementById('docs-switcher-trigger');
+        const menu = document.getElementById('docs-switcher-menu');
+        const addBtn = document.getElementById('btn-add-doc');
+        const titleEl = document.getElementById('docs-title');
+
+        if (trigger && menu) {
+            trigger.onclick = (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+                document.getElementById('graph-switcher-menu')?.classList.add('hidden');
+            };
+
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target) && e.target !== trigger) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+
+        if (addBtn) {
+            addBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.prompt('New Document', '', (name) => {
+                    if (name && name.trim()) {
+                        const newDoc = this.app.storage.addDoc(name.trim());
+                        this.switchDoc(newDoc.id);
+                        menu.classList.add('hidden');
+                    }
+                });
+            };
+        }
+
+        if (titleEl) {
+            titleEl.onclick = () => {
+                const doc = this.app.state.docs.find(d => d.id === this.app.state.activeDocId);
+                if (doc) {
+                    this.app.modals.prompt('Rename Document', doc.name, (newName) => {
+                        if (newName && newName.trim()) {
+                            this.app.storage.updateDoc(doc.id, { name: newName.trim() });
+                            this.updateDocTitle();
+                            this.renderDocsList();
+                        }
+                    });
+                }
+            };
+        }
+    }
+
+    // ============================================
+    // Storage Asset Management
+    // ============================================
+
+    ensureActiveStorage() {
+        const projectId = this.app.state.activeProjectId;
+        const storages = this.app.storage.getStorages(projectId);
+        
+        // If no active storage or active storage doesn't belong to project, select/create one
+        if (!this.app.state.activeStorageId || !storages.find(s => s.id === this.app.state.activeStorageId)) {
+            if (storages.length > 0) {
+                this.app.state.activeStorageId = storages[0].id;
+            } else {
+                // Create default storage
+                const newStorage = this.app.storage.addStorage('Storage');
+                this.app.state.activeStorageId = newStorage.id;
+            }
+        }
+        
+        this.renderStoragesList();
+        this.updateStorageTitle();
+    }
+
+    renderStoragesList() {
+        const list = document.getElementById('storages-list');
+        if (!list) return;
+
+        const projectId = this.app.state.activeProjectId;
+        const storages = this.app.storage.getStorages(projectId);
+
+        list.innerHTML = storages.map(storage => `
+            <div class="asset-switcher-item ${storage.id === this.app.state.activeStorageId ? 'active' : ''}" data-id="${storage.id}">
+                <i class="ph-bold ph-hard-drives"></i>
+                <span class="asset-name">${storage.name}</span>
+                <button class="asset-delete" data-id="${storage.id}"><i class="ph-bold ph-trash"></i></button>
+            </div>
+        `).join('');
+
+        // Item click handlers
+        list.querySelectorAll('.asset-switcher-item').forEach(item => {
+            item.onclick = (e) => {
+                if (e.target.closest('.asset-delete')) return;
+                const id = item.dataset.id;
+                this.switchStorage(id);
+                document.getElementById('storage-switcher-menu').classList.add('hidden');
+            };
+        });
+
+        // Delete handlers
+        list.querySelectorAll('.asset-delete').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                this.deleteStorageWithConfirm(id);
+            };
+        });
+    }
+
+    switchStorage(storageId) {
+        this.app.state.activeStorageId = storageId;
+        this.app.state.currentFolderId = null; // Reset to root
+        this.updateStorageTitle();
+        this.renderStoragesList();
+        this.renderStorage();
+        this.renderBreadcrumbs();
+    }
+
+    updateStorageTitle() {
+        // Storage title is shown in breadcrumbs, so just trigger a breadcrumb update
+        this.renderBreadcrumbs();
+    }
+
+    deleteStorageWithConfirm(id) {
+        const storages = this.app.storage.getStorages(this.app.state.activeProjectId);
+        if (storages.length <= 1) {
+            this.app.modals.alert('Cannot Delete', 'You must have at least one storage.');
+            return;
+        }
+
+        this.app.modals.confirm('Delete Storage', 'This will delete all files in this storage. Are you sure?', () => {
+            const wasActive = this.app.state.activeStorageId === id;
+            this.app.storage.deleteStorage(id);
+            if (wasActive) {
+                this.ensureActiveStorage();
+            }
+            this.renderStoragesList();
+            this.renderStorage();
+        });
+    }
+
+    setupStorageSwitcher() {
+        const trigger = document.getElementById('storage-switcher-trigger');
+        const menu = document.getElementById('storage-switcher-menu');
+        const addBtn = document.getElementById('btn-add-storage');
+
+        if (trigger && menu) {
+            trigger.onclick = (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+                // Close other switcher menus
+                document.getElementById('docs-switcher-menu')?.classList.add('hidden');
+                document.getElementById('graph-switcher-menu')?.classList.add('hidden');
+            };
+
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target) && e.target !== trigger) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+
+        if (addBtn) {
+            addBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.prompt('New Storage', '', (name) => {
+                    if (name && name.trim()) {
+                        const newStorage = this.app.storage.addStorage(name.trim());
+                        this.switchStorage(newStorage.id);
+                        menu.classList.add('hidden');
+                    }
+                });
+            };
+        }
+    }
+
+    // ============================================
+    // Graph Asset Management
+    // ============================================
+
+    ensureActiveGraph() {
+        const projectId = this.app.state.activeProjectId;
+        const graphs = this.app.storage.getGraphs(projectId);
+        
+        // If no active graph or active graph doesn't belong to project, select/create one
+        if (!this.app.state.activeGraphId || !graphs.find(g => g.id === this.app.state.activeGraphId)) {
+            if (graphs.length > 0) {
+                this.app.state.activeGraphId = graphs[0].id;
+            } else {
+                // Create default graph
+                const newGraph = this.app.storage.addGraph('Untitled Graph');
+                this.app.state.activeGraphId = newGraph.id;
+            }
+        }
+        
+        this.renderGraphsList();
+        this.updateGraphTitle();
+    }
+
+    renderGraphsList() {
+        const list = document.getElementById('graphs-list');
+        if (!list) return;
+
+        const projectId = this.app.state.activeProjectId;
+        const graphs = this.app.storage.getGraphs(projectId);
+
+        list.innerHTML = graphs.map(graph => `
+            <div class="asset-switcher-item ${graph.id === this.app.state.activeGraphId ? 'active' : ''}" data-id="${graph.id}">
+                <i class="ph-bold ph-graph"></i>
+                <span class="asset-name">${graph.name}</span>
+                <button class="asset-delete" data-id="${graph.id}"><i class="ph-bold ph-trash"></i></button>
+            </div>
+        `).join('');
+
+        // Item click handlers
+        list.querySelectorAll('.asset-switcher-item').forEach(item => {
+            item.onclick = (e) => {
+                if (e.target.closest('.asset-delete')) return;
+                const id = item.dataset.id;
+                this.switchGraph(id);
+                document.getElementById('graph-switcher-menu').classList.add('hidden');
+            };
+        });
+
+        // Delete handlers
+        list.querySelectorAll('.asset-delete').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                this.deleteGraphWithConfirm(id);
+            };
+        });
+    }
+
+    switchGraph(graphId) {
+        this.app.state.activeGraphId = graphId;
+        this.updateGraphTitle();
+        this.renderGraphsList();
+        
+        // Re-render graph canvas
+        if (this.app.graph) {
+            this.app.graph.render();
+        }
+    }
+
+    updateGraphTitle() {
+        const titleEl = document.getElementById('graph-title');
+        if (!titleEl) return;
+        
+        const graph = this.app.state.graphs.find(g => g.id === this.app.state.activeGraphId);
+        const name = graph ? graph.name : 'Untitled Graph';
+        titleEl.innerHTML = `${name} <i class="ph ph-pencil-simple asset-title-edit"></i>`;
+    }
+
+    deleteGraphWithConfirm(id) {
+        const graph = this.app.state.graphs.find(g => g.id === id);
+        if (!graph) return;
+        
+        this.app.modals.confirm('Delete Graph', `Delete "${graph.name}"? This cannot be undone.`, () => {
+            this.app.storage.deleteGraph(id);
+            
+            // If deleted the active graph, switch to another
+            if (this.app.state.activeGraphId === id) {
+                this.app.state.activeGraphId = null;
+                this.ensureActiveGraph();
+                if (this.app.graph) this.app.graph.render();
+            } else {
+                this.renderGraphsList();
+            }
+        });
+    }
+
+    setupGraphSwitcher() {
+        const trigger = document.getElementById('graph-switcher-trigger');
+        const menu = document.getElementById('graph-switcher-menu');
+        const addBtn = document.getElementById('btn-add-graph');
+        const titleEl = document.getElementById('graph-title');
+
+        if (trigger && menu) {
+            trigger.onclick = (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+                document.getElementById('docs-switcher-menu')?.classList.add('hidden');
+            };
+
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target) && e.target !== trigger) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+
+        if (addBtn) {
+            addBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.app.modals.prompt('New Graph', '', (name) => {
+                    if (name && name.trim()) {
+                        const newGraph = this.app.storage.addGraph(name.trim());
+                        this.switchGraph(newGraph.id);
+                        menu.classList.add('hidden');
+                    }
+                });
+            };
+        }
+
+        if (titleEl) {
+            titleEl.onclick = () => {
+                const graph = this.app.state.graphs.find(g => g.id === this.app.state.activeGraphId);
+                if (graph) {
+                    this.app.modals.prompt('Rename Graph', graph.name, (newName) => {
+                        if (newName && newName.trim()) {
+                            this.app.storage.updateGraph(graph.id, { name: newName.trim() });
+                            this.updateGraphTitle();
+                            this.renderGraphsList();
+                        }
+                    });
+                }
+            };
+        }
+    }
+
     renderDocs() {
         const editor = document.getElementById('docs-editor');
         if (!editor) return;
 
-        // Load content for current project
-        const projectId = this.app.state.activeProjectId;
-        const project = this.app.state.projects.find(p => p.id === projectId);
-        editor.innerHTML = project?.docContent || '';
+        // Load content for current doc
+        const doc = this.app.state.docs.find(d => d.id === this.app.state.activeDocId);
+        editor.innerHTML = doc?.content || '';
 
         // Update all internal links to show friendly names instead of raw codes
         this.updateInternalLinkTexts(editor);
@@ -3362,12 +4638,12 @@ class UIManager {
 
     saveDocsContent() {
         const editor = document.getElementById('docs-editor');
-        const projectId = this.app.state.activeProjectId;
-        if (!editor || !projectId) return;
+        const docId = this.app.state.activeDocId;
+        if (!editor || !docId) return;
 
-        const project = this.app.state.projects.find(p => p.id === projectId);
-        if (project) {
-            project.docContent = editor.innerHTML;
+        const doc = this.app.state.docs.find(d => d.id === docId);
+        if (doc) {
+            doc.content = editor.innerHTML;
             this.app.storage.save();
         }
     }
@@ -4341,7 +5617,7 @@ class ModalManager {
         this.backdrop = document.getElementById('modal-backdrop');
     }
 
-    openMoveTimestamp(timestamp) {
+    openMoveTimestamp(timestamp, callback = null) {
         const modal = document.getElementById('modal-move-timestamp');
         const list = document.getElementById('move-timestamp-list');
         const btnCancel = document.getElementById('btn-cancel-move-timestamp');
@@ -4380,11 +5656,15 @@ class ModalManager {
             } else {
                 div.onclick = (e) => {
                     e.stopPropagation();
-                    this.app.storage.updateTimestamp(timestamp.id, { collectionId: c.id });
+                    if (callback) {
+                        callback(c.id);
+                    } else {
+                        this.app.storage.updateTimestamp(timestamp.id, { collectionId: c.id });
+                        this.app.player.exitCollectionMode();
+                        this.app.player.close();
+                        this.app.router.openCollection(c.id);
+                    }
                     this.close();
-                    this.app.player.exitCollectionMode();
-                    this.app.player.close();
-                    this.app.router.openCollection(c.id);
                 };
             }
             return div;
@@ -4677,7 +5957,7 @@ class ModalManager {
         this.onPromptCallback = callback;
     }
 
-    openMoveFile(file) {
+    openMoveFile(file, callback = null) {
         this.backdrop.classList.remove('hidden');
         document.getElementById('modal-move-file').classList.remove('hidden');
 
@@ -4706,9 +5986,13 @@ class ModalManager {
                 el.innerHTML += `<span class="folder-path-context">Current</span>`;
             } else {
                 el.onclick = () => {
-                    this.app.storage.moveFile(file.id, id);
-                    if (this.app.state.currentFolderId === file.parentId) {
-                        this.app.ui.renderStorage(); // Update grid if we moved it out of view
+                    if (callback) {
+                        callback(id);
+                    } else {
+                        this.app.storage.moveFile(file.id, id);
+                        if (this.app.state.currentFolderId === file.parentId) {
+                            this.app.ui.renderStorage(); // Update grid if we moved it out of view
+                        }
                     }
                     this.close();
                 };
@@ -6690,6 +7974,1062 @@ class ExportImportManager {
     }
 }
 
+// ============================================
+// GraphController - Obsidian-style Graph View
+// ============================================
+class GraphController {
+    constructor(app) {
+        this.app = app;
+        
+        // Canvas elements
+        this.canvas = null;
+        this.ctx = null;
+        
+        // View state
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        
+        // Interaction state
+        this.isDragging = false;
+        this.isPanning = false;
+        this.isConnecting = false;
+        this.dragNode = null;
+        this.selectedNode = null;
+        this.connectFromNode = null;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.mouseX = 0;
+        this.mouseY = 0;
+        
+        // Animation
+        this.animationFrame = null;
+        
+        // Node visual settings
+        this.nodeRadius = 20;
+        this.labelFont = '12px Inter, system-ui, sans-serif';
+        this.labelColor = '#ededef';
+        this.edgeColor = '#3f3f46';
+        this.edgeWidth = 2;
+        
+        // Initialized flag
+        this.initialized = false;
+    }
+    
+    init() {
+        if (this.initialized) {
+            this.render();
+            return;
+        }
+        
+        this.canvas = document.getElementById('graph-canvas');
+        if (!this.canvas) return;
+        
+        this.ctx = this.canvas.getContext('2d');
+        
+        // Setup canvas size
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
+        // Setup event listeners
+        this.setupEventListeners();
+        this.setupToolbar();
+        this.setupNodeEditor();
+        
+        this.initialized = true;
+        
+        // Check for nodes and arrange view
+        const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
+        if (nodes.length > 0) {
+            this.fitView();
+        } else {
+            this.centerView();
+        }
+    }
+    
+    resizeCanvas() {
+        if (!this.canvas) return;
+        const container = this.canvas.parentElement;
+        this.canvas.width = container.clientWidth;
+        this.canvas.height = container.clientHeight;
+        this.render();
+    }
+    
+    setupEventListeners() {
+        // Mouse events
+        this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.onMouseUp(e));
+        this.canvas.addEventListener('wheel', (e) => this.onWheel(e));
+        this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
+        this.canvas.addEventListener('contextmenu', (e) => this.onContextMenu(e));
+        
+        // Close context menu on click elsewhere
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('graph-context-menu');
+            if (menu && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    }
+    
+    setupToolbar() {
+        // Add node button
+        const btnAdd = document.getElementById('btn-graph-add');
+        const addMenu = document.getElementById('graph-add-menu');
+        
+        if (btnAdd && addMenu) {
+            btnAdd.onclick = (e) => {
+                e.stopPropagation();
+                addMenu.classList.toggle('hidden');
+            };
+            
+            // Close menu when clicking elsewhere
+            document.addEventListener('click', () => {
+                addMenu.classList.add('hidden');
+            });
+            
+            // Add menu items
+            addMenu.querySelectorAll('.graph-add-item').forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    const type = item.dataset.type;
+                    this.addNodeOfType(type);
+                    addMenu.classList.add('hidden');
+                };
+            });
+        }
+        
+        // Zoom buttons
+        document.getElementById('btn-graph-zoom-in')?.addEventListener('click', () => this.zoomIn());
+        document.getElementById('btn-graph-zoom-out')?.addEventListener('click', () => this.zoomOut());
+        document.getElementById('btn-graph-fit')?.addEventListener('click', () => this.fitView());
+        document.getElementById('btn-graph-auto-arrange')?.addEventListener('click', () => this.autoArrange());
+    }
+    
+    setupNodeEditor() {
+        const editor = document.getElementById('graph-node-editor');
+        if (!editor) return;
+        
+        // Close button
+        document.getElementById('btn-node-editor-close')?.addEventListener('click', () => {
+            editor.classList.add('hidden');
+        });
+        
+        // Save button
+        document.getElementById('btn-node-save')?.addEventListener('click', () => {
+            this.saveNodeFromEditor();
+        });
+        
+        // Delete button
+        document.getElementById('btn-node-delete')?.addEventListener('click', () => {
+            if (this.selectedNode) {
+                this.app.storage.deleteGraphNode(this.selectedNode.id);
+                this.selectedNode = null;
+                editor.classList.add('hidden');
+                this.render();
+            }
+        });
+        
+        // Color picker trigger
+        document.getElementById('btn-node-color-trigger')?.addEventListener('click', () => {
+            const input = document.getElementById('input-node-color');
+            const preview = document.getElementById('node-color-preview');
+            const currentColor = input.value || '#6366f1';
+            
+            this.app.modals.openColorPicker(currentColor, (newColor) => {
+                if (newColor) {
+                    input.value = newColor;
+                    preview.style.backgroundColor = newColor;
+                }
+                // Re-show the node editor after color picker closes
+                document.getElementById('graph-node-editor').classList.remove('hidden');
+            });
+        });
+        
+        // Context menu handlers
+        document.getElementById('ctx-node-edit')?.addEventListener('click', () => {
+            this.hideContextMenu();
+            this.openNodeEditor(this.selectedNode);
+        });
+        
+        document.getElementById('ctx-node-connect')?.addEventListener('click', () => {
+            this.hideContextMenu();
+            if (this.selectedNode) {
+                this.startConnecting(this.selectedNode);
+            }
+        });
+        
+        document.getElementById('ctx-node-open')?.addEventListener('click', () => {
+            this.hideContextMenu();
+            if (this.selectedNode) {
+                this.openNodeTarget(this.selectedNode);
+            }
+        });
+        
+        document.getElementById('ctx-node-delete')?.addEventListener('click', () => {
+            this.hideContextMenu();
+            if (this.selectedNode) {
+                this.app.storage.deleteGraphNode(this.selectedNode.id);
+                this.selectedNode = null;
+                this.render();
+            }
+        });
+        
+        // Link selector modal listeners
+        this.setupLinkSelectorListeners();
+    }
+    
+    // ============================================
+    // Mouse Event Handlers
+    // ============================================
+    
+    onMouseDown(e) {
+        const { x, y } = this.getMousePos(e);
+        const worldPos = this.screenToWorld(x, y);
+        
+        // Check if we clicked on a node
+        const node = this.getNodeAtPosition(worldPos.x, worldPos.y);
+        
+        if (e.button === 0) { // Left click
+            if (this.isConnecting && node && node !== this.connectFromNode) {
+                // Complete connection
+                this.app.storage.addGraphEdge(this.connectFromNode.id, node.id);
+                this.stopConnecting();
+                this.render();
+            } else if (node) {
+                // Start dragging node
+                this.isDragging = true;
+                this.dragNode = node;
+                this.selectedNode = node;
+                this.dragStartX = worldPos.x - node.x;
+                this.dragStartY = worldPos.y - node.y;
+                this.canvas.classList.add('grabbing');
+            } else {
+                // Start panning
+                this.isPanning = true;
+                this.dragStartX = x - this.panX;
+                this.dragStartY = y - this.panY;
+                this.canvas.classList.add('grabbing');
+                this.selectedNode = null;
+                
+                // Cancel connecting if clicking empty space
+                if (this.isConnecting) {
+                    this.stopConnecting();
+                }
+            }
+            this.render();
+        }
+    }
+    
+    onMouseMove(e) {
+        const { x, y } = this.getMousePos(e);
+        const worldPos = this.screenToWorld(x, y);
+        
+        this.mouseX = x;
+        this.mouseY = y;
+        
+        if (this.isDragging && this.dragNode) {
+            // Move node
+            this.dragNode.x = worldPos.x - this.dragStartX;
+            this.dragNode.y = worldPos.y - this.dragStartY;
+            this.render();
+        } else if (this.isPanning) {
+            // Pan view
+            this.panX = x - this.dragStartX;
+            this.panY = y - this.dragStartY;
+            this.render();
+        } else if (this.isConnecting) {
+            // Render connecting line
+            this.render();
+        }
+    }
+    
+    onMouseUp(e) {
+        if (this.isDragging && this.dragNode) {
+            // Save node position
+            this.app.storage.updateGraphNode(this.dragNode.id, {
+                x: this.dragNode.x,
+                y: this.dragNode.y
+            });
+        }
+        
+        this.isDragging = false;
+        this.isPanning = false;
+        this.dragNode = null;
+        this.canvas.classList.remove('grabbing');
+    }
+    
+    onWheel(e) {
+        e.preventDefault();
+        
+        const { x, y } = this.getMousePos(e);
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        const newZoom = Math.max(0.1, Math.min(5, this.zoom * delta));
+        
+        // Zoom towards mouse position
+        const worldBefore = this.screenToWorld(x, y);
+        this.zoom = newZoom;
+        const worldAfter = this.screenToWorld(x, y);
+        
+        this.panX += (worldAfter.x - worldBefore.x) * this.zoom;
+        this.panY += (worldAfter.y - worldBefore.y) * this.zoom;
+        
+        // Update zoom indicator
+        const indicator = document.getElementById('graph-zoom-indicator');
+        if (indicator) {
+            indicator.textContent = Math.round(this.zoom * 100) + '%';
+        }
+        
+        this.render();
+    }
+    
+    onDoubleClick(e) {
+        const { x, y } = this.getMousePos(e);
+        const worldPos = this.screenToWorld(x, y);
+        const node = this.getNodeAtPosition(worldPos.x, worldPos.y);
+        
+        if (node) {
+            // Open linked item or edit
+            if (node.type === 'note') {
+                this.openNodeEditor(node);
+            } else {
+                this.openNodeTarget(node);
+            }
+        } else {
+            // Create new note at position
+            this.addNodeAtPosition('note', worldPos.x, worldPos.y);
+        }
+    }
+    
+    onContextMenu(e) {
+        e.preventDefault();
+        
+        const { x, y } = this.getMousePos(e);
+        const worldPos = this.screenToWorld(x, y);
+        const node = this.getNodeAtPosition(worldPos.x, worldPos.y);
+        
+        if (node) {
+            this.selectedNode = node;
+            this.showContextMenu(e.clientX, e.clientY, node);
+            this.render();
+        }
+    }
+    
+    // ============================================
+    // Helper Methods
+    // ============================================
+    
+    getMousePos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+    
+    screenToWorld(x, y) {
+        return {
+            x: (x - this.panX) / this.zoom,
+            y: (y - this.panY) / this.zoom
+        };
+    }
+    
+    worldToScreen(x, y) {
+        return {
+            x: x * this.zoom + this.panX,
+            y: y * this.zoom + this.panY
+        };
+    }
+    
+    getNodeAtPosition(x, y) {
+        const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
+        // Check in reverse order (top nodes first)
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            const node = nodes[i];
+            const dx = x - node.x;
+            const dy = y - node.y;
+            if (dx * dx + dy * dy <= this.nodeRadius * this.nodeRadius) {
+                return node;
+            }
+        }
+        return null;
+    }
+    
+    // ============================================
+    // Node Operations
+    // ============================================
+    
+    addNodeOfType(type) {
+        // Add at center of viewport
+        const width = this.canvas.width || 800;
+        const height = this.canvas.height || 600;
+        const centerX = (width / 2 - this.panX) / this.zoom;
+        const centerY = (height / 2 - this.panY) / this.zoom;
+        
+        // Offset slightly from center for multiple adds
+        const offset = Math.random() * 60 - 30;
+        
+        if (type === 'file' || type === 'collection' || type === 'timestamp') {
+            this.showLinkSelector(type, centerX + offset, centerY + offset);
+        } else if (type === 'link') {
+            this.app.modals.prompt('External Link', '', (url) => {
+                if (url && url.trim()) {
+                    const node = this.app.storage.addGraphNode(
+                        'link',
+                        this.extractDomain(url),
+                        '#22c55e',
+                        centerX + offset,
+                        centerY + offset,
+                        null,
+                        url.trim()
+                    );
+                    this.selectedNode = node;
+                    this.openNodeEditor(node);
+                    this.render();
+                }
+            }, false, 'https://...');
+        } else {
+            // Note
+            const node = this.app.storage.addGraphNode(
+                'note',
+                'New Note',
+                '#6366f1',
+                centerX + offset,
+                centerY + offset
+            );
+            this.selectedNode = node;
+            this.openNodeEditor(node);
+            this.render();
+        }
+    }
+    
+    addNodeAtPosition(type, x, y) {
+        const node = this.app.storage.addGraphNode(
+            type,
+            type === 'note' ? 'New Note' : 'Node',
+            '#6366f1',
+            x,
+            y
+        );
+        this.selectedNode = node;
+        this.openNodeEditor(node);
+        this.render();
+    }
+    
+    showLinkSelector(type, x, y) {
+        let items = [];
+        let title = '';
+        
+        if (type === 'file') {
+            title = 'Select File';
+            items = this.app.state.files.filter(
+                f => f.projectId === this.app.state.activeProjectId && f.type !== 'folder'
+            );
+        } else if (type === 'collection') {
+            title = 'Select Collection';
+            items = this.app.state.collections.filter(
+                c => c.projectId === this.app.state.activeProjectId
+            );
+        } else if (type === 'timestamp') {
+            title = 'Select Timestamp';
+            // Get all timestamps for the project (via collections)
+            const projectCollections = this.app.state.collections.filter(
+                c => c.projectId === this.app.state.activeProjectId
+            );
+            items = this.app.state.timestamps.filter(
+                t => projectCollections.some(c => c.id === t.collectionId)
+            );
+        }
+        
+        if (items.length === 0) {
+            this.app.modals.alert('No Items', `No ${type}s found in this project.`);
+            return;
+        }
+        
+        // Use a simple selection approach - create node with first item and open editor
+        // In future could create a proper selector modal
+        const item = items[0];
+        const colors = {
+            file: '#f59e0b',
+            collection: '#8b5cf6',
+            timestamp: '#ec4899'
+        };
+        
+        const node = this.app.storage.addGraphNode(
+            type,
+            item.name || item.note || 'Untitled',
+            colors[type],
+            x,
+            y,
+            item.id
+        );
+        
+        this.selectedNode = node;
+        this.openNodeEditor(node);
+        this.render();
+    }
+    
+    extractDomain(url) {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname.replace('www.', '');
+        } catch {
+            return 'Link';
+        }
+    }
+    
+    // ============================================
+    // Node Editor
+    // ============================================
+    
+    openNodeEditor(node) {
+        if (!node) return;
+        
+        const editor = document.getElementById('graph-node-editor');
+        if (!editor) return;
+        
+        // Populate fields
+        document.getElementById('input-node-title').value = node.title || '';
+        document.getElementById('input-node-color').value = node.color || '#6366f1';
+        document.getElementById('node-color-preview').style.backgroundColor = node.color || '#6366f1';
+        
+        // Show/hide link selector based on type
+        const linkGroup = document.getElementById('node-link-group');
+        const urlGroup = document.getElementById('node-url-group');
+        const selectLink = document.getElementById('select-node-link');
+        const linkDisplay = document.getElementById('node-link-display');
+        const inputUrl = document.getElementById('input-node-url');
+        
+        if (node.type === 'link') {
+            linkGroup.classList.add('hidden');
+            urlGroup.classList.remove('hidden');
+            inputUrl.value = node.url || '';
+        } else if (node.type === 'note') {
+            linkGroup.classList.add('hidden');
+            urlGroup.classList.add('hidden');
+        } else {
+            linkGroup.classList.remove('hidden');
+            urlGroup.classList.add('hidden');
+            
+            // Set current link value and display
+            selectLink.value = node.linkedId || '';
+            this.updateLinkDisplay(node.type, node.linkedId);
+        }
+        
+        editor.classList.remove('hidden');
+    }
+    
+    updateLinkDisplay(type, linkedId) {
+        const display = document.getElementById('node-link-display');
+        if (!display) return;
+        
+        if (!linkedId) {
+            display.textContent = 'None';
+            display.classList.add('empty');
+            return;
+        }
+        
+        display.classList.remove('empty');
+        
+        let item = null;
+        if (type === 'file') {
+            item = this.app.state.files.find(f => f.id === linkedId);
+        } else if (type === 'collection') {
+            item = this.app.state.collections.find(c => c.id === linkedId);
+        } else if (type === 'timestamp') {
+            item = this.app.state.timestamps.find(t => t.id === linkedId);
+        }
+        
+        display.textContent = item ? (item.name || item.note || 'Untitled') : 'None';
+    }
+    
+    openLinkSelectorModal() {
+        if (!this.selectedNode) return;
+        
+        const type = this.selectedNode.type;
+        const currentId = document.getElementById('select-node-link').value;
+        
+        const modal = document.getElementById('modal-node-link');
+        const list = document.getElementById('node-link-list');
+        const title = document.getElementById('modal-node-link-title');
+        
+        // Set title based on type
+        const titles = {
+            file: 'Select File',
+            collection: 'Select Collection',
+            timestamp: 'Select Timestamp'
+        };
+        title.textContent = titles[type] || 'Select Item';
+        
+        // Get items
+        let items = [];
+        let icon = 'ph-file';
+        
+        if (type === 'file') {
+            items = this.app.state.files.filter(
+                f => f.projectId === this.app.state.activeProjectId && f.type !== 'folder'
+            );
+            icon = 'ph-film-strip';
+        } else if (type === 'collection') {
+            items = this.app.state.collections.filter(
+                c => c.projectId === this.app.state.activeProjectId
+            );
+            icon = 'ph-folder';
+        } else if (type === 'timestamp') {
+            const projectCollections = this.app.state.collections.filter(
+                c => c.projectId === this.app.state.activeProjectId
+            );
+            items = this.app.state.timestamps.filter(
+                t => projectCollections.some(c => c.id === t.collectionId)
+            );
+            icon = 'ph-clock';
+        }
+        
+        // Populate list
+        list.innerHTML = '';
+        
+        if (items.length === 0) {
+            list.innerHTML = `<div class="folder-select-item" style="color: var(--text-muted); font-style: italic;">No ${type}s available</div>`;
+        } else {
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'folder-select-item';
+                if (item.id === currentId) el.classList.add('current-folder');
+                
+                const itemColor = item.color || 'var(--accent)';
+                const itemName = item.name || item.note || 'Untitled';
+                
+                el.innerHTML = `
+                    <i class="ph-fill ${icon}" style="color: ${itemColor}"></i>
+                    <span>${itemName}</span>
+                `;
+                
+                if (item.id === currentId) {
+                    el.innerHTML += `<span class="folder-path-context">Current</span>`;
+                }
+                
+                el.onclick = () => {
+                    document.getElementById('select-node-link').value = item.id;
+                    this.updateLinkDisplay(type, item.id);
+                    this.app.modals.close();
+                };
+                
+                list.appendChild(el);
+            });
+        }
+        
+        this.app.modals.show('node-link');
+    }
+    
+    setupLinkSelectorListeners() {
+        // Change button
+        document.getElementById('btn-node-link-change')?.addEventListener('click', () => {
+            this.openLinkSelectorModal();
+        });
+        
+        // Cancel button
+        document.getElementById('btn-node-link-cancel')?.addEventListener('click', () => {
+            this.app.modals.close();
+        });
+        
+        // Clear button
+        document.getElementById('btn-node-link-clear')?.addEventListener('click', () => {
+            document.getElementById('select-node-link').value = '';
+            this.updateLinkDisplay(this.selectedNode?.type, null);
+            this.app.modals.close();
+        });
+    }
+    
+    populateLinkSelector(select, type, currentId) {
+        select.value = currentId || '';
+        this.updateLinkDisplay(type, currentId);
+    }
+    
+    saveNodeFromEditor() {
+        if (!this.selectedNode) return;
+        
+        const title = document.getElementById('input-node-title').value;
+        const color = document.getElementById('input-node-color').value;
+        
+        const updates = { title, color };
+        
+        if (this.selectedNode.type === 'link') {
+            updates.url = document.getElementById('input-node-url').value;
+        } else if (this.selectedNode.type !== 'note') {
+            updates.linkedId = document.getElementById('select-node-link').value || null;
+        }
+        
+        this.app.storage.updateGraphNode(this.selectedNode.id, updates);
+        
+        // Update local reference
+        Object.assign(this.selectedNode, updates);
+        
+        document.getElementById('graph-node-editor').classList.add('hidden');
+        this.render();
+    }
+    
+    // ============================================
+    // Context Menu
+    // ============================================
+    
+    showContextMenu(x, y, node) {
+        const menu = document.getElementById('graph-context-menu');
+        if (!menu) return;
+        
+        // Position menu
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        
+        // Show/hide open option based on node type
+        const openItem = document.getElementById('ctx-node-open');
+        if (openItem) {
+            openItem.style.display = (node.type === 'note') ? 'none' : 'flex';
+        }
+        
+        menu.classList.remove('hidden');
+    }
+    
+    hideContextMenu() {
+        const menu = document.getElementById('graph-context-menu');
+        if (menu) menu.classList.add('hidden');
+    }
+    
+    // ============================================
+    // Connection Mode
+    // ============================================
+    
+    startConnecting(node) {
+        this.isConnecting = true;
+        this.connectFromNode = node;
+        this.canvas.classList.add('connecting');
+        this.render();
+    }
+    
+    stopConnecting() {
+        this.isConnecting = false;
+        this.connectFromNode = null;
+        this.canvas.classList.remove('connecting');
+    }
+    
+    // ============================================
+    // Navigation
+    // ============================================
+    
+    openNodeTarget(node) {
+        if (!node) return;
+        
+        if (node.type === 'link' && node.url) {
+            window.open(node.url, '_blank');
+        } else if (node.type === 'file' && node.linkedId) {
+            const file = this.app.state.files.find(f => f.id === node.linkedId);
+            if (file) {
+                this.app.player.load(file);
+            }
+        } else if (node.type === 'collection' && node.linkedId) {
+            this.app.router.openCollection(node.linkedId);
+        } else if (node.type === 'timestamp' && node.linkedId) {
+            const ts = this.app.state.timestamps.find(t => t.id === node.linkedId);
+            if (ts) {
+                const col = this.app.state.collections.find(c => c.id === ts.collectionId);
+                this.app.player.loadTimestamp(ts, col);
+            }
+        }
+    }
+    
+    // ============================================
+    // View Controls
+    // ============================================
+    
+    zoomIn() {
+        this.zoom = Math.min(5, this.zoom * 1.2);
+        document.getElementById('graph-zoom-indicator').textContent = Math.round(this.zoom * 100) + '%';
+        this.render();
+    }
+    
+    zoomOut() {
+        this.zoom = Math.max(0.1, this.zoom / 1.2);
+        document.getElementById('graph-zoom-indicator').textContent = Math.round(this.zoom * 100) + '%';
+        this.render();
+    }
+    
+    fitView() {
+        const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
+        if (nodes.length === 0) {
+            this.centerView();
+            return;
+        }
+        
+        // Calculate bounds
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        nodes.forEach(n => {
+            minX = Math.min(minX, n.x);
+            minY = Math.min(minY, n.y);
+            maxX = Math.max(maxX, n.x);
+            maxY = Math.max(maxY, n.y);
+        });
+        
+        const padding = 100;
+        const width = maxX - minX + padding * 2;
+        const height = maxY - minY + padding * 2;
+        
+        const scaleX = this.canvas.width / width;
+        const scaleY = this.canvas.height / height;
+        this.zoom = Math.min(scaleX, scaleY, 2);
+        
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        
+        this.panX = this.canvas.width / 2 - centerX * this.zoom;
+        this.panY = this.canvas.height / 2 - centerY * this.zoom;
+        
+        document.getElementById('graph-zoom-indicator').textContent = Math.round(this.zoom * 100) + '%';
+        this.render();
+    }
+    
+    centerView() {
+        this.zoom = 1;
+        this.panX = this.canvas.width / 2;
+        this.panY = this.canvas.height / 2;
+        document.getElementById('graph-zoom-indicator').textContent = '100%';
+        this.render();
+    }
+    
+    autoArrange() {
+        const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
+        if (nodes.length === 0) return;
+        
+        // Simple force-directed layout
+        const iterations = 50;
+        const repulsion = 5000;
+        const attraction = 0.01;
+        const edges = this.app.storage.getGraphEdges(this.app.state.activeGraphId);
+        
+        for (let iter = 0; iter < iterations; iter++) {
+            // Apply repulsion between all nodes
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - nodes[i].x;
+                    const dy = nodes[j].y - nodes[i].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = repulsion / (dist * dist);
+                    
+                    const fx = (dx / dist) * force;
+                    const fy = (dy / dist) * force;
+                    
+                    nodes[i].x -= fx;
+                    nodes[i].y -= fy;
+                    nodes[j].x += fx;
+                    nodes[j].y += fy;
+                }
+            }
+            
+            // Apply attraction for connected nodes
+            edges.forEach(edge => {
+                const from = nodes.find(n => n.id === edge.fromId);
+                const to = nodes.find(n => n.id === edge.toId);
+                if (from && to) {
+                    const dx = to.x - from.x;
+                    const dy = to.y - from.y;
+                    
+                    from.x += dx * attraction;
+                    from.y += dy * attraction;
+                    to.x -= dx * attraction;
+                    to.y -= dy * attraction;
+                }
+            });
+        }
+        
+        // Save new positions
+        nodes.forEach(node => {
+            this.app.storage.updateGraphNode(node.id, { x: node.x, y: node.y });
+        });
+        
+        this.fitView();
+    }
+    
+    // ============================================
+    // Rendering
+    // ============================================
+    
+    render() {
+        if (!this.ctx || !this.canvas) return;
+        
+        const ctx = this.ctx;
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw background grid (dots)
+        const dotGap = 24 * this.zoom;
+        const offsetX = this.panX % dotGap;
+        const offsetY = this.panY % dotGap;
+
+        // Skip drawing dots if zoom is too small to avoid moire/mess
+        if (dotGap > 5) {
+            ctx.fillStyle = '#3f3f46'; // Subtle dot color
+            for (let x = offsetX; x < width; x += dotGap) {
+                for (let y = offsetY; y < height; y += dotGap) {
+                    ctx.fillRect(x, y, 2, 2); // 2px dot for visibility
+                }
+            }
+        }
+        
+        // Get data
+        const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
+        const edges = this.app.storage.getGraphEdges(this.app.state.activeGraphId);
+        
+        // Save context state
+        ctx.save();
+        
+        // Apply pan and zoom
+        ctx.translate(this.panX, this.panY);
+        ctx.scale(this.zoom, this.zoom);
+        
+        // Draw edges
+        ctx.strokeStyle = this.edgeColor;
+        ctx.lineWidth = this.edgeWidth / this.zoom;
+        edges.forEach(edge => {
+            const from = nodes.find(n => n.id === edge.fromId);
+            const to = nodes.find(n => n.id === edge.toId);
+            if (from && to) {
+                ctx.beginPath();
+                ctx.moveTo(from.x, from.y);
+                ctx.lineTo(to.x, to.y);
+                ctx.stroke();
+            }
+        });
+        
+        // Draw connecting line if in connect mode
+        if (this.isConnecting && this.connectFromNode) {
+            const worldMouse = this.screenToWorld(this.mouseX, this.mouseY);
+            ctx.strokeStyle = '#6366f1';
+            ctx.setLineDash([5 / this.zoom, 5 / this.zoom]);
+            ctx.beginPath();
+            ctx.moveTo(this.connectFromNode.x, this.connectFromNode.y);
+            ctx.lineTo(worldMouse.x, worldMouse.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // Draw nodes
+        nodes.forEach(node => {
+            const isSelected = this.selectedNode && this.selectedNode.id === node.id;
+            
+            // Node circle
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, this.nodeRadius, 0, Math.PI * 2);
+            ctx.fillStyle = node.color || '#6366f1';
+            ctx.fill();
+            
+            // Selection ring
+            if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, this.nodeRadius + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2 / this.zoom;
+                ctx.stroke();
+            }
+            
+            // Node icon based on type - draw simple geometric shapes
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+            ctx.lineWidth = 1.5 / this.zoom;
+            
+            const iconSize = 10;
+            const cx = node.x;
+            const cy = node.y;
+            
+            if (node.type === 'note') {
+                // Document icon - rectangle with folded corner
+                ctx.beginPath();
+                ctx.moveTo(cx - 6, cy - 7);
+                ctx.lineTo(cx + 3, cy - 7);
+                ctx.lineTo(cx + 6, cy - 4);
+                ctx.lineTo(cx + 6, cy + 7);
+                ctx.lineTo(cx - 6, cy + 7);
+                ctx.closePath();
+                ctx.fill();
+                // Fold
+                ctx.beginPath();
+                ctx.moveTo(cx + 3, cy - 7);
+                ctx.lineTo(cx + 3, cy - 4);
+                ctx.lineTo(cx + 6, cy - 4);
+                ctx.stroke();
+            } else if (node.type === 'file') {
+                // Play triangle for media files
+                ctx.beginPath();
+                ctx.moveTo(cx - 4, cy - 6);
+                ctx.lineTo(cx + 6, cy);
+                ctx.lineTo(cx - 4, cy + 6);
+                ctx.closePath();
+                ctx.fill();
+            } else if (node.type === 'collection') {
+                // Folder icon
+                ctx.beginPath();
+                ctx.moveTo(cx - 7, cy - 3);
+                ctx.lineTo(cx - 7, cy + 6);
+                ctx.lineTo(cx + 7, cy + 6);
+                ctx.lineTo(cx + 7, cy - 3);
+                ctx.lineTo(cx + 2, cy - 3);
+                ctx.lineTo(cx, cy - 6);
+                ctx.lineTo(cx - 7, cy - 6);
+                ctx.closePath();
+                ctx.fill();
+            } else if (node.type === 'timestamp') {
+                // Clock icon - circle with hands
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx, cy - 4);
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + 3, cy + 1);
+                ctx.stroke();
+            } else if (node.type === 'link') {
+                // Chain link icon
+                ctx.beginPath();
+                ctx.arc(cx - 3, cy, 4, Math.PI * 0.5, Math.PI * 1.5);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(cx + 3, cy, 4, Math.PI * 1.5, Math.PI * 0.5);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx - 3, cy - 4);
+                ctx.lineTo(cx + 3, cy - 4);
+                ctx.moveTo(cx - 3, cy + 4);
+                ctx.lineTo(cx + 3, cy + 4);
+                ctx.stroke();
+            } else {
+                // Default dot
+                ctx.beginPath();
+                ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Label below node
+            ctx.fillStyle = this.labelColor;
+            ctx.font = this.labelFont;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            
+            // Truncate long labels
+            let label = node.title || 'Untitled';
+            if (label.length > 20) {
+                label = label.substring(0, 18) + '...';
+            }
+            ctx.fillText(label, node.x, node.y + this.nodeRadius + 8);
+        });
+        
+        // Restore context
+        ctx.restore();
+    }
+}
+
 // Start
 const app = new WhistlerApp();
 
@@ -6718,3 +9058,5 @@ window.addEventListener('unhandledrejection', function(ev) {
     } catch (e) {}
     console.error(ev);
 });
+
+
