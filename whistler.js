@@ -61,9 +61,14 @@ class StorageManager {
     constructor(app) {
         this.app = app;
         this.KEY = 'whistler_v2_data';
+        this.LAST_MODIFIED_KEY = 'whistler_last_modified';
     }
 
     save() {
+        // Update last modified timestamp
+        const lastModified = Date.now();
+        localStorage.setItem(this.LAST_MODIFIED_KEY, lastModified.toString());
+        
         const data = {
             projects: this.app.state.projects,
             files: this.app.state.files,
@@ -73,7 +78,8 @@ class StorageManager {
             graphNodes: this.app.state.graphNodes,
             graphEdges: this.app.state.graphEdges,
             docs: this.app.state.docs,
-            storages: this.app.state.storages
+            storages: this.app.state.storages,
+            lastModified: lastModified
         };
         localStorage.setItem(this.KEY, JSON.stringify(data));
         
@@ -7868,7 +7874,8 @@ class SyncManager {
             this.isSyncing = true;
             this.setSyncingState(true);
             
-            // Get all local data
+            // Get all local data with timestamp
+            const lastModified = parseInt(localStorage.getItem(this.app.storage.LAST_MODIFIED_KEY)) || Date.now();
             const data = {
                 projects: this.app.state.projects,
                 files: this.app.state.files,
@@ -7878,7 +7885,8 @@ class SyncManager {
                 graphNodes: this.app.state.graphNodes,
                 graphEdges: this.app.state.graphEdges,
                 docs: this.app.state.docs,
-                storages: this.app.state.storages
+                storages: this.app.state.storages,
+                lastModified: lastModified
             };
             
             // Save as a single key
@@ -7954,9 +7962,17 @@ class SyncManager {
             if (dataRow && dataRow.value) {
                 const cloudData = JSON.parse(dataRow.value);
                 
-                // Merge or replace local data
-                // For now, we'll replace if cloud has data
-                if (cloudData.projects?.length > 0 || cloudData.files?.length > 0) {
+                // Get local last modified timestamp
+                const localLastModified = parseInt(localStorage.getItem(this.app.storage.LAST_MODIFIED_KEY)) || 0;
+                const cloudLastModified = cloudData.lastModified || 0;
+                
+                // Only replace local data if cloud data is newer
+                // If cloud has no timestamp (legacy), check if it has more data
+                const cloudIsNewer = cloudLastModified > localLastModified;
+                const cloudHasData = cloudData.projects?.length > 0 || cloudData.files?.length > 0;
+                const localIsEmpty = this.app.state.projects.length === 0 && this.app.state.files.length === 0;
+                
+                if (cloudIsNewer || (cloudHasData && localIsEmpty)) {
                     this.app.state.projects = cloudData.projects || [];
                     this.app.state.files = cloudData.files || [];
                     this.app.state.collections = cloudData.collections || [];
@@ -7967,8 +7983,25 @@ class SyncManager {
                     this.app.state.docs = cloudData.docs || [];
                     this.app.state.storages = cloudData.storages || [];
                     
-                    // Save to local storage
-                    this.app.storage.save();
+                    // Update local modified timestamp to match cloud
+                    if (cloudLastModified) {
+                        localStorage.setItem(this.app.storage.LAST_MODIFIED_KEY, cloudLastModified.toString());
+                    }
+                    
+                    // Save to local storage (without triggering another sync)
+                    const data = {
+                        projects: this.app.state.projects,
+                        files: this.app.state.files,
+                        collections: this.app.state.collections,
+                        timestamps: this.app.state.timestamps,
+                        graphs: this.app.state.graphs,
+                        graphNodes: this.app.state.graphNodes,
+                        graphEdges: this.app.state.graphEdges,
+                        docs: this.app.state.docs,
+                        storages: this.app.state.storages,
+                        lastModified: cloudLastModified
+                    };
+                    localStorage.setItem(this.app.storage.KEY, JSON.stringify(data));
                     
                     // Refresh UI
                     this.app.ui.renderProjectDropdown();
@@ -7981,6 +8014,10 @@ class SyncManager {
                             this.app.router.openProject(this.app.state.activeProjectId);
                         }
                     }
+                } else if (!cloudIsNewer && !localIsEmpty) {
+                    // Local data is newer, push to cloud
+                    console.log('Local data is newer, syncing to cloud...');
+                    await this.syncToCloud();
                 }
             }
             
