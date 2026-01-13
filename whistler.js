@@ -6989,6 +6989,7 @@ class SyncManager {
         this.TOKEN_KEY = 'whistler_session_token';
         this.LAST_SYNC_KEY = 'whistler_last_sync';
         this.DISPLAY_NAME_KEY = 'whistler_display_name';
+        this.AUTO_SYNC_KEY = 'whistler_auto_sync';
         
         // State
         this.accountId = null;
@@ -7000,8 +7001,7 @@ class SyncManager {
         this.totpEnabled = false;
         this.pendingTotpToken = null;
         this.totpSecret = null;
-        this.pendingCloudData = null;
-        this.hasCompletedInitialSync = false;
+        this.autoSyncEnabled = false; // Disabled by default
         
         // Auto-sync interval (5 minutes)
         this.syncInterval = null;
@@ -7014,6 +7014,7 @@ class SyncManager {
         this.sessionToken = localStorage.getItem(this.TOKEN_KEY);
         this.lastSync = localStorage.getItem(this.LAST_SYNC_KEY);
         this.displayName = localStorage.getItem(this.DISPLAY_NAME_KEY);
+        this.autoSyncEnabled = localStorage.getItem(this.AUTO_SYNC_KEY) === 'true';
         
         // Setup UI
         this.setupUI();
@@ -7036,16 +7037,13 @@ class SyncManager {
         // Auto-login if we have credentials
         if (this.accountId && this.sessionToken) {
             this.updateUIState(true);
-            // If we've synced before, mark as completed to avoid conflict dialog on reload
-            if (this.lastSync) {
-                this.hasCompletedInitialSync = true;
+            // Start auto-sync only if enabled
+            if (this.autoSyncEnabled) {
+                this.startAutoSync();
             }
-            // Start auto-sync
-            this.startAutoSync();
-            // Check 2FA status and sync on startup
+            // Check 2FA status on startup (no automatic sync)
             setTimeout(async () => {
                 await this.check2FAStatus();
-                await this.syncFromCloud();
             }, 1000);
         }
     }
@@ -7077,10 +7075,23 @@ class SyncManager {
             btnLogout.onclick = () => this.logout();
         }
         
-        // Sync now button
-        const btnSyncNow = document.getElementById('btn-sync-now');
-        if (btnSyncNow) {
-            btnSyncNow.onclick = () => this.syncToCloud();
+        // Pull from cloud button
+        const btnSyncFromCloud = document.getElementById('btn-sync-from-cloud');
+        if (btnSyncFromCloud) {
+            btnSyncFromCloud.onclick = () => this.manualSyncFromCloud();
+        }
+        
+        // Push to cloud button
+        const btnSyncToCloud = document.getElementById('btn-sync-to-cloud');
+        if (btnSyncToCloud) {
+            btnSyncToCloud.onclick = () => this.syncToCloud();
+        }
+        
+        // Auto-sync toggle
+        const toggleAutoSync = document.getElementById('toggle-auto-sync');
+        if (toggleAutoSync) {
+            toggleAutoSync.checked = this.autoSyncEnabled;
+            toggleAutoSync.onchange = (e) => this.toggleAutoSync(e.target.checked);
         }
         
         // Copy account ID button
@@ -7166,27 +7177,6 @@ class SyncManager {
                 if (e.key === 'Enter') this.confirmTotpDisable();
             });
         }
-        
-        // Conflict resolution buttons
-        const btnConflictKeepLocal = document.getElementById('btn-conflict-keep-local');
-        if (btnConflictKeepLocal) {
-            btnConflictKeepLocal.onclick = () => this.resolveConflict('local');
-        }
-        
-        const btnConflictUseCloud = document.getElementById('btn-conflict-use-cloud');
-        if (btnConflictUseCloud) {
-            btnConflictUseCloud.onclick = () => this.resolveConflict('cloud');
-        }
-        
-        const btnConflictMerge = document.getElementById('btn-conflict-merge');
-        if (btnConflictMerge) {
-            btnConflictMerge.onclick = () => this.resolveConflict('merge');
-        }
-        
-        const btnConflictCancel = document.getElementById('btn-conflict-cancel');
-        if (btnConflictCancel) {
-            btnConflictCancel.onclick = () => this.cancelConflict();
-        }
     }
     
     openSyncModal() {
@@ -7221,7 +7211,6 @@ class SyncManager {
         document.getElementById('sync-totp-verify')?.classList.add('hidden');
         document.getElementById('sync-totp-setup')?.classList.add('hidden');
         document.getElementById('sync-totp-disable')?.classList.add('hidden');
-        document.getElementById('sync-conflict')?.classList.add('hidden');
         
         if (isLoggedIn) {
             const displayName = document.getElementById('display-account-name');
@@ -7238,6 +7227,16 @@ class SyncManager {
             }
             this.updateSyncStatus();
             this.update2FAStatusUI();
+            
+            // Update auto-sync toggle state
+            const toggleAutoSync = document.getElementById('toggle-auto-sync');
+            if (toggleAutoSync) {
+                toggleAutoSync.checked = this.autoSyncEnabled;
+            }
+            const warning = document.getElementById('auto-sync-warning');
+            if (warning) {
+                warning.classList.toggle('hidden', !this.autoSyncEnabled);
+            }
         }
     }
     
@@ -7541,8 +7540,10 @@ class SyncManager {
         this.updateUIState(true);
         this.hideError();
         
-        // Start auto-sync
-        this.startAutoSync();
+        // Start auto-sync only if enabled
+        if (this.autoSyncEnabled) {
+            this.startAutoSync();
+        }
         
         // Check 2FA status
         await this.check2FAStatus();
@@ -7550,10 +7551,8 @@ class SyncManager {
         // If new account, sync local data to cloud
         if (isNew) {
             await this.syncToCloud();
-        } else {
-            // Existing account - sync from cloud
-            await this.syncFromCloud();
         }
+        // For existing accounts, user must manually pull/push
     }
     
     /**
@@ -7874,8 +7873,6 @@ class SyncManager {
         this.displayName = null;
         this.lastSync = null;
         this.totpEnabled = false;
-        this.hasCompletedInitialSync = false;
-        this.pendingCloudData = null;
         
         localStorage.removeItem(this.ACCOUNT_KEY);
         localStorage.removeItem(this.TOKEN_KEY);
@@ -7992,10 +7989,6 @@ class SyncManager {
             if (dataRow && dataRow.value) {
                 const cloudData = JSON.parse(dataRow.value);
                 
-                // Get local last modified timestamp
-                const localLastModified = parseInt(localStorage.getItem(this.app.storage.LAST_MODIFIED_KEY)) || 0;
-                const cloudLastModified = cloudData.lastModified || 0;
-                
                 const cloudHasData = cloudData.projects?.length > 0 || cloudData.files?.length > 0;
                 const localHasData = this.app.state.projects.length > 0 || this.app.state.files.length > 0;
                 
@@ -8008,30 +8001,12 @@ class SyncManager {
                     console.log('Cloud is empty, syncing local to cloud...');
                     await this.syncToCloud();
                 }
-                // Case 3: Both have data → check timestamps or show conflict
+                // Case 3: Both have data → merge (keep local + add new from cloud)
                 else if (localHasData && cloudHasData) {
-                    // If timestamps are the same (already in sync), do nothing
-                    if (localLastModified === cloudLastModified) {
-                        console.log('Already in sync');
-                    }
-                    // If cloud is newer and this is an auto-sync (not initial login), apply cloud data
-                    else if (cloudLastModified > localLastModified && this.hasCompletedInitialSync) {
-                        this.applyCloudData(cloudData);
-                    }
-                    // If local is newer, push to cloud
-                    else if (localLastModified > cloudLastModified) {
-                        console.log('Local data is newer, syncing to cloud...');
-                        await this.syncToCloud();
-                    }
-                    // First sync after login with both having data → show conflict
-                    else if (!this.hasCompletedInitialSync) {
-                        this.pendingCloudData = cloudData;
-                        this.showConflictDialog(cloudData);
-                        return; // Don't update last sync time yet
-                    }
+                    this.mergeData(cloudData);
+                    // Push merged data to cloud
+                    await this.syncToCloud();
                 }
-                
-                this.hasCompletedInitialSync = true;
             }
             
             // Update last sync time
@@ -8091,77 +8066,6 @@ class SyncManager {
                 this.app.router.openProject(this.app.state.activeProjectId);
             }
         }
-    }
-    
-    /**
-     * Show conflict resolution dialog
-     */
-    showConflictDialog(cloudData) {
-        // Open the sync modal if not already open
-        this.app.modals.show('sync');
-        
-        // Hide other views and show conflict view
-        document.getElementById('sync-logged-out')?.classList.add('hidden');
-        document.getElementById('sync-logged-in')?.classList.add('hidden');
-        document.getElementById('sync-totp-verify')?.classList.add('hidden');
-        document.getElementById('sync-totp-setup')?.classList.add('hidden');
-        document.getElementById('sync-totp-disable')?.classList.add('hidden');
-        document.getElementById('sync-conflict')?.classList.remove('hidden');
-        
-        // Update counts
-        const localProjects = this.app.state.projects.length;
-        const localFiles = this.app.state.files.length;
-        const cloudProjects = cloudData.projects?.length || 0;
-        const cloudFiles = cloudData.files?.length || 0;
-        
-        document.getElementById('conflict-local-count').textContent = 
-            `${localProjects} project${localProjects !== 1 ? 's' : ''}, ${localFiles} file${localFiles !== 1 ? 's' : ''}`;
-        document.getElementById('conflict-cloud-count').textContent = 
-            `${cloudProjects} project${cloudProjects !== 1 ? 's' : ''}, ${cloudFiles} file${cloudFiles !== 1 ? 's' : ''}`;
-        
-        this.isSyncing = false;
-        this.setSyncingState(false);
-    }
-    
-    /**
-     * Resolve conflict with user's choice
-     */
-    async resolveConflict(choice) {
-        if (!this.pendingCloudData) return;
-        
-        const cloudData = this.pendingCloudData;
-        this.pendingCloudData = null;
-        this.hasCompletedInitialSync = true;
-        
-        if (choice === 'local') {
-            // Keep local, push to cloud
-            await this.syncToCloud();
-        } else if (choice === 'cloud') {
-            // Use cloud, replace local
-            this.applyCloudData(cloudData);
-        } else if (choice === 'merge') {
-            // Merge both datasets
-            this.mergeData(cloudData);
-            await this.syncToCloud();
-        }
-        
-        // Update last sync time
-        this.lastSync = new Date().toISOString();
-        localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
-        this.updateUIState(true);
-        
-        // Close modal and show logged in state
-        this.showMainSyncView();
-        this.app.modals.close();
-    }
-    
-    /**
-     * Cancel conflict resolution
-     */
-    cancelConflict() {
-        this.pendingCloudData = null;
-        this.hasCompletedInitialSync = true;
-        this.showMainSyncView();
     }
     
     /**
@@ -8266,11 +8170,81 @@ class SyncManager {
     }
     
     /**
-     * Trigger sync when data changes
+     * Toggle auto-sync on/off
+     */
+    toggleAutoSync(enabled) {
+        this.autoSyncEnabled = enabled;
+        localStorage.setItem(this.AUTO_SYNC_KEY, enabled ? 'true' : 'false');
+        
+        // Show/hide warning
+        const warning = document.getElementById('auto-sync-warning');
+        if (warning) {
+            warning.classList.toggle('hidden', !enabled);
+        }
+        
+        if (enabled) {
+            this.startAutoSync();
+        } else {
+            this.stopAutoSync();
+        }
+    }
+    
+    /**
+     * Manual sync from cloud (pull)
+     */
+    async manualSyncFromCloud() {
+        if (!this.sessionToken || this.isSyncing) return;
+        
+        try {
+            this.isSyncing = true;
+            this.setSyncingState(true);
+            
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+            
+            if (response.status === 401) {
+                await this.reLogin();
+                return;
+            }
+            
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Sync failed');
+            }
+            
+            const result = await response.json();
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+            
+            if (dataRow && dataRow.value) {
+                const cloudData = JSON.parse(dataRow.value);
+                
+                // Merge cloud data into local (keeps local, adds new from cloud)
+                this.mergeData(cloudData);
+            }
+            
+            // Update last sync time
+            this.lastSync = new Date().toISOString();
+            localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+            this.updateUIState(true);
+            
+        } catch (err) {
+            console.error('Sync from cloud error:', err);
+        } finally {
+            this.isSyncing = false;
+            this.setSyncingState(false);
+        }
+    }
+    
+    /**
+     * Trigger sync when data changes (only if auto-sync enabled)
      */
     onDataChange() {
-        // Debounced sync on data change
-        if (this.sessionToken) {
+        // Only auto-sync if enabled
+        if (this.sessionToken && this.autoSyncEnabled) {
             clearTimeout(this.syncDebounce);
             this.syncDebounce = setTimeout(() => {
                 this.syncToCloud();
