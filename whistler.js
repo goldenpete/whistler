@@ -7000,6 +7000,8 @@ class SyncManager {
         this.totpEnabled = false;
         this.pendingTotpToken = null;
         this.totpSecret = null;
+        this.pendingCloudData = null;
+        this.hasCompletedInitialSync = false;
         
         // Auto-sync interval (5 minutes)
         this.syncInterval = null;
@@ -7034,6 +7036,10 @@ class SyncManager {
         // Auto-login if we have credentials
         if (this.accountId && this.sessionToken) {
             this.updateUIState(true);
+            // If we've synced before, mark as completed to avoid conflict dialog on reload
+            if (this.lastSync) {
+                this.hasCompletedInitialSync = true;
+            }
             // Start auto-sync
             this.startAutoSync();
             // Check 2FA status and sync on startup
@@ -7160,6 +7166,27 @@ class SyncManager {
                 if (e.key === 'Enter') this.confirmTotpDisable();
             });
         }
+        
+        // Conflict resolution buttons
+        const btnConflictKeepLocal = document.getElementById('btn-conflict-keep-local');
+        if (btnConflictKeepLocal) {
+            btnConflictKeepLocal.onclick = () => this.resolveConflict('local');
+        }
+        
+        const btnConflictUseCloud = document.getElementById('btn-conflict-use-cloud');
+        if (btnConflictUseCloud) {
+            btnConflictUseCloud.onclick = () => this.resolveConflict('cloud');
+        }
+        
+        const btnConflictMerge = document.getElementById('btn-conflict-merge');
+        if (btnConflictMerge) {
+            btnConflictMerge.onclick = () => this.resolveConflict('merge');
+        }
+        
+        const btnConflictCancel = document.getElementById('btn-conflict-cancel');
+        if (btnConflictCancel) {
+            btnConflictCancel.onclick = () => this.cancelConflict();
+        }
     }
     
     openSyncModal() {
@@ -7194,6 +7221,7 @@ class SyncManager {
         document.getElementById('sync-totp-verify')?.classList.add('hidden');
         document.getElementById('sync-totp-setup')?.classList.add('hidden');
         document.getElementById('sync-totp-disable')?.classList.add('hidden');
+        document.getElementById('sync-conflict')?.classList.add('hidden');
         
         if (isLoggedIn) {
             const displayName = document.getElementById('display-account-name');
@@ -7846,6 +7874,8 @@ class SyncManager {
         this.displayName = null;
         this.lastSync = null;
         this.totpEnabled = false;
+        this.hasCompletedInitialSync = false;
+        this.pendingCloudData = null;
         
         localStorage.removeItem(this.ACCOUNT_KEY);
         localStorage.removeItem(this.TOKEN_KEY);
@@ -7966,59 +7996,42 @@ class SyncManager {
                 const localLastModified = parseInt(localStorage.getItem(this.app.storage.LAST_MODIFIED_KEY)) || 0;
                 const cloudLastModified = cloudData.lastModified || 0;
                 
-                // Only replace local data if cloud data is newer
-                // If cloud has no timestamp (legacy), check if it has more data
-                const cloudIsNewer = cloudLastModified > localLastModified;
                 const cloudHasData = cloudData.projects?.length > 0 || cloudData.files?.length > 0;
-                const localIsEmpty = this.app.state.projects.length === 0 && this.app.state.files.length === 0;
+                const localHasData = this.app.state.projects.length > 0 || this.app.state.files.length > 0;
                 
-                if (cloudIsNewer || (cloudHasData && localIsEmpty)) {
-                    this.app.state.projects = cloudData.projects || [];
-                    this.app.state.files = cloudData.files || [];
-                    this.app.state.collections = cloudData.collections || [];
-                    this.app.state.timestamps = cloudData.timestamps || [];
-                    this.app.state.graphs = cloudData.graphs || [];
-                    this.app.state.graphNodes = cloudData.graphNodes || [];
-                    this.app.state.graphEdges = cloudData.graphEdges || [];
-                    this.app.state.docs = cloudData.docs || [];
-                    this.app.state.storages = cloudData.storages || [];
-                    
-                    // Update local modified timestamp to match cloud
-                    if (cloudLastModified) {
-                        localStorage.setItem(this.app.storage.LAST_MODIFIED_KEY, cloudLastModified.toString());
-                    }
-                    
-                    // Save to local storage (without triggering another sync)
-                    const data = {
-                        projects: this.app.state.projects,
-                        files: this.app.state.files,
-                        collections: this.app.state.collections,
-                        timestamps: this.app.state.timestamps,
-                        graphs: this.app.state.graphs,
-                        graphNodes: this.app.state.graphNodes,
-                        graphEdges: this.app.state.graphEdges,
-                        docs: this.app.state.docs,
-                        storages: this.app.state.storages,
-                        lastModified: cloudLastModified
-                    };
-                    localStorage.setItem(this.app.storage.KEY, JSON.stringify(data));
-                    
-                    // Refresh UI
-                    this.app.ui.renderProjectDropdown();
-                    
-                    // If we have projects, open the first one
-                    if (this.app.state.projects.length > 0) {
-                        if (!this.app.state.activeProjectId) {
-                            this.app.router.openProject(this.app.state.projects[0].id);
-                        } else {
-                            this.app.router.openProject(this.app.state.activeProjectId);
-                        }
-                    }
-                } else if (!cloudIsNewer && !localIsEmpty) {
-                    // Local data is newer, push to cloud
-                    console.log('Local data is newer, syncing to cloud...');
+                // Case 1: Local is empty, cloud has data → use cloud
+                if (!localHasData && cloudHasData) {
+                    this.applyCloudData(cloudData);
+                }
+                // Case 2: Local has data, cloud is empty → push to cloud
+                else if (localHasData && !cloudHasData) {
+                    console.log('Cloud is empty, syncing local to cloud...');
                     await this.syncToCloud();
                 }
+                // Case 3: Both have data → check timestamps or show conflict
+                else if (localHasData && cloudHasData) {
+                    // If timestamps are the same (already in sync), do nothing
+                    if (localLastModified === cloudLastModified) {
+                        console.log('Already in sync');
+                    }
+                    // If cloud is newer and this is an auto-sync (not initial login), apply cloud data
+                    else if (cloudLastModified > localLastModified && this.hasCompletedInitialSync) {
+                        this.applyCloudData(cloudData);
+                    }
+                    // If local is newer, push to cloud
+                    else if (localLastModified > cloudLastModified) {
+                        console.log('Local data is newer, syncing to cloud...');
+                        await this.syncToCloud();
+                    }
+                    // First sync after login with both having data → show conflict
+                    else if (!this.hasCompletedInitialSync) {
+                        this.pendingCloudData = cloudData;
+                        this.showConflictDialog(cloudData);
+                        return; // Don't update last sync time yet
+                    }
+                }
+                
+                this.hasCompletedInitialSync = true;
             }
             
             // Update last sync time
@@ -8031,6 +8044,173 @@ class SyncManager {
         } finally {
             this.isSyncing = false;
             this.setSyncingState(false);
+        }
+    }
+    
+    /**
+     * Apply cloud data to local state
+     */
+    applyCloudData(cloudData) {
+        this.app.state.projects = cloudData.projects || [];
+        this.app.state.files = cloudData.files || [];
+        this.app.state.collections = cloudData.collections || [];
+        this.app.state.timestamps = cloudData.timestamps || [];
+        this.app.state.graphs = cloudData.graphs || [];
+        this.app.state.graphNodes = cloudData.graphNodes || [];
+        this.app.state.graphEdges = cloudData.graphEdges || [];
+        this.app.state.docs = cloudData.docs || [];
+        this.app.state.storages = cloudData.storages || [];
+        
+        // Update local modified timestamp to match cloud
+        const cloudLastModified = cloudData.lastModified || Date.now();
+        localStorage.setItem(this.app.storage.LAST_MODIFIED_KEY, cloudLastModified.toString());
+        
+        // Save to local storage (without triggering another sync)
+        const data = {
+            projects: this.app.state.projects,
+            files: this.app.state.files,
+            collections: this.app.state.collections,
+            timestamps: this.app.state.timestamps,
+            graphs: this.app.state.graphs,
+            graphNodes: this.app.state.graphNodes,
+            graphEdges: this.app.state.graphEdges,
+            docs: this.app.state.docs,
+            storages: this.app.state.storages,
+            lastModified: cloudLastModified
+        };
+        localStorage.setItem(this.app.storage.KEY, JSON.stringify(data));
+        
+        // Refresh UI
+        this.app.ui.renderProjectDropdown();
+        
+        // If we have projects, open the first one
+        if (this.app.state.projects.length > 0) {
+            if (!this.app.state.activeProjectId) {
+                this.app.router.openProject(this.app.state.projects[0].id);
+            } else {
+                this.app.router.openProject(this.app.state.activeProjectId);
+            }
+        }
+    }
+    
+    /**
+     * Show conflict resolution dialog
+     */
+    showConflictDialog(cloudData) {
+        // Open the sync modal if not already open
+        this.app.modals.show('sync');
+        
+        // Hide other views and show conflict view
+        document.getElementById('sync-logged-out')?.classList.add('hidden');
+        document.getElementById('sync-logged-in')?.classList.add('hidden');
+        document.getElementById('sync-totp-verify')?.classList.add('hidden');
+        document.getElementById('sync-totp-setup')?.classList.add('hidden');
+        document.getElementById('sync-totp-disable')?.classList.add('hidden');
+        document.getElementById('sync-conflict')?.classList.remove('hidden');
+        
+        // Update counts
+        const localProjects = this.app.state.projects.length;
+        const localFiles = this.app.state.files.length;
+        const cloudProjects = cloudData.projects?.length || 0;
+        const cloudFiles = cloudData.files?.length || 0;
+        
+        document.getElementById('conflict-local-count').textContent = 
+            `${localProjects} project${localProjects !== 1 ? 's' : ''}, ${localFiles} file${localFiles !== 1 ? 's' : ''}`;
+        document.getElementById('conflict-cloud-count').textContent = 
+            `${cloudProjects} project${cloudProjects !== 1 ? 's' : ''}, ${cloudFiles} file${cloudFiles !== 1 ? 's' : ''}`;
+        
+        this.isSyncing = false;
+        this.setSyncingState(false);
+    }
+    
+    /**
+     * Resolve conflict with user's choice
+     */
+    async resolveConflict(choice) {
+        if (!this.pendingCloudData) return;
+        
+        const cloudData = this.pendingCloudData;
+        this.pendingCloudData = null;
+        this.hasCompletedInitialSync = true;
+        
+        if (choice === 'local') {
+            // Keep local, push to cloud
+            await this.syncToCloud();
+        } else if (choice === 'cloud') {
+            // Use cloud, replace local
+            this.applyCloudData(cloudData);
+        } else if (choice === 'merge') {
+            // Merge both datasets
+            this.mergeData(cloudData);
+            await this.syncToCloud();
+        }
+        
+        // Update last sync time
+        this.lastSync = new Date().toISOString();
+        localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+        this.updateUIState(true);
+        
+        // Close modal and show logged in state
+        this.showMainSyncView();
+        this.app.modals.close();
+    }
+    
+    /**
+     * Cancel conflict resolution
+     */
+    cancelConflict() {
+        this.pendingCloudData = null;
+        this.hasCompletedInitialSync = true;
+        this.showMainSyncView();
+    }
+    
+    /**
+     * Merge local and cloud data
+     */
+    mergeData(cloudData) {
+        // Helper to merge arrays by id, preferring the newer item
+        const mergeById = (localArr, cloudArr) => {
+            const merged = new Map();
+            
+            // Add all local items
+            localArr.forEach(item => {
+                merged.set(item.id, item);
+            });
+            
+            // Add cloud items (won't overwrite existing local items with same id)
+            cloudArr.forEach(item => {
+                if (!merged.has(item.id)) {
+                    merged.set(item.id, item);
+                }
+            });
+            
+            return Array.from(merged.values());
+        };
+        
+        // Merge all data types
+        this.app.state.projects = mergeById(this.app.state.projects, cloudData.projects || []);
+        this.app.state.files = mergeById(this.app.state.files, cloudData.files || []);
+        this.app.state.collections = mergeById(this.app.state.collections, cloudData.collections || []);
+        this.app.state.timestamps = mergeById(this.app.state.timestamps, cloudData.timestamps || []);
+        this.app.state.graphs = mergeById(this.app.state.graphs, cloudData.graphs || []);
+        this.app.state.graphNodes = mergeById(this.app.state.graphNodes, cloudData.graphNodes || []);
+        this.app.state.graphEdges = mergeById(this.app.state.graphEdges, cloudData.graphEdges || []);
+        this.app.state.docs = mergeById(this.app.state.docs, cloudData.docs || []);
+        this.app.state.storages = mergeById(this.app.state.storages, cloudData.storages || []);
+        
+        // Save merged data
+        this.app.storage.save();
+        
+        // Refresh UI
+        this.app.ui.renderProjectDropdown();
+        
+        // If we have projects, open the first one
+        if (this.app.state.projects.length > 0) {
+            if (!this.app.state.activeProjectId) {
+                this.app.router.openProject(this.app.state.projects[0].id);
+            } else {
+                this.app.router.openProject(this.app.state.activeProjectId);
+            }
         }
     }
     
