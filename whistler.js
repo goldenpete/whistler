@@ -955,113 +955,100 @@ class Router {
     
     searchProject(query) {
         const results = [];
-        const project = this.app.state.currentProject;
+        const projectId = this.app.state.activeProjectId;
         
-        if (!project) return results;
+        if (!projectId) return results;
         
-        // Search storages
-        if (project.storages) {
-            project.storages.forEach(storage => {
-                if (storage.name.toLowerCase().includes(query)) {
-                    results.push({
-                        type: 'storage',
-                        icon: 'ph-bold ph-hard-drives',
-                        title: storage.name,
-                        meta: 'Storage',
-                        data: { storageId: storage.id }
-                    });
-                }
-                
-                // Search files in storage
-                const searchFiles = (files, path = '') => {
-                    files.forEach(file => {
-                        if (file.type === 'folder') {
-                            if (file.name.toLowerCase().includes(query)) {
-                                results.push({
-                                    type: 'folder',
-                                    icon: 'ph-bold ph-folder',
-                                    title: file.name,
-                                    meta: `Folder in ${storage.name}${path}`,
-                                    data: { storageId: storage.id, folderId: file.id }
-                                });
-                            }
-                            searchFiles(file.children || [], `${path}/${file.name}`);
-                        } else {
-                            if (file.name.toLowerCase().includes(query)) {
-                                results.push({
-                                    type: 'file',
-                                    icon: this.getFileIcon(file),
-                                    title: file.name,
-                                    meta: `${storage.name}${path}`,
-                                    data: { storageId: storage.id, fileId: file.id }
-                                });
-                            }
-                        }
-                    });
-                };
-                searchFiles(storage.files || []);
-            });
-        }
-        
-        // Search collections
-        if (project.collections) {
-            project.collections.forEach(collection => {
-                if (collection.name.toLowerCase().includes(query)) {
-                    results.push({
-                        type: 'collection',
-                        icon: 'ph-bold ph-playlist',
-                        title: collection.name,
-                        meta: `Collection • ${(collection.timestamps || []).length} clips`,
-                        data: { collectionId: collection.id }
-                    });
-                }
-                
-                // Search timestamps in collection
-                (collection.timestamps || []).forEach(ts => {
-                    const tsTitle = ts.title || 'Untitled';
-                    const tsNote = ts.note || '';
-                    if (tsTitle.toLowerCase().includes(query) || tsNote.toLowerCase().includes(query)) {
-                        results.push({
-                            type: 'timestamp',
-                            icon: 'ph-bold ph-clock',
-                            title: tsTitle,
-                            meta: `${collection.name} • ${this.formatTime(ts.time)}`,
-                            data: { collectionId: collection.id, timestampId: ts.id }
-                        });
-                    }
+        // Search storages for this project
+        const storages = this.app.state.storages.filter(s => s.projectId === projectId);
+        storages.forEach(storage => {
+            if (storage.name.toLowerCase().includes(query)) {
+                results.push({
+                    type: 'storage',
+                    icon: 'ph-bold ph-hard-drives',
+                    title: storage.name,
+                    meta: 'Storage',
+                    data: { storageId: storage.id }
                 });
-            });
-        }
+            }
+        });
         
-        // Search docs
-        if (project.docs) {
-            project.docs.forEach(doc => {
-                if (doc.name.toLowerCase().includes(query)) {
-                    results.push({
-                        type: 'doc',
-                        icon: 'ph-bold ph-note-pencil',
-                        title: doc.name,
-                        meta: 'Document',
-                        data: { docId: doc.id }
-                    });
-                }
-            });
-        }
+        // Search files for this project
+        const files = this.app.state.files.filter(f => f.projectId === projectId);
+        files.forEach(file => {
+            if (file.name.toLowerCase().includes(query)) {
+                const storage = storages.find(s => s.id === file.storageId);
+                const storageName = storage ? storage.name : '';
+                results.push({
+                    type: file.type === 'folder' ? 'folder' : 'file',
+                    icon: file.type === 'folder' ? 'ph-bold ph-folder' : this.getFileIcon(file),
+                    title: file.name,
+                    meta: storageName,
+                    data: { storageId: file.storageId, fileId: file.id, folderId: file.type === 'folder' ? file.id : null }
+                });
+            }
+        });
         
-        // Search graphs
-        if (project.graphs) {
-            project.graphs.forEach(graph => {
-                if (graph.name.toLowerCase().includes(query)) {
-                    results.push({
-                        type: 'graph',
-                        icon: 'ph-bold ph-graph',
-                        title: graph.name,
-                        meta: 'Graph',
-                        data: { graphId: graph.id }
-                    });
-                }
-            });
-        }
+        // Search collections for this project
+        const collections = this.app.state.collections.filter(c => c.projectId === projectId);
+        collections.forEach(collection => {
+            if (collection.name.toLowerCase().includes(query)) {
+                const tsCount = this.app.state.timestamps.filter(t => t.collectionId === collection.id).length;
+                results.push({
+                    type: 'collection',
+                    icon: 'ph-bold ph-playlist',
+                    title: collection.name,
+                    meta: `Collection • ${tsCount} clips`,
+                    data: { collectionId: collection.id }
+                });
+            }
+        });
+        
+        // Search timestamps for this project's collections
+        const collectionIds = collections.map(c => c.id);
+        const timestamps = this.app.state.timestamps.filter(t => collectionIds.includes(t.collectionId));
+        timestamps.forEach(ts => {
+            const tsTitle = ts.title || 'Untitled';
+            const tsNote = ts.note || '';
+            if (tsTitle.toLowerCase().includes(query) || tsNote.toLowerCase().includes(query)) {
+                const collection = collections.find(c => c.id === ts.collectionId);
+                results.push({
+                    type: 'timestamp',
+                    icon: 'ph-bold ph-clock',
+                    title: tsTitle,
+                    meta: `${collection ? collection.name : 'Unknown'} • ${this.formatTime(ts.time)}`,
+                    data: { collectionId: ts.collectionId, timestampId: ts.id }
+                });
+            }
+        });
+        
+        // Search docs for this project
+        const docs = this.app.state.docs.filter(d => d.projectId === projectId);
+        docs.forEach(doc => {
+            if (doc.name.toLowerCase().includes(query)) {
+                results.push({
+                    type: 'doc',
+                    icon: 'ph-bold ph-note-pencil',
+                    title: doc.name,
+                    meta: 'Document',
+                    data: { docId: doc.id }
+                });
+            }
+        });
+        
+        // Search graphs for this project
+        const graphs = this.app.state.graphs.filter(g => g.projectId === projectId);
+        graphs.forEach(graph => {
+            if (graph.name.toLowerCase().includes(query)) {
+                results.push({
+                    type: 'graph',
+                    icon: 'ph-bold ph-graph',
+                    title: graph.name,
+                    meta: 'Graph',
+                    data: { graphId: graph.id }
+                });
+            }
+        });
         
         return results.slice(0, 20); // Limit to 20 results
     }
