@@ -1146,22 +1146,33 @@
                     </div>
                 </div>
                 
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <button class="btn-ghost" id="btn-copy-account-id" style="flex: 1; justify-content: center;">
+                <div class="sync-actions-group">
+                    <button class="btn-ghost" id="btn-copy-account-id">
                         <i class="ph-bold ph-copy"></i>
                         <span>Copy ID</span>
                     </button>
-                </div>
-                
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <button class="btn-ghost" id="btn-sync-from-cloud" style="flex: 1; justify-content: center;">
-                        <i class="ph-bold ph-cloud-arrow-down"></i>
-                        <span>Pull from Cloud</span>
-                    </button>
-                    <button class="btn-primary" id="btn-sync-to-cloud" style="flex: 1; justify-content: center;">
-                        <i class="ph-bold ph-cloud-arrow-up"></i>
-                        <span>Push to Cloud</span>
-                    </button>
+                    <div class="sync-actions-row">
+                        <div class="sync-btn-wrapper">
+                            <button class="btn-sync-pull" id="btn-sync-from-cloud">
+                                <i class="ph-bold ph-cloud-arrow-down"></i>
+                                <span>Pull</span>
+                            </button>
+                            <div class="sync-tooltip sync-tooltip-pull">
+                                <i class="ph-bold ph-warning"></i>
+                                <span>Merges cloud data into local. Your local data stays, cloud items are added.</span>
+                            </div>
+                        </div>
+                        <div class="sync-btn-wrapper">
+                            <button class="btn-sync-push" id="btn-sync-to-cloud">
+                                <i class="ph-bold ph-cloud-arrow-up"></i>
+                                <span>Push</span>
+                            </button>
+                            <div class="sync-tooltip sync-tooltip-push">
+                                <i class="ph-bold ph-warning"></i>
+                                <span>Overwrites cloud with your local data. Cloud-only items will be lost.</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div id="sync-status" style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px;">

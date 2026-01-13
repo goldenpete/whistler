@@ -2592,6 +2592,129 @@ button {
     box-shadow: 0 0 0 2px var(--accent-dim);
 }
 
+/* Sync Actions Group */
+.sync-actions-group {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.sync-actions-group > .btn-ghost {
+    border-radius: 0;
+    border-bottom: 1px solid var(--border);
+    justify-content: center;
+    margin: 0;
+}
+
+.sync-actions-row {
+    display: flex;
+}
+
+.sync-btn-wrapper {
+    flex: 1;
+    position: relative;
+}
+
+.sync-btn-wrapper:first-child {
+    border-right: 1px solid var(--border);
+}
+
+.btn-sync-pull,
+.btn-sync-push {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-sync-pull {
+    background: transparent;
+    color: #f87171;
+}
+
+.btn-sync-pull:hover {
+    background: rgba(248, 113, 113, 0.15);
+}
+
+.btn-sync-push {
+    background: transparent;
+    color: #4ade80;
+}
+
+.btn-sync-push:hover {
+    background: rgba(74, 222, 128, 0.15);
+}
+
+/* Sync Tooltips */
+.sync-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    line-height: 1.4;
+    width: 200px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.sync-tooltip i {
+    flex-shrink: 0;
+    font-size: 14px;
+    margin-top: 1px;
+}
+
+.sync-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+}
+
+.sync-tooltip-pull {
+    background: rgba(248, 113, 113, 0.95);
+    color: #1a1a1a;
+}
+
+.sync-tooltip-pull::after {
+    border-top-color: rgba(248, 113, 113, 0.95);
+}
+
+.sync-tooltip-push {
+    background: rgba(74, 222, 128, 0.95);
+    color: #1a1a1a;
+}
+
+.sync-tooltip-push::after {
+    border-top-color: rgba(74, 222, 128, 0.95);
+}
+
+.sync-btn-wrapper:hover .sync-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;
