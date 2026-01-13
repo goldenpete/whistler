@@ -7106,6 +7106,9 @@ class SyncManager {
             btnRevealId.onclick = () => this.toggleRevealAccountId();
         }
         
+        // Setup sync tooltip positioning
+        this.setupSyncTooltips();
+        
         // Account ID input formatting
         const inputAccountId = document.getElementById('input-account-id');
         if (inputAccountId) {
@@ -8292,6 +8295,27 @@ class SyncManager {
             displayId.dataset.revealed = 'true';
             btn.innerHTML = '<i class="ph-bold ph-eye-slash"></i>';
         }
+    }
+    
+    /**
+     * Setup sync button tooltips with proper positioning
+     */
+    setupSyncTooltips() {
+        const wrappers = document.querySelectorAll('.sync-btn-wrapper');
+        
+        wrappers.forEach(wrapper => {
+            const tooltip = wrapper.querySelector('.sync-tooltip');
+            if (!tooltip) return;
+            
+            wrapper.addEventListener('mouseenter', () => {
+                const btn = wrapper.querySelector('button');
+                if (!btn) return;
+                
+                const rect = btn.getBoundingClientRect();
+                tooltip.style.left = `${rect.left + rect.width / 2 - 110}px`; // 110 = half of 220px width
+                tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
+            });
+        });
     }
     
     /**
