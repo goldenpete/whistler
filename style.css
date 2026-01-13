@@ -2691,6 +2691,31 @@ button {
     color: #1a1a1a;
 }
 
+/* Conflict Resolution Buttons */
+.btn-conflict-option {
+    transition: all 0.2s ease;
+}
+
+.btn-conflict-option:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#btn-conflict-merge:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: #22c55e;
+}
+
+#btn-conflict-local:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+}
+
+#btn-conflict-cloud:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: #8b5cf6;
+}
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;

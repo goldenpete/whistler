@@ -6289,6 +6289,11 @@ class ModalManager {
 
     init() {
         this.backdrop.addEventListener('click', (e) => {
+            // Don't close if conflict modal is open (it's non-dismissible)
+            const conflictModal = document.getElementById('modal-sync-conflict');
+            if (conflictModal && !conflictModal.classList.contains('hidden')) {
+                return;
+            }
             if (e.target === this.backdrop) this.close();
         });
 
@@ -6990,6 +6995,7 @@ class SyncManager {
         this.LAST_SYNC_KEY = 'whistler_last_sync';
         this.DISPLAY_NAME_KEY = 'whistler_display_name';
         this.AUTO_SYNC_KEY = 'whistler_auto_sync';
+        this.CONFLICT_KEY = 'whistler_sync_conflict';
         
         // State
         this.accountId = null;
@@ -7002,6 +7008,8 @@ class SyncManager {
         this.pendingTotpToken = null;
         this.totpSecret = null;
         this.autoSyncEnabled = false; // Disabled by default
+        this.pendingConflict = false;
+        this.conflictCloudData = null;
         
         // Auto-sync interval (5 minutes)
         this.syncInterval = null;
@@ -7015,6 +7023,7 @@ class SyncManager {
         this.lastSync = localStorage.getItem(this.LAST_SYNC_KEY);
         this.displayName = localStorage.getItem(this.DISPLAY_NAME_KEY);
         this.autoSyncEnabled = localStorage.getItem(this.AUTO_SYNC_KEY) === 'true';
+        this.pendingConflict = localStorage.getItem(this.CONFLICT_KEY) === 'true';
         
         // Setup UI
         this.setupUI();
@@ -7045,6 +7054,13 @@ class SyncManager {
             setTimeout(async () => {
                 await this.check2FAStatus();
             }, 1000);
+            
+            // Check for pending conflict on page load/refresh
+            if (this.pendingConflict) {
+                setTimeout(() => {
+                    this.showConflictResolution();
+                }, 500);
+            }
         }
     }
     
@@ -7179,6 +7195,22 @@ class SyncManager {
             inputTotpDisable.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') this.confirmTotpDisable();
             });
+        }
+        
+        // Conflict resolution buttons
+        const btnConflictMerge = document.getElementById('btn-conflict-merge');
+        if (btnConflictMerge) {
+            btnConflictMerge.onclick = () => this.resolveConflictMerge();
+        }
+        
+        const btnConflictLocal = document.getElementById('btn-conflict-local');
+        if (btnConflictLocal) {
+            btnConflictLocal.onclick = () => this.resolveConflictKeepLocal();
+        }
+        
+        const btnConflictCloud = document.getElementById('btn-conflict-cloud');
+        if (btnConflictCloud) {
+            btnConflictCloud.onclick = () => this.resolveConflictKeepCloud();
         }
     }
     
@@ -7554,8 +7586,10 @@ class SyncManager {
         // If new account, sync local data to cloud
         if (isNew) {
             await this.syncToCloud();
+        } else {
+            // Existing account - check for conflict
+            await this.checkForConflict();
         }
-        // For existing accounts, user must manually pull/push
     }
     
     /**
@@ -7579,6 +7613,268 @@ class SyncManager {
             }
         } catch (e) {
             console.error('Failed to check 2FA status:', e);
+        }
+    }
+    
+    /**
+     * Check if there's a conflict between local and cloud data after login
+     */
+    async checkForConflict() {
+        // Check if local has any data
+        const hasLocalData = this.app.state.projects.length > 0 || 
+                             this.app.state.files.length > 0 ||
+                             this.app.state.collections.length > 0 ||
+                             this.app.state.timestamps.length > 0;
+        
+        if (!hasLocalData) {
+            // No local data, no conflict - just pull from cloud
+            return;
+        }
+        
+        // Fetch cloud data to check if it has anything
+        try {
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+            
+            if (!response.ok) return;
+            
+            const result = await response.json();
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+            
+            if (dataRow && dataRow.value) {
+                const cloudData = JSON.parse(dataRow.value);
+                
+                // Check if cloud has any data
+                const hasCloudData = (cloudData.projects?.length > 0) ||
+                                     (cloudData.files?.length > 0) ||
+                                     (cloudData.collections?.length > 0) ||
+                                     (cloudData.timestamps?.length > 0);
+                
+                if (hasCloudData) {
+                    // Both local and cloud have data - CONFLICT!
+                    this.conflictCloudData = cloudData;
+                    this.pendingConflict = true;
+                    localStorage.setItem(this.CONFLICT_KEY, 'true');
+                    this.showConflictResolution();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to check for conflict:', e);
+        }
+    }
+    
+    /**
+     * Show the conflict resolution modal (blocks app usage)
+     */
+    showConflictResolution() {
+        // Close any open modals
+        this.app.modals.close();
+        
+        // Show conflict modal (non-dismissible)
+        const modal = document.getElementById('modal-sync-conflict');
+        const backdrop = document.getElementById('modal-backdrop');
+        
+        if (modal && backdrop) {
+            backdrop.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            
+            // Update stats display
+            this.updateConflictStats();
+        }
+    }
+    
+    /**
+     * Update the conflict modal with data statistics
+     */
+    updateConflictStats() {
+        const localStats = document.getElementById('conflict-local-stats');
+        const cloudStats = document.getElementById('conflict-cloud-stats');
+        
+        if (localStats) {
+            const localProjects = this.app.state.projects.length;
+            const localFiles = this.app.state.files.length;
+            const localTimestamps = this.app.state.timestamps.length;
+            localStats.innerHTML = `
+                <div><strong>${localProjects}</strong> project${localProjects !== 1 ? 's' : ''}</div>
+                <div><strong>${localFiles}</strong> file${localFiles !== 1 ? 's' : ''}</div>
+                <div><strong>${localTimestamps}</strong> timestamp${localTimestamps !== 1 ? 's' : ''}</div>
+            `;
+        }
+        
+        if (cloudStats && this.conflictCloudData) {
+            const cloudProjects = this.conflictCloudData.projects?.length || 0;
+            const cloudFiles = this.conflictCloudData.files?.length || 0;
+            const cloudTimestamps = this.conflictCloudData.timestamps?.length || 0;
+            cloudStats.innerHTML = `
+                <div><strong>${cloudProjects}</strong> project${cloudProjects !== 1 ? 's' : ''}</div>
+                <div><strong>${cloudFiles}</strong> file${cloudFiles !== 1 ? 's' : ''}</div>
+                <div><strong>${cloudTimestamps}</strong> timestamp${cloudTimestamps !== 1 ? 's' : ''}</div>
+            `;
+        } else if (cloudStats) {
+            // Need to fetch cloud data if we don't have it cached
+            this.fetchCloudStatsForConflict();
+        }
+    }
+    
+    /**
+     * Fetch cloud data for conflict stats display
+     */
+    async fetchCloudStatsForConflict() {
+        try {
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+            
+            if (!response.ok) return;
+            
+            const result = await response.json();
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+            
+            if (dataRow && dataRow.value) {
+                this.conflictCloudData = JSON.parse(dataRow.value);
+                this.updateConflictStats();
+            }
+        } catch (e) {
+            console.error('Failed to fetch cloud stats:', e);
+        }
+    }
+    
+    /**
+     * Resolve conflict by keeping local data (push to cloud)
+     */
+    async resolveConflictKeepLocal() {
+        try {
+            this.setConflictLoading(true, 'Pushing local data to cloud...');
+            await this.syncToCloud();
+            this.clearConflict();
+        } catch (e) {
+            console.error('Failed to resolve conflict (keep local):', e);
+            this.showConflictError('Failed to push local data. Please try again.');
+        } finally {
+            this.setConflictLoading(false);
+        }
+    }
+    
+    /**
+     * Resolve conflict by replacing with cloud data
+     */
+    async resolveConflictKeepCloud() {
+        try {
+            this.setConflictLoading(true, 'Replacing with cloud data...');
+            
+            if (this.conflictCloudData) {
+                // Replace local data with cloud data
+                this.app.state.projects = this.conflictCloudData.projects || [];
+                this.app.state.files = this.conflictCloudData.files || [];
+                this.app.state.collections = this.conflictCloudData.collections || [];
+                this.app.state.timestamps = this.conflictCloudData.timestamps || [];
+                this.app.state.graphs = this.conflictCloudData.graphs || [];
+                this.app.state.graphNodes = this.conflictCloudData.graphNodes || [];
+                this.app.state.graphEdges = this.conflictCloudData.graphEdges || [];
+                this.app.state.docs = this.conflictCloudData.docs || [];
+                this.app.state.storages = this.conflictCloudData.storages || [];
+                
+                // Save to local storage (don't trigger sync)
+                const data = {
+                    projects: this.app.state.projects,
+                    files: this.app.state.files,
+                    collections: this.app.state.collections,
+                    timestamps: this.app.state.timestamps,
+                    graphs: this.app.state.graphs,
+                    graphNodes: this.app.state.graphNodes,
+                    graphEdges: this.app.state.graphEdges,
+                    docs: this.app.state.docs,
+                    storages: this.app.state.storages,
+                    lastModified: Date.now()
+                };
+                localStorage.setItem(this.app.storage.KEY, JSON.stringify(data));
+            }
+            
+            this.clearConflict();
+            
+            // Refresh the UI
+            window.location.reload();
+        } catch (e) {
+            console.error('Failed to resolve conflict (keep cloud):', e);
+            this.showConflictError('Failed to replace with cloud data. Please try again.');
+            this.setConflictLoading(false);
+        }
+    }
+    
+    /**
+     * Resolve conflict by merging both datasets
+     */
+    async resolveConflictMerge() {
+        try {
+            this.setConflictLoading(true, 'Merging local and cloud data...');
+            
+            if (this.conflictCloudData) {
+                // Merge cloud data into local (keeps local, adds new from cloud)
+                this.mergeData(this.conflictCloudData);
+                
+                // Push merged data to cloud
+                await this.syncToCloud();
+            }
+            
+            this.clearConflict();
+            
+            // Refresh the UI
+            window.location.reload();
+        } catch (e) {
+            console.error('Failed to resolve conflict (merge):', e);
+            this.showConflictError('Failed to merge data. Please try again.');
+            this.setConflictLoading(false);
+        }
+    }
+    
+    /**
+     * Clear conflict state
+     */
+    clearConflict() {
+        this.pendingConflict = false;
+        this.conflictCloudData = null;
+        localStorage.removeItem(this.CONFLICT_KEY);
+        
+        // Close modal
+        const modal = document.getElementById('modal-sync-conflict');
+        const backdrop = document.getElementById('modal-backdrop');
+        if (modal) modal.classList.add('hidden');
+        if (backdrop) backdrop.classList.add('hidden');
+    }
+    
+    /**
+     * Set loading state on conflict modal
+     */
+    setConflictLoading(loading, message = '') {
+        const actions = document.getElementById('conflict-actions');
+        const loadingDiv = document.getElementById('conflict-loading');
+        const loadingMsg = document.getElementById('conflict-loading-message');
+        
+        if (loading) {
+            if (actions) actions.classList.add('hidden');
+            if (loadingDiv) loadingDiv.classList.remove('hidden');
+            if (loadingMsg) loadingMsg.textContent = message;
+        } else {
+            if (actions) actions.classList.remove('hidden');
+            if (loadingDiv) loadingDiv.classList.add('hidden');
+        }
+    }
+    
+    /**
+     * Show error in conflict modal
+     */
+    showConflictError(message) {
+        const errorDiv = document.getElementById('conflict-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
     }
     
