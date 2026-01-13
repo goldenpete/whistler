@@ -1,8 +1,8 @@
-# whistler
+# Whistlerbox
 
 ## Docs Editor Features
 
-Whistler's Docs Editor provides a rich text editing experience with various formatting options. This guide covers all available features and how to use them.
+Whistlerbox's Docs Editor provides a rich text editing experience with various formatting options. This guide covers all available features and how to use them.
 
 ### Basic Formatting
 
@@ -128,7 +128,7 @@ Insert both external and internal links:
 2. Click the Link button (or press `Ctrl+K`)
 3. Choose between:
    - **External URL**: Enter a web address (e.g., `https://example.com`)
-   - **Internal Link**: Link to files, collections, or timestamps within Whistler
+   - **Internal Link**: Link to files, collections, or timestamps within Whistlerbox
 4. Click "Insert Link" to create the link
 
 **Tip**: When your cursor is inside a link, a floating pill will appear allowing you to edit, open, or delete the link.

@@ -1,5 +1,5 @@
 /**
- * Whistler.js
+ * Whistlerbox.js
  * Rebuilt Core Logic
  */
 
@@ -779,12 +779,65 @@ class Router {
         document.getElementById('nav-docs').onclick = () => this.goTo('docs');
         document.getElementById('nav-graph').onclick = () => this.goTo('graph');
         
-        // Category header clicks
-        document.getElementById('nav-assets-header').querySelector('span').onclick = () => this.goTo('assets');
-        document.getElementById('nav-collections-header').querySelector('span').onclick = () => this.goTo('collectionsGrid');
+        // Category header clicks (span inside nav-section-left)
+        document.getElementById('nav-assets-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('assets');
+        document.getElementById('nav-collections-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('collectionsGrid');
         
         // Add collection button on grid view
         document.getElementById('btn-add-collection-grid').onclick = () => this.app.modals.openCollection();
+
+        // Setup collapsible sections
+        this.setupCollapsibleSections();
+        
+        // Setup sidebar collapse button
+        this.setupSidebarCollapse();
+    }
+
+    setupSidebarCollapse() {
+        const sidebar = document.getElementById('sidebar');
+        const collapseBtn = document.getElementById('sidebar-collapse-btn');
+        
+        if (!sidebar || !collapseBtn) return;
+        
+        // Restore state from localStorage
+        const isCollapsed = localStorage.getItem('whistler-sidebar-collapsed') === 'true';
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+        }
+        
+        collapseBtn.onclick = () => {
+            const collapsed = sidebar.classList.toggle('collapsed');
+            localStorage.setItem('whistler-sidebar-collapsed', collapsed);
+        };
+    }
+
+    setupCollapsibleSections() {
+        const sections = [
+            { toggleId: 'toggle-assets', headerId: 'nav-assets-header', contentId: 'assets-content', key: 'whistler-assets-collapsed' },
+            { toggleId: 'toggle-collections', headerId: 'nav-collections-header', contentId: 'collections-content', key: 'whistler-collections-collapsed' }
+        ];
+
+        sections.forEach(({ toggleId, headerId, contentId, key }) => {
+            const toggle = document.getElementById(toggleId);
+            const header = document.getElementById(headerId);
+            const content = document.getElementById(contentId);
+
+            if (!toggle || !header || !content) return;
+
+            // Restore state from localStorage
+            const isCollapsed = localStorage.getItem(key) === 'true';
+            if (isCollapsed) {
+                header.classList.add('collapsed');
+                content.classList.add('collapsed');
+            }
+
+            toggle.onclick = (e) => {
+                e.stopPropagation();
+                const collapsed = header.classList.toggle('collapsed');
+                content.classList.toggle('collapsed');
+                localStorage.setItem(key, collapsed);
+            };
+        });
     }
 
     goTo(viewName) {
@@ -1119,7 +1172,7 @@ class Player {
             const url = this.currentFile.url;
             this.app.modals.confirm(
                 "Open External Link",
-                `You are about to leave Whistler and visit:\n\n${url}\n\nContinue?`,
+                `You are about to leave Whistlerbox and visit:\n\n${url}\n\nContinue?`,
                 () => window.open(url, '_blank'),
                 'Continue',
                 false

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Whistler</title>
+    <title>Whistlerbox</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,8 +22,11 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="brand">
+                <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
+                    <i class="ph-bold ph-sidebar-simple"></i>
+                </button>
                 <i class="ph-fill ph-wave-sine logo-icon"></i>
-                <span class="brand-name">Whistler</span>
+                <span class="brand-name">Whistlerbox</span>
             </div>
 
             <!-- Project Dropdown -->
@@ -53,29 +56,39 @@
             <nav class="nav-menu">
                 <div id="project-nav-items">
                     <div class="nav-section-header nav-section-clickable" id="nav-assets-header">
-                        <span>Assets</span>
+                        <div class="nav-section-left">
+                            <button class="nav-section-toggle" id="toggle-assets"><i class="ph-bold ph-caret-down"></i></button>
+                            <span>Assets</span>
+                        </div>
                     </div>
-                    <button class="nav-item active" id="nav-storage">
-                        <i class="ph-bold ph-hard-drives"></i>
-                        <span>Storage</span>
-                    </button>
-                    <button class="nav-item" id="nav-docs">
-                        <i class="ph-bold ph-note-pencil"></i>
-                        <span>Docs</span>
-                    </button>
-                    <button class="nav-item" id="nav-graph">
-                        <i class="ph-bold ph-graph"></i>
-                        <span>Graph</span>
-                    </button>
+                    <div class="nav-section-content" id="assets-content">
+                        <button class="nav-item active" id="nav-storage">
+                            <i class="ph-bold ph-hard-drives"></i>
+                            <span>Storage</span>
+                        </button>
+                        <button class="nav-item" id="nav-docs">
+                            <i class="ph-bold ph-note-pencil"></i>
+                            <span>Docs</span>
+                        </button>
+                        <button class="nav-item" id="nav-graph">
+                            <i class="ph-bold ph-graph"></i>
+                            <span>Graph</span>
+                        </button>
+                    </div>
 
                     <div class="nav-divider"></div>
 
                     <div class="nav-section-header nav-section-clickable" id="nav-collections-header">
-                        <span>Collections</span>
+                        <div class="nav-section-left">
+                            <button class="nav-section-toggle" id="toggle-collections"><i class="ph-bold ph-caret-down"></i></button>
+                            <span>Collections</span>
+                        </div>
                         <button class="icon-btn-small" id="btn-add-collection"><i class="ph-bold ph-plus"></i></button>
                     </div>
-                    <div id="collections-list" class="collections-list">
-                        <!-- Collections injected here -->
+                    <div class="nav-section-content" id="collections-content">
+                        <div id="collections-list" class="collections-list">
+                            <!-- Collections injected here -->
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -251,9 +264,9 @@
                     <div style="margin-bottom: 32px;">
                         <i class="ph-fill ph-wave-sine logo-icon" style="font-size: 80px; filter: drop-shadow(0 0 20px var(--accent-glow));"></i>
                     </div>
-                    <h1 style="font-size: 36px; font-weight: 700; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Welcome to Whistler</h1>
+                    <h1 style="font-size: 36px; font-weight: 700; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Welcome to Whistlerbox</h1>
                     <p style="font-size: 16px; color: var(--text-secondary); max-width: 600px; margin-bottom: 40px; line-height: 1.7;">
-                        Whistler is a powerful media management and annotation tool. Organize your videos, documents, and media files into projects, create collections, and add timestamps and highlights with ease.
+                        Whistlerbox is a powerful media management and annotation tool. Organize your videos, documents, and media files into projects, create collections, and add timestamps and highlights with ease.
                     </p>
                     <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
                         <button class="btn-ghost" id="btn-welcome-signin" style="font-size: 16px; padding: 14px 28px;">

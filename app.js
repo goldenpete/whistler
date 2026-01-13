@@ -1,5 +1,5 @@
 /**
- * Whistler Application Logic
+ * Whistlerbox Application Logic
  * 
  * Architecture:
  * - State: Singleton object managing data (Projects, Files, Collections, Timestamps)
