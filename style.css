@@ -2594,8 +2594,7 @@ button {
 
 /* Sync Actions Group */
 .sync-actions-group {
-    display: flex;
-    flex-direction: column;
+    position: relative;
     background: var(--bg-hover);
     border-radius: var(--radius-sm);
     margin-bottom: 16px;
@@ -2603,11 +2602,11 @@ button {
 
 .sync-actions-row {
     display: flex;
+    border-radius: var(--radius-sm);
 }
 
 .sync-btn-wrapper {
     flex: 1;
-    position: relative;
 }
 
 .sync-btn-wrapper:first-child {
@@ -2615,11 +2614,11 @@ button {
 }
 
 .sync-btn-wrapper:first-child button {
-    border-radius: var(--radius-sm) 0 0 0;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 
 .sync-btn-wrapper:last-child button {
-    border-radius: 0 var(--radius-sm) 0 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .btn-sync-pull,
@@ -2655,41 +2654,41 @@ button {
     background: rgba(74, 222, 128, 0.15);
 }
 
-/* Sync Tooltip Container - appears below buttons */
+/* Sync Tooltip - overlays below buttons */
 .sync-tooltip-container {
-    min-height: 0;
-    overflow: hidden;
-    transition: min-height 0.2s ease;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    pointer-events: none;
 }
 
 .sync-tooltip-text {
-    padding: 0;
     font-size: 11px;
     line-height: 1.4;
-    color: var(--text-secondary);
     text-align: center;
+    padding: 10px 12px;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: all 0.2s ease;
-    border-top: 1px solid transparent;
+    transform: translateY(-4px);
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .sync-tooltip-text.active {
-    padding: 10px 12px;
     opacity: 1;
-    max-height: 100px;
-    border-top-color: var(--border);
+    transform: translateY(0);
 }
 
 .sync-tooltip-text.pull-active {
-    background: rgba(248, 113, 113, 0.1);
-    color: #f87171;
+    background: rgba(248, 113, 113, 0.95);
+    color: #1a1a1a;
 }
 
 .sync-tooltip-text.push-active {
-    background: rgba(74, 222, 128, 0.1);
-    color: #4ade80;
+    background: rgba(74, 222, 128, 0.95);
+    color: #1a1a1a;
 }
 
 .modal-actions {
@@ -2908,6 +2907,11 @@ input[type="color"]::-webkit-color-swatch {
     z-index: 100;
     animation: fadeIn 0.2s;
     border: 1px solid var(--border);
+}
+
+/* Disable default tooltip for sync buttons (uses custom tooltip) */
+.sync-btn-wrapper[data-tooltip]:hover::after {
+    display: none;
 }
 
 /* Tooltip Left Variant for Sidebar */
