@@ -269,18 +269,7 @@ function init() {
         elements.sidebar.brandContent.onclick = goToProjects;
     }
 
-    // Sidebar Toggle
-    if (elements.sidebar.toggleBtn) {
-        elements.sidebar.toggleBtn.onclick = () => {
-            const sidebar = document.querySelector('.sidebar');
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-
-            // Update Icon
-            if (elements.sidebar.toggleIcon) {
-                elements.sidebar.toggleIcon.className = isCollapsed ? 'ph-bold ph-caret-right' : 'ph-bold ph-caret-left';
-            }
-        };
-    }
+    // Sidebar Toggle - handled by whistler.js setupSidebarCollapse
 
     // Initial Load
     console.log("App Initialized");
