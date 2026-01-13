@@ -932,6 +932,12 @@ class Router {
                 if (selectedIndex >= 0 && currentResults[selectedIndex]) {
                     this.navigateToSpotlightResult(currentResults[selectedIndex]);
                     closeSpotlight();
+                } else if (currentResults.length > 0) {
+                    // No selection yet: open the first result
+                    selectedIndex = 0;
+                    this.updateSpotlightSelection(results, selectedIndex);
+                    this.navigateToSpotlightResult(currentResults[0]);
+                    closeSpotlight();
                 }
             }
         };
@@ -1050,6 +1056,26 @@ class Router {
             }
         });
         
+        // Search navigation pages
+        const pages = [
+            { name: 'Assets', icon: 'ph-bold ph-package', view: 'assets', keywords: ['assets', 'overview', 'storage', 'docs', 'graph'] },
+            { name: 'Collections', icon: 'ph-bold ph-folders', view: 'collectionsGrid', keywords: ['collections', 'all collections', 'clips', 'timestamps'] }
+        ];
+        
+        pages.forEach(page => {
+            const matches = page.name.toLowerCase().includes(query) || 
+                           page.keywords.some(k => k.includes(query));
+            if (matches) {
+                results.push({
+                    type: 'page',
+                    icon: page.icon,
+                    title: page.name,
+                    meta: 'Navigation',
+                    data: { view: page.view }
+                });
+            }
+        });
+        
         return results.slice(0, 20); // Limit to 20 results
     }
     
@@ -1079,6 +1105,7 @@ class Router {
         // Group results by type
         const groups = {};
         const typeLabels = {
+            page: 'Pages',
             storage: 'Storages',
             folder: 'Folders',
             file: 'Files',
@@ -1174,6 +1201,9 @@ class Router {
             case 'graph':
                 this.app.state.currentGraphId = result.data.graphId;
                 this.goTo('graph');
+                break;
+            case 'page':
+                this.goTo(result.data.view);
                 break;
         }
     }
