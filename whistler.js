@@ -7212,6 +7212,22 @@ class SyncManager {
         if (btnConflictCloud) {
             btnConflictCloud.onclick = () => this.resolveConflictKeepCloud();
         }
+        
+        // Conflict data detail views
+        const conflictLocalBox = document.getElementById('conflict-local-box');
+        if (conflictLocalBox) {
+            conflictLocalBox.onclick = () => this.showConflictDetail('local');
+        }
+        
+        const conflictCloudBox = document.getElementById('conflict-cloud-box');
+        if (conflictCloudBox) {
+            conflictCloudBox.onclick = () => this.showConflictDetail('cloud');
+        }
+        
+        const btnConflictBack = document.getElementById('btn-conflict-back');
+        if (btnConflictBack) {
+            btnConflictBack.onclick = () => this.hideConflictDetail();
+        }
     }
     
     openSyncModal() {
@@ -7876,6 +7892,243 @@ class SyncManager {
             errorDiv.textContent = message;
             errorDiv.classList.remove('hidden');
         }
+    }
+    
+    /**
+     * Show detail view for local or cloud data
+     */
+    showConflictDetail(type) {
+        const mainView = document.getElementById('conflict-main-view');
+        const detailView = document.getElementById('conflict-detail-view');
+        const title = document.getElementById('conflict-detail-title');
+        const subtitle = document.getElementById('conflict-detail-subtitle');
+        const content = document.getElementById('conflict-detail-content');
+        
+        if (!mainView || !detailView || !content) return;
+        
+        // Get the data to display
+        let data;
+        if (type === 'local') {
+            data = {
+                projects: this.app.state.projects,
+                files: this.app.state.files,
+                collections: this.app.state.collections,
+                timestamps: this.app.state.timestamps,
+                graphs: this.app.state.graphs,
+                docs: this.app.state.docs,
+                storages: this.app.state.storages
+            };
+            title.innerHTML = '<i class="ph-bold ph-device-mobile" style="color: #3b82f6; margin-right: 8px;"></i>Local Data';
+            subtitle.textContent = 'Contents stored on this device';
+        } else {
+            data = this.conflictCloudData || {};
+            title.innerHTML = '<i class="ph-bold ph-cloud" style="color: #8b5cf6; margin-right: 8px;"></i>Cloud Data';
+            subtitle.textContent = 'Contents stored in the cloud';
+        }
+        
+        // Build the content HTML
+        content.innerHTML = this.buildConflictDetailContent(data);
+        
+        // Show detail view
+        mainView.classList.add('hidden');
+        detailView.classList.remove('hidden');
+    }
+    
+    /**
+     * Build HTML content for conflict detail view
+     */
+    buildConflictDetailContent(data) {
+        let html = '';
+        
+        // Projects section
+        const projects = data.projects || [];
+        if (projects.length > 0) {
+            html += `
+                <div class="conflict-detail-section">
+                    <div class="conflict-detail-header">
+                        <i class="ph-bold ph-folder-simple" style="color: var(--accent);"></i>
+                        <span>Projects (${projects.length})</span>
+                    </div>
+                    <div class="conflict-detail-list">
+                        ${projects.map(p => `
+                            <div class="conflict-detail-item">
+                                <i class="ph-fill ph-folder" style="color: ${p.color || 'var(--accent)'};"></i>
+                                <span>${this.escapeHtml(p.name)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Files section
+        const files = data.files || [];
+        if (files.length > 0) {
+            html += `
+                <div class="conflict-detail-section">
+                    <div class="conflict-detail-header">
+                        <i class="ph-bold ph-video" style="color: #f59e0b;"></i>
+                        <span>Files (${files.length})</span>
+                    </div>
+                    <div class="conflict-detail-list">
+                        ${files.slice(0, 20).map(f => `
+                            <div class="conflict-detail-item">
+                                <i class="ph-fill ph-file-video" style="color: var(--text-muted);"></i>
+                                <span>${this.escapeHtml(f.name)}</span>
+                            </div>
+                        `).join('')}
+                        ${files.length > 20 ? `<div class="conflict-detail-more">...and ${files.length - 20} more</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Collections section
+        const collections = data.collections || [];
+        if (collections.length > 0) {
+            html += `
+                <div class="conflict-detail-section">
+                    <div class="conflict-detail-header">
+                        <i class="ph-bold ph-folders" style="color: #22c55e;"></i>
+                        <span>Collections (${collections.length})</span>
+                    </div>
+                    <div class="conflict-detail-list">
+                        ${collections.slice(0, 15).map(c => `
+                            <div class="conflict-detail-item">
+                                <i class="ph-fill ph-folder" style="color: ${c.color || 'var(--text-muted)'};"></i>
+                                <span>${this.escapeHtml(c.name)}</span>
+                            </div>
+                        `).join('')}
+                        ${collections.length > 15 ? `<div class="conflict-detail-more">...and ${collections.length - 15} more</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Timestamps section
+        const timestamps = data.timestamps || [];
+        if (timestamps.length > 0) {
+            html += `
+                <div class="conflict-detail-section">
+                    <div class="conflict-detail-header">
+                        <i class="ph-bold ph-clock" style="color: #ec4899;"></i>
+                        <span>Timestamps (${timestamps.length})</span>
+                    </div>
+                    <div class="conflict-detail-list">
+                        ${timestamps.slice(0, 15).map(t => `
+                            <div class="conflict-detail-item">
+                                <i class="ph-fill ph-bookmark" style="color: var(--text-muted);"></i>
+                                <span>${this.escapeHtml(t.title || 'Untitled')} <span style="color: var(--text-muted);">(${this.formatTime(t.startTime)})</span></span>
+                            </div>
+                        `).join('')}
+                        ${timestamps.length > 15 ? `<div class="conflict-detail-more">...and ${timestamps.length - 15} more</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Graphs section
+        const graphs = data.graphs || [];
+        if (graphs.length > 0) {
+            html += `
+                <div class="conflict-detail-section">
+                    <div class="conflict-detail-header">
+                        <i class="ph-bold ph-graph" style="color: #06b6d4;"></i>
+                        <span>Graphs (${graphs.length})</span>
+                    </div>
+                    <div class="conflict-detail-list">
+                        ${graphs.map(g => `
+                            <div class="conflict-detail-item">
+                                <i class="ph-fill ph-graph" style="color: var(--text-muted);"></i>
+                                <span>${this.escapeHtml(g.name)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Docs section
+        const docs = data.docs || [];
+        if (docs.length > 0) {
+            html += `
+                <div class="conflict-detail-section">
+                    <div class="conflict-detail-header">
+                        <i class="ph-bold ph-note" style="color: #a855f7;"></i>
+                        <span>Docs (${docs.length})</span>
+                    </div>
+                    <div class="conflict-detail-list">
+                        ${docs.map(d => `
+                            <div class="conflict-detail-item">
+                                <i class="ph-fill ph-note" style="color: var(--text-muted);"></i>
+                                <span>${this.escapeHtml(d.name)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Storages section
+        const storages = data.storages || [];
+        if (storages.length > 0) {
+            html += `
+                <div class="conflict-detail-section">
+                    <div class="conflict-detail-header">
+                        <i class="ph-bold ph-hard-drives" style="color: #64748b;"></i>
+                        <span>Storages (${storages.length})</span>
+                    </div>
+                    <div class="conflict-detail-list">
+                        ${storages.map(s => `
+                            <div class="conflict-detail-item">
+                                <i class="ph-fill ph-hard-drive" style="color: var(--text-muted);"></i>
+                                <span>${this.escapeHtml(s.name)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (!html) {
+            html = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No data found</div>';
+        }
+        
+        return html;
+    }
+    
+    /**
+     * Hide conflict detail view and show main view
+     */
+    hideConflictDetail() {
+        const mainView = document.getElementById('conflict-main-view');
+        const detailView = document.getElementById('conflict-detail-view');
+        
+        if (mainView) mainView.classList.remove('hidden');
+        if (detailView) detailView.classList.add('hidden');
+    }
+    
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+    
+    /**
+     * Format time in seconds to MM:SS or HH:MM:SS
+     */
+    formatTime(seconds) {
+        if (!seconds && seconds !== 0) return '0:00';
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        if (h > 0) {
+            return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+        return `${m}:${s.toString().padStart(2, '0')}`;
     }
     
     /**
