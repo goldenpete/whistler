@@ -7414,7 +7414,12 @@ class SyncManager {
                 projects: this.app.state.projects,
                 files: this.app.state.files,
                 collections: this.app.state.collections,
-                timestamps: this.app.state.timestamps
+                timestamps: this.app.state.timestamps,
+                graphs: this.app.state.graphs,
+                graphNodes: this.app.state.graphNodes,
+                graphEdges: this.app.state.graphEdges,
+                docs: this.app.state.docs,
+                storages: this.app.state.storages
             };
             
             // Save as a single key
@@ -7497,6 +7502,11 @@ class SyncManager {
                     this.app.state.files = cloudData.files || [];
                     this.app.state.collections = cloudData.collections || [];
                     this.app.state.timestamps = cloudData.timestamps || [];
+                    this.app.state.graphs = cloudData.graphs || [];
+                    this.app.state.graphNodes = cloudData.graphNodes || [];
+                    this.app.state.graphEdges = cloudData.graphEdges || [];
+                    this.app.state.docs = cloudData.docs || [];
+                    this.app.state.storages = cloudData.storages || [];
                     
                     // Save to local storage
                     this.app.storage.save();
