@@ -15,6 +15,7 @@ class WhistlerApp {
             graphEdges: [],
             docs: [],
             storages: [],
+            history: [],          // NEW: Change history for all entities
             activeProjectId: null,
             activeFileId: null,
             activeCollectionId: null,
@@ -79,6 +80,7 @@ class StorageManager {
             graphEdges: this.app.state.graphEdges,
             docs: this.app.state.docs,
             storages: this.app.state.storages,
+            history: this.app.state.history,  // NEW: Persist history
             lastModified: lastModified
         };
         localStorage.setItem(this.KEY, JSON.stringify(data));
@@ -104,6 +106,7 @@ class StorageManager {
                 this.app.state.graphEdges = data.graphEdges || [];
                 this.app.state.docs = data.docs || [];
                 this.app.state.storages = data.storages || [];
+                this.app.state.history = data.history || [];  // NEW: Load history
 
                 // Migrate legacy: project.docContent -> docs array
                 this.app.state.projects.forEach(project => {
@@ -168,6 +171,147 @@ class StorageManager {
         }
     }
 
+    // ========================================
+    // History & Trash System
+    // ========================================
+
+    /**
+     * Record a change in history
+     * @param {string} entityType - 'project', 'file', 'collection', 'graph', 'doc', 'storage'
+     * @param {string} entityId - ID of the entity
+     * @param {string} action - 'create', 'rename', 'move', 'update', 'delete', 'restore'
+     * @param {object} oldValue - Previous value (for renames/moves)
+     * @param {object} newValue - New value
+     */
+    recordHistory(entityType, entityId, action, oldValue = null, newValue = null) {
+        const entry = {
+            id: crypto.randomUUID(),
+            entityType,
+            entityId,
+            action,
+            timestamp: Date.now(),
+            oldValue,
+            newValue
+        };
+        this.app.state.history.push(entry);
+
+        // Keep history manageable (max 500 entries)
+        if (this.app.state.history.length > 500) {
+            this.app.state.history = this.app.state.history.slice(-500);
+        }
+    }
+
+    /**
+     * Get history for a specific entity
+     */
+    getHistory(entityId) {
+        return this.app.state.history
+            .filter(h => h.entityId === entityId)
+            .sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    /**
+     * Move item to trash (soft delete)
+     */
+    trashItem(entityType, entityId) {
+        const collections = {
+            file: this.app.state.files,
+            project: this.app.state.projects,
+            collection: this.app.state.collections,
+            graph: this.app.state.graphs,
+            doc: this.app.state.docs,
+            storage: this.app.state.storages
+        };
+
+        const collection = collections[entityType];
+        if (!collection) return false;
+
+        const item = collection.find(i => i.id === entityId);
+        if (!item) return false;
+
+        // Record history
+        this.recordHistory(entityType, entityId, 'delete', { name: item.name }, null);
+
+        // Mark as deleted
+        item.deleted = true;
+        item.deletedAt = Date.now();
+        item.lastModified = Date.now();
+
+        this.save();
+        return true;
+    }
+
+    /**
+     * Restore item from trash
+     */
+    restoreItem(entityType, entityId) {
+        const collections = {
+            file: this.app.state.files,
+            project: this.app.state.projects,
+            collection: this.app.state.collections,
+            graph: this.app.state.graphs,
+            doc: this.app.state.docs,
+            storage: this.app.state.storages
+        };
+
+        const collection = collections[entityType];
+        if (!collection) return false;
+
+        const item = collection.find(i => i.id === entityId);
+        if (!item) return false;
+
+        // Record history
+        this.recordHistory(entityType, entityId, 'restore', null, { name: item.name });
+
+        // Restore
+        item.deleted = false;
+        item.deletedAt = null;
+        item.lastModified = Date.now();
+
+        this.save();
+        return true;
+    }
+
+    /**
+     * Get all trashed items
+     */
+    getTrash() {
+        const trash = {
+            files: this.app.state.files.filter(f => f.deleted),
+            projects: this.app.state.projects.filter(p => p.deleted),
+            collections: this.app.state.collections.filter(c => c.deleted),
+            graphs: this.app.state.graphs.filter(g => g.deleted),
+            docs: this.app.state.docs.filter(d => d.deleted),
+            storages: this.app.state.storages.filter(s => s.deleted)
+        };
+        return trash;
+    }
+
+    /**
+     * Permanently delete all trashed items
+     */
+    emptyTrash() {
+        this.app.state.files = this.app.state.files.filter(f => !f.deleted);
+        this.app.state.projects = this.app.state.projects.filter(p => !p.deleted);
+        this.app.state.collections = this.app.state.collections.filter(c => !c.deleted);
+        this.app.state.graphs = this.app.state.graphs.filter(g => !g.deleted);
+        this.app.state.docs = this.app.state.docs.filter(d => !d.deleted);
+        this.app.state.storages = this.app.state.storages.filter(s => !s.deleted);
+        this.save();
+    }
+
+    /**
+     * Permanently delete a single item from trash
+     */
+    permanentDelete(entityType, entityId) {
+        const stateKey = entityType + 's'; // 'file' -> 'files'
+        if (entityType === 'storage') {
+            this.app.state.storages = this.app.state.storages.filter(s => s.id !== entityId);
+        } else if (this.app.state[stateKey]) {
+            this.app.state[stateKey] = this.app.state[stateKey].filter(i => i.id !== entityId);
+        }
+        this.save();
+    }
     // Graph Asset CRUD
     addGraph(name) {
         if (!this.app.state.activeProjectId) return null;
@@ -175,9 +319,11 @@ class StorageManager {
             id: crypto.randomUUID(),
             projectId: this.app.state.activeProjectId,
             name,
-            created: Date.now()
+            created: Date.now(),
+            lastModified: Date.now()
         };
         this.app.state.graphs.push(graph);
+        this.recordHistory('graph', graph.id, 'create', null, { name });
         this.save();
         return graph;
     }
@@ -185,7 +331,11 @@ class StorageManager {
     updateGraph(id, updates) {
         const graph = this.app.state.graphs.find(g => g.id === id);
         if (graph) {
-            Object.assign(graph, updates);
+            const oldName = graph.name;
+            Object.assign(graph, updates, { lastModified: Date.now() });
+            if (updates.name && updates.name !== oldName) {
+                this.recordHistory('graph', id, 'rename', { name: oldName }, { name: updates.name });
+            }
             this.save();
         }
     }
@@ -210,9 +360,11 @@ class StorageManager {
             projectId: this.app.state.activeProjectId,
             name,
             content: '',
-            created: Date.now()
+            created: Date.now(),
+            lastModified: Date.now()
         };
         this.app.state.docs.push(doc);
+        this.recordHistory('doc', doc.id, 'create', null, { name });
         this.save();
         return doc;
     }
@@ -220,7 +372,11 @@ class StorageManager {
     updateDoc(id, updates) {
         const doc = this.app.state.docs.find(d => d.id === id);
         if (doc) {
-            Object.assign(doc, updates);
+            const oldName = doc.name;
+            Object.assign(doc, updates, { lastModified: Date.now() });
+            if (updates.name && updates.name !== oldName) {
+                this.recordHistory('doc', id, 'rename', { name: oldName }, { name: updates.name });
+            }
             this.save();
         }
     }
@@ -241,9 +397,11 @@ class StorageManager {
             id: crypto.randomUUID(),
             projectId: this.app.state.activeProjectId,
             name,
-            created: Date.now()
+            created: Date.now(),
+            lastModified: Date.now()
         };
         this.app.state.storages.push(storage);
+        this.recordHistory('storage', storage.id, 'create', null, { name });
         this.save();
         return storage;
     }
@@ -251,7 +409,11 @@ class StorageManager {
     updateStorage(id, updates) {
         const storage = this.app.state.storages.find(s => s.id === id);
         if (storage) {
-            Object.assign(storage, updates);
+            const oldName = storage.name;
+            Object.assign(storage, updates, { lastModified: Date.now() });
+            if (updates.name && updates.name !== oldName) {
+                this.recordHistory('storage', id, 'rename', { name: oldName }, { name: updates.name });
+            }
             this.save();
         }
     }
@@ -269,10 +431,15 @@ class StorageManager {
     }
 
     // CRUD
-    // CRUD
     addProject(name) {
-        const p = { id: crypto.randomUUID(), name, created: Date.now() };
+        const p = {
+            id: crypto.randomUUID(),
+            name,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
         this.app.state.projects.push(p);
+        this.recordHistory('project', p.id, 'create', null, { name });
         this.save();
         return p;
     }
@@ -288,14 +455,16 @@ class StorageManager {
             id: crypto.randomUUID(),
             projectId: this.app.state.activeProjectId,
             storageId: this.app.state.activeStorageId,
-            parentId: parentId, // null = root of this storage
+            parentId: parentId,
             name,
             url,
-            type, // 'catbox', 'youtube', 'dropbox', 'drive', 'folder'
+            type,
             order: maxOrder + 1,
-            created: Date.now()
+            created: Date.now(),
+            lastModified: Date.now()
         };
         this.app.state.files.push(f);
+        this.recordHistory('file', f.id, 'create', null, { name, type });
         this.save();
         return f;
     }
@@ -312,9 +481,11 @@ class StorageManager {
             parentId,
             name,
             color,
-            created: Date.now()
+            created: Date.now(),
+            lastModified: Date.now()
         };
         this.app.state.collections.push(c);
+        this.recordHistory('collection', c.id, 'create', null, { name, color });
         this.save();
         return c;
     }
@@ -349,19 +520,28 @@ class StorageManager {
     updateFile(id, updates) {
         const f = this.app.state.files.find(x => x.id === id);
         if (f) {
-            Object.assign(f, updates);
+            const oldName = f.name;
+            Object.assign(f, updates, { lastModified: Date.now() });
+            if (updates.name && updates.name !== oldName) {
+                this.recordHistory('file', id, 'rename', { name: oldName }, { name: updates.name });
+            }
             this.save();
         }
     }
 
     moveFile(id, targetParentId) {
         const f = this.app.state.files.find(x => x.id === id);
-        if (f && f.id !== targetParentId) { // Prevent self-parenting
+        if (f && f.id !== targetParentId) {
+            const oldParentId = f.parentId;
             f.parentId = targetParentId;
+            f.lastModified = Date.now();
             // Append to end of new list
             const siblings = this.getItems(f.projectId, targetParentId);
             const maxOrder = siblings.length > 0 ? Math.max(...siblings.map(s => s.order || 0)) : -1;
             f.order = maxOrder + 1;
+
+            // Record history
+            this.recordHistory('file', id, 'move', { parentId: oldParentId }, { parentId: targetParentId });
             this.save();
         }
     }
@@ -776,7 +956,8 @@ class Router {
             exportImport: document.getElementById('view-export-import'),
             welcome: document.getElementById('view-welcome'),
             assets: document.getElementById('view-assets'),
-            collectionsGrid: document.getElementById('view-collections-grid')
+            collectionsGrid: document.getElementById('view-collections-grid'),
+            trash: document.getElementById('view-trash')
         };
     }
 
@@ -784,6 +965,7 @@ class Router {
         document.getElementById('nav-storage').onclick = () => this.goTo('storage');
         document.getElementById('nav-docs').onclick = () => this.goTo('docs');
         document.getElementById('nav-graph').onclick = () => this.goTo('graph');
+        document.getElementById('nav-trash').onclick = () => this.goTo('trash');
 
         // Category header clicks (span inside nav-section-left)
         document.getElementById('nav-assets-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('assets');
@@ -1346,6 +1528,7 @@ class Router {
             document.getElementById('nav-storage').classList.add('active');
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.remove('active');
+            document.getElementById('nav-trash')?.classList.remove('active');
             this.app.ui.renderCollectionsList(); // Re-render to clear active collections
 
             this.views.storage.classList.remove('hidden');
@@ -1367,6 +1550,7 @@ class Router {
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.add('active');
             document.getElementById('nav-graph').classList.remove('active');
+            document.getElementById('nav-trash')?.classList.remove('active');
             this.app.ui.renderCollectionsList();
 
             // Ensure a doc is selected or create one
@@ -1385,6 +1569,7 @@ class Router {
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.add('active');
+            document.getElementById('nav-trash')?.classList.remove('active');
             this.app.ui.renderCollectionsList();
 
             // Ensure a graph is selected or create one
@@ -1437,6 +1622,20 @@ class Router {
             this.app.ui.renderCollectionsGrid();
 
             this.views.collectionsGrid.classList.remove('hidden');
+        } else if (viewName === 'trash') {
+            this.app.state.activeCollectionId = null;
+
+            // Update nav state
+            document.getElementById('nav-storage').classList.remove('active');
+            document.getElementById('nav-docs').classList.remove('active');
+            document.getElementById('nav-graph').classList.remove('active');
+            document.getElementById('nav-trash').classList.add('active');
+            this.app.ui.renderCollectionsList();
+
+            // Render trash view
+            this.app.ui.renderTrash();
+
+            this.views.trash.classList.remove('hidden');
         }
     }
 
@@ -3260,6 +3459,254 @@ class UIManager {
         })), () => this.app.router.goTo('graph'));
         container.appendChild(graphsCategory);
     }
+
+    /**
+     * Render the Trash view with all deleted items
+     */
+    renderTrash() {
+        const container = document.getElementById('trash-content');
+        const emptyState = document.getElementById('trash-empty-state');
+        if (!container) return;
+
+        // Get all trashed items
+        const trash = this.app.storage.getTrash();
+        const totalItems = Object.values(trash).flat().length;
+
+        // Clear previous content (except empty state)
+        Array.from(container.children).forEach(child => {
+            if (child.id !== 'trash-empty-state') child.remove();
+        });
+
+        if (totalItems === 0) {
+            emptyState?.classList.remove('hidden');
+            return;
+        }
+        emptyState?.classList.add('hidden');
+
+        // Helper to escape HTML
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        };
+
+        // Helper to format relative time
+        const formatTime = (timestamp) => {
+            if (!timestamp) return 'Unknown';
+            const diff = Date.now() - timestamp;
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' min ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+            return Math.floor(diff / 86400000) + ' days ago';
+        };
+
+        // Helper to create a section
+        const createSection = (title, icon, items, entityType) => {
+            if (items.length === 0) return null;
+
+            const section = document.createElement('div');
+            section.className = 'trash-section';
+
+            section.innerHTML = `
+                <div class="trash-section-header">
+                    <i class="ph-bold ${icon}"></i>
+                    <span>${title}</span>
+                    <span class="trash-section-count">${items.length}</span>
+                </div>
+            `;
+
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'trash-item';
+                row.innerHTML = `
+                    <div class="trash-item-icon">
+                        <i class="ph ${icon}"></i>
+                    </div>
+                    <div class="trash-item-info">
+                        <div class="trash-item-name">${escapeHtml(item.name || 'Untitled')}</div>
+                        <div class="trash-item-meta">Deleted ${formatTime(item.deletedAt)}</div>
+                    </div>
+                    <div class="trash-item-actions">
+                        <button class="trash-action-btn restore" data-type="${entityType}" data-id="${item.id}">
+                            <i class="ph-bold ph-arrow-counter-clockwise"></i> Restore
+                        </button>
+                        <button class="trash-action-btn delete" data-type="${entityType}" data-id="${item.id}">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
+                    </div>
+                `;
+                section.appendChild(row);
+            });
+
+            return section;
+        };
+
+        // Create sections for each entity type
+        const sections = [
+            { title: 'Files', icon: 'ph-file', items: trash.files, type: 'file' },
+            { title: 'Projects', icon: 'ph-folder', items: trash.projects, type: 'project' },
+            { title: 'Collections', icon: 'ph-folders', items: trash.collections, type: 'collection' },
+            { title: 'Graphs', icon: 'ph-graph', items: trash.graphs, type: 'graph' },
+            { title: 'Documents', icon: 'ph-note-pencil', items: trash.docs, type: 'doc' },
+            { title: 'Storages', icon: 'ph-hard-drives', items: trash.storages, type: 'storage' }
+        ];
+
+        sections.forEach(({ title, icon, items, type }) => {
+            const section = createSection(title, icon, items, type);
+            if (section) container.appendChild(section);
+        });
+
+        // Add event listeners
+        container.querySelectorAll('.trash-action-btn.restore').forEach(btn => {
+            btn.onclick = () => {
+                this.app.storage.restoreItem(btn.dataset.type, btn.dataset.id);
+                this.renderTrash();
+            };
+        });
+
+        container.querySelectorAll('.trash-action-btn.delete').forEach(btn => {
+            btn.onclick = () => {
+                if (confirm('Permanently delete this item?')) {
+                    this.app.storage.permanentDelete(btn.dataset.type, btn.dataset.id);
+                    this.renderTrash();
+                }
+            };
+        });
+
+        // Empty trash button
+        document.getElementById('btn-empty-trash').onclick = () => {
+            if (confirm('Permanently delete all items in trash? This cannot be undone.')) {
+                this.app.storage.emptyTrash();
+                this.renderTrash();
+            }
+        };
+    }
+
+    /**
+     * Open the history panel showing all changes or filtered by entity
+     */
+    openHistoryPanel(entityType = null, entityId = null) {
+        const panel = document.getElementById('history-panel');
+        if (!panel) return;
+
+        panel.classList.remove('hidden');
+        this.renderHistoryPanel(entityType, entityId);
+
+        // Close button handler
+        document.getElementById('btn-close-history').onclick = () => this.closeHistoryPanel();
+    }
+
+    /**
+     * Close the history panel
+     */
+    closeHistoryPanel() {
+        const panel = document.getElementById('history-panel');
+        if (panel) panel.classList.add('hidden');
+    }
+
+    /**
+     * Render history entries in the panel
+     */
+    renderHistoryPanel(entityType = null, entityId = null) {
+        const container = document.getElementById('history-panel-content');
+        const emptyState = document.getElementById('history-empty-state');
+        if (!container) return;
+
+        // Get history (optionally filtered)
+        let history = this.app.storage.getHistory(entityType, entityId);
+
+        // Sort by timestamp descending (most recent first)
+        history = history.sort((a, b) => b.timestamp - a.timestamp);
+
+        // Clear previous content (except empty state)
+        Array.from(container.children).forEach(child => {
+            if (child.id !== 'history-empty-state') child.remove();
+        });
+
+        if (history.length === 0) {
+            emptyState?.classList.remove('hidden');
+            return;
+        }
+        emptyState?.classList.add('hidden');
+
+        // Helper to format relative time
+        const formatTime = (timestamp) => {
+            if (!timestamp) return 'Unknown';
+            const diff = Date.now() - timestamp;
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' min ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + ' days ago';
+            return new Date(timestamp).toLocaleDateString();
+        };
+
+        // Helper to get action label
+        const getActionLabel = (action) => {
+            const labels = {
+                'create': 'Created',
+                'rename': 'Renamed',
+                'update': 'Updated',
+                'delete': 'Deleted',
+                'move': 'Moved',
+                'restore': 'Restored'
+            };
+            return labels[action] || action;
+        };
+
+        // Helper to get icon for action
+        const getActionIcon = (action) => {
+            const icons = {
+                'create': 'ph-plus-circle',
+                'rename': 'ph-pencil-simple',
+                'update': 'ph-arrow-clockwise',
+                'delete': 'ph-trash',
+                'move': 'ph-folder-notch-plus',
+                'restore': 'ph-arrow-counter-clockwise'
+            };
+            return icons[action] || 'ph-clock';
+        };
+
+        // Render each history entry
+        history.slice(0, 50).forEach(entry => {
+            const entryEl = document.createElement('div');
+            entryEl.className = 'history-entry';
+            entryEl.setAttribute('data-action', entry.action);
+
+            let valueHtml = '';
+            if (entry.oldValue?.name || entry.newValue?.name) {
+                if (entry.action === 'rename' && entry.oldValue?.name && entry.newValue?.name) {
+                    valueHtml = `
+                        <div class="history-values">
+                            <span class="history-old">${entry.oldValue.name}</span>
+                            <span class="history-arrow">→</span>
+                            <span class="history-new">${entry.newValue.name}</span>
+                        </div>
+                    `;
+                } else if (entry.newValue?.name) {
+                    valueHtml = `
+                        <div class="history-values">
+                            <span class="history-new">${entry.newValue.name}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            entryEl.innerHTML = `
+                <div class="history-dot">
+                    <i class="ph-bold ${getActionIcon(entry.action)}"></i>
+                </div>
+                <div class="history-content">
+                    <div class="history-action">
+                        ${getActionLabel(entry.action)} 
+                        <span class="entity-name">${entry.entityType}</span>
+                    </div>
+                    <div class="history-time">${formatTime(entry.timestamp)}</div>
+                    ${valueHtml}
+                </div>
+            `;
+            container.appendChild(entryEl);
+        });
+    }
+
 
     createAssetCategory(title, icon, items, onTitleClick) {
         const category = document.createElement('div');
@@ -7777,6 +8224,206 @@ class SyncManager {
     }
 
     /**
+     * Perform seamless per-item sync using Last-Write-Wins (LWW)
+     * This replaces the old conflict-modal-based sync for most cases
+     */
+    async performSeamlessSync() {
+        if (!this.sessionToken || this.syncInProgress) return;
+
+        this.syncInProgress = true;
+        this.setSyncStatus('syncing');
+
+        try {
+            // Fetch cloud data
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${this.sessionToken}` }
+            });
+
+            if (!response.ok) {
+                this.setSyncStatus('error');
+                return;
+            }
+
+            const result = await response.json();
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+
+            if (!dataRow?.value) {
+                // No cloud data - just push local
+                await this.syncToCloud();
+                this.setSyncStatus('synced');
+                return;
+            }
+
+            const cloudData = JSON.parse(dataRow.value);
+            let hasChanges = false;
+
+            // Per-item merge for each entity type
+            const entityTypes = [
+                { local: 'projects', cloud: 'projects' },
+                { local: 'files', cloud: 'files' },
+                { local: 'collections', cloud: 'collections' },
+                { local: 'graphs', cloud: 'graphs' },
+                { local: 'docs', cloud: 'docs' },
+                { local: 'storages', cloud: 'storages' }
+            ];
+
+            for (const { local, cloud } of entityTypes) {
+                const localItems = this.app.state[local] || [];
+                const cloudItems = cloudData[cloud] || [];
+
+                // Create maps for quick lookup
+                const localMap = new Map(localItems.map(i => [i.id, i]));
+                const cloudMap = new Map(cloudItems.map(i => [i.id, i]));
+
+                // Process cloud items
+                for (const cloudItem of cloudItems) {
+                    if (cloudItem.deleted) continue; // Skip deleted items
+
+                    const localItem = localMap.get(cloudItem.id);
+
+                    if (!localItem) {
+                        // New from cloud - add locally
+                        this.app.state[local].push(cloudItem);
+                        hasChanges = true;
+                    } else {
+                        // Both exist - compare lastModified
+                        const cloudMod = cloudItem.lastModified || 0;
+                        const localMod = localItem.lastModified || 0;
+
+                        if (cloudMod > localMod) {
+                            // Cloud is newer - update local
+                            Object.assign(localItem, cloudItem);
+                            hasChanges = true;
+                        }
+                        // If local is newer, it will be pushed in syncToCloud
+                    }
+                }
+
+                // Handle deleted items from cloud
+                for (const cloudItem of cloudItems) {
+                    if (cloudItem.deleted) {
+                        const localItem = localMap.get(cloudItem.id);
+                        if (localItem && !localItem.deleted) {
+                            // Cloud marked as deleted, local is not
+                            const cloudDeletedAt = cloudItem.deletedAt || 0;
+                            const localMod = localItem.lastModified || 0;
+
+                            if (cloudDeletedAt > localMod) {
+                                // Deletion is newer than local changes
+                                localItem.deleted = true;
+                                localItem.deletedAt = cloudItem.deletedAt;
+                                hasChanges = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Merge history
+            if (cloudData.history && Array.isArray(cloudData.history)) {
+                const localHistoryIds = new Set(this.app.state.history.map(h => h.id));
+                for (const cloudH of cloudData.history) {
+                    if (!localHistoryIds.has(cloudH.id)) {
+                        this.app.state.history.push(cloudH);
+                        hasChanges = true;
+                    }
+                }
+                // Keep history capped
+                if (this.app.state.history.length > 500) {
+                    this.app.state.history = this.app.state.history.slice(-500);
+                }
+            }
+
+            // Save local changes
+            if (hasChanges) {
+                this.app.storage.save();
+                this.showToast('Synced changes from cloud', 'success');
+            }
+
+            // Push local changes to cloud
+            await this.syncToCloud();
+
+            // Update sync time
+            this.lastSync = Date.now();
+            localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+            this.setSyncStatus('synced');
+
+        } catch (e) {
+            console.error('Seamless sync failed:', e);
+            this.setSyncStatus('error');
+            this.showToast('Sync failed', 'error');
+        } finally {
+            this.syncInProgress = false;
+        }
+    }
+
+    /**
+     * Set sync status indicator
+     */
+    setSyncStatus(status) {
+        this.syncStatus = status;
+        const icon = document.getElementById('sync-icon');
+        if (!icon) return;
+
+        // Remove all status classes
+        icon.classList.remove('sync-syncing', 'sync-synced', 'sync-error');
+
+        switch (status) {
+            case 'syncing':
+                icon.classList.add('sync-syncing');
+                icon.className = 'ph-bold ph-arrows-clockwise sync-syncing';
+                break;
+            case 'synced':
+                icon.classList.add('sync-synced');
+                icon.className = 'ph-bold ph-check-circle sync-synced';
+                // Revert to cloud icon after 3 seconds
+                setTimeout(() => {
+                    if (this.syncStatus === 'synced') {
+                        icon.className = 'ph-bold ph-cloud';
+                    }
+                }, 3000);
+                break;
+            case 'error':
+                icon.classList.add('sync-error');
+                icon.className = 'ph-bold ph-warning-circle sync-error';
+                break;
+            default:
+                icon.className = 'ph-bold ph-cloud';
+        }
+    }
+
+    /**
+     * Show a toast notification
+     */
+    showToast(message, type = 'info') {
+        // Remove existing toasts
+        document.querySelectorAll('.sync-toast').forEach(t => t.remove());
+
+        const toast = document.createElement('div');
+        toast.className = `sync-toast sync-toast-${type}`;
+
+        const icon = type === 'success' ? 'ph-check-circle' :
+            type === 'error' ? 'ph-warning-circle' : 'ph-info';
+
+        toast.innerHTML = `
+            <i class="ph-bold ${icon}"></i>
+            <span>${message}</span>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => toast.classList.add('visible'));
+
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    /**
      * Show the conflict resolution modal (blocks app usage)
      */
     showConflictResolution() {
@@ -9705,7 +10352,7 @@ class SyncManager {
         if (this.sessionToken && this.autoSyncEnabled) {
             clearTimeout(this.syncDebounce);
             this.syncDebounce = setTimeout(() => {
-                this.syncToCloud();
+                this.performSeamlessSync();
             }, 2000); // Wait 2 seconds after last change
         }
     }
