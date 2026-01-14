@@ -8429,7 +8429,59 @@ class SyncManager {
                 container.appendChild(createRow(col, 'collections'));
             });
         }
+
     }
+
+    async resolveConflictChoose() {
+        const boxes = document.querySelectorAll('.conflict-choose-checkbox:checked');
+        if (boxes.length === 0) {
+            alert('Please select at least one item to merge.');
+            return;
+        }
+
+        const selectedIds = {
+            projects: new Set(),
+            files: new Set(),
+            collections: new Set()
+        };
+
+        boxes.forEach(box => {
+            selectedIds[box.dataset.type].add(box.dataset.id);
+        });
+
+        try {
+            this.setConflictLoading(true, 'Merging selected data...');
+
+            // Filter cloud data to only selected items
+            const filteredCloudData = {
+                projects: (this.conflictCloudData.projects || []).filter(i => selectedIds.projects.has(i.id)),
+                files: (this.conflictCloudData.files || []).filter(i => selectedIds.files.has(i.id)),
+                collections: (this.conflictCloudData.collections || []).filter(i => selectedIds.collections.has(i.id)),
+                timestamps: this.conflictCloudData.timestamps || [],
+                graphs: this.conflictCloudData.graphs || [],
+                graphNodes: this.conflictCloudData.graphNodes || [],
+                graphEdges: this.conflictCloudData.graphEdges || [],
+                docs: this.conflictCloudData.docs || [],
+                storages: this.conflictCloudData.storages || []
+            };
+
+            // Merge filtered cloud data
+            this.mergeData(filteredCloudData);
+
+            // Push merged state to cloud
+            await this.syncToCloud();
+
+            this.clearConflict();
+            // Refresh UI
+            window.location.reload();
+
+        } catch (e) {
+            console.error('Merge failed:', e);
+            alert('Merge failed: ' + e.message);
+            this.setConflictLoading(false);
+        }
+    }
+
 
     /**
      * Show detailed review for a modified project (Questionnaire Style)
@@ -8464,16 +8516,16 @@ class SyncManager {
         // 1. Property Changes
         if (cloudProject.name !== localProject.name) {
             addDecision('property', 'name', 'Project Name Change', 'The project name is different in the cloud.',
-                ['Your Version', 'Cloud Version'], [localProject.name, cloudProject.name]);
+                ['Your Version', 'Cloud Version'], [this.escapeHtml(localProject.name || 'Untitled'), this.escapeHtml(cloudProject.name || 'Untitled')]);
         }
         if (cloudProject.description !== localProject.description) {
             addDecision('property', 'description', 'Description Update', 'Cloud has a different description.',
-                ['Your Version', 'Cloud Version'], [localProject.description || '(empty)', cloudProject.description || '(empty)']);
+                ['Your Version', 'Cloud Version'], [this.escapeHtml(localProject.description || '(empty)'), this.escapeHtml(cloudProject.description || '(empty)')]);
         }
         if (cloudProject.color !== localProject.color) {
             addDecision('property', 'color', 'Color Update', 'Cloud uses a different color.',
                 ['Your Version', 'Cloud Version'],
-                [`<span style="color:${localProject.color}">●</span> ${localProject.color}`, `<span style="color:${cloudProject.color}">●</span> ${cloudProject.color}`]);
+                [`<span style="color:${localProject.color}">●</span> ${this.escapeHtml(localProject.color)}`, `<span style="color:${cloudProject.color}">●</span> ${this.escapeHtml(cloudProject.color)}`]);
         }
 
         // 2. New Files
