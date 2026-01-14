@@ -2626,7 +2626,19 @@ button {
 }
 
 /* Merge Button */
+
 .btn-sync-merge {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
     background: transparent;
     color: #06b6d4;
 }
