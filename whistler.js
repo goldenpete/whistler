@@ -965,7 +965,6 @@ class Router {
         document.getElementById('nav-storage').onclick = () => this.goTo('storage');
         document.getElementById('nav-docs').onclick = () => this.goTo('docs');
         document.getElementById('nav-graph').onclick = () => this.goTo('graph');
-        document.getElementById('nav-trash').onclick = () => this.goTo('trash');
 
         // Category header clicks (span inside nav-section-left)
         document.getElementById('nav-assets-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('assets');
@@ -9906,6 +9905,128 @@ class SyncManager {
     }
 
     /**
+     * Pull data from cloud and replace local (Cloud-First approach)
+     * Called on app start when logged in
+     */
+    async pullFromCloud() {
+        if (!this.sessionToken) return false;
+
+        this.setSyncStatus('syncing');
+
+        try {
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${this.sessionToken}` }
+            });
+
+            if (response.status === 401) {
+                await this.reLogin();
+                return false;
+            }
+
+            if (!response.ok) {
+                this.setSyncStatus('error');
+                return false;
+            }
+
+            const result = await response.json();
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+
+            if (dataRow?.value) {
+                const cloudData = typeof dataRow.value === 'string'
+                    ? JSON.parse(dataRow.value)
+                    : dataRow.value;
+
+                // Replace local data with cloud data
+                this.app.state.projects = cloudData.projects || [];
+                this.app.state.files = cloudData.files || [];
+                this.app.state.collections = cloudData.collections || [];
+                this.app.state.timestamps = cloudData.timestamps || [];
+                this.app.state.graphs = cloudData.graphs || [];
+                this.app.state.graphNodes = cloudData.graphNodes || [];
+                this.app.state.graphEdges = cloudData.graphEdges || [];
+                this.app.state.docs = cloudData.docs || [];
+                this.app.state.storages = cloudData.storages || [];
+
+                // Save to local storage (without triggering cloud sync)
+                this.skipNextSync = true;
+                this.app.storage.save();
+                this.skipNextSync = false;
+
+                this.lastSync = Date.now();
+                localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+                this.setSyncStatus('synced');
+                this.showToast('Loaded from cloud', 'success');
+                return true;
+            }
+
+            this.setSyncStatus('synced');
+            return true;
+
+        } catch (e) {
+            console.error('Pull from cloud failed:', e);
+            this.setSyncStatus('error');
+            this.showToast('Failed to load from cloud', 'error');
+            return false;
+        }
+    }
+
+    /**
+     * Push local data to cloud (Cloud-First approach)
+     * Called on every edit
+     */
+    async pushToCloud() {
+        if (!this.sessionToken || this.skipNextSync) return;
+
+        // Debounce rapid edits
+        clearTimeout(this.pushDebounce);
+        this.pushDebounce = setTimeout(async () => {
+            this.setSyncStatus('syncing');
+
+            try {
+                const data = {
+                    projects: this.app.state.projects,
+                    files: this.app.state.files,
+                    collections: this.app.state.collections,
+                    timestamps: this.app.state.timestamps,
+                    graphs: this.app.state.graphs,
+                    graphNodes: this.app.state.graphNodes,
+                    graphEdges: this.app.state.graphEdges,
+                    docs: this.app.state.docs,
+                    storages: this.app.state.storages,
+                    lastModified: Date.now()
+                };
+
+                const response = await fetch(`${this.API_URL}/data`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.sessionToken}`
+                    },
+                    body: JSON.stringify({ key: 'whistler_data', value: data })
+                });
+
+                if (response.status === 401) {
+                    await this.reLogin();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Push failed');
+                }
+
+                this.lastSync = Date.now();
+                localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+                this.setSyncStatus('synced');
+
+            } catch (e) {
+                console.error('Push to cloud failed:', e);
+                this.setSyncStatus('error');
+            }
+        }, 500); // 500ms debounce
+    }
+
+    /**
      * Sync local data to cloud
      */
     async syncToCloud() {
@@ -10345,15 +10466,12 @@ class SyncManager {
     }
 
     /**
-     * Trigger sync when data changes (only if auto-sync enabled)
+     * Trigger sync when data changes (Cloud-First: push immediately)
      */
     onDataChange() {
-        // Only auto-sync if enabled
-        if (this.sessionToken && this.autoSyncEnabled) {
-            clearTimeout(this.syncDebounce);
-            this.syncDebounce = setTimeout(() => {
-                this.performSeamlessSync();
-            }, 2000); // Wait 2 seconds after last change
+        // Cloud-first: push to cloud on every change
+        if (this.sessionToken) {
+            this.pushToCloud();
         }
     }
 
