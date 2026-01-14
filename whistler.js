@@ -7097,6 +7097,12 @@ class SyncManager {
             btnSyncFromCloud.onclick = () => this.manualSyncFromCloud();
         }
         
+        // Merge from cloud button
+        const btnSyncMerge = document.getElementById('btn-sync-merge');
+        if (btnSyncMerge) {
+            btnSyncMerge.onclick = () => this.manualMergeFromCloud();
+        }
+        
         // Push to cloud button
         const btnSyncToCloud = document.getElementById('btn-sync-to-cloud');
         if (btnSyncToCloud) {
@@ -8496,6 +8502,9 @@ class SyncManager {
             this.lastSync = new Date().toISOString();
             localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
             this.updateUIState(true);
+
+            // Show success checkmark on Push button
+            this.showSyncButtonSuccess('btn-sync-to-cloud');
             
         } catch (err) {
             console.error('Sync to cloud error:', err);
@@ -8774,8 +8783,14 @@ class SyncManager {
             if (dataRow && dataRow.value) {
                 const cloudData = JSON.parse(dataRow.value);
                 
-                // Merge cloud data into local (keeps local, adds new from cloud)
-                this.mergeData(cloudData);
+                // Replace local data with cloud data (Pull = replace)
+                this.applyCloudData(cloudData);
+
+                // Persist to storage
+                this.app.storage.save();
+
+                // Show success checkmark on Pull button
+                this.showSyncButtonSuccess('btn-sync-from-cloud');
             }
             
             // Update last sync time
@@ -8789,6 +8804,88 @@ class SyncManager {
             this.isSyncing = false;
             this.setSyncingState(false);
         }
+    }
+
+    /**
+     * Manual merge from cloud (keeps local, adds cloud items)
+     */
+    async manualMergeFromCloud() {
+        if (!this.sessionToken || this.isSyncing) return;
+        try {
+            this.isSyncing = true;
+            this.setSyncingState(true);
+
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+
+            if (response.status === 401) {
+                await this.reLogin();
+                return;
+            }
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Merge failed');
+            }
+
+            const result = await response.json();
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+
+            if (dataRow && dataRow.value) {
+                const cloudData = JSON.parse(dataRow.value);
+
+                // Merge cloud data into local (keeps local, adds new from cloud)
+                this.mergeData(cloudData);
+
+                // Push merged data to cloud
+                await this.syncToCloud();
+
+                // Show success on Merge button
+                this.showSyncButtonSuccess('btn-sync-merge');
+            }
+
+            // Update last sync time
+            this.lastSync = new Date().toISOString();
+            localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+            this.updateUIState(true);
+
+        } catch (err) {
+            console.error('Merge from cloud error:', err);
+        } finally {
+            this.isSyncing = false;
+            this.setSyncingState(false);
+        }
+    }
+
+    /**
+     * Temporarily swap the button icon to a check, then revert
+     */
+    showSyncButtonSuccess(buttonId, duration = 2000) {
+        const btn = document.getElementById(buttonId);
+        if (!btn) return;
+
+        const icon = btn.querySelector('i');
+        if (!icon) return;
+
+        // Save previous class to restore it later
+        const prevClass = icon.className;
+        icon.className = 'ph-bold ph-check';
+        btn.classList.add('btn-sync-success');
+
+        // Revert after duration
+        setTimeout(() => {
+            // Ensure button still exists
+            const currentBtn = document.getElementById(buttonId);
+            if (!currentBtn) return;
+            const currentIcon = currentBtn.querySelector('i');
+            if (!currentIcon) return;
+            currentIcon.className = prevClass;
+            currentBtn.classList.remove('btn-sync-success');
+        }, duration);
     }
     
     /**
@@ -8858,16 +8955,20 @@ class SyncManager {
         wrappers.forEach(wrapper => {
             const tooltip = wrapper.dataset.tooltip;
             const isPull = wrapper.querySelector('.btn-sync-pull');
-            
+            const isPush = wrapper.querySelector('.btn-sync-push');
+            const isMerge = wrapper.querySelector('.btn-sync-merge');
+
             wrapper.addEventListener('mouseenter', () => {
                 tooltipText.textContent = tooltip;
                 tooltipText.classList.add('active');
-                tooltipText.classList.remove('pull-active', 'push-active');
-                tooltipText.classList.add(isPull ? 'pull-active' : 'push-active');
+                tooltipText.classList.remove('pull-active', 'push-active', 'merge-active');
+                if (isPull) tooltipText.classList.add('pull-active');
+                else if (isPush) tooltipText.classList.add('push-active');
+                else if (isMerge) tooltipText.classList.add('merge-active');
             });
-            
+
             wrapper.addEventListener('mouseleave', () => {
-                tooltipText.classList.remove('active', 'pull-active', 'push-active');
+                tooltipText.classList.remove('active', 'pull-active', 'push-active', 'merge-active');
             });
         });
     }

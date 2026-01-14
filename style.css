@@ -2609,7 +2609,7 @@ button {
     flex: 1;
 }
 
-.sync-btn-wrapper:first-child {
+.sync-btn-wrapper:not(:last-child) {
     border-right: 1px solid var(--border);
 }
 
@@ -2617,8 +2617,22 @@ button {
     border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 
+.sync-btn-wrapper:nth-child(2) button {
+    border-radius: 0;
+}
+
 .sync-btn-wrapper:last-child button {
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Merge Button */
+.btn-sync-merge {
+    background: transparent;
+    color: #06b6d4;
+}
+
+.btn-sync-merge:hover {
+    background: rgba(6, 182, 212, 0.12);
 }
 
 .btn-sync-pull,
@@ -2653,6 +2667,19 @@ button {
 .btn-sync-push:hover {
     background: rgba(74, 222, 128, 0.15);
 }
+
+/* Sync Button Success State */
+.btn-sync-success i {
+    color: #22c55e !important;
+    transform: scale(1.05);
+    transition: transform 0.12s ease, color 0.12s ease;
+}
+
+.btn-sync-success {
+    /* subtle highlight */
+    box-shadow: inset 0 0 0 1px rgba(34,197,94,0.06);
+}
+
 
 /* Sync Tooltip - overlays above buttons */
 .sync-tooltip-container {
@@ -2689,6 +2716,11 @@ button {
 
 .sync-tooltip-text.push-active {
     background: rgba(74, 222, 128, 0.95);
+    color: #1a1a1a;
+}
+
+.sync-tooltip-text.merge-active {
+    background: rgba(6, 182, 212, 0.95);
     color: #1a1a1a;
 }
 
