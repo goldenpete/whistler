@@ -1488,6 +1488,33 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Review View for granular diffs -->
+            <div id="conflict-review-view" class="hidden">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <button id="btn-review-back"
+                        style="background: var(--bg-hover); border: none; border-radius: var(--radius-sm); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <i class="ph-bold ph-arrow-left" style="font-size: 18px; color: var(--text-primary);"></i>
+                    </button>
+                    <div>
+                        <h3 class="modal-title" style="margin: 0; font-size: 18px;">Review Changes</h3>
+                        <p style="color: var(--text-muted); font-size: 12px; margin: 0;" id="review-project-name">
+                            Project Name</p>
+                    </div>
+                </div>
+
+                <div id="conflict-review-content" style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Injected Diff Content -->
+                </div>
+
+                <div class="modal-actions"
+                    style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <button class="btn-primary" id="btn-review-confirm" style="width: 100%;">
+                        <i class="ph-bold ph-check"></i>
+                        <span>Apply Selected Changes</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Export/Import Modal -->

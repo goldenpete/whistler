@@ -7273,6 +7273,19 @@ class SyncManager {
         if (btnChooseConfirm) {
             btnChooseConfirm.onclick = () => this.resolveConflictChoose();
         }
+
+        const btnReviewBack = document.getElementById('btn-review-back');
+        if (btnReviewBack) {
+            btnReviewBack.onclick = () => {
+                document.getElementById('conflict-review-view').classList.add('hidden');
+                document.getElementById('conflict-choose-view').classList.remove('hidden');
+            };
+        }
+
+        const btnReviewConfirm = document.getElementById('btn-review-confirm');
+        if (btnReviewConfirm) {
+            btnReviewConfirm.onclick = () => this.applyReviewChanges();
+        }
     }
 
     openSyncModal() {
@@ -7687,12 +7700,7 @@ class SyncManager {
             this.app.state.collections.length > 0 ||
             this.app.state.timestamps.length > 0;
 
-        if (!hasLocalData) {
-            // No local data, no conflict - just pull from cloud
-            return;
-        }
-
-        // Fetch cloud data to check if it has anything
+        // Fetch cloud data
         try {
             const response = await fetch(`${this.API_URL}/data`, {
                 method: 'GET',
@@ -7708,19 +7716,59 @@ class SyncManager {
 
             if (dataRow && dataRow.value) {
                 const cloudData = JSON.parse(dataRow.value);
+                const cloudLastMod = cloudData.lastModified || 0;
 
-                // Check if cloud has any data
-                const hasCloudData = (cloudData.projects?.length > 0) ||
-                    (cloudData.files?.length > 0) ||
-                    (cloudData.collections?.length > 0) ||
-                    (cloudData.timestamps?.length > 0);
+                // Get local timestamps
+                const localLastMod = parseInt(localStorage.getItem(this.app.storage.LAST_MODIFIED_KEY) || '0');
+                const lastSyncTime = parseInt(localStorage.getItem(this.LAST_SYNC_KEY) || '0');
 
-                if (hasCloudData) {
-                    // Both local and cloud have data - CONFLICT!
+                // Buffer to avoid race conditions (1 second)
+                const BUFFER = 1000;
+
+                // Case 1: Cloud is newer, Local hasn't changed since last sync -> Safe Pull
+                if (cloudLastMod > lastSyncTime && localLastMod <= (lastSyncTime + BUFFER)) {
+                    console.log('Safe Pull: Cloud is newer, local unchanged. Auto-updating.');
+                    await this.applyCloudData(cloudData);
+                    // Update last sync time
+                    this.lastSync = Date.now();
+                    localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
+                    this.updateSyncStatus();
+                    // Reload to show changes
+                    window.location.reload();
+                    return;
+                }
+
+                // Case 2: Local is newer, Cloud hasn't changed since last sync -> Safe Push
+                if (localLastMod > lastSyncTime && cloudLastMod <= (lastSyncTime + BUFFER)) {
+                    console.log('Safe Push: Local is newer, cloud unchanged. Auto-pushing.');
+                    await this.syncToCloud();
+                    return;
+                }
+
+                // Case 3: True Conflict - Both have changed since last sync
+                if (localLastMod > (lastSyncTime + BUFFER) && cloudLastMod > (lastSyncTime + BUFFER)) {
+                    console.log('Valid Conflict Detected');
                     this.conflictCloudData = cloudData;
                     this.pendingConflict = true;
                     localStorage.setItem(this.CONFLICT_KEY, 'true');
                     this.showConflictResolution();
+                    return;
+                }
+
+                // Fallback for initial syncs or missing timestamps: use data presence check if we haven't synced before
+                if (lastSyncTime === 0 && hasLocalData) {
+                    const hasCloudData = (cloudData.projects?.length > 0) ||
+                        (cloudData.files?.length > 0) ||
+                        (cloudData.collections?.length > 0);
+
+                    if (hasCloudData) {
+                        // Check if data is identical to avoid pointless conflicts?
+                        // For now, safe to show conflict if we can't determine ancestry
+                        this.conflictCloudData = cloudData;
+                        this.pendingConflict = true;
+                        localStorage.setItem(this.CONFLICT_KEY, 'true');
+                        this.showConflictResolution();
+                    }
                 }
             }
         } catch (e) {
@@ -8225,141 +8273,272 @@ class SyncManager {
 
         container.innerHTML = '';
         const data = this.conflictCloudData;
+        const processedFileIds = new Set();
 
-        // Helper to create sections
-        const createSection = (title, items, type) => {
-            if (!items || items.length === 0) return;
+        // Helper to create checkbox row
+        const createRow = (item, type, indent = false) => {
+            const row = document.createElement('div');
+            row.style.cssText = `display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color); ${indent ? 'padding-left: 32px;' : ''}`;
 
-            const section = document.createElement('div');
-            section.style.marginBottom = '16px';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'conflict-choose-checkbox';
+            checkbox.dataset.type = type;
+            checkbox.dataset.id = item.id;
+            checkbox.id = `chk-${item.id}`;
 
-            const header = document.createElement('div');
-            header.style.cssText = 'font-weight: 600; margin-bottom: 8px; color: var(--text-primary); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;';
-            header.textContent = title;
-            section.appendChild(header);
+            const label = document.createElement('label');
+            label.htmlFor = `chk-${item.id}`;
+            label.style.flex = '1';
+            label.style.cursor = 'pointer';
+            label.style.fontSize = '13px';
 
-            items.forEach(item => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 8px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color);';
+            let iconClass = 'ph-file';
+            let color = 'var(--text-primary)';
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'conflict-choose-checkbox';
-                checkbox.dataset.type = type;
-                checkbox.dataset.id = item.id;
-                checkbox.id = `chk-${item.id}`;
+            if (type === 'projects') {
+                iconClass = 'ph-folder-fill';
+                color = item.color || 'var(--accent)';
+            } else if (type === 'collections') {
+                iconClass = 'ph-cards';
+            } else if (type === 'files') {
+                iconClass = 'ph-file-video';
+            }
 
-                const label = document.createElement('label');
-                label.htmlFor = `chk-${item.id}`;
-                label.style.flex = '1';
-                label.style.cursor = 'pointer';
-                label.style.fontSize = '13px';
+            label.innerHTML = `<div style="display:flex; align-items:center; gap:10px;">
+                <i class="ph ${iconClass}" style="color: ${color}; font-size: 16px;"></i>
+                <span style="color: var(--text-primary); font-weight: ${type === 'projects' ? '600' : '400'}">${item.name || item.title || 'Untitled'}</span>
+            </div>`;
 
-                let iconClass = 'ph-file';
-                let name = item.name || item.title || 'Untitled';
-
-                if (type === 'projects') iconClass = 'ph-folder';
-                if (type === 'collections') iconClass = 'ph-cards';
-                if (type === 'files') iconClass = 'ph-file'; // Needs refinement based on file type
-
-                label.innerHTML = `<div style="display:flex; align-items:center; gap:8px;">
-                    <i class="ph-bold ${iconClass}"></i>
-                    <span>${name}</span>
-                </div>`;
-
-                row.appendChild(checkbox);
-                row.appendChild(label);
-                section.appendChild(row);
-            });
-
-            container.appendChild(section);
+            row.appendChild(checkbox);
+            row.appendChild(label);
+            return row;
         };
 
-        createSection('Projects', data.projects, 'projects');
-        createSection('Files', data.files, 'files');
-        createSection('Collections', data.collections, 'collections');
-    }
+        // 1. Render Projects and their files
+        if (data.projects && data.projects.length > 0) {
+            const projectHeader = document.createElement('div');
+            projectHeader.style.cssText = 'font-weight: 600; margin: 16px 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
+            projectHeader.textContent = 'Projects & Files';
+            container.appendChild(projectHeader);
 
-    async resolveConflictChoose() {
-        const boxes = document.querySelectorAll('.conflict-choose-checkbox:checked');
-        if (boxes.length === 0) {
-            alert('Please select at least one item to merge.');
-            return;
+            data.projects.forEach(project => {
+                // Find files for this project to check if they exist locally
+                const projectFiles = data.files ? data.files.filter(f => f.projectId === project.id) : [];
+
+                // Check if project exists locally
+                const localProject = this.app.state.projects.find(p => p.id === project.id);
+
+                if (!localProject) {
+                    // New Project - Render Checkbox
+                    container.appendChild(createRow(project, 'projects'));
+
+                    projectFiles.forEach(file => {
+                        container.appendChild(createRow(file, 'files', true)); // indented
+                        processedFileIds.add(file.id);
+                    });
+                } else {
+                    // Existing Project - Render "Review Changes" button
+                    const updateRow = document.createElement('div');
+                    updateRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color); border-left: 3px solid #f59e0b;';
+
+                    updateRow.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <i class="ph-fill ph-arrows-clockwise" style="color: #f59e0b; font-size: 18px;"></i>
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">${project.name}</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Updates available</div>
+                            </div>
+                        </div>
+                    `;
+
+                    const btnReview = document.createElement('button');
+                    btnReview.className = 'btn-ghost';
+                    btnReview.style.cssText = 'font-size: 12px; padding: 6px 12px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);';
+                    btnReview.innerHTML = '<i class="ph-bold ph-eye"></i> Review Changes';
+                    btnReview.onclick = () => this.showProjectReview(project, localProject, projectFiles);
+
+                    updateRow.appendChild(btnReview);
+                    container.appendChild(updateRow);
+
+                    // Mark files as processed so they don't show up in orphans
+                    projectFiles.forEach(f => processedFileIds.add(f.id));
+                }
+            });
         }
 
-        const selectedIds = {
-            projects: new Set(),
-            files: new Set(),
-            collections: new Set()
+        // 2. Render Orphaned Files (files with no project or project not in cloud list)
+        const orphanFiles = data.files ? data.files.filter(f => !processedFileIds.has(f.id)) : [];
+
+        if (orphanFiles.length > 0) {
+            const fileHeader = document.createElement('div');
+            fileHeader.style.cssText = 'font-weight: 600; margin: 16px 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
+            fileHeader.textContent = 'Uncategorized Files';
+            container.appendChild(fileHeader);
+
+            orphanFiles.forEach(file => {
+                container.appendChild(createRow(file, 'files'));
+            });
+        }
+
+        // 3. Render Collections
+        if (data.collections && data.collections.length > 0) {
+            const colHeader = document.createElement('div');
+            colHeader.style.cssText = 'font-weight: 600; margin: 16px 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
+            colHeader.textContent = 'Collections';
+            container.appendChild(colHeader);
+
+            data.collections.forEach(col => {
+                container.appendChild(createRow(col, 'collections'));
+            });
+        }
+    }
+
+    /**
+     * Show detailed review for a modified project
+     */
+    showProjectReview(cloudProject, localProject, cloudFiles) {
+        document.getElementById('conflict-choose-view').classList.add('hidden');
+        document.getElementById('conflict-review-view').classList.remove('hidden');
+
+        document.getElementById('review-project-name').textContent = cloudProject.name;
+
+        const container = document.getElementById('conflict-review-content');
+        container.innerHTML = '';
+
+        // Helper to create checkbox row
+        const createDiffRow = (id, label, sublabel, checked = false, type = 'property') => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color);';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'conflict-review-checkbox';
+            checkbox.dataset.type = type;
+            checkbox.dataset.id = id;
+            checkbox.id = `review-${id}`;
+            checkbox.checked = checked;
+
+            // Build content
+            const content = document.createElement('div');
+            content.style.flex = '1';
+            content.innerHTML = `
+                <div style="font-weight: 500; font-size: 13px; color: var(--text-primary);">${label}</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${sublabel}</div>
+            `;
+
+            const lbl = document.createElement('label');
+            lbl.htmlFor = `review-${id}`;
+            lbl.style.cssText = 'display: contents; cursor: pointer;';
+            lbl.appendChild(checkbox);
+            lbl.appendChild(content);
+
+            row.appendChild(lbl);
+            return row;
+        };
+
+        // 1. Property Diffs
+        const props = [];
+        if (cloudProject.name !== localProject.name) {
+            props.push({ key: 'name', label: 'Update Name', sub: `Current: "${localProject.name}" → New: "${cloudProject.name}"` });
+        }
+        if (cloudProject.description !== localProject.description) {
+            props.push({ key: 'description', label: 'Update Description', sub: 'Project description has changed' });
+        }
+        if (cloudProject.color !== localProject.color) {
+            props.push({ key: 'color', label: 'Update Color', sub: 'Project color has changed' });
+        }
+
+        if (props.length > 0) {
+            const header = document.createElement('div');
+            header.style.cssText = 'font-weight: 600; margin: 0 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
+            header.textContent = 'Property Changes';
+            container.appendChild(header);
+
+            props.forEach(p => {
+                const row = createDiffRow(p.key, p.label, p.sub, true, 'property');
+                row.querySelector('input').dataset.projectId = cloudProject.id;
+                // Store actual new value in dataset for easy retrieval? Or easier just to read from object later.
+                // We'll read from object later using the key.
+                container.appendChild(row);
+            });
+
+            container.appendChild(document.createElement('div')).style.marginBottom = '20px';
+        }
+
+        // 2. File Diffs (New files in cloud that aren't local)
+        // Find files that are in cloud list but NOT in local list
+        const newFiles = cloudFiles.filter(cf => !this.app.state.files.find(lf => lf.id === cf.id));
+
+        if (newFiles.length > 0) {
+            const header = document.createElement('div');
+            header.style.cssText = 'font-weight: 600; margin: 0 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
+            header.textContent = `New Files (${newFiles.length})`;
+            container.appendChild(header);
+
+            newFiles.forEach(f => {
+                const row = createDiffRow(f.id, f.name || 'Untitled', 'New file from cloud', true, 'file');
+                container.appendChild(row);
+            });
+        }
+
+        if (props.length === 0 && newFiles.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No visible changes to review.</div>';
+        }
+
+        // Save context for applying changes
+        this.currentReviewContext = { cloudProject, localProject };
+    }
+
+    async applyReviewChanges() {
+        if (!this.currentReviewContext) return;
+
+        const boxes = document.querySelectorAll('.conflict-review-checkbox:checked');
+        const changes = {
+            properties: [],
+            files: []
         };
 
         boxes.forEach(box => {
-            selectedIds[box.dataset.type].add(box.dataset.id);
+            if (box.dataset.type === 'property') {
+                changes.properties.push(box.dataset.id);
+            } else if (box.dataset.type === 'file') {
+                changes.files.push(box.dataset.id);
+            }
         });
 
-        // Check for dependencies: Collection selected but files not selected
-        const warnings = [];
-
-        if (this.conflictCloudData.collections) {
-            for (const col of this.conflictCloudData.collections) {
-                if (selectedIds.collections.has(col.id)) {
-                    // Check items in this collection
-                    if (col.items && col.items.length > 0) {
-                        const missingFiles = col.items.filter(fileId => {
-                            // Only warn if the file EXISTS in cloud data but is NOT selected
-                            const fileExistsInCloud = this.conflictCloudData.files.some(f => f.id === fileId);
-                            // Also need to check if file already exists locally?
-                            // The user said: "if a collection is moved but it has a file not in the moved section"
-                            // Presumably "moved section" means "selected for import".
-                            // If file exists locally, it's fine.
-                            const fileExistsLocal = this.app.state.files.find(f => f.id === fileId);
-                            const fileSelected = selectedIds.files.has(fileId);
-
-                            return fileExistsInCloud && !fileSelected && !fileExistsLocal;
-                        });
-
-                        if (missingFiles.length > 0) {
-                            warnings.push(`Collection "${col.name}" includes ${missingFiles.length} file(s) that are not selected and not on your device.`);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (warnings.length > 0) {
-            const proceed = confirm(`Warning:\n\n${warnings.join('\n')}\n\nDo you want to proceed anyway? Missing files will show as broken links.`);
-            if (!proceed) return;
-        }
+        const { cloudProject, localProject } = this.currentReviewContext;
 
         try {
-            this.setConflictLoading(true, 'Merging selected data...');
+            this.setConflictLoading(true, 'Applying changes...');
 
-            // Filter cloud data to only selected items
-            const filteredCloudData = {
-                projects: (this.conflictCloudData.projects || []).filter(i => selectedIds.projects.has(i.id)),
-                files: (this.conflictCloudData.files || []).filter(i => selectedIds.files.has(i.id)),
-                collections: (this.conflictCloudData.collections || []).filter(i => selectedIds.collections.has(i.id)),
-                timestamps: this.conflictCloudData.timestamps || [], // Timestamps usually follow files, could act smarter here
-                graphs: this.conflictCloudData.graphs || [],    // Graphs are complex, merge all or none? Let's skip for now or merge all
-                graphNodes: this.conflictCloudData.graphNodes || [],
-                graphEdges: this.conflictCloudData.graphEdges || [],
-                docs: this.conflictCloudData.docs || [],
-                storages: this.conflictCloudData.storages || []
-            };
+            // 1. Apply Properties
+            if (changes.properties.length > 0) {
+                const targetProject = this.app.state.projects.find(p => p.id === localProject.id);
+                if (targetProject) {
+                    changes.properties.forEach(prop => {
+                        if (cloudProject[prop] !== undefined) {
+                            targetProject[prop] = cloudProject[prop];
+                        }
+                    });
+                }
+            }
 
-            // Merge filtered cloud data
-            this.mergeData(filteredCloudData);
+            // 2. Apply Files
+            if (changes.files.length > 0) {
+                // Find files in cloud data matching IDs
+                const filesToAdd = this.conflictCloudData.files.filter(f => changes.files.includes(f.id));
+                this.app.state.files.push(...filesToAdd);
+            }
 
-            // Push merged state to cloud
+            // 3. Save & Sync
             await this.syncToCloud();
-
             this.clearConflict();
-            // Refresh UI
             window.location.reload();
 
         } catch (e) {
-            console.error('Merge failed:', e);
-            alert('Merge failed: ' + e.message);
+            console.error('Failed to apply changes:', e);
+            alert('Error applying changes');
             this.setConflictLoading(false);
         }
     }

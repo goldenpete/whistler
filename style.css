@@ -5740,3 +5740,16 @@ input[type="color"]::-webkit-color-swatch {
 .conflict-choose-checkbox:hover {
     accent-color: var(--accent-hover);
 }
+
+/* Conflict Review Checkboxes */
+.conflict-review-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #f59e0b;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.conflict-review-checkbox:hover {
+    accent-color: #d97706;
+}
