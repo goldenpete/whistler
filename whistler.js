@@ -1011,14 +1011,14 @@ class Router {
             };
         });
 
-        // Keyboard shortcut: Ctrl+B to toggle sidebar
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'b') {
-                e.preventDefault();
-                const collapsed = sidebar.classList.toggle('collapsed');
-                localStorage.setItem('whistler-sidebar-collapsed', collapsed);
-            }
-        });
+        // Keyboard shortcut: Ctrl+B to toggle sidebar - MOVED TO KeybindManager
+        // document.addEventListener('keydown', (e) => {
+        //     if (e.ctrlKey && e.key === 'b') {
+        //         e.preventDefault();
+        //         const collapsed = sidebar.classList.toggle('collapsed');
+        //         localStorage.setItem('whistler-sidebar-collapsed', collapsed);
+        //     }
+        // });
     }
 
     setupCollapsibleSections() {
@@ -3958,6 +3958,7 @@ class UIManager {
 
             // DRAG AND DROP ATTRIBUTES
             card.draggable = true;
+            card.setAttribute('tabindex', '0'); // Allow keyboard focus
             card.dataset.id = f.id;
             card.dataset.type = f.type;
 
@@ -5595,6 +5596,15 @@ class UIManager {
 
             editor.addEventListener('input', () => {
                 this.saveDocsContent();
+            });
+
+            // Keybinds for Editor
+            editor.addEventListener('keydown', (e) => {
+                // Ctrl+Shift+K = Insert Link
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
+                    e.preventDefault();
+                    this.openDocsLinkModal();
+                }
             });
 
             // Setup toolbar
@@ -10792,157 +10802,451 @@ class SyncManager {
 class KeybindManager {
     constructor(app) {
         this.app = app;
-        this.init();
+        document.addEventListener('keydown', (e) => this.onKeyDown(e));
     }
 
-    init() {
-        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-    }
-
-    handleKeyDown(e) {
-        console.log('Key pressed:', e.key, 'Target:', e.target.tagName); // Debugging
-
-        // Ignore if typing in an input/textarea
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
-            // Allow Esc to blur input
-            if (e.key === 'Escape') {
-                e.target.blur();
-                // console.log('Blurred input with Esc');
-            }
+    onKeyDown(e) {
+        // Skip if typing in input/textarea
+        const tag = e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) {
+            if (e.key === 'Escape') e.target.blur();
             return;
         }
 
+        const key = e.key;
+        const ctrl = e.ctrlKey || e.metaKey;
+
+        // Get UI state
         const backdrop = document.getElementById('modal-backdrop');
-        const overlay = document.getElementById('video-player-overlay');
-        const isModalOpen = backdrop && !backdrop.classList.contains('hidden');
-        const isPlayerOpen = overlay && !overlay.classList.contains('hidden');
+        const playerOverlay = document.getElementById('player-overlay');
+        const modalOpen = backdrop && !backdrop.classList.contains('hidden');
+        const playerOpen = playerOverlay && !playerOverlay.classList.contains('hidden');
 
-        // 1. Global Shortcuts
+        // === GLOBAL: Always work ===
 
-        // Toggle Help (?)
-        if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        // ? = Help modal
+        if (key === '?') {
             e.preventDefault();
-            this.toggleHelpModal();
-            return;
-        }
-
-        // Close Modal / Player (Esc)
-        if (e.key === 'Escape') {
-            if (isModalOpen) {
-                this.app.modals.close();
-            } else if (isPlayerOpen) {
-                this.app.player.close();
-            } else if (this.app.state.activeProjectId && !this.app.state.activeCollectionId) {
-                // E.g. clear selection or something?
+            const helpModal = document.getElementById('modal-shortcuts');
+            if (helpModal && backdrop) {
+                if (helpModal.classList.contains('hidden')) {
+                    backdrop.classList.remove('hidden');
+                    helpModal.classList.remove('hidden');
+                } else {
+                    backdrop.classList.add('hidden');
+                    helpModal.classList.add('hidden');
+                }
             }
             return;
         }
 
-        // Save (Ctrl+S)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        // Escape = Close
+        if (key === 'Escape') {
+            if (modalOpen && this.app.modals) {
+                this.app.modals.close();
+            } else if (playerOpen && this.app.player) {
+                this.app.player.close();
+            }
+            return;
+        }
+
+        // Ctrl+S = Save (silent, not advertised)
+        if (ctrl && key.toLowerCase() === 's') {
             e.preventDefault();
-            this.app.storage.save();
-            this.app.ui.showToast('Saved successfully', 'success');
+            if (this.app.storage) this.app.storage.save();
             return;
         }
 
-        // 2. Context: Player
-        if (isPlayerOpen) {
-            this.handlePlayerShortcuts(e);
+        // I = Toggle Sidebar
+        if (key.toLowerCase() === 'i' && !modalOpen) {
+            e.preventDefault();
+            this.toggleSidebarAction(playerOpen);
             return;
         }
 
-        // 3. Context: Global (if no modal)
-        if (!isModalOpen) {
-            this.handleGlobalShortcuts(e);
+        // Ctrl+B = Toggle Sidebar
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyB') {
+            if (!modalOpen) {
+                e.preventDefault();
+                this.toggleSidebarAction(playerOpen);
+                return;
+            }
+        }
+
+        // T = Timestamp/Mark/Highlight (context-aware)
+        if (key.toLowerCase() === 't' && !modalOpen) {
+            e.preventDefault();
+            if (playerOpen) {
+                // Try add timestamp button first, then add mark
+                const btnTs = document.getElementById('btn-add-timestamp') || document.getElementById('btn-add-mark');
+                if (btnTs) btnTs.click();
+                this.showPlayerToast('<i class="ph-bold ph-timer"></i> Add Mark');
+            }
+            return;
+        }
+
+        // === PLAYER: When player is open ===
+        if (playerOpen) {
+            this.playerKeys(e);
+            return;
+        }
+
+        // Ctrl+Shift+L = Local Search (Page Search)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyL') {
+            const isStorage = !document.getElementById('view-storage').classList.contains('hidden');
+            const isCollection = !document.getElementById('view-collection').classList.contains('hidden');
+
+            if (modalOpen) return;
+
+            let searchInput = null;
+            let container = null;
+
+            if (isStorage) {
+                searchInput = document.getElementById('search-input');
+                container = document.getElementById('search-bar-container');
+            } else if (isCollection) {
+                searchInput = document.getElementById('collection-search-input');
+                container = document.getElementById('collection-search-container');
+            }
+
+            if (searchInput && container) {
+                e.preventDefault();
+                container.classList.remove('hidden');
+                searchInput.focus();
+                searchInput.select();
+                return;
+            }
+        }
+
+        // Ctrl+Shift+N = Add File/Folder (Storage) or Add Clip (Collection)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyN') {
+            const isStorage = !document.getElementById('view-storage').classList.contains('hidden');
+            const isCollection = !document.getElementById('view-collection').classList.contains('hidden');
+
+            if (modalOpen) return;
+
+            if (isStorage) {
+                e.preventDefault();
+                const btn = document.getElementById('btn-expand-add');
+                if (btn) btn.click();
+            } else if (isCollection) {
+                e.preventDefault();
+                const btn = document.getElementById('btn-add-clip');
+                if (btn) btn.click();
+            }
+            return;
+        }
+
+        // Storage Grid Navigation (Arrows)
+        const activeEl = document.activeElement;
+        const storageView = document.getElementById('view-storage');
+        const isStorageVisible = storageView && !storageView.classList.contains('hidden');
+        const isStorageGrid = activeEl && activeEl.closest('#storage-grid');
+
+        if (!modalOpen && !playerOpen && (isStorageGrid || isStorageVisible)) {
+            const key = e.key;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+
+                // Action Menu Navigation (Horizontal + Exit)
+                if (activeEl.classList.contains('card-action-btn') || activeEl.closest('.card-actions')) {
+                    e.preventDefault();
+                    const btnContainer = activeEl.closest('.card-actions');
+                    if (!btnContainer) return;
+
+                    const btns = Array.from(btnContainer.querySelectorAll('.card-action-btn, button'));
+                    const idx = btns.indexOf(activeEl);
+
+                    if (key === 'ArrowRight') {
+                        if (idx < btns.length - 1) btns[idx + 1].focus();
+                    } else if (key === 'ArrowLeft') {
+                        if (idx > 0) btns[idx - 1].focus();
+                    } else if (key === 'ArrowUp' || key === 'ArrowDown') {
+                        const card = activeEl.closest('.card');
+                        if (card) card.focus();
+                    }
+                    return;
+                }
+
+                // If not currently in grid, focus first item
+                if (!isStorageGrid) {
+                    e.preventDefault();
+                    const grid = document.getElementById('storage-grid');
+                    const firstCard = grid.querySelector('.card');
+                    if (firstCard) firstCard.focus();
+                    return;
+                }
+
+                // Existing grid navigation logic
+                e.preventDefault();
+                const currentCard = activeEl.closest('.card');
+                if (!currentCard) return;
+
+                const grid = document.getElementById('storage-grid');
+                const cards = Array.from(grid.querySelectorAll('.card'));
+                const currentIndex = cards.indexOf(currentCard);
+
+                if (currentIndex === -1) return;
+
+                // Calculate columns dynamically
+                let columns = 1;
+                if (cards.length > 0) {
+                    const firstTop = cards[0].offsetTop;
+                    // Count how many items share the same top offset
+                    for (let i = 1; i < cards.length; i++) {
+                        if (cards[i].offsetTop === firstTop) columns++;
+                        else break;
+                    }
+                }
+
+                let nextIndex = currentIndex;
+
+                if (key === 'ArrowRight') nextIndex = currentIndex + 1;
+                if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
+                if (key === 'ArrowDown') nextIndex = currentIndex + columns;
+                if (key === 'ArrowUp') nextIndex = currentIndex - columns;
+
+                // Bounds check
+                if (nextIndex >= 0 && nextIndex < cards.length) {
+                    cards[nextIndex].focus();
+                }
+                return;
+            }
+
+            // 'e' to focus action buttons
+            if (key.toLowerCase() === 'e') {
+                const currentCard = activeEl.closest('.card');
+                if (currentCard) {
+                    e.preventDefault();
+                    // Try multiple selectors
+                    const actionBtn = currentCard.querySelector('.card-action-btn') || currentCard.querySelector('button');
+
+                    if (actionBtn) {
+                        actionBtn.focus();
+                    }
+                    return;
+                }
+            }
+        }
+
+        // === NAVIGATION: No modal open ===
+        if (!modalOpen && this.app.router) {
+            switch (key) {
+                case '1':
+                    e.preventDefault();
+                    this.app.router.goTo('storage');
+                    this.showNavigationDial(1);
+                    break;
+                case '2':
+                    e.preventDefault();
+                    this.app.router.goTo('collectionsGrid');
+                    this.showNavigationDial(2);
+                    break;
+                case '3':
+                    e.preventDefault();
+                    this.app.router.goTo('graph');
+                    this.showNavigationDial(3);
+                    break;
+                case '4':
+                    e.preventDefault();
+                    this.app.router.goTo('docs');
+                    this.showNavigationDial(4);
+                    break;
+            }
         }
     }
 
-    handlePlayerShortcuts(e) {
+    showNavigationDial(index) {
+        const toast = document.getElementById('nav-toast');
+        if (!toast) {
+            console.error('[NavToast] Element #nav-toast not found in DOM!');
+            return;
+        }
+
+        // Nuclear option: Ensure it's a direct child of body to avoid clipping/transform traps
+        if (toast.parentElement !== document.body) {
+            console.warn('[NavToast] Moving toast to body to fix visibility');
+            document.body.appendChild(toast);
+        }
+
+        const indicator = toast.querySelector('.nav-toast-indicator');
+        const items = toast.querySelectorAll('.nav-toast-item');
+
+        if (!indicator || !items) {
+            console.error('[NavToast] Missing internal elements');
+            return;
+        }
+
+        // Show toast
+        // Force a reflow before adding active to ensure transition plays if it was just moved
+        void toast.offsetWidth;
+        toast.classList.add('active');
+        console.log('[NavToast] Showing toast. Active class added. Z-Index:', getComputedStyle(toast).zIndex);
+
+        // Update active state
+        items.forEach(item => item.classList.remove('active'));
+        const activeItem = toast.querySelector(`.nav-toast-item[data-index="${index}"]`);
+        if (activeItem) activeItem.classList.add('active');
+
+        // Move indicator
+        // Item width = 44px, Gap = 0 (flex), Padding = 6px
+        // Position = 6 + (index - 1) * 44
+        const offset = (index - 1) * 44;
+        indicator.style.transform = `translateX(${offset}px)`;
+
+        // Clear existing timeout
+        if (this.navDialTimeout) clearTimeout(this.navDialTimeout);
+
+        // Hide after 1.5s
+        this.navDialTimeout = setTimeout(() => {
+            toast.classList.remove('active');
+            console.log('[NavToast] Hiding toast');
+        }, 1500);
+    }
+
+    playerKeys(e) {
         const p = this.app.player;
         if (!p) return;
 
-        // PDF Context
+        const key = e.key.toLowerCase();
+        const v = p.els?.video;
+
+        // PDF mode
         if (p.isPdf && p.pdf) {
-            const pdf = p.pdf;
             switch (e.key) {
-                case '[': pdf.prevPage(); return;
-                case ']': pdf.nextPage(); return;
-                case '-': pdf.zoomOut(); return;
-                case '+':
-                case '=': pdf.zoomIn(); return;
-                case '0': pdf.zoomLevel = 1.0; pdf.renderCurrentPage(); return;
+                case '[': e.preventDefault(); p.pdf.prevPage?.(); this.showPlayerToast('Previous Page'); return;
+                case ']': e.preventDefault(); p.pdf.nextPage?.(); this.showPlayerToast('Next Page'); return;
+                case '-': e.preventDefault(); p.pdf.zoomOut?.(); this.showPlayerToast('Zoom Out'); return;
+                case '+': case '=': e.preventDefault(); p.pdf.zoomIn?.(); this.showPlayerToast('Zoom In'); return;
             }
         }
 
-        // Video Context
-        if (!p.els.video) return;
-
-        switch (e.key.toLowerCase()) {
-            case ' ':
-            case 'k':
-                e.preventDefault();
-                p.togglePlay();
-                break;
-            case 'f':
-                e.preventDefault();
-                p.toggleFullscreen();
-                break;
-            case 'j':
-                p.seek(-10);
-                break;
-            case 'l':
-                p.seek(10);
-                break;
-            case 'arrowleft':
-                e.preventDefault(); // prevent scroll
-                p.seek(-5);
-                break;
-            case 'arrowright':
-                e.preventDefault();
-                p.seek(5);
-                break;
-            case 'arrowup':
-                e.preventDefault();
-                if (p.els.video.volume < 1) p.els.video.volume = Math.min(1, p.els.video.volume + 0.1);
-                break;
-            case 'arrowdown':
-                e.preventDefault();
-                if (p.els.video.volume > 0) p.els.video.volume = Math.max(0, p.els.video.volume - 0.1);
-                break;
-            case 'm':
-                p.els.video.muted = !p.els.video.muted;
-                break;
-            case ',': // <
-                if (p.els.video.paused) p.els.video.currentTime = Math.max(0, p.els.video.currentTime - (1 / 30)); // Frame step back (approx)
-                else p.els.video.playbackRate = Math.max(0.25, p.els.video.playbackRate - 0.25);
-                break;
-            case '.': // >
-                if (p.els.video.paused) p.els.video.currentTime = Math.min(p.els.video.duration, p.els.video.currentTime + (1 / 30)); // Frame step fwd
-                else p.els.video.playbackRate = Math.min(4, p.els.video.playbackRate + 0.25);
-                break;
+        // Video mode
+        if (v) {
+            switch (key) {
+                case ' ': case 'k':
+                    e.preventDefault();
+                    const wasPlaying = !v.paused;
+                    p.togglePlay?.();
+                    this.showPlayerToast(wasPlaying ? '<i class="ph-fill ph-pause"></i> Pause' : '<i class="ph-fill ph-play"></i> Play');
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    p.toggleFullscreen?.();
+                    this.showPlayerToast('<i class="ph-bold ph-corners-out"></i> Fullscreen');
+                    break;
+                case 'm':
+                    e.preventDefault();
+                    v.muted = !v.muted;
+                    this.showPlayerToast(v.muted ? '<i class="ph-fill ph-speaker-x"></i> Muted' : '<i class="ph-fill ph-speaker-high"></i> Unmuted');
+                    break;
+                case 'j':
+                    e.preventDefault();
+                    v.currentTime = Math.max(0, v.currentTime - 10);
+                    this.showPlayerToast('<i class="ph-bold ph-rewind"></i> -10s');
+                    break;
+                case 'l':
+                    e.preventDefault();
+                    v.currentTime = Math.min(v.duration || 0, v.currentTime + 10);
+                    this.showPlayerToast('<i class="ph-bold ph-fast-forward"></i> +10s');
+                    break;
+                case 'arrowleft':
+                    e.preventDefault();
+                    v.currentTime = Math.max(0, v.currentTime - 5);
+                    this.showPlayerToast('<i class="ph-bold ph-rewind"></i> -5s');
+                    break;
+                case 'arrowright':
+                    e.preventDefault();
+                    v.currentTime = Math.min(v.duration || 0, v.currentTime + 5);
+                    this.showPlayerToast('<i class="ph-bold ph-fast-forward"></i> +5s');
+                    break;
+                case 'arrowup':
+                    e.preventDefault();
+                    v.volume = Math.min(1, v.volume + 0.1);
+                    this.showPlayerToast(`<i class="ph-fill ph-speaker-high"></i> ${Math.round(v.volume * 100)}%`);
+                    break;
+                case 'arrowdown':
+                    e.preventDefault();
+                    v.volume = Math.max(0, v.volume - 0.1);
+                    this.showPlayerToast(`<i class="ph-fill ph-speaker-low"></i> ${Math.round(v.volume * 100)}%`);
+                    break;
+                case ',':
+                    e.preventDefault();
+                    if (v.paused) {
+                        v.currentTime = Math.max(0, v.currentTime - (1 / 30));
+                        this.showPlayerToast('<i class="ph-bold ph-frame-corners"></i> -1 Frame');
+                    } else {
+                        v.playbackRate = Math.max(0.25, v.playbackRate - 0.25);
+                        this.showPlayerToast(`<i class="ph-bold ph-gauge"></i> ${v.playbackRate}x`);
+                    }
+                    break;
+                case '.':
+                    e.preventDefault();
+                    if (v.paused) {
+                        v.currentTime = Math.min(v.duration || 0, v.currentTime + (1 / 30));
+                        this.showPlayerToast('<i class="ph-bold ph-frame-corners"></i> +1 Frame');
+                    } else {
+                        v.playbackRate = Math.min(4, v.playbackRate + 0.25);
+                        this.showPlayerToast(`<i class="ph-bold ph-gauge"></i> ${v.playbackRate}x`);
+                    }
+                    break;
+            }
         }
     }
 
-    handleGlobalShortcuts(e) {
-        // PDF Viewer Shortcuts (only if we can detect it's active - assuming player handles PDF rendering too in overlay?)
-        // If PDF is rendered in the player overlay, handlePlayerShortcuts might cover it, 
-        // OR we need specific checks in handlePlayerShortcuts if it delegates to PDFController.
+    showPlayerToast(text) {
+        // Get the player stage element to position relative to video area
+        const playerStage = document.getElementById('player-stage');
+        if (!playerStage) return;
 
-        // Actually, Player class has an `isPdf` flag or similar. 
-        // Let's check: The Player class likely manages the PDF view too based on previous context.
-        // If so, handlePlayerShortcuts should check app.player.isPdf
+        // Get or create toast element
+        let toast = document.getElementById('player-keybind-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'player-keybind-toast';
+            toast.style.cssText = `
+                position: absolute;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%) translateY(10px);
+                background: rgba(0, 0, 0, 0.85);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: 500;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.1s, transform 0.1s;
+                z-index: 9999;
+            `;
+            playerStage.appendChild(toast);
+        }
 
-        // Let's refine handlePlayerShortcuts to dispatch to PDF controller if needed.
+        // Clear any existing timeout
+        if (this.toastTimeout) clearTimeout(this.toastTimeout);
+
+        // Show toast
+        toast.innerHTML = text;
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+
+        // Hide after 600ms
+        this.toastTimeout = setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(10px)';
+        }, 600);
     }
-
-    toggleHelpModal() {
-        const modal = document.getElementById('modal-shortcuts');
-        if (modal) {
-            if (modal.classList.contains('hidden')) {
-                this.app.modals.show('shortcuts');
-            } else {
-                this.app.modals.close();
+    toggleSidebarAction(playerOpen) {
+        if (playerOpen && this.app.player) {
+            // Player sidebar
+            this.app.player.toggleSidebar?.();
+            this.showPlayerToast('<i class="ph-bold ph-sidebar"></i> Sidebar');
+        } else {
+            // Main sidebar
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                const collapsed = sidebar.classList.toggle('collapsed');
+                localStorage.setItem('whistler-sidebar-collapsed', collapsed);
             }
         }
     }
@@ -11334,7 +11638,12 @@ class GraphController {
 
         // Setup canvas size
         this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
+
+        // Use ResizeObserver to handle container size changes (e.g. sidebar toggle)
+        const observer = new ResizeObserver(() => this.resizeCanvas());
+        if (this.canvas.parentElement) {
+            observer.observe(this.canvas.parentElement);
+        }
 
         // Setup event listeners
         this.setupEventListeners();
@@ -12338,30 +12647,6 @@ class GraphController {
 // Start
 const app = new WhistlerApp();
 
-// Dev: capture runtime errors and show in debug panel (temporary)
-window.addEventListener('error', function (ev) {
-    try {
-        const panel = document.getElementById('debug-errors');
-        const body = document.getElementById('debug-errors-body');
-        if (panel && body) {
-            panel.style.display = 'block';
-            const msg = `[Error] ${ev.message} at ${ev.filename}:${ev.lineno}:${ev.colno}\n${ev.error ? ev.error.stack : ''}`;
-            body.textContent = (body.textContent || '') + msg + '\n\n';
-        }
-    } catch (e) { }
-    console.error(ev);
-});
-window.addEventListener('unhandledrejection', function (ev) {
-    try {
-        const panel = document.getElementById('debug-errors');
-        const body = document.getElementById('debug-errors-body');
-        if (panel && body) {
-            panel.style.display = 'block';
-            const msg = `[UnhandledRejection] ${ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)}\n${ev.reason && ev.reason.stack ? ev.reason.stack : ''}`;
-            body.textContent = (body.textContent || '') + msg + '\n\n';
-        }
-    } catch (e) { }
-    console.error(ev);
-});
+
 
 

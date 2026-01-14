@@ -174,11 +174,12 @@
                                 <i class="ph-bold ph-check-square"></i>
                             </button>
                             <div class="header-toolbar-divider"></div>
-                            <button id="btn-search-toggle" class="header-toolbar-btn" data-tooltip="Search">
+                            <button id="btn-search-toggle" class="header-toolbar-btn"
+                                data-tooltip="Search (Ctrl+Shift+L)">
                                 <i class="ph-bold ph-magnifying-glass"></i>
                             </button>
                             <div class="header-toolbar-divider"></div>
-                            <button id="btn-expand-add" class="header-toolbar-btn" data-tooltip="Add">
+                            <button id="btn-expand-add" class="header-toolbar-btn" data-tooltip="Add (Ctrl+Shift+N)">
                                 <i class="ph-bold ph-plus"></i>
                             </button>
                         </div>
@@ -240,11 +241,12 @@
                                 <i class="ph-bold ph-check-square"></i>
                             </button>
                             <div class="header-toolbar-divider"></div>
-                            <button id="btn-collection-search" class="header-toolbar-btn" data-tooltip="Search">
+                            <button id="btn-collection-search" class="header-toolbar-btn"
+                                data-tooltip="Search (Ctrl+Shift+L)">
                                 <i class="ph-bold ph-magnifying-glass"></i>
                             </button>
                             <div class="header-toolbar-divider"></div>
-                            <button id="btn-add-clip" class="header-toolbar-btn" data-tooltip="Add Clip">
+                            <button id="btn-add-clip" class="header-toolbar-btn" data-tooltip="Add Clip (Ctrl+Shift+N)">
                                 <i class="ph-bold ph-plus"></i>
                             </button>
                         </div>
@@ -625,13 +627,7 @@
         </div>
     </div>
 
-    <!-- Debug Panel (temporary, shows JS runtime errors) -->
-    <div id="debug-errors"
-        style="position:fixed;z-index:99999;right:12px;bottom:12px;max-width:420px;max-height:240px;overflow:auto;background:rgba(255,255,255,0.98);border:1px solid rgba(0,0,0,0.08);padding:8px;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,0.2);font-size:12px;color:#111;display:none;">
-        <strong style="display:block;margin-bottom:6px">Runtime Errors</strong>
-        <div id="debug-errors-body" style="white-space:pre-wrap;font-family:monospace;font-size:11px;color:#900;">
-        </div>
-    </div>
+
 
     <!-- Player Overlay -->
     <div id="player-overlay" class="player-overlay hidden">
@@ -1695,50 +1691,71 @@
 
 
         <!-- Shortcuts Help Modal -->
-        <div class="modal hidden" id="modal-shortcuts" style="width: 500px;">
+        <div class="modal hidden" id="modal-shortcuts" style="width: 560px;">
             <h3 class="modal-title">Keyboard Shortcuts</h3>
             <div class="shortcuts-grid">
                 <div class="shortcut-category">
                     <h4>Global</h4>
-                    <div class="shortcut-item"><span class="key">?</span> <span class="action">Toggle this list</span>
+                    <div class="shortcut-item"><span class="key">?</span> <span class="action">Show this help</span>
                     </div>
-                    <div class="shortcut-item"><span class="key">Esc</span> <span class="action">Close Modal /
-                            Player</span></div>
-                    <div class="shortcut-item"><span class="key">Ctrl</span> + <span class="key">S</span> <span
-                            class="action">Save</span></div>
+                    <div class="shortcut-item"><span class="key">Esc</span> <span class="action">Close
+                            modal/player</span></div>
+                    <div class="shortcut-item"><span class="key">I</span> <span class="action">Toggle sidebar</span>
+                    </div>
+                    <div class="shortcut-item"><span class="key">T</span> <span class="action">Add mark/timestamp</span>
+                    </div>
+                    <div class="shortcut-item"><span class="key">1</span> <span class="action">Storage</span></div>
+                    <div class="shortcut-item"><span class="key">2</span> <span class="action">Collections</span></div>
+                    <div class="shortcut-item"><span class="key">3</span> <span class="action">Graph</span></div>
+                    <div class="shortcut-item"><span class="key">4</span> <span class="action">Docs</span></div>
+                    <div class="shortcut-item"><span class="key">Ctrl</span>+<span class="key">K</span> <span
+                            class="action">Global search</span></div>
+                    <div class="shortcut-item"><span class="key">Ctrl</span>+<span class="key">Shift</span>+<span
+                            class="key">L</span> <span class="action">Page search</span></div>
                 </div>
                 <div class="shortcut-category">
-                    <h4>Player</h4>
-                    <div class="shortcut-item"><span class="key">Space</span> / <span class="key">K</span> <span
-                            class="action">Play / Pause</span></div>
-                    <div class="shortcut-item"><span class="key">F</span> <span class="action">Toggle Fullscreen</span>
-                    </div>
-                    <div class="shortcut-item"><span class="key">J</span> / <span class="key">L</span> <span
-                            class="action">Seek -10s / +10s</span></div>
-                    <div class="shortcut-item"><span class="key">←</span> / <span class="key">→</span> <span
-                            class="action">Seek -5s / +5s</span></div>
-                    <div class="shortcut-item"><span class="key">↑</span> / <span class="key">↓</span> <span
-                            class="action">Volume</span></div>
+                    <h4>Video Player</h4>
+                    <div class="shortcut-item"><span class="key">Space</span>/<span class="key">K</span> <span
+                            class="action">Play/Pause</span></div>
+                    <div class="shortcut-item"><span class="key">F</span> <span class="action">Fullscreen</span></div>
                     <div class="shortcut-item"><span class="key">M</span> <span class="action">Mute</span></div>
-                    <div class="shortcut-item"><span class="key">&lt;</span> / <span class="key">&gt;</span> <span
-                            class="action">Frame Step / Speed</span></div>
+                    <div class="shortcut-item"><span class="key">J</span>/<span class="key">L</span> <span
+                            class="action">Seek ±10s</span></div>
+                    <div class="shortcut-item"><span class="key">←</span>/<span class="key">→</span> <span
+                            class="action">Seek ±5s</span></div>
+                    <div class="shortcut-item"><span class="key">↑</span>/<span class="key">↓</span> <span
+                            class="action">Volume</span></div>
+                    <div class="shortcut-item"><span class="key">,</span>/<span class="key">.</span> <span
+                            class="action">Frame/Speed</span></div>
                 </div>
                 <div class="shortcut-category">
-                    <h4>PDF</h4>
-                    <div class="shortcut-item"><span class="key">[</span> / <span class="key">]</span> <span
-                            class="action">Prev / Next Page</span></div>
-                    <div class="shortcut-item"><span class="key">-</span> / <span class="key">+</span> <span
-                            class="action">Zoom Out / In</span></div>
-                    <div class="shortcut-item"><span class="key">0</span> <span class="action">Reset Zoom</span></div>
+                    <h4>PDF Viewer</h4>
+                    <div class="shortcut-item"><span class="key">[</span>/<span class="key">]</span> <span
+                            class="action">Prev/Next page</span></div>
+                    <div class="shortcut-item"><span class="key">-</span>/<span class="key">+</span> <span
+                            class="action">Zoom</span></div>
+                    <div class="shortcut-item"><span class="key">0</span> <span class="action">Reset zoom</span></div>
+                    <div class="shortcut-item"><span class="key">H</span> <span class="action">Add highlight</span>
+                    </div>
                 </div>
             </div>
             <div class="modal-actions">
-                <button class="btn-primary" onclick="app.modals.close()">Got it</button>
+                <button class="btn-primary" onclick="app.modals.close()" tabindex="-1">Got it</button>
             </div>
         </div>
-    </div>
 
-    <script src="whistler.js"></script>
+        <!-- Navigation Toast (Rebuilt) -->
+        <div id="nav-toast" class="nav-toast">
+            <div class="nav-toast-track">
+                <div class="nav-toast-indicator"></div>
+                <div class="nav-toast-item" data-index="1"><i class="ph-bold ph-hard-drives"></i></div>
+                <div class="nav-toast-item" data-index="2"><i class="ph-bold ph-squares-four"></i></div>
+                <div class="nav-toast-item" data-index="3"><i class="ph-bold ph-graph"></i></div>
+                <div class="nav-toast-item" data-index="4"><i class="ph-bold ph-file-text"></i></div>
+            </div>
+        </div>
+
+        <script src="whistler.js"></script>
 </body>
 
 </html>
