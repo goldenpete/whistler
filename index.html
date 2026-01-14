@@ -451,6 +451,9 @@
                                     </div>
                                 </div>
                             </div>
+                            <button class="graph-toolbar-btn" id="btn-graph-delete-mode" data-tooltip="Delete Tool">
+                                <i class="ph-bold ph-eraser"></i>
+                            </button>
                             <div class="graph-toolbar-divider"></div>
                             <button class="graph-toolbar-btn" id="btn-graph-zoom-in" data-tooltip="Zoom In">
                                 <i class="ph-bold ph-magnifying-glass-plus"></i>
@@ -513,363 +516,369 @@
                         </div>
                     </div>
                 </header>
-    </div>
-    </section>
-
-    <!-- Trash View -->
-    <section id="view-trash" class="view-section hidden">
-        <header class="view-header">
-            <div class="topbar-sidebar-toggle">
-                <button class="sidebar-expand-btn" data-sidebar-toggle>
-                    <i class="ph-bold ph-sidebar-simple"></i>
-                </button>
-                <i class="ph-fill ph-wave-sine topbar-logo"></i>
-            </div>
-            <div class="header-breadcrumb">
-                <h1><i class="ph-bold ph-trash"></i> Trash</h1>
-            </div>
-            <div class="header-actions">
-                <div class="header-toolbar">
-                    <button id="btn-empty-trash" class="header-toolbar-btn header-toolbar-btn-danger"
-                        data-tooltip="Empty Trash">
-                        <i class="ph-bold ph-trash"></i>
-                        <span style="margin-left:4px;">Empty</span>
-                    </button>
+                <div class="grid-layout" id="collections-grid">
+                    <!-- Collection Cards injected by JS -->
                 </div>
-            </div>
-        </header>
-        <div class="trash-content" id="trash-content">
-            <!-- Trash items injected by JS -->
-            <div class="trash-empty-state" id="trash-empty-state">
-                <i class="ph ph-trash" style="font-size: 64px; opacity: 0.3; margin-bottom: 16px;"></i>
-                <div style="font-size: 16px; font-weight: 600; color: var(--text-secondary);">Trash is Empty</div>
-                <div style="font-size: 13px; color: var(--text-muted); margin-top: 8px;">Deleted items will appear here
-                </div>
-            </div>
-        </div>
-    </section>
-    </main>
+            </section>
 
-    <!-- Graph Node Editor Panel -->
-    <div class="graph-node-editor hidden" id="graph-node-editor">
-        <div class="graph-node-editor-header">
-            <span>Edit Node</span>
-            <button class="icon-btn-small" id="btn-node-editor-close"><i class="ph-bold ph-x"></i></button>
-        </div>
-        <div class="graph-node-editor-body">
-            <div class="form-group">
-                <label class="form-label">Title</label>
-                <input type="text" class="form-input" id="input-node-title" placeholder="Node title...">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Color</label>
-                <div class="color-picker-wrapper">
-                    <div class="color-preview" id="node-color-preview"></div>
-                    <input type="hidden" id="input-node-color" value="#6366f1">
-                    <button class="btn-ghost" id="btn-node-color-trigger">Change</button>
-                </div>
-            </div>
-            <div class="form-group" id="node-link-group">
-                <label class="form-label">Link</label>
-                <div class="link-selector-wrapper">
-                    <span class="link-selector-display" id="node-link-display">None</span>
-                    <button class="btn-ghost" id="btn-node-link-change">Change</button>
-                </div>
-                <input type="hidden" id="select-node-link" value="">
-            </div>
-            <div class="form-group hidden" id="node-url-group">
-                <label class="form-label">URL</label>
-                <input type="text" class="form-input" id="input-node-url" placeholder="https://...">
-            </div>
-        </div>
-        <div class="graph-node-editor-actions">
-            <button class="btn-ghost" id="btn-node-delete"><i class="ph-bold ph-trash"></i> Delete</button>
-            <button class="btn-primary" id="btn-node-save">Save</button>
-        </div>
-    </div>
-
-    <!-- Graph Context Menu -->
-    <div class="graph-context-menu hidden" id="graph-context-menu">
-        <div class="graph-context-item" id="ctx-node-edit">
-            <i class="ph-bold ph-pencil-simple"></i>
-            <span>Edit</span>
-        </div>
-        <div class="graph-context-item" id="ctx-node-connect">
-            <i class="ph-bold ph-arrows-split"></i>
-            <span>Connect</span>
-        </div>
-        <div class="graph-context-item" id="ctx-node-open">
-            <i class="ph-bold ph-arrow-square-out"></i>
-            <span>Open</span>
-        </div>
-        <div class="graph-context-item danger" id="ctx-node-delete">
-            <i class="ph-bold ph-trash"></i>
-            <span>Delete</span>
-        </div>
-    </div>
-
-    <!-- History Panel (Slide-out) -->
-    <div class="history-panel hidden" id="history-panel">
-        <div class="history-panel-header">
-            <div class="history-panel-title">
-                <i class="ph-bold ph-clock-counter-clockwise"></i>
-                <span>History</span>
-            </div>
-            <button class="icon-btn-small" id="btn-close-history"><i class="ph-bold ph-x"></i></button>
-        </div>
-        <div class="history-panel-content" id="history-panel-content">
-            <!-- History entries injected by JS -->
-            <div class="history-empty-state" id="history-empty-state">
-                <i class="ph ph-clock-counter-clockwise"
-                    style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
-                <div style="font-size: 14px; color: var(--text-muted);">No history yet</div>
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- Player Overlay -->
-    <div id="player-overlay" class="player-overlay hidden">
-        <!-- Top Bar (Spans full width over video and sidebar) -->
-        <div class="player-top-bar">
-            <div class="player-info">
-                <i class="ph-bold ph-film-strip"></i>
-                <div class="editable-group" id="group-filename" data-tooltip="Edit Title">
-                    <span id="player-filename">Filename.mp4</span>
-                    <i class="ph-bold ph-pencil-simple edit-icon"></i>
-                </div>
-                <div class="divider-vertical"></div>
-                <div class="editable-group" id="group-description" data-tooltip="Edit Description">
-                    <span id="player-description" class="player-description text-truncate">Click to add
-                        description</span>
-                    <i class="ph-bold ph-pencil-simple edit-icon"></i>
-                </div>
-            </div>
-            <div class="player-top-actions">
-                <button class="btn-ghost" id="player-link" data-tooltip="Open Link"><i
-                        class="ph-bold ph-arrow-square-out"></i></button>
-                <button class="btn-ghost" id="player-btn-copy" data-tooltip="Copy URL"><i
-                        class="ph-bold ph-copy"></i></button>
-                <button class="btn-ghost" id="player-btn-share" data-tooltip="Share"><i
-                        class="ph-bold ph-share-network"></i></button>
-                <div class="divider-vertical"></div>
-                <button class="btn-ghost" id="player-btn-move" data-tooltip="Move to Folder"><i
-                        class="ph-bold ph-folder-notch-plus"></i></button>
-                <button class="btn-ghost" id="player-btn-color" data-tooltip="Change Color"><i
-                        class="ph-bold ph-palette"></i></button>
-                <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
-                        class="ph-bold ph-trash"></i></button>
-                <div class="divider-vertical"></div>
-                <button class="btn-ghost" id="player-btn-close" data-tooltip="Close"><i
-                        class="ph-bold ph-x"></i></button>
-            </div>
-
-            <!-- Collection Mode Actions (Hidden by default) -->
-            <div class="player-top-actions collection-mode-actions hidden" id="collection-mode-actions">
-                <button class="btn-ghost" id="btn-move-collection" data-tooltip="Move to Collection"><i
-                        class="ph-bold ph-folder-notch-plus"></i></button>
-                <button class="btn-ghost" id="btn-delete-timestamp" data-tooltip="Delete Timestamp"><i
-                        class="ph-bold ph-trash"></i></button>
-                <div class="divider-vertical"></div>
-                <button class="btn-ghost" id="btn-close-collection-view" data-tooltip="Close"><i
-                        class="ph-bold ph-x"></i></button>
-            </div>
-        </div>
-
-        <!-- Player Content -->
-        <div class="player-content">
-            <div class="player-stage" id="player-stage">
-                <div class="video-wrapper" id="video-wrapper">
-                    <!-- Placeholders -->
-                    <div id="youtube-placeholder" class="hidden"></div>
-                    <video id="main-video" class="main-video"></video>
-
-                    <!-- PDF Container -->
-                    <div id="pdf-stage" class="pdf-stage hidden">
-                        <div id="pdf-page-container">
-                            <canvas id="pdf-render"></canvas>
-                            <div id="pdf-text-layer" class="textLayer"></div>
+            <!-- Trash View -->
+            <section id="view-trash" class="view-section hidden">
+                <header class="view-header">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
+                    <div class="header-breadcrumb">
+                        <h1><i class="ph-bold ph-trash"></i> Trash</h1>
+                    </div>
+                    <div class="header-actions">
+                        <div class="header-toolbar">
+                            <button id="btn-empty-trash" class="header-toolbar-btn header-toolbar-btn-danger"
+                                data-tooltip="Empty Trash">
+                                <i class="ph-bold ph-trash"></i>
+                                <span style="margin-left:4px;">Empty</span>
+                            </button>
                         </div>
                     </div>
-
-                    <!-- Loader -->
-                    <div id="video-loader" class="video-loader hidden">
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
+                </header>
+                <div class="trash-content" id="trash-content">
+                    <!-- Trash items injected by JS -->
+                    <div class="trash-empty-state" id="trash-empty-state">
+                        <i class="ph ph-trash" style="font-size: 64px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <div style="font-size: 16px; font-weight: 600; color: var(--text-secondary);">Trash is Empty
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-muted); margin-top: 8px;">Deleted items will
+                            appear here
+                        </div>
                     </div>
                 </div>
+            </section>
+        </main>
 
-                <!-- Bottom Bar -->
-                <div class="player-bottom-bar">
-                    <!-- Speed Menu -->
-                    <div id="speed-menu" class="speed-menu hidden">
-                        <div class="speed-header">
-                            <span id="speed-display">1.00x</span>
-                        </div>
-                        <div class="speed-slider-row">
-                            <button class="btn-icon-small" id="btn-speed-minus"><i
-                                    class="ph-bold ph-minus"></i></button>
-                            <input type="range" id="speed-slider" class="speed-slider" min="0.25" max="8" step="0.05"
-                                value="1">
-                            <button class="btn-icon-small" id="btn-speed-plus"><i class="ph-bold ph-plus"></i></button>
-                        </div>
-                        <div class="speed-grid" id="speed-grid">
-                            <button class="speed-preset">0.25</button>
-                            <button class="speed-preset">0.5</button>
-                            <button class="speed-preset">0.75</button>
-                            <button class="speed-preset active">1.0</button>
-                            <button class="speed-preset">1.25</button>
-                            <button class="speed-preset">1.5</button>
-                            <button class="speed-preset">1.75</button>
-                            <button class="speed-preset">2.0</button>
-                            <button class="speed-preset">2.5</button>
-                            <button class="speed-preset">3.0</button>
-                            <button class="speed-preset">4.0</button>
-                            <button class="speed-preset">8.0</button>
-                        </div>
+        <!-- Graph Node Editor Panel -->
+        <div class="graph-node-editor hidden" id="graph-node-editor">
+            <div class="graph-node-editor-header">
+                <span>Edit Node</span>
+                <button class="icon-btn-small" id="btn-node-editor-close"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div class="graph-node-editor-body">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" class="form-input" id="input-node-title" placeholder="Node title...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-picker-wrapper">
+                        <div class="color-preview" id="node-color-preview"></div>
+                        <input type="hidden" id="input-node-color" value="#6366f1">
+                        <button class="btn-ghost" id="btn-node-color-trigger">Change</button>
                     </div>
-
-                    <div class="seek-container" id="seek-container">
-                        <div class="seek-preview" id="seek-preview">
-                            <canvas id="seek-preview-canvas" width="160" height="90"></canvas>
-                            <span id="seek-preview-time">0:00</span>
-                        </div>
-                        <div class="seek-track" id="seek-track">
-                            <div class="seek-fill" id="seek-fill"></div>
-                            <div class="seek-thumb" id="seek-thumb"></div>
-                            <div class="seek-markers" id="seek-markers"></div>
-                        </div>
+                </div>
+                <div class="form-group" id="node-link-group">
+                    <label class="form-label">Link</label>
+                    <div class="link-selector-wrapper">
+                        <span class="link-selector-display" id="node-link-display">None</span>
+                        <button class="btn-ghost" id="btn-node-link-change">Change</button>
                     </div>
+                    <input type="hidden" id="select-node-link" value="">
+                </div>
+                <div class="form-group hidden" id="node-url-group">
+                    <label class="form-label">URL</label>
+                    <input type="text" class="form-input" id="input-node-url" placeholder="https://...">
+                </div>
+            </div>
+            <div class="graph-node-editor-actions">
+                <button class="btn-ghost" id="btn-node-delete"><i class="ph-bold ph-trash"></i> Delete</button>
+                <button class="btn-primary" id="btn-node-save">Save</button>
+            </div>
+        </div>
 
-                    <div class="controls-row">
-                        <div class="controls-left">
-                            <button class="ctrl-btn-filled" id="btn-play-pause" data-tooltip="Play/Pause"><i
-                                    class="ph-fill ph-play"></i></button>
+        <!-- Graph Context Menu -->
+        <div class="graph-context-menu hidden" id="graph-context-menu">
+            <div class="graph-context-item" id="ctx-node-edit">
+                <i class="ph-bold ph-pencil-simple"></i>
+                <span>Edit</span>
+            </div>
+            <div class="graph-context-item" id="ctx-node-connect">
+                <i class="ph-bold ph-arrows-split"></i>
+                <span>Connect</span>
+            </div>
+            <div class="graph-context-item" id="ctx-node-open">
+                <i class="ph-bold ph-arrow-square-out"></i>
+                <span>Open</span>
+            </div>
+            <div class="graph-context-item danger" id="ctx-node-delete">
+                <i class="ph-bold ph-trash"></i>
+                <span>Delete</span>
+            </div>
+        </div>
 
-                            <div class="volume-container">
-                                <button class="ctrl-btn-filled" id="btn-volume" data-tooltip="Mute/Unmute"><i
-                                        class="ph-bold ph-speaker-high"></i></button>
-                                <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.05"
-                                    value="1">
+        <!-- History Panel (Slide-out) -->
+        <div class="history-panel hidden" id="history-panel">
+            <div class="history-panel-header">
+                <div class="history-panel-title">
+                    <i class="ph-bold ph-clock-counter-clockwise"></i>
+                    <span>History</span>
+                </div>
+                <button class="icon-btn-small" id="btn-close-history"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div class="history-panel-content" id="history-panel-content">
+                <!-- History entries injected by JS -->
+                <div class="history-empty-state" id="history-empty-state">
+                    <i class="ph ph-clock-counter-clockwise"
+                        style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
+                    <div style="font-size: 14px; color: var(--text-muted);">No history yet</div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Player Overlay -->
+        <div id="player-overlay" class="player-overlay hidden">
+            <!-- Top Bar (Spans full width over video and sidebar) -->
+            <div class="player-top-bar">
+                <div class="player-info">
+                    <i class="ph-bold ph-film-strip"></i>
+                    <div class="editable-group" id="group-filename" data-tooltip="Edit Title">
+                        <span id="player-filename">Filename.mp4</span>
+                        <i class="ph-bold ph-pencil-simple edit-icon"></i>
+                    </div>
+                    <div class="divider-vertical"></div>
+                    <div class="editable-group" id="group-description" data-tooltip="Edit Description">
+                        <span id="player-description" class="player-description text-truncate">Click to add
+                            description</span>
+                        <i class="ph-bold ph-pencil-simple edit-icon"></i>
+                    </div>
+                </div>
+                <div class="player-top-actions">
+                    <button class="btn-ghost" id="player-link" data-tooltip="Open Link"><i
+                            class="ph-bold ph-arrow-square-out"></i></button>
+                    <button class="btn-ghost" id="player-btn-copy" data-tooltip="Copy URL"><i
+                            class="ph-bold ph-copy"></i></button>
+                    <button class="btn-ghost" id="player-btn-share" data-tooltip="Share"><i
+                            class="ph-bold ph-share-network"></i></button>
+                    <div class="divider-vertical"></div>
+                    <button class="btn-ghost" id="player-btn-move" data-tooltip="Move to Folder"><i
+                            class="ph-bold ph-folder-notch-plus"></i></button>
+                    <button class="btn-ghost" id="player-btn-color" data-tooltip="Change Color"><i
+                            class="ph-bold ph-palette"></i></button>
+                    <button class="btn-ghost" id="player-btn-delete" data-tooltip="Delete File"><i
+                            class="ph-bold ph-trash"></i></button>
+                    <div class="divider-vertical"></div>
+                    <button class="btn-ghost" id="player-btn-close" data-tooltip="Close"><i
+                            class="ph-bold ph-x"></i></button>
+                </div>
+
+                <!-- Collection Mode Actions (Hidden by default) -->
+                <div class="player-top-actions collection-mode-actions hidden" id="collection-mode-actions">
+                    <button class="btn-ghost" id="btn-move-collection" data-tooltip="Move to Collection"><i
+                            class="ph-bold ph-folder-notch-plus"></i></button>
+                    <button class="btn-ghost" id="btn-delete-timestamp" data-tooltip="Delete Timestamp"><i
+                            class="ph-bold ph-trash"></i></button>
+                    <div class="divider-vertical"></div>
+                    <button class="btn-ghost" id="btn-close-collection-view" data-tooltip="Close"><i
+                            class="ph-bold ph-x"></i></button>
+                </div>
+            </div>
+
+            <!-- Player Content -->
+            <div class="player-content">
+                <div class="player-stage" id="player-stage">
+                    <div class="video-wrapper" id="video-wrapper">
+                        <!-- Placeholders -->
+                        <div id="youtube-placeholder" class="hidden"></div>
+                        <video id="main-video" class="main-video"></video>
+
+                        <!-- PDF Container -->
+                        <div id="pdf-stage" class="pdf-stage hidden">
+                            <div id="pdf-page-container">
+                                <canvas id="pdf-render"></canvas>
+                                <div id="pdf-text-layer" class="textLayer"></div>
                             </div>
                         </div>
 
+                        <!-- Loader -->
+                        <div id="video-loader" class="video-loader hidden">
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Bar -->
+                    <div class="player-bottom-bar">
+                        <!-- Speed Menu -->
+                        <div id="speed-menu" class="speed-menu hidden">
+                            <div class="speed-header">
+                                <span id="speed-display">1.00x</span>
+                            </div>
+                            <div class="speed-slider-row">
+                                <button class="btn-icon-small" id="btn-speed-minus"><i
+                                        class="ph-bold ph-minus"></i></button>
+                                <input type="range" id="speed-slider" class="speed-slider" min="0.25" max="8"
+                                    step="0.05" value="1">
+                                <button class="btn-icon-small" id="btn-speed-plus"><i
+                                        class="ph-bold ph-plus"></i></button>
+                            </div>
+                            <div class="speed-grid" id="speed-grid">
+                                <button class="speed-preset">0.25</button>
+                                <button class="speed-preset">0.5</button>
+                                <button class="speed-preset">0.75</button>
+                                <button class="speed-preset active">1.0</button>
+                                <button class="speed-preset">1.25</button>
+                                <button class="speed-preset">1.5</button>
+                                <button class="speed-preset">1.75</button>
+                                <button class="speed-preset">2.0</button>
+                                <button class="speed-preset">2.5</button>
+                                <button class="speed-preset">3.0</button>
+                                <button class="speed-preset">4.0</button>
+                                <button class="speed-preset">8.0</button>
+                            </div>
+                        </div>
+
+                        <div class="seek-container" id="seek-container">
+                            <div class="seek-preview" id="seek-preview">
+                                <canvas id="seek-preview-canvas" width="160" height="90"></canvas>
+                                <span id="seek-preview-time">0:00</span>
+                            </div>
+                            <div class="seek-track" id="seek-track">
+                                <div class="seek-fill" id="seek-fill"></div>
+                                <div class="seek-thumb" id="seek-thumb"></div>
+                                <div class="seek-markers" id="seek-markers"></div>
+                            </div>
+                        </div>
+
+                        <div class="controls-row">
+                            <div class="controls-left">
+                                <button class="ctrl-btn-filled" id="btn-play-pause" data-tooltip="Play/Pause"><i
+                                        class="ph-fill ph-play"></i></button>
+
+                                <div class="volume-container">
+                                    <button class="ctrl-btn-filled" id="btn-volume" data-tooltip="Mute/Unmute"><i
+                                            class="ph-bold ph-speaker-high"></i></button>
+                                    <input type="range" id="volume-slider" class="volume-slider" min="0" max="1"
+                                        step="0.05" value="1">
+                                </div>
+                            </div>
 
 
-                        <span class="time-display" id="time-display">0:00 / 0:00</span>
 
-                        <div class="controls-right">
-                            <button class="ctrl-btn-text" id="btn-speed" data-tooltip="Playback Speed">1.00x</button>
+                            <span class="time-display" id="time-display">0:00 / 0:00</span>
 
-                            <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
-                                    class="ph-bold ph-picture-in-picture"></i></button>
-                            <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
+                            <div class="controls-right">
+                                <button class="ctrl-btn-text" id="btn-speed"
+                                    data-tooltip="Playback Speed">1.00x</button>
+
+                                <button class="ctrl-btn-filled" id="btn-pip-toggle" data-tooltip="Mini Player"><i
+                                        class="ph-bold ph-picture-in-picture"></i></button>
+                                <button class="ctrl-btn-filled" id="btn-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
+                                        class="ph-bold ph-sidebar-simple"></i></button>
+                                <button class="ctrl-btn-filled" id="btn-fullscreen" data-tooltip="Fullscreen"><i
+                                        class="ph-bold ph-corners-out"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PDF Controls (Floating, inside player-stage) -->
+                    <div id="pdf-controls" class="pdf-controls hidden">
+
+                        <!-- Removed manual divider for even spacing -->
+                        <button class="ctrl-btn-filled" id="btn-pdf-zoom-out" data-tooltip="Zoom Out"><i
+                                class="ph-bold ph-minus"></i></button>
+                        <button class="ctrl-btn-filled" id="btn-pdf-zoom-in" data-tooltip="Zoom In"><i
+                                class="ph-bold ph-plus"></i></button>
+                        <div class="pdf-nav-group">
+                            <button class="ctrl-btn-filled" id="btn-pdf-prev" data-tooltip="Previous Page"><i
+                                    class="ph-bold ph-caret-left"></i></button>
+                            <span id="pdf-page-num">1 / 10</span>
+                            <button class="ctrl-btn-filled" id="btn-pdf-next" data-tooltip="Next Page"><i
+                                    class="ph-bold ph-caret-right"></i></button>
+                        </div>
+                        <div class="pdf-nav-group">
+                            <button class="ctrl-btn-filled" id="btn-pdf-save-highlight" disabled
+                                data-tooltip="Save Highlight"><i class="ph-bold ph-floppy-disk"></i></button>
+                            <button class="ctrl-btn-filled" id="btn-pdf-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
                                     class="ph-bold ph-sidebar-simple"></i></button>
-                            <button class="ctrl-btn-filled" id="btn-fullscreen" data-tooltip="Fullscreen"><i
+                            <button class="ctrl-btn-filled" id="btn-pdf-fullscreen" data-tooltip="Fullscreen"><i
                                     class="ph-bold ph-corners-out"></i></button>
                         </div>
                     </div>
-                </div>
+                </div> <!-- End player-stage -->
 
-                <!-- PDF Controls (Floating, inside player-stage) -->
-                <div id="pdf-controls" class="pdf-controls hidden">
+                <!-- Resize Handle -->
+                <div class="resize-handle" id="player-resize-handle"></div>
 
-                    <!-- Removed manual divider for even spacing -->
-                    <button class="ctrl-btn-filled" id="btn-pdf-zoom-out" data-tooltip="Zoom Out"><i
-                            class="ph-bold ph-minus"></i></button>
-                    <button class="ctrl-btn-filled" id="btn-pdf-zoom-in" data-tooltip="Zoom In"><i
-                            class="ph-bold ph-plus"></i></button>
-                    <div class="pdf-nav-group">
-                        <button class="ctrl-btn-filled" id="btn-pdf-prev" data-tooltip="Previous Page"><i
-                                class="ph-bold ph-caret-left"></i></button>
-                        <span id="pdf-page-num">1 / 10</span>
-                        <button class="ctrl-btn-filled" id="btn-pdf-next" data-tooltip="Next Page"><i
-                                class="ph-bold ph-caret-right"></i></button>
-                    </div>
-                    <div class="pdf-nav-group">
-                        <button class="ctrl-btn-filled" id="btn-pdf-save-highlight" disabled
-                            data-tooltip="Save Highlight"><i class="ph-bold ph-floppy-disk"></i></button>
-                        <button class="ctrl-btn-filled" id="btn-pdf-sidebar-toggle" data-tooltip="Toggle Sidebar"><i
-                                class="ph-bold ph-sidebar-simple"></i></button>
-                        <button class="ctrl-btn-filled" id="btn-pdf-fullscreen" data-tooltip="Fullscreen"><i
-                                class="ph-bold ph-corners-out"></i></button>
-                    </div>
-                </div>
-            </div> <!-- End player-stage -->
-
-            <!-- Resize Handle -->
-            <div class="resize-handle" id="player-resize-handle"></div>
-
-            <!-- Timestamp Sidebar (Moved inside player-content) -->
-            <aside class="player-sidebar" id="player-sidebar">
-                <div class="sidebar-header">
-                    <h3 id="sidebar-main-title">Timestamps</h3>
-                    <button class="btn-small-primary" id="btn-add-timestamp">
-                        <i class="ph-bold ph-note-pencil"></i> Add
-                    </button>
-                </div>
-                <div class="timestamps-scroll" id="timestamps-list">
-                    <!-- Timestamps injected -->
-                </div>
-            </aside>
-
-            <!-- Info Sidebar (Collection Mode) -->
-            <aside class="player-sidebar info-sidebar hidden" id="info-sidebar">
-                <div class="sidebar-header">
-                    <h3 id="info-sidebar-title">Clip Info</h3>
-                </div>
-
-                <div class="info-content">
-                    <!-- Group for Tight Spacing -->
-                    <div class="info-actions-group">
-                        <button class="info-action-btn view-original-btn" id="btn-view-original">
-                            <i class="ph-bold ph-arrow-square-out"></i>
-                            <span>View Original</span>
+                <!-- Timestamp Sidebar (Moved inside player-content) -->
+                <aside class="player-sidebar" id="player-sidebar">
+                    <div class="sidebar-header">
+                        <h3 id="sidebar-main-title">Timestamps</h3>
+                        <button class="btn-small-primary" id="btn-add-timestamp">
+                            <i class="ph-bold ph-note-pencil"></i> Add
                         </button>
+                    </div>
+                    <div class="timestamps-scroll" id="timestamps-list">
+                        <!-- Timestamps injected -->
+                    </div>
+                </aside>
 
-                        <div class="info-actions-row">
-                            <button class="info-action-btn" id="btn-edit-timestamp-sidebar" data-tooltip="Edit">
-                                <i class="ph-bold ph-pencil-simple"></i>
+                <!-- Info Sidebar (Collection Mode) -->
+                <aside class="player-sidebar info-sidebar hidden" id="info-sidebar">
+                    <div class="sidebar-header">
+                        <h3 id="info-sidebar-title">Clip Info</h3>
+                    </div>
+
+                    <div class="info-content">
+                        <!-- Group for Tight Spacing -->
+                        <div class="info-actions-group">
+                            <button class="info-action-btn view-original-btn" id="btn-view-original">
+                                <i class="ph-bold ph-arrow-square-out"></i>
+                                <span>View Original</span>
                             </button>
-                            <button class="info-action-btn" id="btn-move-collection-sidebar" data-tooltip="Move">
-                                <i class="ph-bold ph-folder-notch-plus"></i>
-                            </button>
-                            <button class="info-action-btn danger" id="btn-delete-timestamp-sidebar"
-                                data-tooltip="Delete">
-                                <i class="ph-bold ph-trash"></i>
-                            </button>
-                            <button class="info-action-btn" id="btn-close-collection-sidebar" data-tooltip="Close">
-                                <i class="ph-bold ph-x"></i>
-                            </button>
+
+                            <div class="info-actions-row">
+                                <button class="info-action-btn" id="btn-edit-timestamp-sidebar" data-tooltip="Edit">
+                                    <i class="ph-bold ph-pencil-simple"></i>
+                                </button>
+                                <button class="info-action-btn" id="btn-move-collection-sidebar" data-tooltip="Move">
+                                    <i class="ph-bold ph-folder-notch-plus"></i>
+                                </button>
+                                <button class="info-action-btn danger" id="btn-delete-timestamp-sidebar"
+                                    data-tooltip="Delete">
+                                    <i class="ph-bold ph-trash"></i>
+                                </button>
+                                <button class="info-action-btn" id="btn-close-collection-sidebar" data-tooltip="Close">
+                                    <i class="ph-bold ph-x"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="info-time-range" id="info-time-range">
+                            0:00 - 0:00
+                        </div>
+
+                        <div class="info-note" id="info-note">
+                            No note
+                        </div>
+
+                        <!-- Video Info Card -->
+                        <div class="info-file-card">
+                            <div class="info-file" id="info-file">
+                                <i class="ph-bold ph-film-strip"></i> Unknown
+                            </div>
+                            <div class="info-file-desc" id="info-file-desc">
+                                No description
+                            </div>
                         </div>
                     </div>
+                </aside>
+            </div> <!-- End player-content -->
 
-                    <div class="info-time-range" id="info-time-range">
-                        0:00 - 0:00
-                    </div>
-
-                    <div class="info-note" id="info-note">
-                        No note
-                    </div>
-
-                    <!-- Video Info Card -->
-                    <div class="info-file-card">
-                        <div class="info-file" id="info-file">
-                            <i class="ph-bold ph-film-strip"></i> Unknown
-                        </div>
-                        <div class="info-file-desc" id="info-file-desc">
-                            No description
-                        </div>
-                    </div>
-                </div>
-            </aside>
-        </div> <!-- End player-content -->
-
-    </div> <!-- End player-overlay -->
+        </div> <!-- End player-overlay -->
     </div> <!-- End app -->
 
     <!-- Spotlight Search -->
@@ -1754,6 +1763,9 @@
                 <div class="nav-toast-item" data-index="4"><i class="ph-bold ph-file-text"></i></div>
             </div>
         </div>
+
+        <!-- Global Tooltip -->
+        <div id="global-tooltip" class="global-tooltip"></div>
 
         <script src="whistler.js"></script>
 </body>

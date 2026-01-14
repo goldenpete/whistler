@@ -6604,3 +6604,159 @@ input[type="color"]::-webkit-color-swatch {
 .nav-dial-item.active {
     color: white;
 }
+
+/* ========== Assets Overview Styles ========== */
+.assets-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    padding: 24px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.asset-category {
+    background: linear-gradient(145deg, rgba(20, 20, 24, 0.9), rgba(15, 15, 18, 0.95));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.3s var(--ease-out);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.asset-category:hover {
+    border-color: var(--border-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.asset-category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--bg-hover) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+}
+
+.asset-category-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px 12px;
+    margin: -8px -12px;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s var(--ease-out);
+}
+
+.asset-category-title:hover {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+.asset-category-title i {
+    font-size: 20px;
+    color: var(--accent);
+}
+
+.asset-category-items {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 4px;
+}
+
+.asset-recent-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+}
+
+.asset-recent-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: translateX(4px);
+}
+
+.asset-recent-item i {
+    font-size: 18px;
+    color: var(--accent);
+    opacity: 0.8;
+}
+
+.asset-recent-item:hover i {
+    opacity: 1;
+}
+
+.asset-recent-item span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asset-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* ========== Tooltip Styles (JS-based) ========== */
+.global-tooltip {
+    position: fixed;
+    background: rgba(15, 15, 18, 0.95);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, visibility 0.15s;
+    z-index: 10000;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    top: 0;
+    left: 0;
+    transform: translate(10px, 10px);
+    /* Default offset */
+}
+
+.global-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Delete tool active state */
+.graph-toolbar-btn.delete-mode-active {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+/* Nav Headings Active State */
+.nav-section-header.active {
+    background: transparent;
+    border-color: transparent;
+}
+
+.nav-section-header.active span {
+    color: var(--accent);
+    font-weight: 600;
+}

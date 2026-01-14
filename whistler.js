@@ -31,6 +31,7 @@ class WhistlerApp {
         this.player = new Player(this);
         this.ui = new UIManager(this);
         this.modals = new ModalManager(this);
+        this.tooltips = new TooltipManager();
         this.exportImport = new ExportImportManager(this);
         this.sync = new SyncManager(this);
         this.sync = new SyncManager(this);
@@ -649,8 +650,11 @@ class StorageManager {
     }
 
     deleteGraphEdge(id) {
+        const initialLen = this.app.state.graphEdges.length;
         this.app.state.graphEdges = this.app.state.graphEdges.filter(e => e.id !== id);
-        this.save();
+        if (this.app.state.graphEdges.length !== initialLen) {
+            this.save();
+        }
     }
 
     getGraphEdges(graphId) {
@@ -1530,6 +1534,8 @@ class Router {
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.remove('active');
             document.getElementById('nav-trash')?.classList.remove('active');
+            document.getElementById('nav-assets-header')?.classList.remove('active');
+            document.getElementById('nav-collections-header')?.classList.remove('active');
             this.app.ui.renderCollectionsList(); // Re-render to clear active collections
 
             this.views.storage.classList.remove('hidden');
@@ -1541,6 +1547,8 @@ class Router {
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.remove('active');
+            document.getElementById('nav-assets-header')?.classList.remove('active');
+            document.getElementById('nav-collections-header')?.classList.remove('active');
             this.app.ui.renderCollectionsList(); // Re-render to highlight active collection
         } else if (viewName === 'docs') {
             if (!this.app.state.activeProjectId) return;
@@ -1552,6 +1560,8 @@ class Router {
             document.getElementById('nav-docs').classList.add('active');
             document.getElementById('nav-graph').classList.remove('active');
             document.getElementById('nav-trash')?.classList.remove('active');
+            document.getElementById('nav-assets-header')?.classList.remove('active');
+            document.getElementById('nav-collections-header')?.classList.remove('active');
             this.app.ui.renderCollectionsList();
 
             // Ensure a doc is selected or create one
@@ -1571,6 +1581,8 @@ class Router {
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.add('active');
             document.getElementById('nav-trash')?.classList.remove('active');
+            document.getElementById('nav-assets-header')?.classList.remove('active');
+            document.getElementById('nav-collections-header')?.classList.remove('active');
             this.app.ui.renderCollectionsList();
 
             // Ensure a graph is selected or create one
@@ -1592,16 +1604,21 @@ class Router {
         } else if (viewName === 'welcome') {
             if (this.views.welcome) {
                 this.views.welcome.classList.remove('hidden');
+                // Check if nav elements exist before trying to access classList
+                document.getElementById('nav-assets-header')?.classList.remove('active');
+                document.getElementById('nav-collections-header')?.classList.remove('active');
             }
         } else if (viewName === 'assets') {
             if (!this.app.state.activeProjectId) return;
 
             this.app.state.activeCollectionId = null;
 
-            // Update nav state - no specific item active
+            // Update nav state - highlight Assets header
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.remove('active');
+            document.getElementById('nav-assets-header')?.classList.add('active');
+            document.getElementById('nav-collections-header')?.classList.remove('active');
             this.app.ui.renderCollectionsList();
 
             // Render assets overview
@@ -1613,10 +1630,12 @@ class Router {
 
             this.app.state.activeCollectionId = null;
 
-            // Update nav state - no specific item active
+            // Update nav state - highlight Collections header
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.remove('active');
+            document.getElementById('nav-assets-header')?.classList.remove('active');
+            document.getElementById('nav-collections-header')?.classList.add('active');
             this.app.ui.renderCollectionsList();
 
             // Render collections grid
@@ -1630,6 +1649,8 @@ class Router {
             document.getElementById('nav-storage').classList.remove('active');
             document.getElementById('nav-docs').classList.remove('active');
             document.getElementById('nav-graph').classList.remove('active');
+            document.getElementById('nav-assets-header')?.classList.remove('active');
+            document.getElementById('nav-collections-header')?.classList.remove('active');
             document.getElementById('nav-trash').classList.add('active');
             this.app.ui.renderCollectionsList();
 
@@ -4156,7 +4177,28 @@ class UIManager {
             grid.appendChild(card);
 
             if (f.type === 'catbox' && f.url && !isFolder) {
-                this.generateVideoThumbnail(f.url, card.querySelector('.card-thumbnail'));
+                const ext = f.url.toLowerCase().split('.').pop();
+                const thumbnailContainer = card.querySelector('.card-thumbnail');
+
+                if (ext === 'pdf') {
+                    // Generate PDF thumbnail (first page)
+                    this.generatePDFThumbnail(f.url, thumbnailContainer, 1);
+                } else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) {
+                    // For images, show the image directly
+                    const img = document.createElement('img');
+                    img.src = f.url;
+                    img.className = 'card-thumb-img';
+                    img.onerror = () => {
+                        // Keep the icon if image fails to load
+                    };
+                    img.onload = () => {
+                        thumbnailContainer.innerHTML = '';
+                        thumbnailContainer.appendChild(img);
+                    };
+                } else if (!['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(ext)) {
+                    // For non-audio files (assumed video), generate video thumbnail
+                    this.generateVideoThumbnail(f.url, thumbnailContainer);
+                }
             }
         });
     }
@@ -11610,6 +11652,7 @@ class GraphController {
         this.dragStartY = 0;
         this.mouseX = 0;
         this.mouseY = 0;
+        this.isDeleteMode = false;
 
         // Animation
         this.animationFrame = null;
@@ -11715,6 +11758,24 @@ class GraphController {
             });
         }
 
+        // Delete Tool
+        const btnDeleteMode = document.getElementById('btn-graph-delete-mode');
+        if (btnDeleteMode) {
+            btnDeleteMode.onclick = (e) => {
+                e.stopPropagation();
+                this.isDeleteMode = !this.isDeleteMode;
+                btnDeleteMode.classList.toggle('delete-mode-active', this.isDeleteMode);
+
+                // Update cursor
+                if (this.isDeleteMode) {
+                    this.canvas.style.cursor = 'crosshair';
+                    this.selectedNode = null; // Deselect
+                } else {
+                    this.canvas.style.cursor = 'default';
+                }
+            };
+        }
+
         // Zoom buttons
         document.getElementById('btn-graph-zoom-in')?.addEventListener('click', () => this.zoomIn());
         document.getElementById('btn-graph-zoom-out')?.addEventListener('click', () => this.zoomOut());
@@ -11807,6 +11868,24 @@ class GraphController {
         const node = this.getNodeAtPosition(worldPos.x, worldPos.y);
 
         if (e.button === 0) { // Left click
+            // Delete Mode Logic
+            if (this.isDeleteMode) {
+                if (node) {
+                    this.app.storage.deleteGraphNode(node.id);
+                    this.render();
+                    return;
+                }
+
+                // Check edge
+                const edge = this.getEdgeAtPosition(worldPos.x, worldPos.y);
+                if (edge) {
+                    this.app.storage.deleteGraphEdge(edge.id);
+                    this.render();
+                    return;
+                }
+                return;
+            }
+
             if (this.isConnecting && node && node !== this.connectFromNode) {
                 // Complete connection
                 this.app.storage.addGraphEdge(this.connectFromNode.id, node.id);
@@ -11959,13 +12038,61 @@ class GraphController {
 
     getNodeAtPosition(x, y) {
         const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
-        // Check in reverse order (top nodes first)
+        // Reverse iterate to find top-most node
         for (let i = nodes.length - 1; i >= 0; i--) {
             const node = nodes[i];
             const dx = x - node.x;
             const dy = y - node.y;
             if (dx * dx + dy * dy <= this.nodeRadius * this.nodeRadius) {
                 return node;
+            }
+        }
+        return null;
+    }
+
+    getEdgeAtPosition(x, y) {
+        const edges = this.app.storage.getGraphEdges(this.app.state.activeGraphId);
+        const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
+        const nodeMap = new Map(nodes.map(n => [n.id, n]));
+        const threshold = 5 / this.zoom;
+
+        for (const edge of edges) {
+            const n1 = nodeMap.get(edge.fromId);
+            const n2 = nodeMap.get(edge.toId);
+            if (!n1 || !n2) continue;
+
+            // Distance from point to line segment
+            const A = x - n1.x;
+            const B = y - n1.y;
+            const C = n2.x - n1.x;
+            const D = n2.y - n1.y;
+
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            if (lenSq !== 0) param = dot / lenSq;
+
+            let xx, yy;
+
+            if (param < 0) {
+                xx = n1.x;
+                yy = n1.y;
+            }
+            else if (param > 1) {
+                xx = n2.x;
+                yy = n2.y;
+            }
+            else {
+                xx = n1.x + param * C;
+                yy = n1.y + param * D;
+            }
+
+            const dx = x - xx;
+            const dy = y - yy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < threshold) {
+                return edge;
             }
         }
         return null;
@@ -12641,6 +12768,79 @@ class GraphController {
 
         // Restore context
         ctx.restore();
+    }
+}
+
+// ============================================
+// TooltipManager
+// ============================================
+class TooltipManager {
+    constructor() {
+        this.tooltip = document.getElementById('global-tooltip');
+        this.target = null;
+
+        // Bind events globally to catch dynamic elements
+        document.addEventListener('mouseover', (e) => this.onMouseOver(e));
+        document.addEventListener('mouseout', (e) => this.onMouseOut(e));
+        document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+    }
+
+    onMouseOver(e) {
+        const target = e.target.closest('[data-tooltip]');
+        if (target) {
+            this.target = target;
+            const text = target.getAttribute('data-tooltip');
+            if (text) {
+                this.show(text);
+            }
+        }
+    }
+
+    onMouseOut(e) {
+        const target = e.target.closest('[data-tooltip]');
+        if (target) {
+            // Only hide if we're leaving the current target
+            if (target === this.target) {
+                this.hide();
+                this.target = null;
+            }
+        }
+    }
+
+    onMouseMove(e) {
+        if (this.target && this.tooltip.classList.contains('visible')) {
+            // Position tooltip to right of cursor + offset
+            const x = e.clientX + 12;
+            const y = e.clientY + 12;
+
+            // Boundary checks
+            const rect = this.tooltip.getBoundingClientRect();
+            let finalX = x;
+            let finalY = y;
+
+            // Split screen logic: Right half -> Tooltip goes Left. Left half -> Tooltip goes Right.
+            if (e.clientX > window.innerWidth / 2) {
+                // Shift to left of cursor
+                finalX = e.clientX - rect.width - 12;
+            }
+            // If close to bottom edge
+            if (y + rect.height > window.innerHeight - 10) {
+                finalY = e.clientY - rect.height - 10;
+            }
+
+            this.tooltip.style.transform = `translate(${finalX}px, ${finalY}px)`;
+        }
+    }
+
+    show(text) {
+        if (!this.tooltip) return;
+        this.tooltip.textContent = text;
+        this.tooltip.classList.add('visible');
+    }
+
+    hide() {
+        if (!this.tooltip) return;
+        this.tooltip.classList.remove('visible');
     }
 }
 
