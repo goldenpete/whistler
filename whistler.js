@@ -8563,14 +8563,15 @@ class SyncManager {
         // 2. New Files
         const newFiles = cloudFiles.filter(cf => !this.app.state.files.find(lf => lf.id === cf.id));
         newFiles.forEach(f => {
-            // Determine icon or preview
-            const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => f.url.toLowerCase().endsWith(ext));
+            // Determine icon or preview (handle folders/null URLs)
+            const url = f.url || '';
+            const isImg = url && ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => url.toLowerCase().endsWith(ext));
             const meta = {
-                icon: isImg ? 'ph-image' : (f.type === 'folder' ? 'ph-folder' : 'ph-file'),
-                previewUrl: isImg ? f.url : null
+                icon: f.type === 'folder' ? 'ph-folder' : (isImg ? 'ph-image' : 'ph-file'),
+                previewUrl: isImg ? url : null
             };
 
-            addDecision('file', f.id, 'New File Found', `File "${f.name}" detected in cloud.`,
+            addDecision('file', f.id, 'New File Found', `File "${this.escapeHtml(f.name)}" detected in cloud.`,
                 ['Ignore File', 'Add to Library'],
                 ['(Does not exist)', this.escapeHtml(f.name)],
                 meta);
@@ -8586,10 +8587,11 @@ class SyncManager {
 
         modifiedFiles.forEach(f => {
             const lf = this.app.state.files.find(i => i.id === f.id);
-            const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => f.url.toLowerCase().endsWith(ext));
+            const url = f.url || '';
+            const isImg = url && ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => url.toLowerCase().endsWith(ext));
             const meta = {
-                icon: isImg ? 'ph-image' : 'ph-file',
-                previewUrl: isImg ? f.url : null
+                icon: f.type === 'folder' ? 'ph-folder' : (isImg ? 'ph-image' : 'ph-file'),
+                previewUrl: isImg ? url : null
             };
 
             // Detect what changed
