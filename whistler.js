@@ -33,7 +33,9 @@ class WhistlerApp {
         this.modals = new ModalManager(this);
         this.exportImport = new ExportImportManager(this);
         this.sync = new SyncManager(this);
+        this.sync = new SyncManager(this);
         this.graph = new GraphController(this);
+        this.keybinds = new KeybindManager(this);
 
         this.init();
     }
@@ -7457,9 +7459,9 @@ class SyncManager {
         this.pendingConflict = false;
         this.conflictCloudData = null;
 
-        // Auto-sync interval (5 minutes)
+        // Auto-sync interval (15 seconds)
         this.syncInterval = null;
-        this.SYNC_INTERVAL_MS = 5 * 60 * 1000;
+        this.SYNC_INTERVAL_MS = 15 * 1000;
     }
 
     init() {
@@ -7507,8 +7509,16 @@ class SyncManager {
                     this.showConflictResolution();
                 }, 500);
             } else {
-                // Check for remote updates on startup
-                this.checkForRemoteUpdates();
+                // Force pull from cloud on startup (Sync on Refresh)
+                this.pullFromCloud();
+
+                // Start polling for updates (simulating real-time)
+                if (this.autoSyncEnabled) {
+                    this.startAutoSync();
+                } else {
+                    // Even if auto-sync (push) is disabled, we might want to poll for *incoming* changes?
+                    // For now, respect the flag for the interval, but we just did a pull.
+                }
             }
         }
 
@@ -10772,6 +10782,149 @@ class SyncManager {
         } catch (e) {
             console.error('Error revoking session:', e);
             alert('Failed to revoke session. Please try again.');
+        }
+    }
+}
+
+// ============================================
+// KeybindManager - Keyboard Shortcuts
+// ============================================
+class KeybindManager {
+    constructor(app) {
+        this.app = app;
+        this.init();
+    }
+
+    init() {
+        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+    }
+
+    handleKeyDown(e) {
+        // Ignore if typing in an input/textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+            // Allow Esc to blur input
+            if (e.key === 'Escape') {
+                e.target.blur();
+            }
+            return;
+        }
+
+        const backdrop = document.getElementById('modal-backdrop');
+        const overlay = document.getElementById('video-player-overlay');
+        const isModalOpen = backdrop && !backdrop.classList.contains('hidden');
+        const isPlayerOpen = overlay && !overlay.classList.contains('hidden');
+
+        // 1. Global Shortcuts
+
+        // Toggle Help (?)
+        if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            this.toggleHelpModal();
+            return;
+        }
+
+        // Close Modal / Player (Esc)
+        if (e.key === 'Escape') {
+            if (isModalOpen) {
+                this.app.modals.close();
+            } else if (isPlayerOpen) {
+                this.app.player.close();
+            } else if (this.app.state.activeProjectId && !this.app.state.activeCollectionId) {
+                // E.g. clear selection or something?
+            }
+            return;
+        }
+
+        // Save (Ctrl+S)
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            this.app.storage.save();
+            this.app.ui.showToast('Saved successfully', 'success');
+            return;
+        }
+
+        // 2. Context: Player
+        if (isPlayerOpen) {
+            this.handlePlayerShortcuts(e);
+            return;
+        }
+
+        // 3. Context: Global (if no modal)
+        if (!isModalOpen) {
+            this.handleGlobalShortcuts(e);
+        }
+    }
+
+    handlePlayerShortcuts(e) {
+        const p = this.app.player;
+        if (!p || !p.els.video) return;
+
+        switch (e.key.toLowerCase()) {
+            case ' ':
+            case 'k':
+                e.preventDefault();
+                p.togglePlay();
+                break;
+            case 'f':
+                e.preventDefault();
+                p.toggleFullscreen();
+                break;
+            case 'j':
+                p.seek(-10);
+                break;
+            case 'l':
+                p.seek(10);
+                break;
+            case 'arrowleft':
+                e.preventDefault(); // prevent scroll
+                p.seek(-5);
+                break;
+            case 'arrowright':
+                e.preventDefault();
+                p.seek(5);
+                break;
+            case 'arrowup':
+                e.preventDefault();
+                if (p.els.video.volume < 1) p.els.video.volume = Math.min(1, p.els.video.volume + 0.1);
+                break;
+            case 'arrowdown':
+                e.preventDefault();
+                if (p.els.video.volume > 0) p.els.video.volume = Math.max(0, p.els.video.volume - 0.1);
+                break;
+            case 'm':
+                p.els.video.muted = !p.els.video.muted;
+                break;
+            case ',': // <
+                if (p.els.video.paused) p.els.video.currentTime = Math.max(0, p.els.video.currentTime - (1 / 30)); // Frame step back (approx)
+                else p.els.video.playbackRate = Math.max(0.25, p.els.video.playbackRate - 0.25);
+                break;
+            case '.': // >
+                if (p.els.video.paused) p.els.video.currentTime = Math.min(p.els.video.duration, p.els.video.currentTime + (1 / 30)); // Frame step fwd
+                else p.els.video.playbackRate = Math.min(4, p.els.video.playbackRate + 0.25);
+                break;
+        }
+    }
+
+    handleGlobalShortcuts(e) {
+        // PDF Viewer Shortcuts (only if we can detect it's active - assuming player handles PDF rendering too in overlay?)
+        // If PDF is rendered in the player overlay, handlePlayerShortcuts might cover it, 
+        // OR we need specific checks in handlePlayerShortcuts if it delegates to PDFController.
+
+        // Actually, Player class has an `isPdf` flag or similar. 
+        // Let's check: The Player class likely manages the PDF view too based on previous context.
+        // If so, handlePlayerShortcuts should check app.player.isPdf
+
+        // Let's refine handlePlayerShortcuts to dispatch to PDF controller if needed.
+    }
+
+    toggleHelpModal() {
+        const modal = document.getElementById('modal-shortcuts');
+        if (modal) {
+            if (modal.classList.contains('hidden')) {
+                this.app.modals.show('shortcuts');
+            } else {
+                this.app.modals.close();
+            }
         }
     }
 }
