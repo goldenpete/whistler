@@ -2670,7 +2670,7 @@ button {
     line-height: 1.4;
     text-align: center;
     padding: 10px 12px;
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    border-radius: var(--radius-sm);
     opacity: 0;
     transform: translateY(4px);
     transition: all 0.15s ease;
