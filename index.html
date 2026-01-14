@@ -1694,6 +1694,48 @@
         </div>
 
 
+        <!-- Shortcuts Help Modal -->
+        <div class="modal hidden" id="modal-shortcuts" style="width: 500px;">
+            <h3 class="modal-title">Keyboard Shortcuts</h3>
+            <div class="shortcuts-grid">
+                <div class="shortcut-category">
+                    <h4>Global</h4>
+                    <div class="shortcut-item"><span class="key">?</span> <span class="action">Toggle this list</span>
+                    </div>
+                    <div class="shortcut-item"><span class="key">Esc</span> <span class="action">Close Modal /
+                            Player</span></div>
+                    <div class="shortcut-item"><span class="key">Ctrl</span> + <span class="key">S</span> <span
+                            class="action">Save</span></div>
+                </div>
+                <div class="shortcut-category">
+                    <h4>Player</h4>
+                    <div class="shortcut-item"><span class="key">Space</span> / <span class="key">K</span> <span
+                            class="action">Play / Pause</span></div>
+                    <div class="shortcut-item"><span class="key">F</span> <span class="action">Toggle Fullscreen</span>
+                    </div>
+                    <div class="shortcut-item"><span class="key">J</span> / <span class="key">L</span> <span
+                            class="action">Seek -10s / +10s</span></div>
+                    <div class="shortcut-item"><span class="key">←</span> / <span class="key">→</span> <span
+                            class="action">Seek -5s / +5s</span></div>
+                    <div class="shortcut-item"><span class="key">↑</span> / <span class="key">↓</span> <span
+                            class="action">Volume</span></div>
+                    <div class="shortcut-item"><span class="key">M</span> <span class="action">Mute</span></div>
+                    <div class="shortcut-item"><span class="key">&lt;</span> / <span class="key">&gt;</span> <span
+                            class="action">Frame Step / Speed</span></div>
+                </div>
+                <div class="shortcut-category">
+                    <h4>PDF</h4>
+                    <div class="shortcut-item"><span class="key">[</span> / <span class="key">]</span> <span
+                            class="action">Prev / Next Page</span></div>
+                    <div class="shortcut-item"><span class="key">-</span> / <span class="key">+</span> <span
+                            class="action">Zoom Out / In</span></div>
+                    <div class="shortcut-item"><span class="key">0</span> <span class="action">Reset Zoom</span></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="app.modals.close()">Got it</button>
+            </div>
+        </div>
     </div>
 
     <script src="whistler.js"></script>

@@ -10800,11 +10800,14 @@ class KeybindManager {
     }
 
     handleKeyDown(e) {
+        console.log('Key pressed:', e.key, 'Target:', e.target.tagName); // Debugging
+
         // Ignore if typing in an input/textarea
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
             // Allow Esc to blur input
             if (e.key === 'Escape') {
                 e.target.blur();
+                // console.log('Blurred input with Esc');
             }
             return;
         }
@@ -10857,7 +10860,23 @@ class KeybindManager {
 
     handlePlayerShortcuts(e) {
         const p = this.app.player;
-        if (!p || !p.els.video) return;
+        if (!p) return;
+
+        // PDF Context
+        if (p.isPdf && p.pdf) {
+            const pdf = p.pdf;
+            switch (e.key) {
+                case '[': pdf.prevPage(); return;
+                case ']': pdf.nextPage(); return;
+                case '-': pdf.zoomOut(); return;
+                case '+':
+                case '=': pdf.zoomIn(); return;
+                case '0': pdf.zoomLevel = 1.0; pdf.renderCurrentPage(); return;
+            }
+        }
+
+        // Video Context
+        if (!p.els.video) return;
 
         switch (e.key.toLowerCase()) {
             case ' ':
