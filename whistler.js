@@ -10705,7 +10705,11 @@ class SyncManager {
 
         try {
             const sessions = await this.getSessions();
-            this.renderSessionsList(sessions);
+            if (sessions === null) {
+                list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 13px;">Session management is not supported by this sync server.</div>';
+            } else {
+                this.renderSessionsList(sessions);
+            }
         } catch (e) {
             console.error('Failed to load sessions:', e);
             list.innerHTML = '<div style="text-align: center; color: #ef4444;">Failed to load sessions.</div>';
@@ -10725,6 +10729,11 @@ class SyncManager {
                     'Authorization': `Bearer ${this.sessionToken}`
                 }
             });
+
+            if (response.status === 404) {
+                // Endpoint not implemented on server
+                return null;
+            }
 
             if (response.status === 401) {
                 await this.reLogin();
