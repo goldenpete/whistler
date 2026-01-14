@@ -8033,88 +8033,92 @@ class SyncManager {
     buildConflictDetailContent(data) {
         let html = '';
 
-        // Projects section
+        // Helper to create list items
+        const createListItem = (icon, color, text, subtext = '') => `
+            <div class="conflict-detail-item">
+                <i class="ph-fill ${icon}" style="color: ${color};"></i>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span>${this.escapeHtml(text)}</span>
+                    ${subtext ? `<span style="font-size:10px; opacity:0.6;">${subtext}</span>` : ''}
+                </div>
+            </div>
+        `;
+
+        // 1. Projects & Their Contents
+        // We'll group everything by project first
         const projects = data.projects || [];
+        const files = data.files || [];
+        const collections = data.collections || [];
+
+        const processedFiles = new Set();
+        const processedCols = new Set();
+
         if (projects.length > 0) {
             html += `
                 <div class="conflict-detail-section">
                     <div class="conflict-detail-header">
-                        <i class="ph-bold ph-folder-simple" style="color: var(--accent);"></i>
-                        <span>Projects (${projects.length})</span>
+                        <i class="ph-bold ph-folders" style="color: var(--accent);"></i>
+                        <span>Projects & Content</span>
                     </div>
                     <div class="conflict-detail-list">
-                        ${projects.map(p => `
-                            <div class="conflict-detail-item">
-                                <i class="ph-fill ph-folder" style="color: ${p.color || 'var(--accent)'};"></i>
-                                <span>${this.escapeHtml(p.name)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
             `;
+
+            projects.forEach(p => {
+                // Render Project
+                html += createListItem('ph-folder', p.color || 'var(--accent)', p.name);
+
+                // Render Project Files
+                const pFiles = files.filter(f => f.projectId === p.id);
+                pFiles.forEach(f => {
+                    html += `<div style="padding-left: 20px;">
+                        ${createListItem('ph-file-video', 'var(--text-muted)', f.name)}
+                    </div>`;
+                    processedFiles.add(f.id);
+                });
+
+                // Render Project Collections
+                const pCols = collections.filter(c => c.projectId === p.id);
+                pCols.forEach(c => {
+                    html += `<div style="padding-left: 20px;">
+                        ${createListItem('ph-cards', c.color || 'var(--text-muted)', c.name)}
+                    </div>`;
+                    processedCols.add(c.id);
+                });
+            });
+
+            html += `   </div>
+                </div>`;
         }
 
-        // Files section
-        const files = data.files || [];
-        if (files.length > 0) {
+        // 2. Orphaned Files
+        const orphanFiles = files.filter(f => !processedFiles.has(f.id));
+        if (orphanFiles.length > 0) {
             html += `
                 <div class="conflict-detail-section">
                     <div class="conflict-detail-header">
                         <i class="ph-bold ph-video" style="color: #f59e0b;"></i>
-                        <span>Files (${files.length})</span>
+                        <span>Uncategorized Files (${orphanFiles.length})</span>
                     </div>
                     <div class="conflict-detail-list">
-                        ${files.slice(0, 20).map(f => `
-                            <div class="conflict-detail-item">
-                                <i class="ph-fill ph-file-video" style="color: var(--text-muted);"></i>
-                                <span>${this.escapeHtml(f.name)}</span>
-                            </div>
-                        `).join('')}
-                        ${files.length > 20 ? `<div class="conflict-detail-more">...and ${files.length - 20} more</div>` : ''}
+                        ${orphanFiles.slice(0, 20).map(f => createListItem('ph-file-video', 'var(--text-muted)', f.name)).join('')}
+                        ${orphanFiles.length > 20 ? `<div class="conflict-detail-more">...and ${orphanFiles.length - 20} more</div>` : ''}
                     </div>
                 </div>
             `;
         }
 
-        // Collections section
-        const collections = data.collections || [];
-        if (collections.length > 0) {
+        // 3. Orphaned Collections
+        const orphanCols = collections.filter(c => !processedCols.has(c.id));
+        if (orphanCols.length > 0) {
             html += `
                 <div class="conflict-detail-section">
                     <div class="conflict-detail-header">
-                        <i class="ph-bold ph-folders" style="color: #22c55e;"></i>
-                        <span>Collections (${collections.length})</span>
+                        <i class="ph-bold ph-cards" style="color: #22c55e;"></i>
+                        <span>Uncategorized Collections (${orphanCols.length})</span>
                     </div>
                     <div class="conflict-detail-list">
-                        ${collections.slice(0, 15).map(c => `
-                            <div class="conflict-detail-item">
-                                <i class="ph-fill ph-folder" style="color: ${c.color || 'var(--text-muted)'};"></i>
-                                <span>${this.escapeHtml(c.name)}</span>
-                            </div>
-                        `).join('')}
-                        ${collections.length > 15 ? `<div class="conflict-detail-more">...and ${collections.length - 15} more</div>` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        // Timestamps section
-        const timestamps = data.timestamps || [];
-        if (timestamps.length > 0) {
-            html += `
-                <div class="conflict-detail-section">
-                    <div class="conflict-detail-header">
-                        <i class="ph-bold ph-clock" style="color: #ec4899;"></i>
-                        <span>Timestamps (${timestamps.length})</span>
-                    </div>
-                    <div class="conflict-detail-list">
-                        ${timestamps.slice(0, 15).map(t => `
-                            <div class="conflict-detail-item">
-                                <i class="ph-fill ph-bookmark" style="color: var(--text-muted);"></i>
-                                <span>${this.escapeHtml(t.title || 'Untitled')} <span style="color: var(--text-muted);">(${this.formatTime(t.startTime)})</span></span>
-                            </div>
-                        `).join('')}
-                        ${timestamps.length > 15 ? `<div class="conflict-detail-more">...and ${timestamps.length - 15} more</div>` : ''}
+                        ${orphanCols.slice(0, 15).map(c => createListItem('ph-cards', c.color || 'var(--text-muted)', c.name)).join('')}
+                        ${orphanCols.length > 15 ? `<div class="conflict-detail-more">...and ${orphanCols.length - 15} more</div>` : ''}
                     </div>
                 </div>
             `;
@@ -8274,6 +8278,7 @@ class SyncManager {
         container.innerHTML = '';
         const data = this.conflictCloudData;
         const processedFileIds = new Set();
+        const processedCollectionIds = new Set();
 
         // Helper to create checkbox row
         const createRow = (item, type, indent = false) => {
@@ -8325,6 +8330,7 @@ class SyncManager {
             data.projects.forEach(project => {
                 // Find files for this project to check if they exist locally
                 const projectFiles = data.files ? data.files.filter(f => f.projectId === project.id) : [];
+                const projectCollections = data.collections ? data.collections.filter(c => c.projectId === project.id) : []; // ADDED
 
                 // Check if project exists locally
                 const localProject = this.app.state.projects.find(p => p.id === project.id);
@@ -8333,36 +8339,66 @@ class SyncManager {
                     // New Project - Render Checkbox
                     container.appendChild(createRow(project, 'projects'));
 
+                    // Render Files
                     projectFiles.forEach(file => {
                         container.appendChild(createRow(file, 'files', true)); // indented
                         processedFileIds.add(file.id);
                     });
+
+                    // Render Collections
+                    projectCollections.forEach(col => {
+                        container.appendChild(createRow(col, 'collections', true)); // indented
+                        processedCollectionIds.add(col.id);
+                    });
+
                 } else {
-                    // Existing Project - Render "Review Changes" button
-                    const updateRow = document.createElement('div');
-                    updateRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color); border-left: 3px solid #f59e0b;';
+                    // Existing Project - Check for ACTUAL differences
+                    let hasDiffs = false;
 
-                    updateRow.innerHTML = `
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <i class="ph-fill ph-arrows-clockwise" style="color: #f59e0b; font-size: 18px;"></i>
-                            <div>
-                                <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">${project.name}</div>
-                                <div style="font-size: 11px; color: var(--text-muted);">Updates available</div>
+                    // 1. Property Diffs
+                    if (project.name !== localProject.name ||
+                        project.description !== localProject.description ||
+                        project.color !== localProject.color) {
+                        hasDiffs = true;
+                    }
+
+                    // 2. File Diffs (New files)
+                    // We only care about NEW files for now in this wizard
+                    const newFiles = projectFiles.filter(f => !this.app.state.files.find(lf => lf.id === f.id));
+                    if (newFiles.length > 0) hasDiffs = true;
+
+                    // 3. Collection Diffs (New collections)
+                    const newCols = projectCollections.filter(c => !this.app.state.collections.find(lc => lc.id === c.id));
+                    if (newCols.length > 0) hasDiffs = true;
+
+                    if (hasDiffs) {
+                        // Render "Review Changes" button
+                        const updateRow = document.createElement('div');
+                        updateRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color); border-left: 3px solid #f59e0b;';
+
+                        updateRow.innerHTML = `
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <i class="ph-fill ph-arrows-clockwise" style="color: #f59e0b; font-size: 18px;"></i>
+                                <div>
+                                    <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">${project.name}</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);">Updates available</div>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
 
-                    const btnReview = document.createElement('button');
-                    btnReview.className = 'btn-ghost';
-                    btnReview.style.cssText = 'font-size: 12px; padding: 6px 12px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);';
-                    btnReview.innerHTML = '<i class="ph-bold ph-eye"></i> Review Changes';
-                    btnReview.onclick = () => this.showProjectReview(project, localProject, projectFiles);
+                        const btnReview = document.createElement('button');
+                        btnReview.className = 'btn-ghost';
+                        btnReview.style.cssText = 'font-size: 12px; padding: 6px 12px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);';
+                        btnReview.innerHTML = '<i class="ph-bold ph-eye"></i> Review Changes';
+                        btnReview.onclick = () => this.showProjectReview(project, localProject, projectFiles, projectCollections);
 
-                    updateRow.appendChild(btnReview);
-                    container.appendChild(updateRow);
+                        updateRow.appendChild(btnReview);
+                        container.appendChild(updateRow);
+                    }
 
-                    // Mark files as processed so they don't show up in orphans
+                    // Mark as processed regardless, to avoid cluttering orphans
                     projectFiles.forEach(f => processedFileIds.add(f.id));
+                    projectCollections.forEach(c => processedCollectionIds.add(c.id));
                 }
             });
         }
@@ -8381,129 +8417,159 @@ class SyncManager {
             });
         }
 
-        // 3. Render Collections
-        if (data.collections && data.collections.length > 0) {
+        // 3. Render Orphaned Collections
+        const orphanCols = data.collections ? data.collections.filter(c => !processedCollectionIds.has(c.id)) : [];
+        if (orphanCols.length > 0) {
             const colHeader = document.createElement('div');
             colHeader.style.cssText = 'font-weight: 600; margin: 16px 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
-            colHeader.textContent = 'Collections';
+            colHeader.textContent = 'Uncategorized Collections';
             container.appendChild(colHeader);
 
-            data.collections.forEach(col => {
+            orphanCols.forEach(col => {
                 container.appendChild(createRow(col, 'collections'));
             });
         }
     }
 
     /**
-     * Show detailed review for a modified project
+     * Show detailed review for a modified project (Questionnaire Style)
      */
-    showProjectReview(cloudProject, localProject, cloudFiles) {
+    showProjectReview(cloudProject, localProject, cloudFiles, cloudCollections = []) {
         document.getElementById('conflict-choose-view').classList.add('hidden');
         document.getElementById('conflict-review-view').classList.remove('hidden');
 
-        document.getElementById('review-project-name').textContent = cloudProject.name;
+        document.getElementById('review-project-name').textContent = "Reviewing Changes: " + cloudProject.name;
 
         const container = document.getElementById('conflict-review-content');
         container.innerHTML = '';
 
-        // Helper to create checkbox row
-        const createDiffRow = (id, label, sublabel, checked = false, type = 'property') => {
-            const row = document.createElement('div');
-            row.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color);';
+        // Prepare Decision Objects
+        this.reviewDecisions = [];
+        let index = 0;
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'conflict-review-checkbox';
-            checkbox.dataset.type = type;
-            checkbox.dataset.id = id;
-            checkbox.id = `review-${id}`;
-            checkbox.checked = checked;
-
-            // Build content
-            const content = document.createElement('div');
-            content.style.flex = '1';
-            content.innerHTML = `
-                <div style="font-weight: 500; font-size: 13px; color: var(--text-primary);">${label}</div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${sublabel}</div>
-            `;
-
-            const lbl = document.createElement('label');
-            lbl.htmlFor = `review-${id}`;
-            lbl.style.cssText = 'display: contents; cursor: pointer;';
-            lbl.appendChild(checkbox);
-            lbl.appendChild(content);
-
-            row.appendChild(lbl);
-            return row;
+        // Helper to add decision
+        const addDecision = (type, id, title, desc, labels, values) => {
+            this.reviewDecisions.push({
+                index: index++,
+                type,
+                id,
+                title,
+                desc,
+                labels, // [Label 1, Label 2]
+                values, // [Value 1, Value 2]
+                choice: null // 'local' or 'cloud' / 'reject' or 'accept'
+            });
         };
 
-        // 1. Property Diffs
-        const props = [];
+        // 1. Property Changes
         if (cloudProject.name !== localProject.name) {
-            props.push({ key: 'name', label: 'Update Name', sub: `Current: "${localProject.name}" → New: "${cloudProject.name}"` });
+            addDecision('property', 'name', 'Project Name Change', 'The project name is different in the cloud.',
+                ['Your Version', 'Cloud Version'], [localProject.name, cloudProject.name]);
         }
         if (cloudProject.description !== localProject.description) {
-            props.push({ key: 'description', label: 'Update Description', sub: 'Project description has changed' });
+            addDecision('property', 'description', 'Description Update', 'Cloud has a different description.',
+                ['Your Version', 'Cloud Version'], [localProject.description || '(empty)', cloudProject.description || '(empty)']);
         }
         if (cloudProject.color !== localProject.color) {
-            props.push({ key: 'color', label: 'Update Color', sub: 'Project color has changed' });
+            addDecision('property', 'color', 'Color Update', 'Cloud uses a different color.',
+                ['Your Version', 'Cloud Version'],
+                [`<span style="color:${localProject.color}">●</span> ${localProject.color}`, `<span style="color:${cloudProject.color}">●</span> ${cloudProject.color}`]);
         }
 
-        if (props.length > 0) {
-            const header = document.createElement('div');
-            header.style.cssText = 'font-weight: 600; margin: 0 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
-            header.textContent = 'Property Changes';
-            container.appendChild(header);
-
-            props.forEach(p => {
-                const row = createDiffRow(p.key, p.label, p.sub, true, 'property');
-                row.querySelector('input').dataset.projectId = cloudProject.id;
-                // Store actual new value in dataset for easy retrieval? Or easier just to read from object later.
-                // We'll read from object later using the key.
-                container.appendChild(row);
-            });
-
-            container.appendChild(document.createElement('div')).style.marginBottom = '20px';
-        }
-
-        // 2. File Diffs (New files in cloud that aren't local)
-        // Find files that are in cloud list but NOT in local list
+        // 2. New Files
         const newFiles = cloudFiles.filter(cf => !this.app.state.files.find(lf => lf.id === cf.id));
+        newFiles.forEach(f => {
+            addDecision('file', f.id, 'New File Found', `File "${f.name}" exists in cloud but not locally.`,
+                ['Ignore File', 'Import File'], ['Don\'t add', 'Add to library']);
+        });
 
-        if (newFiles.length > 0) {
-            const header = document.createElement('div');
-            header.style.cssText = 'font-weight: 600; margin: 0 0 8px 0; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;';
-            header.textContent = `New Files (${newFiles.length})`;
-            container.appendChild(header);
+        // 3. New Collections
+        const newCollections = cloudCollections.filter(cc => !this.app.state.collections.find(lc => lc.id === cc.id));
+        newCollections.forEach(c => {
+            addDecision('collection', c.id, 'New Collection Found', `Collection "${c.name}" exists in cloud but not locally.`,
+                ['Ignore Collection', 'Import Collection'], ['Don\'t add', 'Add to library']);
+        });
 
-            newFiles.forEach(f => {
-                const row = createDiffRow(f.id, f.name || 'Untitled', 'New file from cloud', true, 'file');
-                container.appendChild(row);
-            });
+        if (this.reviewDecisions.length === 0) {
+            container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);">No actionable changes found.</div>';
+            return;
         }
 
-        if (props.length === 0 && newFiles.length === 0) {
-            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No visible changes to review.</div>';
-        }
+        // Render Cards
+        this.reviewDecisions.forEach((d, i) => {
+            const card = document.createElement('div');
+            card.className = 'review-question-card';
+            card.innerHTML = `
+                <div class="review-question-header">
+                    <div style="width:24px; height:24px; background:var(--bg-hover); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-secondary);">${i + 1}</div>
+                    <div class="review-question-title">${d.title}</div>
+                </div>
+                <div class="review-question-desc">${d.desc}</div>
+                ${d.type === 'property' ? `
+                <div class="review-diff-box">
+                    <div class="review-diff-line">
+                        <span class="review-diff-label">Local:</span>
+                        <span class="review-diff-val">${d.values[0]}</span>
+                    </div>
+                     <div class="review-diff-line">
+                        <span class="review-diff-label">Cloud:</span>
+                        <span class="review-diff-val">${d.values[1]}</span>
+                    </div>
+                </div>` : ''}
+                
+                <div class="review-decision-group">
+                    <div class="review-option-btn" onclick="app.sync.selectDecision(${i}, 'reject')">
+                        ${d.type === 'property' ? 'Keep My Version' : 'Ignore'}
+                    </div>
+                     <div class="review-option-btn selected" onclick="app.sync.selectDecision(${i}, 'accept')">
+                        <i class="ph-bold ph-check"></i> ${d.type === 'property' ? 'Use Cloud Version' : 'Add to Library'}
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
 
-        // Save context for applying changes
+            // Set default choice to accept
+            d.choice = 'accept';
+        });
+
         this.currentReviewContext = { cloudProject, localProject };
     }
 
-    async applyReviewChanges() {
-        if (!this.currentReviewContext) return;
+    selectDecision(index, choice) {
+        const item = this.reviewDecisions[index];
+        if (!item) return;
+        item.choice = choice;
 
-        const boxes = document.querySelectorAll('.conflict-review-checkbox:checked');
+        // Update UI
+        const container = document.getElementById('conflict-review-content');
+        const card = container.children[index];
+        const btns = card.querySelectorAll('.review-option-btn');
+
+        btns[0].className = `review-option-btn ${choice === 'reject' ? 'selected reject' : ''}`;
+        btns[1].className = `review-option-btn ${choice === 'accept' ? 'selected' : ''}`;
+
+        btns[0].innerHTML = choice === 'reject' ? '<i class="ph-bold ph-x"></i> ' + (item.type === 'property' ? 'Keep My Version' : 'Ignore') : (item.type === 'property' ? 'Keep My Version' : 'Ignore');
+        btns[1].innerHTML = choice === 'accept' ? '<i class="ph-bold ph-check"></i> ' + (item.type === 'property' ? 'Use Cloud Version' : 'Add to Library') : (item.type === 'property' ? 'Use Cloud Version' : 'Add to Library');
+    }
+
+    async applyReviewChanges() {
+        if (!this.reviewDecisions || this.reviewDecisions.length === 0) return;
+
         const changes = {
             properties: [],
-            files: []
+            files: [],
+            collections: []
         };
 
-        boxes.forEach(box => {
-            if (box.dataset.type === 'property') {
-                changes.properties.push(box.dataset.id);
-            } else if (box.dataset.type === 'file') {
-                changes.files.push(box.dataset.id);
+        this.reviewDecisions.forEach(d => {
+            if (d.choice === 'accept') {
+                if (d.type === 'property') {
+                    changes.properties.push(d.id);
+                } else if (d.type === 'file') {
+                    changes.files.push(d.id);
+                } else if (d.type === 'collection') {
+                    changes.collections.push(d.id);
+                }
             }
         });
 
@@ -8531,7 +8597,14 @@ class SyncManager {
                 this.app.state.files.push(...filesToAdd);
             }
 
-            // 3. Save & Sync
+            // 3. Apply Collections
+            if (changes.collections.length > 0) {
+                // Find collections in cloud data matching IDs
+                const colsToAdd = this.conflictCloudData.collections.filter(c => changes.collections.includes(c.id));
+                this.app.state.collections.push(...colsToAdd);
+            }
+
+            // 4. Save & Sync
             await this.syncToCloud();
             this.clearConflict();
             window.location.reload();
