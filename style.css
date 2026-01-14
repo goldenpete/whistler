@@ -6805,3 +6805,39 @@ input[type="color"]::-webkit-color-swatch {
     color: var(--accent);
     font-weight: 600;
 }
+
+/* Sync Controls Styling */
+.project-control-btn.btn-sync-push,
+.project-control-btn.btn-sync-pull {
+    flex: 1;
+    /* Stretch */
+    width: auto;
+    /* Override fixed width */
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Push - Green */
+.project-control-btn.btn-sync-push {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.2);
+}
+
+.project-control-btn.btn-sync-push:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: #22c55e;
+}
+
+/* Pull - Red */
+.project-control-btn.btn-sync-pull {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.project-control-btn.btn-sync-pull:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
