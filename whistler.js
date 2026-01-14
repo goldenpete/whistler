@@ -7514,6 +7514,42 @@ class SyncManager {
         // Auto-sync interval (15 seconds)
         this.syncInterval = null;
         this.SYNC_INTERVAL_MS = 15 * 1000;
+
+        // UI State
+        this.isSyncMenuOpen = false;
+    }
+
+    /**
+     * Toggle the inline sync menu
+     */
+    toggleSyncMenu(forceState = null) {
+        // If not logged in, just open the modal
+        if (!this.sessionToken) {
+            this.openSyncModal();
+            return;
+        }
+
+        if (forceState !== null) {
+            this.isSyncMenuOpen = forceState;
+        } else {
+            this.isSyncMenuOpen = !this.isSyncMenuOpen;
+        }
+
+        const defaultControls = document.getElementById('project-controls-default');
+        const syncControls = document.getElementById('project-controls-sync');
+        const toggleBtn = document.getElementById('btn-cloud-sync');
+
+        if (this.isSyncMenuOpen) {
+            defaultControls?.classList.add('hidden');
+            syncControls?.classList.remove('hidden');
+            toggleBtn?.classList.add('active'); // Optional: Add active styling
+            // toggleBtn.innerHTML = '<i class="ph-bold ph-x"></i>'; // Optional: Change icon to X?
+        } else {
+            defaultControls?.classList.remove('hidden');
+            syncControls?.classList.add('hidden');
+            toggleBtn?.classList.remove('active');
+            // this.updateUIState(true); // Restore cloud icon
+        }
     }
 
     init() {
@@ -7594,7 +7630,22 @@ class SyncManager {
         // Cloud sync button in sidebar
         const btnCloudSync = document.getElementById('btn-cloud-sync');
         if (btnCloudSync) {
-            btnCloudSync.onclick = () => this.openSyncModal();
+            btnCloudSync.onclick = () => this.toggleSyncMenu();
+        }
+
+        // Inline Sync Controls
+        const btnPush = document.getElementById('btn-sync-push');
+        if (btnPush) btnPush.onclick = () => this.pushToCloud();
+
+        const btnPull = document.getElementById('btn-sync-pull');
+        if (btnPull) btnPull.onclick = () => this.manualSyncFromCloud();
+
+        const btnSettings = document.getElementById('btn-sync-settings');
+        if (btnSettings) {
+            btnSettings.onclick = () => {
+                this.openSyncModal();
+                this.toggleSyncMenu(false); // Close menu
+            };
         }
 
         // Manage Sessions button

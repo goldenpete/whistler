@@ -263,6 +263,9 @@ button {
     position: relative;
     font-size: 14px;
     font-weight: 500;
+    flex: 1;
+    /* Take remaining space in row */
+    min-width: 0;
 }
 
 .custom-select-trigger {
@@ -278,6 +281,15 @@ button {
     transition: all 0.2s ease;
     user-select: none;
     font-size: 13px;
+    height: 34px;
+    /* Fixed height to match buttons */
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.custom-select-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .custom-select-trigger:hover {
@@ -289,9 +301,42 @@ button {
     color: var(--text-muted);
     font-size: 14px;
     margin-left: 8px;
+    flex-shrink: 0;
 }
 
-/* Sidebar action buttons */
+/* Project Row Layout */
+.project-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.project-control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.2s var(--ease-out);
+}
+
+.project-control-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-light);
+    color: var(--text-primary);
+}
+
+.project-control-btn i {
+    font-size: 16px;
+}
+
+/* Sidebar action buttons (Legacy/Unused but kept for safe measures or if reused elsewhere) */
 .sidebar-action-btn {
     display: flex;
     align-items: center;
