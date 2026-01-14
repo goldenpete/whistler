@@ -8049,9 +8049,15 @@ class SyncManager {
         const projects = data.projects || [];
         const files = data.files || [];
         const collections = data.collections || [];
+        const graphs = data.graphs || [];
+        const docs = data.docs || [];
+        const storages = data.storages || [];
 
         const processedFiles = new Set();
         const processedCols = new Set();
+        const processedGraphs = new Set();
+        const processedDocs = new Set();
+        const processedStorages = new Set();
 
         if (projects.length > 0) {
             html += `
@@ -8083,6 +8089,33 @@ class SyncManager {
                         ${createListItem('ph-cards', c.color || 'var(--text-muted)', c.name)}
                     </div>`;
                     processedCols.add(c.id);
+                });
+
+                // Render Project Graphs
+                const pGraphs = graphs.filter(g => g.projectId === p.id);
+                pGraphs.forEach(g => {
+                    html += `<div style="padding-left: 20px;">
+                         ${createListItem('ph-graph', '#06b6d4', g.name)}
+                     </div>`;
+                    processedGraphs.add(g.id);
+                });
+
+                // Render Project Docs
+                const pDocs = docs.filter(d => d.projectId === p.id);
+                pDocs.forEach(d => {
+                    html += `<div style="padding-left: 20px;">
+                         ${createListItem('ph-note', '#a855f7', d.name)}
+                     </div>`;
+                    processedDocs.add(d.id);
+                });
+
+                // Render Project Storages
+                const pStorages = storages.filter(s => s.projectId === p.id);
+                pStorages.forEach(s => {
+                    html += `<div style="padding-left: 20px;">
+                         ${createListItem('ph-hard-drive', '#64748b', s.name)}
+                     </div>`;
+                    processedStorages.add(s.id);
                 });
             });
 
@@ -8124,67 +8157,52 @@ class SyncManager {
             `;
         }
 
-        // Graphs section
-        const graphs = data.graphs || [];
-        if (graphs.length > 0) {
+        // 4. Orphaned Graphs
+        const orphanGraphs = graphs.filter(g => !processedGraphs.has(g.id));
+        if (orphanGraphs.length > 0) {
             html += `
-                <div class="conflict-detail-section">
-                    <div class="conflict-detail-header">
-                        <i class="ph-bold ph-graph" style="color: #06b6d4;"></i>
-                        <span>Graphs (${graphs.length})</span>
-                    </div>
-                    <div class="conflict-detail-list">
-                        ${graphs.map(g => `
-                            <div class="conflict-detail-item">
-                                <i class="ph-fill ph-graph" style="color: var(--text-muted);"></i>
-                                <span>${this.escapeHtml(g.name)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+                 <div class="conflict-detail-section">
+                     <div class="conflict-detail-header">
+                         <i class="ph-bold ph-graph" style="color: #06b6d4;"></i>
+                         <span>Uncategorized Graphs (${orphanGraphs.length})</span>
+                     </div>
+                     <div class="conflict-detail-list">
+                         ${orphanGraphs.map(g => createListItem('ph-graph', 'var(--text-muted)', g.name)).join('')}
+                     </div>
+                 </div>
+             `;
         }
 
-        // Docs section
-        const docs = data.docs || [];
-        if (docs.length > 0) {
+        // 5. Orphaned Docs
+        const orphanDocs = docs.filter(d => !processedDocs.has(d.id));
+        if (orphanDocs.length > 0) {
             html += `
-                <div class="conflict-detail-section">
-                    <div class="conflict-detail-header">
-                        <i class="ph-bold ph-note" style="color: #a855f7;"></i>
-                        <span>Docs (${docs.length})</span>
-                    </div>
-                    <div class="conflict-detail-list">
-                        ${docs.map(d => `
-                            <div class="conflict-detail-item">
-                                <i class="ph-fill ph-note" style="color: var(--text-muted);"></i>
-                                <span>${this.escapeHtml(d.name)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+                 <div class="conflict-detail-section">
+                     <div class="conflict-detail-header">
+                         <i class="ph-bold ph-note" style="color: #a855f7;"></i>
+                         <span>Uncategorized Docs (${orphanDocs.length})</span>
+                     </div>
+                     <div class="conflict-detail-list">
+                         ${orphanDocs.map(d => createListItem('ph-note', 'var(--text-muted)', d.name)).join('')}
+                     </div>
+                 </div>
+             `;
         }
 
-        // Storages section
-        const storages = data.storages || [];
-        if (storages.length > 0) {
+        // 6. Orphaned Storages
+        const orphanStorages = storages.filter(s => !processedStorages.has(s.id));
+        if (orphanStorages.length > 0) {
             html += `
-                <div class="conflict-detail-section">
-                    <div class="conflict-detail-header">
-                        <i class="ph-bold ph-hard-drives" style="color: #64748b;"></i>
-                        <span>Storages (${storages.length})</span>
-                    </div>
-                    <div class="conflict-detail-list">
-                        ${storages.map(s => `
-                            <div class="conflict-detail-item">
-                                <i class="ph-fill ph-hard-drive" style="color: var(--text-muted);"></i>
-                                <span>${this.escapeHtml(s.name)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+                 <div class="conflict-detail-section">
+                     <div class="conflict-detail-header">
+                         <i class="ph-bold ph-hard-drives" style="color: #64748b;"></i>
+                         <span>Uncategorized Storages (${orphanStorages.length})</span>
+                     </div>
+                     <div class="conflict-detail-list">
+                         ${orphanStorages.map(s => createListItem('ph-hard-drive', 'var(--text-muted)', s.name)).join('')}
+                     </div>
+                 </div>
+             `;
         }
 
         if (!html) {
@@ -8328,9 +8346,11 @@ class SyncManager {
             container.appendChild(projectHeader);
 
             data.projects.forEach(project => {
-                // Find files for this project to check if they exist locally
+                // Find items for this project
                 const projectFiles = data.files ? data.files.filter(f => f.projectId === project.id) : [];
-                const projectCollections = data.collections ? data.collections.filter(c => c.projectId === project.id) : []; // ADDED
+                const projectCollections = data.collections ? data.collections.filter(c => c.projectId === project.id) : [];
+
+                // New logic: Check for other modifyable assets if we want to be thorough, but focusing on what user asked
 
                 // Check if project exists locally
                 const localProject = this.app.state.projects.find(p => p.id === project.id);
@@ -8347,12 +8367,13 @@ class SyncManager {
 
                     // Render Collections
                     projectCollections.forEach(col => {
-                        container.appendChild(createRow(col, 'collections', true)); // indented
+                        container.appendChild(createRow(col, 'collections', true));
                         processedCollectionIds.add(col.id);
                     });
+                    // Note: We could technically render graphs/docs here too for clarity, but standard 'files' is usually enough context for a new project. 
 
                 } else {
-                    // Existing Project - Check for ACTUAL differences
+                    // Existing Project - Check for ACTUAL differences (New OR Modified)
                     let hasDiffs = false;
 
                     // 1. Property Diffs
@@ -8362,12 +8383,18 @@ class SyncManager {
                         hasDiffs = true;
                     }
 
-                    // 2. File Diffs (New files)
-                    // We only care about NEW files for now in this wizard
-                    const newFiles = projectFiles.filter(f => !this.app.state.files.find(lf => lf.id === f.id));
-                    if (newFiles.length > 0) hasDiffs = true;
+                    // 2. File Diffs (New OR Modified)
+                    const diffFiles = projectFiles.filter(cf => {
+                        const lf = this.app.state.files.find(f => f.id === cf.id);
+                        if (!lf) return true; // New file
+                        // Check for modifications
+                        if (cf.name !== lf.name) return true; // Renamed
+                        if (cf.parentId !== lf.parentId) return true; // Moved
+                        return false;
+                    });
+                    if (diffFiles.length > 0) hasDiffs = true;
 
-                    // 3. Collection Diffs (New collections)
+                    // 3. Collection Diffs (New collections for now, properties could be added)
                     const newCols = projectCollections.filter(c => !this.app.state.collections.find(lc => lc.id === c.id));
                     if (newCols.length > 0) hasDiffs = true;
 
@@ -8396,7 +8423,7 @@ class SyncManager {
                         container.appendChild(updateRow);
                     }
 
-                    // Mark as processed regardless, to avoid cluttering orphans
+                    // Mark as processed
                     projectFiles.forEach(f => processedFileIds.add(f.id));
                     projectCollections.forEach(c => processedCollectionIds.add(c.id));
                 }
@@ -8535,6 +8562,31 @@ class SyncManager {
                 ['Ignore File', 'Import File'], ['Don\'t add', 'Add to library']);
         });
 
+        // 2b. Modified Files (Renames & Moves)
+        const modifiedFiles = cloudFiles.filter(cf => {
+            const lf = this.app.state.files.find(f => f.id === cf.id);
+            return lf && (lf.name !== cf.name || lf.parentId !== cf.parentId);
+        });
+
+        modifiedFiles.forEach(f => {
+            const lf = this.app.state.files.find(i => i.id === f.id);
+
+            // Rename Decision
+            if (lf.name !== f.name) {
+                addDecision('file-update', f.id, 'File Renamed', `File name changed.`,
+                    ['Keep Local Name', 'Use Cloud Name'],
+                    [this.escapeHtml(lf.name), this.escapeHtml(f.name)]);
+            }
+
+            // Move Decision (Placement)
+            if (lf.parentId !== f.parentId) {
+                // We can try to look up folder names for better context, but for now just showing "Moved" is functional
+                addDecision('file-move', f.id, 'File Moved', `File location changed (folder/placement).`,
+                    ['Keep Local Position', 'Use Cloud Position'],
+                    ['Keep current location', 'Update location']);
+            }
+        });
+
         // 3. New Collections
         const newCollections = cloudCollections.filter(cc => !this.app.state.collections.find(lc => lc.id === cc.id));
         newCollections.forEach(c => {
@@ -8610,7 +8662,9 @@ class SyncManager {
         const changes = {
             properties: [],
             files: [],
-            collections: []
+            collections: [],
+            fileUpdates: [],
+            fileMoves: []
         };
 
         this.reviewDecisions.forEach(d => {
@@ -8621,6 +8675,10 @@ class SyncManager {
                     changes.files.push(d.id);
                 } else if (d.type === 'collection') {
                     changes.collections.push(d.id);
+                } else if (d.type === 'file-update') {
+                    changes.fileUpdates.push(d.id);
+                } else if (d.type === 'file-move') {
+                    changes.fileMoves.push(d.id);
                 }
             }
         });
@@ -8642,21 +8700,45 @@ class SyncManager {
                 }
             }
 
-            // 2. Apply Files
+            // 2. Apply New Files
             if (changes.files.length > 0) {
                 // Find files in cloud data matching IDs
                 const filesToAdd = this.conflictCloudData.files.filter(f => changes.files.includes(f.id));
                 this.app.state.files.push(...filesToAdd);
             }
 
-            // 3. Apply Collections
+            // 3. Apply File Updates (Renames)
+            if (changes.fileUpdates.length > 0) {
+                changes.fileUpdates.forEach(fid => {
+                    const localFile = this.app.state.files.find(f => f.id === fid);
+                    const cloudFile = this.conflictCloudData.files.find(f => f.id === fid);
+                    if (localFile && cloudFile) {
+                        localFile.name = cloudFile.name;
+                    }
+                });
+            }
+
+            // 4. Apply File Moves (Placement)
+            if (changes.fileMoves.length > 0) {
+                changes.fileMoves.forEach(fid => {
+                    const localFile = this.app.state.files.find(f => f.id === fid);
+                    const cloudFile = this.conflictCloudData.files.find(f => f.id === fid);
+                    if (localFile && cloudFile) {
+                        localFile.parentId = cloudFile.parentId;
+                        // Also sync order if possible, though strict order might conflict with local items.
+                        if (cloudFile.order !== undefined) localFile.order = cloudFile.order;
+                    }
+                });
+            }
+
+            // 5. Apply Collections
             if (changes.collections.length > 0) {
                 // Find collections in cloud data matching IDs
                 const colsToAdd = this.conflictCloudData.collections.filter(c => changes.collections.includes(c.id));
                 this.app.state.collections.push(...colsToAdd);
             }
 
-            // 4. Save & Sync
+            // 6. Save & Sync
             await this.syncToCloud();
             this.clearConflict();
             window.location.reload();
