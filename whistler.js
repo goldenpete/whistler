@@ -7531,7 +7531,6 @@ class SyncManager {
     setupUI() {
         // Cloud sync button in sidebar
         const btnCloudSync = document.getElementById('btn-cloud-sync');
-        const btnCloudSync = document.getElementById('btn-cloud-sync');
         if (btnCloudSync) {
             btnCloudSync.onclick = () => this.openSyncModal();
         }
