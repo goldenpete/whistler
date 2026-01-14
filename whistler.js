@@ -8512,144 +8512,216 @@ class SyncManager {
 
     /**
      * Show detailed review for a modified project (Questionnaire Style)
+     * Completely rewritten with clean logic separation.
      */
     showProjectReview(cloudProject, localProject, cloudFiles, cloudCollections = []) {
         document.getElementById('conflict-choose-view').classList.add('hidden');
         document.getElementById('conflict-review-view').classList.remove('hidden');
 
-        document.getElementById('review-project-name').textContent = "Reviewing Changes: " + cloudProject.name;
+        const projectName = this.safeStr(cloudProject.name, 'Untitled Project');
+        document.getElementById('review-project-name').textContent = `Reviewing: ${projectName}`;
 
-        const container = document.getElementById('conflict-review-content');
-        container.innerHTML = '';
+        // Compute diff using pure function
+        this.reviewDecisions = this.computeProjectDiff(cloudProject, localProject, cloudFiles, cloudCollections);
+        this.currentReviewContext = { cloudProject, localProject };
 
-        // Prepare Decision Objects
-        this.reviewDecisions = [];
-        let index = 0;
+        // Render the wizard
+        this.renderConflictWizard();
+    }
 
-        // Helper to add decision
-        // generic: type, id, title, description, labels[reject, accept], values[old, new], meta{previewUrl, icon}
-        const addDecision = (type, id, title, desc, labels, values, meta = {}) => {
-            this.reviewDecisions.push({
-                index: index++,
+    /**
+     * Null-safe string helper
+     */
+    safeStr(val, fallback = '') {
+        return (val != null && val !== '') ? String(val) : fallback;
+    }
+
+    /**
+     * Null-safe URL helper
+     */
+    safeUrl(file) {
+        return (file && file.url) ? file.url : '';
+    }
+
+    /**
+     * Determine file icon based on URL and type
+     */
+    getFileIcon(file) {
+        if (!file) return 'ph-file';
+        if (file.type === 'folder') return 'ph-folder';
+
+        const url = this.safeUrl(file).toLowerCase();
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].some(ext => url.endsWith(ext))) return 'ph-image';
+        if (['mp4', 'webm', 'mov', 'avi', 'mkv'].some(ext => url.endsWith(ext))) return 'ph-video';
+        if (['mp3', 'wav', 'ogg', 'flac'].some(ext => url.endsWith(ext))) return 'ph-music-note';
+        if (['pdf'].some(ext => url.endsWith(ext))) return 'ph-file-pdf';
+        return 'ph-file';
+    }
+
+    /**
+     * Check if file URL is an image (for previews)
+     */
+    isImageUrl(url) {
+        if (!url) return false;
+        return ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => url.toLowerCase().endsWith(ext));
+    }
+
+    /**
+     * Pure function: Compute differences between cloud and local project data
+     * Returns an array of ChangeItem objects
+     */
+    computeProjectDiff(cloudProject, localProject, cloudFiles, cloudCollections) {
+        const changes = [];
+        let idx = 0;
+
+        const addChange = (type, targetId, title, desc, localVal, cloudVal, icon = 'ph-file', previewUrl = null) => {
+            changes.push({
+                idx: idx++,
                 type,
-                id,
+                targetId,
                 title,
                 desc,
-                labels,
-                values,
-                meta,
-                choice: null // 'reject' or 'accept' (default to be set later)
+                localValue: localVal,
+                cloudValue: cloudVal,
+                icon,
+                previewUrl,
+                choice: 'accept' // Default to accepting cloud changes
             });
         };
 
-        // 1. Property Changes
-        // We can group property changes or show them individually. Individually is finer control.
-        if (cloudProject.name !== localProject.name) {
-            addDecision('property', 'name', 'Project Name Change', 'The project name has been updated.',
-                ['Keep Local Name', 'Use Cloud Name'],
-                [this.escapeHtml(localProject.name || 'Untitled'), this.escapeHtml(cloudProject.name || 'Untitled')]);
-        }
-        if (cloudProject.description !== localProject.description) {
-            addDecision('property', 'description', 'Description Update', 'The project description has been modified.',
-                ['Keep Local Desc.', 'Use Cloud Desc.'],
-                [this.escapeHtml(localProject.description || '(empty)'), this.escapeHtml(cloudProject.description || '(empty)')]);
-        }
-        if (cloudProject.color !== localProject.color) {
-            addDecision('property', 'color', 'Color Update', 'The project color code changed.',
-                ['Keep Local Color', 'Use Cloud Color'],
-                [`<span style="color:${localProject.color}">●</span> ${this.escapeHtml(localProject.color)}`, `<span style="color:${cloudProject.color}">●</span> ${this.escapeHtml(cloudProject.color)}`]);
+        // --- 1. Project Property Changes ---
+        if (this.safeStr(cloudProject.name) !== this.safeStr(localProject.name)) {
+            addChange('project-name', cloudProject.id, 'Project Name Changed',
+                'The project name differs between local and cloud.',
+                this.safeStr(localProject.name, 'Untitled'),
+                this.safeStr(cloudProject.name, 'Untitled'),
+                'ph-text-aa');
         }
 
-        // 2. New Files
-        const newFiles = cloudFiles.filter(cf => !this.app.state.files.find(lf => lf.id === cf.id));
-        newFiles.forEach(f => {
-            // Determine icon or preview (handle folders/null URLs)
-            const url = f.url || '';
-            const isImg = url && ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => url.toLowerCase().endsWith(ext));
-            const meta = {
-                icon: f.type === 'folder' ? 'ph-folder' : (isImg ? 'ph-image' : 'ph-file'),
-                previewUrl: isImg ? url : null
-            };
+        if (this.safeStr(cloudProject.description) !== this.safeStr(localProject.description)) {
+            addChange('project-desc', cloudProject.id, 'Description Updated',
+                'The project description has been modified.',
+                this.safeStr(localProject.description, '(empty)'),
+                this.safeStr(cloudProject.description, '(empty)'),
+                'ph-text-align-left');
+        }
 
-            addDecision('file', f.id, 'New File Found', `File "${this.escapeHtml(f.name)}" detected in cloud.`,
-                ['Ignore File', 'Add to Library'],
-                ['(Does not exist)', this.escapeHtml(f.name)],
-                meta);
-        });
+        if (this.safeStr(cloudProject.color) !== this.safeStr(localProject.color)) {
+            addChange('project-color', cloudProject.id, 'Color Changed',
+                'The project color has been updated.',
+                `<span style="color:${localProject.color || '#888'}">●</span> ${this.safeStr(localProject.color, 'None')}`,
+                `<span style="color:${cloudProject.color || '#888'}">●</span> ${this.safeStr(cloudProject.color, 'None')}`,
+                'ph-palette');
+        }
 
-        // 3. Modified Files (Renames & Moves)
-        // Consolidate updates for the same file into one card if possible, OR keep distinct if logic requires.
-        // User saw duplicates, so likely one file had rename AND move? We will separate logic but handle duplicates.
-        const modifiedFiles = cloudFiles.filter(cf => {
+        // --- 2. File Changes ---
+        (cloudFiles || []).forEach(cf => {
             const lf = this.app.state.files.find(f => f.id === cf.id);
-            return lf && (lf.name !== cf.name || lf.parentId !== cf.parentId);
-        });
+            const url = this.safeUrl(cf);
+            const icon = this.getFileIcon(cf);
+            const preview = this.isImageUrl(url) ? url : null;
 
-        modifiedFiles.forEach(f => {
-            const lf = this.app.state.files.find(i => i.id === f.id);
-            const url = f.url || '';
-            const isImg = url && ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => url.toLowerCase().endsWith(ext));
-            const meta = {
-                icon: f.type === 'folder' ? 'ph-folder' : (isImg ? 'ph-image' : 'ph-file'),
-                previewUrl: isImg ? url : null
-            };
+            if (!lf) {
+                // New file
+                addChange('file-new', cf.id, 'New File',
+                    `"${this.escapeHtml(this.safeStr(cf.name, 'Unnamed'))}" exists in cloud but not locally.`,
+                    '(Does not exist)',
+                    this.escapeHtml(this.safeStr(cf.name, 'Unnamed')),
+                    icon, preview);
+            } else {
+                // Existing file - check for changes
+                const nameChanged = this.safeStr(cf.name) !== this.safeStr(lf.name);
+                const parentChanged = cf.parentId !== lf.parentId;
 
-            // Detect what changed
-            const nameChanged = lf.name !== f.name;
-            const parentChanged = lf.parentId !== f.parentId;
-
-            // Strategy: If both changed, we could show a combined "File Updated" card. 
-            // This is safer to avoid "duplicate" feeling cards for the same file.
-            if (nameChanged && parentChanged) {
-                addDecision('file-update-all', f.id, 'File Updated', `File name and location changed.`,
-                    ['Keep Local Version', 'Update File'],
-                    [`${this.escapeHtml(lf.name)} <br><span style="opacity:0.6; font-size:10px;">(Old Pos)</span>`, `${this.escapeHtml(f.name)} <br><span style="opacity:0.6; font-size:10px;">(New Pos)</span>`],
-                    meta);
-            } else if (nameChanged) {
-                addDecision('file-update', f.id, 'File Renamed', `File name changed.`,
-                    ['Keep Local Name', 'Use Cloud Name'],
-                    [this.escapeHtml(lf.name), this.escapeHtml(f.name)],
-                    meta);
-            } else if (parentChanged) {
-                addDecision('file-move', f.id, 'File Moved', `File location changed (folder/placement).`,
-                    ['Keep Local Position', 'Use Cloud Position'],
-                    ['Current Position', 'New Position'],
-                    meta);
+                if (nameChanged && parentChanged) {
+                    // Combined update
+                    addChange('file-update', cf.id, 'File Updated',
+                        'This file was renamed and moved.',
+                        `${this.escapeHtml(lf.name)}`,
+                        `${this.escapeHtml(cf.name)} (moved)`,
+                        icon, preview);
+                } else if (nameChanged) {
+                    addChange('file-rename', cf.id, 'File Renamed',
+                        'The file name has changed.',
+                        this.escapeHtml(lf.name),
+                        this.escapeHtml(cf.name),
+                        icon, preview);
+                } else if (parentChanged) {
+                    addChange('file-move', cf.id, 'File Moved',
+                        'The file has been moved to a different folder.',
+                        'Current Location',
+                        'New Location',
+                        icon, preview);
+                }
             }
         });
 
-        // 4. New Collections
-        const newCollections = cloudCollections.filter(cc => !this.app.state.collections.find(lc => lc.id === cc.id));
-        newCollections.forEach(c => {
-            addDecision('collection', c.id, 'New Collection', `Collection "${c.name}" found in cloud.`,
-                ['Ignore', 'Import'], ['(None)', this.escapeHtml(c.name)], { icon: 'ph-cards' });
+        // --- 3. Collection Changes ---
+        (cloudCollections || []).forEach(cc => {
+            const lc = this.app.state.collections.find(c => c.id === cc.id);
+            if (!lc) {
+                addChange('collection-new', cc.id, 'New Collection',
+                    `"${this.escapeHtml(this.safeStr(cc.name, 'Unnamed'))}" exists in cloud but not locally.`,
+                    '(Does not exist)',
+                    this.escapeHtml(this.safeStr(cc.name, 'Unnamed')),
+                    'ph-cards');
+            }
         });
 
-        if (this.reviewDecisions.length === 0) {
-            container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);">No actionable changes found.</div>';
+        return changes;
+    }
+
+    /**
+     * Render the conflict wizard UI from this.reviewDecisions
+     */
+    renderConflictWizard() {
+        const container = document.getElementById('conflict-review-content');
+        container.innerHTML = '';
+
+        if (!this.reviewDecisions || this.reviewDecisions.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 60px 20px; text-align: center;">
+                    <i class="ph ph-check-circle" style="font-size: 48px; color: #22c55e; margin-bottom: 16px;"></i>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">All Synced!</div>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 8px;">No actionable changes found for this project.</div>
+                </div>`;
             return;
         }
 
-        // Render Cards
+        // Progress indicator
+        const progressEl = document.createElement('div');
+        progressEl.style.cssText = 'text-align: center; padding: 12px; margin-bottom: 16px; background: var(--bg-hover); border-radius: 8px; font-size: 12px; color: var(--text-muted);';
+        progressEl.innerHTML = `<i class="ph ph-list-checks"></i> ${this.reviewDecisions.length} change${this.reviewDecisions.length > 1 ? 's' : ''} to review`;
+        container.appendChild(progressEl);
+
+        // Render each decision card
         this.reviewDecisions.forEach((d, i) => {
             const card = document.createElement('div');
             card.className = 'review-question-card';
+            card.dataset.idx = i;
 
-            // Preview logic
+            // Build preview/icon HTML
             let graphicHtml = '';
-            if (d.meta && d.meta.previewUrl) {
-                graphicHtml = `<div style="width: 100%; height: 120px; background: #000; display:flex; align-items:center; justify-content:center; margin-bottom:12px; border-radius:6px; overflow:hidden;">
-                    <img src="${d.meta.previewUrl}" style="height:100%; width:100%; object-fit:contain;">
-                </div>`;
-            } else if (d.meta && d.meta.icon) {
-                graphicHtml = `<div style="width: 40px; height: 40px; background: var(--bg-hover); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-                    <i class="ph ${d.meta.icon}" style="font-size: 20px; color: var(--accent);"></i>
-                </div>`;
+            if (d.previewUrl) {
+                graphicHtml = `
+                    <div style="width: 100%; height: 100px; background: #0a0a0a; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; border-radius: 6px; overflow: hidden;">
+                        <img src="${d.previewUrl}" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.parentElement.innerHTML='<i class=\\'ph ${d.icon}\\' style=\\'font-size:32px;color:var(--text-muted)\\'></i>'">
+                    </div>`;
+            } else if (d.icon) {
+                graphicHtml = `
+                    <div style="width: 44px; height: 44px; background: var(--bg-hover); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                        <i class="ph ${d.icon}" style="font-size: 22px; color: var(--accent);"></i>
+                    </div>`;
             }
+
+            // Determine button labels based on type
+            const isProperty = d.type.startsWith('project-');
+            const rejectLabel = isProperty ? 'Keep Local' : 'Skip';
+            const acceptLabel = isProperty ? 'Use Cloud' : 'Import';
 
             card.innerHTML = `
                 <div class="review-question-header">
-                    <div style="width:24px; height:24px; background:var(--bg-hover); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-secondary);">${i + 1}</div>
+                    <div style="min-width:26px; height:26px; background: linear-gradient(135deg, var(--accent), #8b5cf6); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;">${i + 1}</div>
                     <div class="review-question-title">${d.title}</div>
                 </div>
                 ${graphicHtml}
@@ -8658,142 +8730,148 @@ class SyncManager {
                 <div class="review-diff-box">
                     <div class="review-diff-line">
                         <span class="review-diff-label">Local:</span>
-                        <span class="review-diff-val">${d.values[0]}</span>
+                        <span class="review-diff-val">${d.localValue}</span>
                     </div>
-                     <div class="review-diff-line">
+                    <div class="review-diff-line">
                         <span class="review-diff-label">Cloud:</span>
-                        <span class="review-diff-val" style="color: var(--accent);">${d.values[1]}</span>
+                        <span class="review-diff-val" style="color: var(--accent);">${d.cloudValue}</span>
                     </div>
                 </div>
                 
                 <div class="review-decision-group">
-                    <div class="review-option-btn" onclick="app.sync.selectDecision(${i}, 'reject')">
-                        ${d.labels[0]}
+                    <div class="review-option-btn ${d.choice === 'reject' ? 'selected reject' : ''}" onclick="app.sync.selectDecision(${i}, 'reject')" data-label="${rejectLabel}">
+                        ${d.choice === 'reject' ? '<i class="ph-bold ph-x"></i> ' : ''}${rejectLabel}
                     </div>
-                     <div class="review-option-btn selected" onclick="app.sync.selectDecision(${i}, 'accept')">
-                        <i class="ph-bold ph-check"></i> ${d.labels[1]}
+                    <div class="review-option-btn ${d.choice === 'accept' ? 'selected' : ''}" onclick="app.sync.selectDecision(${i}, 'accept')" data-label="${acceptLabel}">
+                        ${d.choice === 'accept' ? '<i class="ph-bold ph-check"></i> ' : ''}${acceptLabel}
                     </div>
                 </div>
             `;
             container.appendChild(card);
-
-            // Set default choice to accept
-            d.choice = 'accept';
         });
-
-        this.currentReviewContext = { cloudProject, localProject };
     }
 
+    /**
+     * Handle user decision selection
+     */
     selectDecision(index, choice) {
         const item = this.reviewDecisions[index];
         if (!item) return;
         item.choice = choice;
 
-        // Update UI
+        // Re-render just this card for smooth UX
         const container = document.getElementById('conflict-review-content');
-        const card = container.children[index];
+        const card = container.querySelector(`[data-idx="${index}"]`);
+        if (!card) return;
+
         const btns = card.querySelectorAll('.review-option-btn');
+        if (btns.length < 2) return;
+
+        const rejectLabel = btns[0].dataset.label || 'Skip';
+        const acceptLabel = btns[1].dataset.label || 'Import';
 
         btns[0].className = `review-option-btn ${choice === 'reject' ? 'selected reject' : ''}`;
-        btns[1].className = `review-option-btn ${choice === 'accept' ? 'selected' : ''}`;
+        btns[0].innerHTML = choice === 'reject' ? `<i class="ph-bold ph-x"></i> ${rejectLabel}` : rejectLabel;
 
-        btns[0].innerHTML = choice === 'reject' ? '<i class="ph-bold ph-x"></i> ' + (item.type === 'property' ? 'Keep My Version' : 'Ignore') : (item.type === 'property' ? 'Keep My Version' : 'Ignore');
-        btns[1].innerHTML = choice === 'accept' ? '<i class="ph-bold ph-check"></i> ' + (item.type === 'property' ? 'Use Cloud Version' : 'Add to Library') : (item.type === 'property' ? 'Use Cloud Version' : 'Add to Library');
+        btns[1].className = `review-option-btn ${choice === 'accept' ? 'selected' : ''}`;
+        btns[1].innerHTML = choice === 'accept' ? `<i class="ph-bold ph-check"></i> ${acceptLabel}` : acceptLabel;
     }
 
     async applyReviewChanges() {
         if (!this.reviewDecisions || this.reviewDecisions.length === 0) return;
 
-        const changes = {
-            properties: [],
-            files: [],
-            collections: [],
-            fileUpdates: [],
-            fileMoves: []
-        };
-
-        this.reviewDecisions.forEach(d => {
-            if (d.choice === 'accept') {
-                if (d.type === 'property') {
-                    changes.properties.push(d.id);
-                } else if (d.type === 'file') {
-                    changes.files.push(d.id);
-                } else if (d.type === 'collection') {
-                    changes.collections.push(d.id);
-                } else if (d.type === 'file-update') {
-                    changes.fileUpdates.push(d.id);
-                } else if (d.type === 'file-move') {
-                    changes.fileMoves.push(d.id);
-                } else if (d.type === 'file-update-all') {
-                    changes.fileUpdates.push(d.id); // Rename
-                    changes.fileMoves.push(d.id);   // Move
-                }
-            }
-        });
-
         const { cloudProject, localProject } = this.currentReviewContext;
+        if (!cloudProject || !localProject) {
+            console.error('Missing review context');
+            return;
+        }
 
         try {
             this.setConflictLoading(true, 'Applying changes...');
 
-            // 1. Apply Properties
-            if (changes.properties.length > 0) {
-                const targetProject = this.app.state.projects.find(p => p.id === localProject.id);
-                if (targetProject) {
-                    changes.properties.forEach(prop => {
-                        if (cloudProject[prop] !== undefined) {
-                            targetProject[prop] = cloudProject[prop];
+            // Process each accepted decision
+            for (const decision of this.reviewDecisions) {
+                if (decision.choice !== 'accept') continue;
+
+                const targetId = decision.targetId;
+
+                switch (decision.type) {
+                    // --- Project Property Changes ---
+                    case 'project-name': {
+                        const proj = this.app.state.projects.find(p => p.id === targetId);
+                        if (proj) proj.name = cloudProject.name;
+                        break;
+                    }
+                    case 'project-desc': {
+                        const proj = this.app.state.projects.find(p => p.id === targetId);
+                        if (proj) proj.description = cloudProject.description;
+                        break;
+                    }
+                    case 'project-color': {
+                        const proj = this.app.state.projects.find(p => p.id === targetId);
+                        if (proj) proj.color = cloudProject.color;
+                        break;
+                    }
+
+                    // --- File Changes ---
+                    case 'file-new': {
+                        const cloudFile = this.conflictCloudData.files?.find(f => f.id === targetId);
+                        if (cloudFile && !this.app.state.files.find(f => f.id === targetId)) {
+                            this.app.state.files.push(cloudFile);
                         }
-                    });
+                        break;
+                    }
+                    case 'file-rename': {
+                        const localFile = this.app.state.files.find(f => f.id === targetId);
+                        const cloudFile = this.conflictCloudData.files?.find(f => f.id === targetId);
+                        if (localFile && cloudFile) {
+                            localFile.name = cloudFile.name;
+                        }
+                        break;
+                    }
+                    case 'file-move': {
+                        const localFile = this.app.state.files.find(f => f.id === targetId);
+                        const cloudFile = this.conflictCloudData.files?.find(f => f.id === targetId);
+                        if (localFile && cloudFile) {
+                            localFile.parentId = cloudFile.parentId;
+                            if (cloudFile.order !== undefined) localFile.order = cloudFile.order;
+                        }
+                        break;
+                    }
+                    case 'file-update': {
+                        // Combined rename + move
+                        const localFile = this.app.state.files.find(f => f.id === targetId);
+                        const cloudFile = this.conflictCloudData.files?.find(f => f.id === targetId);
+                        if (localFile && cloudFile) {
+                            localFile.name = cloudFile.name;
+                            localFile.parentId = cloudFile.parentId;
+                            if (cloudFile.order !== undefined) localFile.order = cloudFile.order;
+                        }
+                        break;
+                    }
+
+                    // --- Collection Changes ---
+                    case 'collection-new': {
+                        const cloudCol = this.conflictCloudData.collections?.find(c => c.id === targetId);
+                        if (cloudCol && !this.app.state.collections.find(c => c.id === targetId)) {
+                            this.app.state.collections.push(cloudCol);
+                        }
+                        break;
+                    }
+
+                    default:
+                        console.warn('Unknown decision type:', decision.type);
                 }
             }
 
-            // 2. Apply New Files
-            if (changes.files.length > 0) {
-                // Find files in cloud data matching IDs
-                const filesToAdd = this.conflictCloudData.files.filter(f => changes.files.includes(f.id));
-                this.app.state.files.push(...filesToAdd);
-            }
-
-            // 3. Apply File Updates (Renames)
-            if (changes.fileUpdates.length > 0) {
-                changes.fileUpdates.forEach(fid => {
-                    const localFile = this.app.state.files.find(f => f.id === fid);
-                    const cloudFile = this.conflictCloudData.files.find(f => f.id === fid);
-                    if (localFile && cloudFile) {
-                        localFile.name = cloudFile.name;
-                    }
-                });
-            }
-
-            // 4. Apply File Moves (Placement)
-            if (changes.fileMoves.length > 0) {
-                changes.fileMoves.forEach(fid => {
-                    const localFile = this.app.state.files.find(f => f.id === fid);
-                    const cloudFile = this.conflictCloudData.files.find(f => f.id === fid);
-                    if (localFile && cloudFile) {
-                        localFile.parentId = cloudFile.parentId;
-                        // Also sync order if possible, though strict order might conflict with local items.
-                        if (cloudFile.order !== undefined) localFile.order = cloudFile.order;
-                    }
-                });
-            }
-
-            // 5. Apply Collections
-            if (changes.collections.length > 0) {
-                // Find collections in cloud data matching IDs
-                const colsToAdd = this.conflictCloudData.collections.filter(c => changes.collections.includes(c.id));
-                this.app.state.collections.push(...colsToAdd);
-            }
-
-            // 6. Save & Sync
+            // Save & Sync
             await this.syncToCloud();
             this.clearConflict();
             window.location.reload();
 
         } catch (e) {
             console.error('Failed to apply changes:', e);
-            alert('Error applying changes');
+            alert('Error applying changes: ' + e.message);
             this.setConflictLoading(false);
         }
     }
