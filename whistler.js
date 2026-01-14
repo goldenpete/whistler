@@ -8527,42 +8527,58 @@ class SyncManager {
         let index = 0;
 
         // Helper to add decision
-        const addDecision = (type, id, title, desc, labels, values) => {
+        // generic: type, id, title, description, labels[reject, accept], values[old, new], meta{previewUrl, icon}
+        const addDecision = (type, id, title, desc, labels, values, meta = {}) => {
             this.reviewDecisions.push({
                 index: index++,
                 type,
                 id,
                 title,
                 desc,
-                labels, // [Label 1, Label 2]
-                values, // [Value 1, Value 2]
-                choice: null // 'local' or 'cloud' / 'reject' or 'accept'
+                labels,
+                values,
+                meta,
+                choice: null // 'reject' or 'accept' (default to be set later)
             });
         };
 
         // 1. Property Changes
+        // We can group property changes or show them individually. Individually is finer control.
         if (cloudProject.name !== localProject.name) {
-            addDecision('property', 'name', 'Project Name Change', 'The project name is different in the cloud.',
-                ['Your Version', 'Cloud Version'], [this.escapeHtml(localProject.name || 'Untitled'), this.escapeHtml(cloudProject.name || 'Untitled')]);
+            addDecision('property', 'name', 'Project Name Change', 'The project name has been updated.',
+                ['Keep Local Name', 'Use Cloud Name'],
+                [this.escapeHtml(localProject.name || 'Untitled'), this.escapeHtml(cloudProject.name || 'Untitled')]);
         }
         if (cloudProject.description !== localProject.description) {
-            addDecision('property', 'description', 'Description Update', 'Cloud has a different description.',
-                ['Your Version', 'Cloud Version'], [this.escapeHtml(localProject.description || '(empty)'), this.escapeHtml(cloudProject.description || '(empty)')]);
+            addDecision('property', 'description', 'Description Update', 'The project description has been modified.',
+                ['Keep Local Desc.', 'Use Cloud Desc.'],
+                [this.escapeHtml(localProject.description || '(empty)'), this.escapeHtml(cloudProject.description || '(empty)')]);
         }
         if (cloudProject.color !== localProject.color) {
-            addDecision('property', 'color', 'Color Update', 'Cloud uses a different color.',
-                ['Your Version', 'Cloud Version'],
+            addDecision('property', 'color', 'Color Update', 'The project color code changed.',
+                ['Keep Local Color', 'Use Cloud Color'],
                 [`<span style="color:${localProject.color}">●</span> ${this.escapeHtml(localProject.color)}`, `<span style="color:${cloudProject.color}">●</span> ${this.escapeHtml(cloudProject.color)}`]);
         }
 
         // 2. New Files
         const newFiles = cloudFiles.filter(cf => !this.app.state.files.find(lf => lf.id === cf.id));
         newFiles.forEach(f => {
-            addDecision('file', f.id, 'New File Found', `File "${f.name}" exists in cloud but not locally.`,
-                ['Ignore File', 'Import File'], ['Don\'t add', 'Add to library']);
+            // Determine icon or preview
+            const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => f.url.toLowerCase().endsWith(ext));
+            const meta = {
+                icon: isImg ? 'ph-image' : (f.type === 'folder' ? 'ph-folder' : 'ph-file'),
+                previewUrl: isImg ? f.url : null
+            };
+
+            addDecision('file', f.id, 'New File Found', `File "${f.name}" detected in cloud.`,
+                ['Ignore File', 'Add to Library'],
+                ['(Does not exist)', this.escapeHtml(f.name)],
+                meta);
         });
 
-        // 2b. Modified Files (Renames & Moves)
+        // 3. Modified Files (Renames & Moves)
+        // Consolidate updates for the same file into one card if possible, OR keep distinct if logic requires.
+        // User saw duplicates, so likely one file had rename AND move? We will separate logic but handle duplicates.
         const modifiedFiles = cloudFiles.filter(cf => {
             const lf = this.app.state.files.find(f => f.id === cf.id);
             return lf && (lf.name !== cf.name || lf.parentId !== cf.parentId);
@@ -8570,28 +8586,41 @@ class SyncManager {
 
         modifiedFiles.forEach(f => {
             const lf = this.app.state.files.find(i => i.id === f.id);
+            const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp'].some(ext => f.url.toLowerCase().endsWith(ext));
+            const meta = {
+                icon: isImg ? 'ph-image' : 'ph-file',
+                previewUrl: isImg ? f.url : null
+            };
 
-            // Rename Decision
-            if (lf.name !== f.name) {
+            // Detect what changed
+            const nameChanged = lf.name !== f.name;
+            const parentChanged = lf.parentId !== f.parentId;
+
+            // Strategy: If both changed, we could show a combined "File Updated" card. 
+            // This is safer to avoid "duplicate" feeling cards for the same file.
+            if (nameChanged && parentChanged) {
+                addDecision('file-update-all', f.id, 'File Updated', `File name and location changed.`,
+                    ['Keep Local Version', 'Update File'],
+                    [`${this.escapeHtml(lf.name)} <br><span style="opacity:0.6; font-size:10px;">(Old Pos)</span>`, `${this.escapeHtml(f.name)} <br><span style="opacity:0.6; font-size:10px;">(New Pos)</span>`],
+                    meta);
+            } else if (nameChanged) {
                 addDecision('file-update', f.id, 'File Renamed', `File name changed.`,
                     ['Keep Local Name', 'Use Cloud Name'],
-                    [this.escapeHtml(lf.name), this.escapeHtml(f.name)]);
-            }
-
-            // Move Decision (Placement)
-            if (lf.parentId !== f.parentId) {
-                // We can try to look up folder names for better context, but for now just showing "Moved" is functional
+                    [this.escapeHtml(lf.name), this.escapeHtml(f.name)],
+                    meta);
+            } else if (parentChanged) {
                 addDecision('file-move', f.id, 'File Moved', `File location changed (folder/placement).`,
                     ['Keep Local Position', 'Use Cloud Position'],
-                    ['Keep current location', 'Update location']);
+                    ['Current Position', 'New Position'],
+                    meta);
             }
         });
 
-        // 3. New Collections
+        // 4. New Collections
         const newCollections = cloudCollections.filter(cc => !this.app.state.collections.find(lc => lc.id === cc.id));
         newCollections.forEach(c => {
-            addDecision('collection', c.id, 'New Collection Found', `Collection "${c.name}" exists in cloud but not locally.`,
-                ['Ignore Collection', 'Import Collection'], ['Don\'t add', 'Add to library']);
+            addDecision('collection', c.id, 'New Collection', `Collection "${c.name}" found in cloud.`,
+                ['Ignore', 'Import'], ['(None)', this.escapeHtml(c.name)], { icon: 'ph-cards' });
         });
 
         if (this.reviewDecisions.length === 0) {
@@ -8603,13 +8632,27 @@ class SyncManager {
         this.reviewDecisions.forEach((d, i) => {
             const card = document.createElement('div');
             card.className = 'review-question-card';
+
+            // Preview logic
+            let graphicHtml = '';
+            if (d.meta && d.meta.previewUrl) {
+                graphicHtml = `<div style="width: 100%; height: 120px; background: #000; display:flex; align-items:center; justify-content:center; margin-bottom:12px; border-radius:6px; overflow:hidden;">
+                    <img src="${d.meta.previewUrl}" style="height:100%; width:100%; object-fit:contain;">
+                </div>`;
+            } else if (d.meta && d.meta.icon) {
+                graphicHtml = `<div style="width: 40px; height: 40px; background: var(--bg-hover); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                    <i class="ph ${d.meta.icon}" style="font-size: 20px; color: var(--accent);"></i>
+                </div>`;
+            }
+
             card.innerHTML = `
                 <div class="review-question-header">
                     <div style="width:24px; height:24px; background:var(--bg-hover); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-secondary);">${i + 1}</div>
                     <div class="review-question-title">${d.title}</div>
                 </div>
+                ${graphicHtml}
                 <div class="review-question-desc">${d.desc}</div>
-                ${d.type === 'property' ? `
+                
                 <div class="review-diff-box">
                     <div class="review-diff-line">
                         <span class="review-diff-label">Local:</span>
@@ -8617,16 +8660,16 @@ class SyncManager {
                     </div>
                      <div class="review-diff-line">
                         <span class="review-diff-label">Cloud:</span>
-                        <span class="review-diff-val">${d.values[1]}</span>
+                        <span class="review-diff-val" style="color: var(--accent);">${d.values[1]}</span>
                     </div>
-                </div>` : ''}
+                </div>
                 
                 <div class="review-decision-group">
                     <div class="review-option-btn" onclick="app.sync.selectDecision(${i}, 'reject')">
-                        ${d.type === 'property' ? 'Keep My Version' : 'Ignore'}
+                        ${d.labels[0]}
                     </div>
                      <div class="review-option-btn selected" onclick="app.sync.selectDecision(${i}, 'accept')">
-                        <i class="ph-bold ph-check"></i> ${d.type === 'property' ? 'Use Cloud Version' : 'Add to Library'}
+                        <i class="ph-bold ph-check"></i> ${d.labels[1]}
                     </div>
                 </div>
             `;
@@ -8679,6 +8722,9 @@ class SyncManager {
                     changes.fileUpdates.push(d.id);
                 } else if (d.type === 'file-move') {
                     changes.fileMoves.push(d.id);
+                } else if (d.type === 'file-update-all') {
+                    changes.fileUpdates.push(d.id); // Rename
+                    changes.fileMoves.push(d.id);   // Move
                 }
             }
         });
