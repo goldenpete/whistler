@@ -7494,7 +7494,7 @@ class SyncManager {
         this.TOKEN_KEY = 'whistler_session_token';
         this.LAST_SYNC_KEY = 'whistler_last_sync';
         this.DISPLAY_NAME_KEY = 'whistler_display_name';
-        this.AUTO_SYNC_KEY = 'whistler_auto_sync';
+        this.DISPLAY_NAME_KEY = 'whistler_display_name';
         this.CONFLICT_KEY = 'whistler_sync_conflict';
 
         // State
@@ -7507,13 +7507,8 @@ class SyncManager {
         this.totpEnabled = false;
         this.pendingTotpToken = null;
         this.totpSecret = null;
-        this.autoSyncEnabled = false; // Disabled by default
         this.pendingConflict = false;
         this.conflictCloudData = null;
-
-        // Auto-sync interval (15 seconds)
-        this.syncInterval = null;
-        this.SYNC_INTERVAL_MS = 15 * 1000;
 
         // UI State
         this.isSyncMenuOpen = false;
@@ -7558,7 +7553,6 @@ class SyncManager {
         this.sessionToken = localStorage.getItem(this.TOKEN_KEY);
         this.lastSync = localStorage.getItem(this.LAST_SYNC_KEY);
         this.displayName = localStorage.getItem(this.DISPLAY_NAME_KEY);
-        this.autoSyncEnabled = localStorage.getItem(this.AUTO_SYNC_KEY) === 'true';
         this.pendingConflict = localStorage.getItem(this.CONFLICT_KEY) === 'true';
 
         // Setup UI
@@ -7582,11 +7576,8 @@ class SyncManager {
         // Auto-login if we have credentials
         if (this.accountId && this.sessionToken) {
             this.updateUIState(true);
-            // Start auto-sync only if enabled
-            if (this.autoSyncEnabled) {
-                this.startAutoSync();
-            }
-            // Check 2FA status on startup (no automatic sync)
+
+            // Check 2FA status on startup
             setTimeout(async () => {
                 await this.check2FAStatus();
             }, 1000);
@@ -7599,14 +7590,6 @@ class SyncManager {
             } else {
                 // Force pull from cloud on startup (Sync on Refresh)
                 this.pullFromCloud();
-
-                // Start polling for updates (simulating real-time)
-                if (this.autoSyncEnabled) {
-                    this.startAutoSync();
-                } else {
-                    // Even if auto-sync (push) is disabled, we might want to poll for *incoming* changes?
-                    // For now, respect the flag for the interval, but we just did a pull.
-                }
             }
         }
 
@@ -7692,12 +7675,7 @@ class SyncManager {
             btnSyncToCloud.onclick = () => this.syncToCloud();
         }
 
-        // Auto-sync toggle
-        const toggleAutoSync = document.getElementById('toggle-auto-sync');
-        if (toggleAutoSync) {
-            toggleAutoSync.checked = this.autoSyncEnabled;
-            toggleAutoSync.onchange = (e) => this.toggleAutoSync(e.target.checked);
-        }
+
 
         // Copy account ID button
         const btnCopyId = document.getElementById('btn-copy-account-id');
@@ -8213,11 +8191,6 @@ class SyncManager {
         // Update UI
         this.updateUIState(true);
         this.hideError();
-
-        // Start auto-sync only if enabled
-        if (this.autoSyncEnabled) {
-            this.startAutoSync();
-        }
 
         // Check 2FA status
         await this.check2FAStatus();
@@ -9964,7 +9937,9 @@ class SyncManager {
         localStorage.removeItem(this.DISPLAY_NAME_KEY);
         localStorage.removeItem(this.LAST_SYNC_KEY);
 
-        this.stopAutoSync();
+        localStorage.removeItem(this.DISPLAY_NAME_KEY);
+        localStorage.removeItem(this.LAST_SYNC_KEY);
+
         this.updateUIState(false);
 
         // Clear the input
@@ -10009,8 +9984,6 @@ class SyncManager {
                 // If server has newer data than our last sync (with 2s buffer for clock skew)
                 if (serverTime > lastSyncTime + 2000) {
                     console.log('Remote changes detected!');
-                    // Stop auto-sync to prevent overwrite
-                    this.stopAutoSync();
 
                     // Trigger conflict check (which handles fetching data and showing modal)
                     await this.checkForConflict();
@@ -10406,45 +10379,7 @@ class SyncManager {
         }
     }
 
-    /**
-     * Start auto-sync interval
-     */
-    startAutoSync() {
-        this.stopAutoSync();
-        this.syncInterval = setInterval(() => {
-            this.syncToCloud();
-        }, this.SYNC_INTERVAL_MS);
-    }
 
-    /**
-     * Stop auto-sync interval
-     */
-    stopAutoSync() {
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
-        }
-    }
-
-    /**
-     * Toggle auto-sync on/off
-     */
-    toggleAutoSync(enabled) {
-        this.autoSyncEnabled = enabled;
-        localStorage.setItem(this.AUTO_SYNC_KEY, enabled ? 'true' : 'false');
-
-        // Show/hide warning
-        const warning = document.getElementById('auto-sync-warning');
-        if (warning) {
-            warning.classList.toggle('hidden', !enabled);
-        }
-
-        if (enabled) {
-            this.startAutoSync();
-        } else {
-            this.stopAutoSync();
-        }
-    }
 
     /**
      * Manual sync from cloud (pull)
@@ -10817,23 +10752,40 @@ class SyncManager {
         list.innerHTML = '';
 
         if (!sessions || sessions.length === 0) {
-            list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">No active devices found.</div>';
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">No active sessions found.</div>';
             return;
         }
 
         sessions.forEach(session => {
             const el = document.createElement('div');
             el.className = 'session-item';
-            el.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); margin-bottom: 8px;';
+            el.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); margin-bottom: 8px; border: 1px solid var(--border-subtle);';
 
-            const isCurrent = session.is_current; // Assuming API returns this flag
+            const isCurrent = session.is_current;
+            const deviceName = session.device_name || 'Unknown Device';
+            const deviceType = session.device_type || 'desktop';
+
+            // Safe date formatting
+            let dateStr = 'Unknown time';
+            try {
+                if (session.last_active) {
+                    dateStr = new Date(session.last_active).toLocaleString();
+                }
+            } catch (e) { console.error('Date parse error', e); }
+
+            const iconClass = deviceType === 'mobile' ? 'ph-device-mobile' : 'ph-monitor';
 
             el.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <i class="ph-bold ${session.device_type === 'mobile' ? 'ph-device-mobile' : 'ph-monitor'}" style="font-size: 20px; color: var(--text-secondary);"></i>
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-weight: 500; color: var(--text-primary); font-size: 14px;">${session.device_name || 'Unknown Device'} ${isCurrent ? '<span style="color: var(--accent); font-size: 11px; background: rgba(99, 102, 241, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Current</span>' : ''}</span>
-                        <span style="font-size: 12px; color: var(--text-muted);">Last active: ${new Date(session.last_active).toLocaleString()}</span>
+                    <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border);">
+                        <i class="ph-bold ${iconClass}" style="font-size: 18px; color: var(--text-secondary);"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <div style="display: flex; align-items: center;">
+                            <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">${deviceName}</span>
+                            ${isCurrent ? '<span style="color: var(--accent); font-size: 10px; font-weight: 600; background: rgba(99, 102, 241, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px; border: 1px solid rgba(99, 102, 241, 0.2);">CURRENT</span>' : ''}
+                        </div>
+                        <span style="font-size: 12px; color: var(--text-muted);">Last active: ${dateStr}</span>
                     </div>
                 </div>
             `;
@@ -10841,11 +10793,11 @@ class SyncManager {
             if (!isCurrent) {
                 const btnRevoke = document.createElement('button');
                 btnRevoke.className = 'btn-ghost-small';
-                btnRevoke.style.cssText = 'color: #ef4444; padding: 6px 10px; height: auto;';
+                btnRevoke.style.cssText = 'color: #ef4444; padding: 6px 10px; height: auto; margin-left: 12px;';
                 btnRevoke.innerHTML = '<i class="ph-bold ph-x"></i> Revoke';
                 btnRevoke.title = 'Log out this device';
                 btnRevoke.onclick = () => {
-                    if (confirm(`Are you sure you want to revoke access for ${session.device_name || 'this device'}?`)) {
+                    if (confirm(`Are you sure you want to revoke access for ${deviceName}?`)) {
                         this.revokeSession(session.id);
                     }
                 };

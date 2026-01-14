@@ -37,9 +37,10 @@
                 <label class="context-label">PROJECT</label>
                 <div class="project-row">
                     <!-- Default Group -->
+                    <!-- Default Project Controls (Dropdown + Load) -->
                     <div id="project-controls-default"
-                        style="display: flex; width: 100%; align-items: center; gap: 6px;">
-                        <div class="custom-select" id="project-dropdown">
+                        style="display: flex; flex: 1; min-width: 0; align-items: center; gap: 6px;">
+                        <div class="custom-select" id="project-dropdown" style="flex: 1;">
                             <div class="custom-select-trigger" id="project-trigger">
                                 <span id="project-trigger-text">Select Project</span>
                                 <i class="ph-bold ph-caret-down"></i>
@@ -55,7 +56,7 @@
 
                     <!-- Sync Controls Group (Hidden) -->
                     <div id="project-controls-sync" class="hidden"
-                        style="display: flex; width: 100%; align-items: center; justify-content: flex-end; gap: 6px; flex: 1;">
+                        style="display: flex; flex: 1; min-width: 0; align-items: center; justify-content: flex-end; gap: 6px;">
                         <button class="project-control-btn btn-sync-push" id="btn-sync-push"
                             data-tooltip="Push to Cloud">
                             <i class="ph-bold ph-cloud-arrow-up"></i>
@@ -1288,29 +1289,7 @@
                     Last synced: Never
                 </div>
 
-                <!-- Auto-Sync Toggle -->
-                <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 16px;">
-                    <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <i class="ph-bold ph-arrows-clockwise" style="color: var(--accent);"></i>
-                            <span style="font-weight: 500;">Auto-Sync</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="toggle-auto-sync">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <p id="auto-sync-warning" class="hidden"
-                        style="font-size: 11px; color: #f59e0b; margin-bottom: 8px; padding: 8px; background: rgba(245, 158, 11, 0.1); border-radius: var(--radius-sm);">
-                        <i class="ph-bold ph-warning" style="margin-right: 4px;"></i>
-                        Auto-sync will automatically push changes every 5 minutes. This may overwrite changes made on
-                        other devices if you're not careful.
-                    </p>
-                    <p style="font-size: 11px; color: var(--text-muted);">
-                        Automatically sync changes to cloud every 5 minutes.
-                    </p>
-                </div>
+
 
                 <!-- 2FA Settings Section -->
                 <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 16px;">

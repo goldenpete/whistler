@@ -6841,3 +6841,24 @@ input[type="color"]::-webkit-color-swatch {
     background: rgba(239, 68, 68, 0.2);
     border-color: #ef4444;
 }
+
+/* Ghost small button for sessions */
+.btn-ghost-small {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-ghost-small:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
