@@ -45,7 +45,7 @@ class WhistlerApp {
         this.sync.init(); // Initialize cloud sync
         this.ui.setupNavigation();
         this.ui.renderProjectDropdown(); // Initialize Dropdown & Auto-select
-        
+
         // Show welcome page if no projects, otherwise go to storage
         if (this.state.projects.length === 0) {
             this.router.goTo('welcome');
@@ -68,7 +68,7 @@ class StorageManager {
         // Update last modified timestamp
         const lastModified = Date.now();
         localStorage.setItem(this.LAST_MODIFIED_KEY, lastModified.toString());
-        
+
         const data = {
             projects: this.app.state.projects,
             files: this.app.state.files,
@@ -82,7 +82,7 @@ class StorageManager {
             lastModified: lastModified
         };
         localStorage.setItem(this.KEY, JSON.stringify(data));
-        
+
         // Trigger cloud sync on data change
         if (this.app.sync) {
             this.app.sync.onDataChange();
@@ -104,7 +104,7 @@ class StorageManager {
                 this.app.state.graphEdges = data.graphEdges || [];
                 this.app.state.docs = data.docs || [];
                 this.app.state.storages = data.storages || [];
-                
+
                 // Migrate legacy: project.docContent -> docs array
                 this.app.state.projects.forEach(project => {
                     if (project.docContent && !this.app.state.docs.some(d => d.projectId === project.id)) {
@@ -118,7 +118,7 @@ class StorageManager {
                         delete project.docContent;
                     }
                 });
-                
+
                 // Migrate legacy: project-level graphNodes -> graph asset
                 const projectsWithNodes = [...new Set(this.app.state.graphNodes.map(n => n.projectId).filter(Boolean))];
                 projectsWithNodes.forEach(projectId => {
@@ -379,8 +379,8 @@ class StorageManager {
 
     getItems(projectId, parentId = null) {
         const storageId = this.app.state.activeStorageId;
-        let items = this.app.state.files.filter(f => 
-            f.projectId === projectId && 
+        let items = this.app.state.files.filter(f =>
+            f.projectId === projectId &&
             f.storageId === storageId &&
             (f.parentId === parentId || (!f.parentId && parentId === null))
         );
@@ -449,8 +449,8 @@ class StorageManager {
         if (!this.app.state.activeGraphId) return null;
         // Check if edge already exists
         const exists = this.app.state.graphEdges.some(
-            e => (e.fromId === fromId && e.toId === toId) || 
-                 (e.fromId === toId && e.toId === fromId)
+            e => (e.fromId === fromId && e.toId === toId) ||
+                (e.fromId === toId && e.toId === fromId)
         );
         if (exists) return null;
 
@@ -784,20 +784,20 @@ class Router {
         document.getElementById('nav-storage').onclick = () => this.goTo('storage');
         document.getElementById('nav-docs').onclick = () => this.goTo('docs');
         document.getElementById('nav-graph').onclick = () => this.goTo('graph');
-        
+
         // Category header clicks (span inside nav-section-left)
         document.getElementById('nav-assets-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('assets');
         document.getElementById('nav-collections-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('collectionsGrid');
-        
+
         // Add collection button on grid view
         document.getElementById('btn-add-collection-grid').onclick = () => this.app.modals.openCollection();
 
         // Setup collapsible sections
         this.setupCollapsibleSections();
-        
+
         // Setup sidebar collapse button
         this.setupSidebarCollapse();
-        
+
         // Setup spotlight search
         this.setupSpotlightSearch();
     }
@@ -805,21 +805,21 @@ class Router {
     setupSidebarCollapse() {
         const sidebar = document.getElementById('sidebar');
         const collapseBtn = document.getElementById('sidebar-collapse-btn');
-        
+
         if (!sidebar || !collapseBtn) return;
-        
+
         // Restore state from localStorage
         const isCollapsed = localStorage.getItem('whistler-sidebar-collapsed') === 'true';
         if (isCollapsed) {
             sidebar.classList.add('collapsed');
         }
-        
+
         // Sidebar collapse button (in sidebar)
         collapseBtn.onclick = () => {
             sidebar.classList.add('collapsed');
             localStorage.setItem('whistler-sidebar-collapsed', 'true');
         };
-        
+
         // All topbar expand buttons (in main view headers)
         document.querySelectorAll('[data-sidebar-toggle]').forEach(btn => {
             btn.onclick = () => {
@@ -827,7 +827,7 @@ class Router {
                 localStorage.setItem('whistler-sidebar-collapsed', 'false');
             };
         });
-        
+
         // Keyboard shortcut: Ctrl+B to toggle sidebar
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'b') {
@@ -872,12 +872,12 @@ class Router {
         const input = document.getElementById('spotlight-input');
         const results = document.getElementById('spotlight-results');
         const searchBtn = document.getElementById('global-search-btn');
-        
+
         if (!backdrop || !input || !results) return;
-        
+
         let selectedIndex = -1;
         let currentResults = [];
-        
+
         const openSpotlight = () => {
             backdrop.classList.remove('hidden');
             input.value = '';
@@ -887,17 +887,17 @@ class Router {
             currentResults = [];
             setTimeout(() => input.focus(), 50);
         };
-        
+
         const closeSpotlight = () => {
             backdrop.classList.add('hidden');
             input.blur();
         };
-        
+
         // Search button click
         if (searchBtn) {
             searchBtn.onclick = openSpotlight;
         }
-        
+
         // Keyboard shortcut: Ctrl+K to open spotlight
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'k') {
@@ -909,14 +909,14 @@ class Router {
                 }
             }
         });
-        
+
         // Close on backdrop click
         backdrop.onclick = (e) => {
             if (e.target === backdrop) {
                 closeSpotlight();
             }
         };
-        
+
         // Close on ESC
         input.onkeydown = (e) => {
             if (e.key === 'Escape') {
@@ -947,7 +947,7 @@ class Router {
                 }
             }
         };
-        
+
         // Search input
         input.oninput = () => {
             const query = input.value.trim().toLowerCase();
@@ -958,13 +958,13 @@ class Router {
                 selectedIndex = -1;
                 return;
             }
-            
+
             currentResults = this.searchProject(query);
             selectedIndex = currentResults.length > 0 ? 0 : -1;
             this.renderSpotlightResults(results, currentResults, selectedIndex, closeSpotlight);
         };
     }
-    
+
     searchProject(query) {
         const results = [];
         const projectId = this.app.state.activeProjectId;
@@ -1084,8 +1084,8 @@ class Router {
         ];
 
         pages.forEach(page => {
-            const matches = page.name.toLowerCase().includes(q) || 
-                           page.keywords.some(k => k.includes(q));
+            const matches = page.name.toLowerCase().includes(q) ||
+                page.keywords.some(k => k.includes(q));
             if (matches) {
                 results.push({
                     type: 'page',
@@ -1118,7 +1118,7 @@ class Router {
 
         return results.slice(0, 20); // Limit to 20 results
     }
-    
+
     getFileIcon(file) {
         const ext = (file.name || '').split('.').pop().toLowerCase();
         if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) return 'ph-bold ph-video';
@@ -1127,21 +1127,21 @@ class Router {
         if (['pdf'].includes(ext)) return 'ph-bold ph-file-pdf';
         return 'ph-bold ph-file';
     }
-    
+
     formatTime(seconds) {
         if (!seconds && seconds !== 0) return '0:00';
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
-    
+
     renderSpotlightResults(container, results, selectedIndex, closeCallback) {
         if (results.length === 0) {
             container.innerHTML = '<div class="spotlight-no-results">No results found</div>';
             container.classList.add('has-results');
             return;
         }
-        
+
         // Group results by type
         const groups = {};
         const typeLabels = {
@@ -1156,13 +1156,13 @@ class Router {
             doc: 'Documents',
             graph: 'Graphs'
         };
-        
+
         results.forEach((r, i) => {
             r._index = i;
             if (!groups[r.type]) groups[r.type] = [];
             groups[r.type].push(r);
         });
-        
+
         let html = '';
         for (const type of Object.keys(groups)) {
             html += `<div class="spotlight-results-section">`;
@@ -1185,10 +1185,10 @@ class Router {
             });
             html += `</div>`;
         }
-        
+
         container.innerHTML = html;
         container.classList.add('has-results');
-        
+
         // Add click handlers for items
         container.querySelectorAll('.spotlight-result-item').forEach(item => {
             item.onclick = () => {
@@ -1217,13 +1217,13 @@ class Router {
             };
         });
     }
-    
+
     escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
     }
-    
+
     updateSpotlightSelection(container, selectedIndex) {
         container.querySelectorAll('.spotlight-result-item').forEach(item => {
             const idx = parseInt(item.dataset.index);
@@ -1233,7 +1233,7 @@ class Router {
             }
         });
     }
-    
+
     navigateToSpotlightResult(result) {
         switch (result.type) {
             case 'storage':
@@ -2948,13 +2948,13 @@ class UIManager {
             item.className = 'custom-select-item project-item';
             if (p.id === currentId) item.classList.add('selected');
             item.dataset.value = p.id;
-            
+
             // Project name
             const nameSpan = document.createElement('span');
             nameSpan.className = 'project-item-name';
             nameSpan.textContent = p.name;
             item.appendChild(nameSpan);
-            
+
             // Action buttons container
             const actions = document.createElement('div');
             actions.className = 'project-item-actions';
@@ -2963,13 +2963,13 @@ class UIManager {
                 <button class="project-action-btn project-action-danger" data-action="delete" title="Delete"><i class="ph-bold ph-trash"></i></button>
             `;
             item.appendChild(actions);
-            
+
             // Handle action button clicks
             actions.onclick = (e) => {
                 e.stopPropagation();
                 const btn = e.target.closest('.project-action-btn');
                 if (!btn) return;
-                
+
                 const action = btn.dataset.action;
                 if (action === 'edit') {
                     this.app.modals.prompt("Rename Project", p.name, (newName) => {
@@ -2989,9 +2989,9 @@ class UIManager {
                             return file; // Only keep timestamps whose files still exist
                         });
                         this.app.state.projects = this.app.state.projects.filter(x => x.id !== p.id);
-                        
+
                         this.app.storage.save();
-                        
+
                         // If deleting active project, switch to another or go to welcome
                         if (this.app.state.activeProjectId === p.id) {
                             this.app.state.activeProjectId = null;
@@ -3008,7 +3008,7 @@ class UIManager {
                     });
                 }
             };
-            
+
             menu.appendChild(item);
         });
 
@@ -3073,11 +3073,11 @@ class UIManager {
                 <button class="sidebar-action-btn sidebar-action-danger" title="Delete"><i class="ph-bold ph-trash"></i></button>
             `;
             item.appendChild(actions);
-            
+
             // Drag-drop reordering
             item.setAttribute('draggable', 'true');
             item.dataset.collectionId = c.id;
-            
+
             item.ondragstart = (e) => {
                 // Don't start drag from action buttons
                 if (e.target.closest('.sidebar-actions')) {
@@ -3088,13 +3088,13 @@ class UIManager {
                 e.dataTransfer.setData('text/plain', c.id);
                 setTimeout(() => item.classList.add('dragging'), 0);
             };
-            
+
             item.ondragend = () => {
                 item.classList.remove('dragging');
                 // Clean up any lingering drag-over states
                 list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
             };
-            
+
             item.ondragover = (e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
@@ -3103,14 +3103,14 @@ class UIManager {
                     item.classList.add('drag-over');
                 }
             };
-            
+
             item.ondragleave = (e) => {
                 // Only remove if actually leaving the item (not entering a child)
                 if (!item.contains(e.relatedTarget)) {
                     item.classList.remove('drag-over');
                 }
             };
-            
+
             item.ondrop = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -3129,7 +3129,7 @@ class UIManager {
                 this.app.router.openCollection(c.id);
                 this.renderCollectionsList();
             };
-            
+
             // Bind color picker
             const colorBtn = actions.querySelector('[title="Color"]');
             colorBtn.onclick = (e) => {
@@ -3191,30 +3191,30 @@ class UIManager {
             list.appendChild(item);
         });
     }
-    
+
     reorderCollection(draggedId, targetId) {
         const collections = this.app.state.collections;
         const projectId = this.app.state.activeProjectId;
-        
+
         // Get top-level collections for this project (sorted by current order)
         const topLevel = collections
             .filter(c => c.projectId === projectId && !c.parentId)
             .sort((a, b) => (a.order || 0) - (b.order || 0));
-        
+
         const draggedIdx = topLevel.findIndex(c => c.id === draggedId);
         const targetIdx = topLevel.findIndex(c => c.id === targetId);
-        
+
         if (draggedIdx === -1 || targetIdx === -1 || draggedIdx === targetIdx) return;
-        
+
         // Remove dragged item and insert at target position
         const [dragged] = topLevel.splice(draggedIdx, 1);
         topLevel.splice(targetIdx, 0, dragged);
-        
+
         // Update order values on the actual collection objects
         topLevel.forEach((c, i) => {
             c.order = i;
         });
-        
+
         this.app.storage.save();
         this.renderCollectionsList();
     }
@@ -3591,14 +3591,14 @@ class UIManager {
             // Main card click
             card.onclick = (e) => {
                 if (e.target.closest('.card-actions')) return;
-                
+
                 // Selection mode handling
                 if (this.selectionMode) {
                     this.toggleItemSelection(f.id);
                     card.classList.toggle('selected');
                     return;
                 }
-                
+
                 if (isFolder) {
                     this.app.state.currentFolderId = f.id;
                     this.renderStorage();
@@ -3789,7 +3789,7 @@ class UIManager {
 
     moveSelectedItems() {
         if (this.selectedItems.size === 0) return;
-        
+
         // Show move modal for first item, apply to all
         const firstId = Array.from(this.selectedItems)[0];
         const firstFile = this.app.state.files.find(f => f.id === firstId);
@@ -3806,7 +3806,7 @@ class UIManager {
 
     colorSelectedItems() {
         if (this.selectedItems.size === 0) return;
-        
+
         this.app.modals.openColorPicker('#6366f1', (color) => {
             this.selectedItems.forEach(id => {
                 this.app.storage.updateFile(id, { color });
@@ -3817,7 +3817,7 @@ class UIManager {
 
     deleteSelectedItems() {
         if (this.selectedItems.size === 0) return;
-        
+
         const count = this.selectedItems.size;
         this.app.modals.confirm(
             'Delete Items',
@@ -3967,7 +3967,7 @@ class UIManager {
 
     deleteSelectedCollectionItems() {
         if (this.selectedCollectionItems.size === 0) return;
-        
+
         const count = this.selectedCollectionItems.size;
         this.app.modals.confirm(
             'Delete Items',
@@ -4724,7 +4724,7 @@ class UIManager {
     ensureActiveDoc() {
         const projectId = this.app.state.activeProjectId;
         const docs = this.app.storage.getDocs(projectId);
-        
+
         // If no active doc or active doc doesn't belong to project, select/create one
         if (!this.app.state.activeDocId || !docs.find(d => d.id === this.app.state.activeDocId)) {
             if (docs.length > 0) {
@@ -4735,7 +4735,7 @@ class UIManager {
                 this.app.state.activeDocId = newDoc.id;
             }
         }
-        
+
         this.renderDocsList();
         this.updateDocTitle();
     }
@@ -4785,7 +4785,7 @@ class UIManager {
     updateDocTitle() {
         const titleEl = document.getElementById('docs-title');
         if (!titleEl) return;
-        
+
         const doc = this.app.state.docs.find(d => d.id === this.app.state.activeDocId);
         const name = doc ? doc.name : 'Untitled Doc';
         titleEl.innerHTML = `${name} <i class="ph ph-pencil-simple asset-title-edit"></i>`;
@@ -4794,10 +4794,10 @@ class UIManager {
     deleteDocWithConfirm(id) {
         const doc = this.app.state.docs.find(d => d.id === id);
         if (!doc) return;
-        
+
         this.app.modals.confirm('Delete Document', `Delete "${doc.name}"? This cannot be undone.`, () => {
             this.app.storage.deleteDoc(id);
-            
+
             // If deleted the active doc, switch to another
             if (this.app.state.activeDocId === id) {
                 this.app.state.activeDocId = null;
@@ -4864,7 +4864,7 @@ class UIManager {
     ensureActiveStorage() {
         const projectId = this.app.state.activeProjectId;
         const storages = this.app.storage.getStorages(projectId);
-        
+
         // If no active storage or active storage doesn't belong to project, select/create one
         if (!this.app.state.activeStorageId || !storages.find(s => s.id === this.app.state.activeStorageId)) {
             if (storages.length > 0) {
@@ -4875,7 +4875,7 @@ class UIManager {
                 this.app.state.activeStorageId = newStorage.id;
             }
         }
-        
+
         this.renderStoragesList();
         this.updateStorageTitle();
     }
@@ -4989,7 +4989,7 @@ class UIManager {
     ensureActiveGraph() {
         const projectId = this.app.state.activeProjectId;
         const graphs = this.app.storage.getGraphs(projectId);
-        
+
         // If no active graph or active graph doesn't belong to project, select/create one
         if (!this.app.state.activeGraphId || !graphs.find(g => g.id === this.app.state.activeGraphId)) {
             if (graphs.length > 0) {
@@ -5000,7 +5000,7 @@ class UIManager {
                 this.app.state.activeGraphId = newGraph.id;
             }
         }
-        
+
         this.renderGraphsList();
         this.updateGraphTitle();
     }
@@ -5044,7 +5044,7 @@ class UIManager {
         this.app.state.activeGraphId = graphId;
         this.updateGraphTitle();
         this.renderGraphsList();
-        
+
         // Re-render graph canvas
         if (this.app.graph) {
             this.app.graph.render();
@@ -5054,7 +5054,7 @@ class UIManager {
     updateGraphTitle() {
         const titleEl = document.getElementById('graph-title');
         if (!titleEl) return;
-        
+
         const graph = this.app.state.graphs.find(g => g.id === this.app.state.activeGraphId);
         const name = graph ? graph.name : 'Untitled Graph';
         titleEl.innerHTML = `${name} <i class="ph ph-pencil-simple asset-title-edit"></i>`;
@@ -5063,10 +5063,10 @@ class UIManager {
     deleteGraphWithConfirm(id) {
         const graph = this.app.state.graphs.find(g => g.id === id);
         if (!graph) return;
-        
+
         this.app.modals.confirm('Delete Graph', `Delete "${graph.name}"? This cannot be undone.`, () => {
             this.app.storage.deleteGraph(id);
-            
+
             // If deleted the active graph, switch to another
             if (this.app.state.activeGraphId === id) {
                 this.app.state.activeGraphId = null;
@@ -5314,8 +5314,8 @@ class UIManager {
 
             // Find nearest formatting ancestor
             let anc = textNode.parentElement;
-            const inlineTags = ['a','b','strong','i','em','u','span','font','s','strike','mark','h1','h2','h3','h4','h5','h6'];
-            const classTags = ['docs-title','docs-subtitle'];
+            const inlineTags = ['a', 'b', 'strong', 'i', 'em', 'u', 'span', 'font', 's', 'strike', 'mark', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+            const classTags = ['docs-title', 'docs-subtitle'];
             while (anc && anc !== editor) {
                 if (inlineTags.includes(anc.tagName.toLowerCase()) || classTags.some(cls => anc.classList && anc.classList.contains(cls))) break;
                 // also detect heading-like by computed style
@@ -5324,7 +5324,7 @@ class UIManager {
                     const fs = parseFloat(cs.fontSize) || 0;
                     const fw = parseInt(cs.fontWeight) || 0;
                     if (fs >= 18 || fw >= 600) break;
-                } catch (e) {}
+                } catch (e) { }
                 anc = anc.parentElement;
             }
             if (!anc || anc === editor) return false;
@@ -5372,7 +5372,7 @@ class UIManager {
                         document.execCommand('insertHTML', false, wrapped);
                     } catch (e) {
                         // Fallback: replace with text and wrap
-                        try { document.execCommand('insertText', false, tmp.textContent || ''); } catch (e2) {}
+                        try { document.execCommand('insertText', false, tmp.textContent || ''); } catch (e2) { }
                     }
                 } else {
                     // Collapsed caret: insert a temporary styled span with zero-width marker and place caret inside
@@ -5583,7 +5583,7 @@ class UIManager {
 
                     // Internal whistler:// links should open in-app
                     if (hrefAttr.startsWith('whistler://')) {
-                        const itemValue = hrefAttr.replace('whistler://','');
+                        const itemValue = hrefAttr.replace('whistler://', '');
                         const [type, id] = itemValue.split(':');
 
                         if (type === 'file') {
@@ -5656,7 +5656,7 @@ class UIManager {
                             document.getElementById('input-docs-link-url').value = href;
                         } else if (href.startsWith('whistler://')) {
                             // Internal
-                            const itemValue = href.replace('whistler://','');
+                            const itemValue = href.replace('whistler://', '');
                             document.querySelectorAll('.docs-link-tab').forEach(t => t.classList.remove('active'));
                             const intTab = document.querySelector('.docs-link-tab[data-tab="internal"]');
                             if (intTab) intTab.classList.add('active');
@@ -5761,7 +5761,7 @@ class UIManager {
                     if (matched) { matched.classList.add('active'); sizeLabel.textContent = matched.textContent.trim(); }
                     else { sizeLabel.textContent = 'Normal'; }
                 }
-            } catch (e) {}
+            } catch (e) { }
 
 
             // Show a floating pill when caret is inside a link and selection is collapsed
@@ -5782,7 +5782,7 @@ class UIManager {
                     // Derive friendly text from internal link
                     const itemValue = href.replace('whistler://', '');
                     let friendly = itemValue; // Default to itemValue
-                    
+
                     try {
                         const [type, id] = itemValue.split(':');
                         if (uiManager && uiManager.app && uiManager.app.state) {
@@ -5800,7 +5800,7 @@ class UIManager {
                     } catch (err) {
                         // Keep default friendly value if parsing fails
                     }
-                    
+
                     urlEl.textContent = friendly;
                     urlEl.style.whiteSpace = 'nowrap';
                     docsLinkPill.style.maxWidth = '520px';
@@ -5858,10 +5858,10 @@ class UIManager {
                         ph.removeAttribute('data-docs-size-placeholder');
                     }
                 });
-            } catch (e) {}
+            } catch (e) { }
 
-            try { updateButtonStates(); } catch (e) {}
-            try { this.saveDocsContent(); } catch (e) {}
+            try { updateButtonStates(); } catch (e) { }
+            try { this.saveDocsContent(); } catch (e) { }
         });
 
         // Shift+Space handler: insert non-breaking space and keep spacing consistent
@@ -5879,14 +5879,14 @@ class UIManager {
             // Ensure Shift+Enter inserts a <br> (soft break) which preserves spacing
             if (e.key === 'Enter' && e.shiftKey) {
                 e.preventDefault();
-                try { document.execCommand('insertHTML', false, '<br>'); } catch (ex) {}
+                try { document.execCommand('insertHTML', false, '<br>'); } catch (ex) { }
                 updateButtonStates();
             }
         });
 
         // Initialize
         updateButtonStates();
-        
+
 
 
     }
@@ -6069,7 +6069,7 @@ class UIManager {
             if (selection.toString().trim()) {
                 const selectedText = selection.toString().trim();
                 document.execCommand('createLink', false, url);
-                
+
                 // After createLink, if it's an internal link, check if we should update the text
                 if (url.startsWith('whistler://')) {
                     // Find the link in the current selection
@@ -6081,12 +6081,12 @@ class UIManager {
                             link = link.parentElement;
                         }
                         link = link.closest('a');
-                        
+
                         // If no link found, try finding by URL
                         if (!link || link.href !== url) {
                             link = editor.querySelector(`a[href="${CSS.escape(url)}"]`);
                         }
-                        
+
                         if (link) {
                             const friendlyText = this.getInternalLinkFriendlyText(url);
                             // Only replace text if it looks like raw code
@@ -6643,11 +6643,11 @@ class ModalManager {
         const titleEl = document.getElementById('confirm-title');
         const messageEl = document.getElementById('confirm-message');
         const btnYes = document.getElementById('btn-confirm-yes');
-        
+
         if (modal && titleEl && messageEl && btnYes) {
             titleEl.textContent = title || 'Alert';
             messageEl.textContent = message || '';
-            
+
             // Store original onclick
             const originalOnClick = btnYes.onclick;
             const newBtn = btnYes.cloneNode(true);
@@ -6656,7 +6656,7 @@ class ModalManager {
                 this.close();
             };
             document.getElementById('btn-confirm-yes').textContent = 'OK';
-            
+
             this.backdrop.classList.remove('hidden');
             modal.classList.remove('hidden');
         } else {
@@ -6669,13 +6669,13 @@ class ModalManager {
         this.backdrop.classList.remove('hidden');
         const modal = document.getElementById('modal-add-file');
         modal.classList.remove('hidden');
-        
+
         const input = document.getElementById('input-add-file-url');
         input.value = '';
         input.focus();
-        
+
         this.onAddFileCallback = callback;
-        
+
         // Set up button handlers
         document.getElementById('btn-add-file-ok').onclick = () => {
             const url = input.value.trim();
@@ -6684,7 +6684,7 @@ class ModalManager {
             }
             this.close();
         };
-        
+
         // Handle Enter key
         input.onkeydown = (e) => {
             if (e.key === 'Enter') {
@@ -6982,13 +6982,13 @@ class ModalManager {
 class SyncManager {
     constructor(app) {
         this.app = app;
-        
+
         // Configuration
         this.API_URL = 'https://whistler-sync.peteawesome.workers.dev';
-        
+
         // Turnstile site key
         this.TURNSTILE_SITE_KEY = '0x4AAAAAACL9Ojn2jXAFNaw_';
-        
+
         // Local storage keys
         this.ACCOUNT_KEY = 'whistler_account_id';
         this.TOKEN_KEY = 'whistler_session_token';
@@ -6996,7 +6996,7 @@ class SyncManager {
         this.DISPLAY_NAME_KEY = 'whistler_display_name';
         this.AUTO_SYNC_KEY = 'whistler_auto_sync';
         this.CONFLICT_KEY = 'whistler_sync_conflict';
-        
+
         // State
         this.accountId = null;
         this.sessionToken = null;
@@ -7010,12 +7010,12 @@ class SyncManager {
         this.autoSyncEnabled = false; // Disabled by default
         this.pendingConflict = false;
         this.conflictCloudData = null;
-        
+
         // Auto-sync interval (5 minutes)
         this.syncInterval = null;
         this.SYNC_INTERVAL_MS = 5 * 60 * 1000;
     }
-    
+
     init() {
         // Load stored credentials
         this.accountId = localStorage.getItem(this.ACCOUNT_KEY);
@@ -7024,10 +7024,10 @@ class SyncManager {
         this.displayName = localStorage.getItem(this.DISPLAY_NAME_KEY);
         this.autoSyncEnabled = localStorage.getItem(this.AUTO_SYNC_KEY) === 'true';
         this.pendingConflict = localStorage.getItem(this.CONFLICT_KEY) === 'true';
-        
+
         // Setup UI
         this.setupUI();
-        
+
         // Setup global Turnstile callbacks
         window.onTurnstileSuccess = (token) => {
             this.captchaToken = token;
@@ -7035,14 +7035,14 @@ class SyncManager {
             const btn = document.getElementById('btn-sync-login');
             if (btn) btn.disabled = false;
         };
-        
+
         window.onTurnstileExpired = () => {
             this.captchaToken = null;
             // Disable login button
             const btn = document.getElementById('btn-sync-login');
             if (btn) btn.disabled = true;
         };
-        
+
         // Auto-login if we have credentials
         if (this.accountId && this.sessionToken) {
             this.updateUIState(true);
@@ -7054,29 +7054,47 @@ class SyncManager {
             setTimeout(async () => {
                 await this.check2FAStatus();
             }, 1000);
-            
+
             // Check for pending conflict on page load/refresh
             if (this.pendingConflict) {
                 setTimeout(() => {
                     this.showConflictResolution();
                 }, 500);
+            } else {
+                // Check for remote updates on startup
+                this.checkForRemoteUpdates();
             }
         }
+
+        // Listen for visibility changes to detect remote updates
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && this.accountId && this.sessionToken) {
+                console.log('App became visible, checking for remote updates...');
+                this.checkForRemoteUpdates();
+            }
+        });
+
+        // Listen for focus to detect remote updates (redundancy for window switching)
+        window.addEventListener('focus', () => {
+            if (this.accountId && this.sessionToken) {
+                this.checkForRemoteUpdates();
+            }
+        });
     }
-    
+
     setupUI() {
         // Cloud sync button in sidebar
         const btnCloudSync = document.getElementById('btn-cloud-sync');
         if (btnCloudSync) {
             btnCloudSync.onclick = () => this.openSyncModal();
         }
-        
+
         // Generate account ID button
         const btnGenerate = document.getElementById('btn-generate-account-id');
         if (btnGenerate) {
             btnGenerate.onclick = () => this.generateAccountId();
         }
-        
+
         // Login button
         const btnLogin = document.getElementById('btn-sync-login');
         if (btnLogin) {
@@ -7084,168 +7102,189 @@ class SyncManager {
             // Initially disabled until captcha is solved
             btnLogin.disabled = true;
         }
-        
+
         // Logout button
         const btnLogout = document.getElementById('btn-sync-logout');
         if (btnLogout) {
             btnLogout.onclick = () => this.logout();
         }
-        
+
         // Pull from cloud button
         const btnSyncFromCloud = document.getElementById('btn-sync-from-cloud');
         if (btnSyncFromCloud) {
             btnSyncFromCloud.onclick = () => this.manualSyncFromCloud();
         }
-        
+
         // Merge from cloud button
         const btnSyncMerge = document.getElementById('btn-sync-merge');
         if (btnSyncMerge) {
             btnSyncMerge.onclick = () => this.manualMergeFromCloud();
         }
-        
+
         // Push to cloud button
         const btnSyncToCloud = document.getElementById('btn-sync-to-cloud');
         if (btnSyncToCloud) {
             btnSyncToCloud.onclick = () => this.syncToCloud();
         }
-        
+
         // Auto-sync toggle
         const toggleAutoSync = document.getElementById('toggle-auto-sync');
         if (toggleAutoSync) {
             toggleAutoSync.checked = this.autoSyncEnabled;
             toggleAutoSync.onchange = (e) => this.toggleAutoSync(e.target.checked);
         }
-        
+
         // Copy account ID button
         const btnCopyId = document.getElementById('btn-copy-account-id');
         if (btnCopyId) {
             btnCopyId.onclick = () => this.copyAccountId();
         }
-        
+
         // Reveal/hide account ID button
         const btnRevealId = document.getElementById('btn-reveal-id');
         if (btnRevealId) {
             btnRevealId.onclick = () => this.toggleRevealAccountId();
         }
-        
+
         // Setup sync tooltip positioning
         this.setupSyncTooltips();
-        
+
         // Account ID input formatting
         const inputAccountId = document.getElementById('input-account-id');
         if (inputAccountId) {
             inputAccountId.addEventListener('input', (e) => this.formatAccountIdInput(e));
         }
-        
+
         // 2FA TOTP Verification (during login)
         const btnTotpVerifySubmit = document.getElementById('btn-totp-verify-submit');
         if (btnTotpVerifySubmit) {
             btnTotpVerifySubmit.onclick = () => this.verifyTotpLogin();
         }
-        
+
         const btnTotpVerifyCancel = document.getElementById('btn-totp-verify-cancel');
         if (btnTotpVerifyCancel) {
             btnTotpVerifyCancel.onclick = () => this.cancelTotpVerify();
         }
-        
+
         const inputTotpVerify = document.getElementById('input-totp-verify');
         if (inputTotpVerify) {
             inputTotpVerify.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') this.verifyTotpLogin();
             });
         }
-        
+
         // 2FA Setup button
         const btnTotpSetup = document.getElementById('btn-totp-setup');
         if (btnTotpSetup) {
             btnTotpSetup.onclick = () => this.startTotpSetup();
         }
-        
+
         // 2FA Setup confirmation
         const btnTotpSetupConfirm = document.getElementById('btn-totp-setup-confirm');
         if (btnTotpSetupConfirm) {
             btnTotpSetupConfirm.onclick = () => this.confirmTotpSetup();
         }
-        
+
         const btnTotpSetupCancel = document.getElementById('btn-totp-setup-cancel');
         if (btnTotpSetupCancel) {
             btnTotpSetupCancel.onclick = () => this.cancelTotpSetup();
         }
-        
+
         const inputTotpSetup = document.getElementById('input-totp-setup');
         if (inputTotpSetup) {
             inputTotpSetup.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') this.confirmTotpSetup();
             });
         }
-        
+
         // 2FA Disable button
         const btnTotpDisable = document.getElementById('btn-totp-disable');
         if (btnTotpDisable) {
             btnTotpDisable.onclick = () => this.showTotpDisable();
         }
-        
+
         // 2FA Disable confirmation
         const btnTotpDisableConfirm = document.getElementById('btn-totp-disable-confirm');
         if (btnTotpDisableConfirm) {
             btnTotpDisableConfirm.onclick = () => this.confirmTotpDisable();
         }
-        
+
         const btnTotpDisableCancel = document.getElementById('btn-totp-disable-cancel');
         if (btnTotpDisableCancel) {
             btnTotpDisableCancel.onclick = () => this.cancelTotpDisable();
         }
-        
+
         const inputTotpDisable = document.getElementById('input-totp-disable');
         if (inputTotpDisable) {
             inputTotpDisable.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') this.confirmTotpDisable();
             });
         }
-        
+
         // Conflict resolution buttons
         const btnConflictMerge = document.getElementById('btn-conflict-merge');
         if (btnConflictMerge) {
             btnConflictMerge.onclick = () => this.resolveConflictMerge();
         }
-        
+
         const btnConflictLocal = document.getElementById('btn-conflict-local');
         if (btnConflictLocal) {
             btnConflictLocal.onclick = () => this.resolveConflictKeepLocal();
         }
-        
+
         const btnConflictCloud = document.getElementById('btn-conflict-cloud');
         if (btnConflictCloud) {
             btnConflictCloud.onclick = () => this.resolveConflictKeepCloud();
         }
-        
+
         // Conflict data detail views
         const conflictLocalBox = document.getElementById('conflict-local-box');
         if (conflictLocalBox) {
             conflictLocalBox.onclick = () => this.showConflictDetail('local');
         }
-        
+
         const conflictCloudBox = document.getElementById('conflict-cloud-box');
         if (conflictCloudBox) {
             conflictCloudBox.onclick = () => this.showConflictDetail('cloud');
         }
-        
+
         const btnConflictBack = document.getElementById('btn-conflict-back');
         if (btnConflictBack) {
             btnConflictBack.onclick = () => this.hideConflictDetail();
         }
+
+        // New Conflict Buttons
+        const btnConflictLogout = document.getElementById('btn-conflict-logout');
+        if (btnConflictLogout) {
+            btnConflictLogout.onclick = () => this.logoutFromConflict();
+        }
+
+        const btnConflictChoose = document.getElementById('btn-conflict-choose');
+        if (btnConflictChoose) {
+            btnConflictChoose.onclick = () => this.showConflictSelection();
+        }
+
+        const btnChooseBack = document.getElementById('btn-choose-back');
+        if (btnChooseBack) {
+            btnChooseBack.onclick = () => this.hideConflictSelection();
+        }
+
+        const btnChooseConfirm = document.getElementById('btn-choose-confirm');
+        if (btnChooseConfirm) {
+            btnChooseConfirm.onclick = () => this.resolveConflictChoose();
+        }
     }
-    
+
     openSyncModal() {
         this.app.modals.show('sync');
         this.showMainSyncView();
-        
+
         // Reset Turnstile when modal opens (if logged out)
         if (!this.accountId && typeof turnstile !== 'undefined') {
             this.captchaToken = null;
             const btn = document.getElementById('btn-sync-login');
             if (btn) btn.disabled = true;
-            
+
             // Reset the widget
             try {
                 turnstile.reset('#turnstile-widget');
@@ -7253,22 +7292,22 @@ class SyncManager {
                 // Widget might not be ready yet
             }
         }
-        
+
         // Update 2FA status if logged in
         if (this.sessionToken) {
             this.check2FAStatus();
         }
     }
-    
+
     showMainSyncView() {
         const isLoggedIn = !!this.accountId && !!this.sessionToken;
-        
+
         document.getElementById('sync-logged-out')?.classList.toggle('hidden', isLoggedIn);
         document.getElementById('sync-logged-in')?.classList.toggle('hidden', !isLoggedIn);
         document.getElementById('sync-totp-verify')?.classList.add('hidden');
         document.getElementById('sync-totp-setup')?.classList.add('hidden');
         document.getElementById('sync-totp-disable')?.classList.add('hidden');
-        
+
         if (isLoggedIn) {
             const displayName = document.getElementById('display-account-name');
             if (displayName && this.displayName) {
@@ -7284,7 +7323,7 @@ class SyncManager {
             }
             this.updateSyncStatus();
             this.update2FAStatusUI();
-            
+
             // Update auto-sync toggle state
             const toggleAutoSync = document.getElementById('toggle-auto-sync');
             if (toggleAutoSync) {
@@ -7296,10 +7335,10 @@ class SyncManager {
             }
         }
     }
-    
+
     updateUIState(isLoggedIn) {
         const syncIcon = document.getElementById('sync-icon');
-        
+
         if (isLoggedIn) {
             // Update sidebar icon
             if (syncIcon) {
@@ -7311,10 +7350,10 @@ class SyncManager {
                 syncIcon.className = 'ph-bold ph-cloud';
             }
         }
-        
+
         this.showMainSyncView();
     }
-    
+
     updateSyncStatus() {
         const syncStatus = document.getElementById('sync-status');
         if (syncStatus) {
@@ -7326,12 +7365,12 @@ class SyncManager {
             }
         }
     }
-    
+
     update2FAStatusUI() {
         const badge = document.getElementById('totp-status-badge');
         const btnSetup = document.getElementById('btn-totp-setup');
         const btnDisable = document.getElementById('btn-totp-disable');
-        
+
         if (this.totpEnabled) {
             if (badge) {
                 badge.textContent = 'On';
@@ -7350,14 +7389,14 @@ class SyncManager {
             btnDisable?.classList.add('hidden');
         }
     }
-    
+
     /**
      * Generate a cryptographically random 16-digit account ID
      */
     generateAccountId() {
         const array = new Uint8Array(8);
         crypto.getRandomValues(array);
-        
+
         // Convert to 16-digit number string
         let id = '';
         for (let i = 0; i < 8; i++) {
@@ -7365,13 +7404,13 @@ class SyncManager {
             const digits = (array[i] % 100).toString().padStart(2, '0');
             id += digits;
         }
-        
+
         const inputAccountId = document.getElementById('input-account-id');
         if (inputAccountId) {
             inputAccountId.value = this.formatAccountId(id);
         }
     }
-    
+
     /**
      * Format account ID as XXXX-XXXX-XXXX-XXXX
      */
@@ -7384,7 +7423,7 @@ class SyncManager {
         }
         return parts.join('-');
     }
-    
+
     /**
      * Format the input field as user types
      */
@@ -7392,17 +7431,17 @@ class SyncManager {
         const input = e.target;
         const cursorPos = input.selectionStart;
         const oldValue = input.value;
-        
+
         // Get just digits
         const digits = oldValue.replace(/\D/g, '').slice(0, 16);
-        
+
         // Format with dashes
         const formatted = this.formatAccountId(digits);
-        
+
         // Only update if changed
         if (formatted !== oldValue) {
             input.value = formatted;
-            
+
             // Try to preserve cursor position
             const digitsBeforeCursor = oldValue.slice(0, cursorPos).replace(/\D/g, '').length;
             let newCursorPos = 0;
@@ -7414,7 +7453,7 @@ class SyncManager {
             input.setSelectionRange(newCursorPos, newCursorPos);
         }
     }
-    
+
     /**
      * Get clean 16-digit ID from input
      */
@@ -7423,61 +7462,61 @@ class SyncManager {
         if (!input) return null;
         return input.value.replace(/\D/g, '');
     }
-    
+
     /**
      * Login or register with account ID
      */
     async login() {
         const accountId = this.getCleanAccountId();
-        
+
         if (!accountId || accountId.length !== 16) {
             this.showError('Please enter a valid 16-digit account ID');
             return;
         }
-        
+
         if (!this.captchaToken) {
             this.showError('Please complete the captcha verification');
             return;
         }
-        
+
         try {
             this.setLoading(true);
-            
+
             const response = await fetch(`${this.API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     account_id: accountId,
                     captcha_token: this.captchaToken
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 // Reset captcha on error
                 this.resetCaptcha();
                 throw new Error(data.error || 'Login failed');
             }
-            
+
             // Clear captcha token after successful login
             this.captchaToken = null;
-            
+
             // Check if 2FA is required
             if (data.requires_totp) {
                 // Store pending state
                 this.pendingTotpToken = data.pending_token;
                 this.accountId = accountId;
                 this.pendingDisplayName = data.display_name;
-                
+
                 // Show TOTP verification screen
                 this.showTotpVerify();
                 return;
             }
-            
+
             // No 2FA - complete login
             await this.completeLogin(accountId, data.token, data.is_new, data.display_name);
-            
+
         } catch (err) {
             console.error('Login error:', err);
             this.showError(err.message || 'Failed to connect to sync server');
@@ -7485,7 +7524,7 @@ class SyncManager {
             this.setLoading(false);
         }
     }
-    
+
     /**
      * Show TOTP verification screen
      */
@@ -7495,37 +7534,37 @@ class SyncManager {
         document.getElementById('sync-totp-verify')?.classList.remove('hidden');
         document.getElementById('sync-totp-setup')?.classList.add('hidden');
         document.getElementById('sync-totp-disable')?.classList.add('hidden');
-        
+
         // Clear and focus the input
         const input = document.getElementById('input-totp-verify');
         if (input) {
             input.value = '';
             input.focus();
         }
-        
+
         // Hide any previous error
         document.getElementById('totp-verify-error')?.classList.add('hidden');
     }
-    
+
     /**
      * Verify TOTP code during login
      */
     async verifyTotpLogin() {
         const input = document.getElementById('input-totp-verify');
         const code = input?.value?.replace(/\s/g, '');
-        
+
         if (!code || code.length !== 6) {
             this.showTotpVerifyError('Please enter a 6-digit code');
             return;
         }
-        
+
         try {
             const btn = document.getElementById('btn-totp-verify-submit');
             if (btn) {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i><span>Verifying...</span>';
             }
-            
+
             const response = await fetch(`${this.API_URL}/login/totp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -7534,23 +7573,23 @@ class SyncManager {
                     totp_code: code
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Verification failed');
             }
-            
+
             // Complete login
             this.pendingTotpToken = null;
             const displayName = data.display_name || this.pendingDisplayName;
             this.pendingDisplayName = null;
             await this.completeLogin(this.accountId, data.token, false, displayName);
-            
+
         } catch (err) {
             console.error('TOTP verify error:', err);
             this.showTotpVerifyError(err.message || 'Invalid code');
-            
+
             // Reset button
             const btn = document.getElementById('btn-totp-verify-submit');
             if (btn) {
@@ -7559,7 +7598,7 @@ class SyncManager {
             }
         }
     }
-    
+
     /**
      * Cancel TOTP verification and go back to login
      */
@@ -7569,7 +7608,7 @@ class SyncManager {
         this.showMainSyncView();
         this.resetCaptcha();
     }
-    
+
     showTotpVerifyError(message) {
         const errorDiv = document.getElementById('totp-verify-error');
         if (errorDiv) {
@@ -7577,7 +7616,7 @@ class SyncManager {
             errorDiv.classList.remove('hidden');
         }
     }
-    
+
     /**
      * Complete login after credentials are verified
      */
@@ -7586,25 +7625,25 @@ class SyncManager {
         this.sessionToken = token;
         this.displayName = displayName;
         this.totpEnabled = false; // Will be updated by check2FAStatus
-        
+
         localStorage.setItem(this.ACCOUNT_KEY, this.accountId);
         localStorage.setItem(this.TOKEN_KEY, this.sessionToken);
         if (displayName) {
             localStorage.setItem(this.DISPLAY_NAME_KEY, displayName);
         }
-        
+
         // Update UI
         this.updateUIState(true);
         this.hideError();
-        
+
         // Start auto-sync only if enabled
         if (this.autoSyncEnabled) {
             this.startAutoSync();
         }
-        
+
         // Check 2FA status
         await this.check2FAStatus();
-        
+
         // If new account, sync local data to cloud
         if (isNew) {
             await this.syncToCloud();
@@ -7613,13 +7652,13 @@ class SyncManager {
             await this.checkForConflict();
         }
     }
-    
+
     /**
      * Check 2FA status from server
      */
     async check2FAStatus() {
         if (!this.sessionToken) return;
-        
+
         try {
             const response = await fetch(`${this.API_URL}/2fa/status`, {
                 method: 'GET',
@@ -7627,7 +7666,7 @@ class SyncManager {
                     'Authorization': `Bearer ${this.sessionToken}`
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.totpEnabled = data.totp_enabled;
@@ -7637,22 +7676,22 @@ class SyncManager {
             console.error('Failed to check 2FA status:', e);
         }
     }
-    
+
     /**
      * Check if there's a conflict between local and cloud data after login
      */
     async checkForConflict() {
         // Check if local has any data
-        const hasLocalData = this.app.state.projects.length > 0 || 
-                             this.app.state.files.length > 0 ||
-                             this.app.state.collections.length > 0 ||
-                             this.app.state.timestamps.length > 0;
-        
+        const hasLocalData = this.app.state.projects.length > 0 ||
+            this.app.state.files.length > 0 ||
+            this.app.state.collections.length > 0 ||
+            this.app.state.timestamps.length > 0;
+
         if (!hasLocalData) {
             // No local data, no conflict - just pull from cloud
             return;
         }
-        
+
         // Fetch cloud data to check if it has anything
         try {
             const response = await fetch(`${this.API_URL}/data`, {
@@ -7661,21 +7700,21 @@ class SyncManager {
                     'Authorization': `Bearer ${this.sessionToken}`
                 }
             });
-            
+
             if (!response.ok) return;
-            
+
             const result = await response.json();
             const dataRow = result.data?.find(d => d.key === 'whistler_data');
-            
+
             if (dataRow && dataRow.value) {
                 const cloudData = JSON.parse(dataRow.value);
-                
+
                 // Check if cloud has any data
                 const hasCloudData = (cloudData.projects?.length > 0) ||
-                                     (cloudData.files?.length > 0) ||
-                                     (cloudData.collections?.length > 0) ||
-                                     (cloudData.timestamps?.length > 0);
-                
+                    (cloudData.files?.length > 0) ||
+                    (cloudData.collections?.length > 0) ||
+                    (cloudData.timestamps?.length > 0);
+
                 if (hasCloudData) {
                     // Both local and cloud have data - CONFLICT!
                     this.conflictCloudData = cloudData;
@@ -7688,34 +7727,34 @@ class SyncManager {
             console.error('Failed to check for conflict:', e);
         }
     }
-    
+
     /**
      * Show the conflict resolution modal (blocks app usage)
      */
     showConflictResolution() {
         // Close any open modals
         this.app.modals.close();
-        
+
         // Show conflict modal (non-dismissible)
         const modal = document.getElementById('modal-sync-conflict');
         const backdrop = document.getElementById('modal-backdrop');
-        
+
         if (modal && backdrop) {
             backdrop.classList.remove('hidden');
             modal.classList.remove('hidden');
-            
+
             // Update stats display
             this.updateConflictStats();
         }
     }
-    
+
     /**
      * Update the conflict modal with data statistics
      */
     updateConflictStats() {
         const localStats = document.getElementById('conflict-local-stats');
         const cloudStats = document.getElementById('conflict-cloud-stats');
-        
+
         if (localStats) {
             const localProjects = this.app.state.projects.length;
             const localFiles = this.app.state.files.length;
@@ -7726,7 +7765,7 @@ class SyncManager {
                 <div><strong>${localTimestamps}</strong> timestamp${localTimestamps !== 1 ? 's' : ''}</div>
             `;
         }
-        
+
         if (cloudStats && this.conflictCloudData) {
             const cloudProjects = this.conflictCloudData.projects?.length || 0;
             const cloudFiles = this.conflictCloudData.files?.length || 0;
@@ -7741,7 +7780,7 @@ class SyncManager {
             this.fetchCloudStatsForConflict();
         }
     }
-    
+
     /**
      * Fetch cloud data for conflict stats display
      */
@@ -7753,12 +7792,12 @@ class SyncManager {
                     'Authorization': `Bearer ${this.sessionToken}`
                 }
             });
-            
+
             if (!response.ok) return;
-            
+
             const result = await response.json();
             const dataRow = result.data?.find(d => d.key === 'whistler_data');
-            
+
             if (dataRow && dataRow.value) {
                 this.conflictCloudData = JSON.parse(dataRow.value);
                 this.updateConflictStats();
@@ -7767,7 +7806,7 @@ class SyncManager {
             console.error('Failed to fetch cloud stats:', e);
         }
     }
-    
+
     /**
      * Resolve conflict by keeping local data (push to cloud)
      */
@@ -7783,14 +7822,14 @@ class SyncManager {
             this.setConflictLoading(false);
         }
     }
-    
+
     /**
      * Resolve conflict by replacing with cloud data
      */
     async resolveConflictKeepCloud() {
         try {
             this.setConflictLoading(true, 'Replacing with cloud data...');
-            
+
             if (this.conflictCloudData) {
                 // Replace local data with cloud data
                 this.app.state.projects = this.conflictCloudData.projects || [];
@@ -7802,7 +7841,7 @@ class SyncManager {
                 this.app.state.graphEdges = this.conflictCloudData.graphEdges || [];
                 this.app.state.docs = this.conflictCloudData.docs || [];
                 this.app.state.storages = this.conflictCloudData.storages || [];
-                
+
                 // Save to local storage (don't trigger sync)
                 const data = {
                     projects: this.app.state.projects,
@@ -7818,9 +7857,9 @@ class SyncManager {
                 };
                 localStorage.setItem(this.app.storage.KEY, JSON.stringify(data));
             }
-            
+
             this.clearConflict();
-            
+
             // Refresh the UI
             window.location.reload();
         } catch (e) {
@@ -7829,24 +7868,24 @@ class SyncManager {
             this.setConflictLoading(false);
         }
     }
-    
+
     /**
      * Resolve conflict by merging both datasets
      */
     async resolveConflictMerge() {
         try {
             this.setConflictLoading(true, 'Merging local and cloud data...');
-            
+
             if (this.conflictCloudData) {
                 // Merge cloud data into local (keeps local, adds new from cloud)
                 this.mergeData(this.conflictCloudData);
-                
+
                 // Push merged data to cloud
                 await this.syncToCloud();
             }
-            
+
             this.clearConflict();
-            
+
             // Refresh the UI
             window.location.reload();
         } catch (e) {
@@ -7855,7 +7894,7 @@ class SyncManager {
             this.setConflictLoading(false);
         }
     }
-    
+
     /**
      * Clear conflict state
      */
@@ -7863,14 +7902,14 @@ class SyncManager {
         this.pendingConflict = false;
         this.conflictCloudData = null;
         localStorage.removeItem(this.CONFLICT_KEY);
-        
+
         // Close modal
         const modal = document.getElementById('modal-sync-conflict');
         const backdrop = document.getElementById('modal-backdrop');
         if (modal) modal.classList.add('hidden');
         if (backdrop) backdrop.classList.add('hidden');
     }
-    
+
     /**
      * Set loading state on conflict modal
      */
@@ -7878,7 +7917,7 @@ class SyncManager {
         const actions = document.getElementById('conflict-actions');
         const loadingDiv = document.getElementById('conflict-loading');
         const loadingMsg = document.getElementById('conflict-loading-message');
-        
+
         if (loading) {
             if (actions) actions.classList.add('hidden');
             if (loadingDiv) loadingDiv.classList.remove('hidden');
@@ -7888,7 +7927,7 @@ class SyncManager {
             if (loadingDiv) loadingDiv.classList.add('hidden');
         }
     }
-    
+
     /**
      * Show error in conflict modal
      */
@@ -7899,7 +7938,7 @@ class SyncManager {
             errorDiv.classList.remove('hidden');
         }
     }
-    
+
     /**
      * Show detail view for local or cloud data
      */
@@ -7909,9 +7948,9 @@ class SyncManager {
         const title = document.getElementById('conflict-detail-title');
         const subtitle = document.getElementById('conflict-detail-subtitle');
         const content = document.getElementById('conflict-detail-content');
-        
+
         if (!mainView || !detailView || !content) return;
-        
+
         // Get the data to display
         let data;
         if (type === 'local') {
@@ -7931,21 +7970,21 @@ class SyncManager {
             title.innerHTML = '<i class="ph-bold ph-cloud" style="color: #8b5cf6; margin-right: 8px;"></i>Cloud Data';
             subtitle.textContent = 'Contents stored in the cloud';
         }
-        
+
         // Build the content HTML
         content.innerHTML = this.buildConflictDetailContent(data);
-        
+
         // Show detail view
         mainView.classList.add('hidden');
         detailView.classList.remove('hidden');
     }
-    
+
     /**
      * Build HTML content for conflict detail view
      */
     buildConflictDetailContent(data) {
         let html = '';
-        
+
         // Projects section
         const projects = data.projects || [];
         if (projects.length > 0) {
@@ -7966,7 +8005,7 @@ class SyncManager {
                 </div>
             `;
         }
-        
+
         // Files section
         const files = data.files || [];
         if (files.length > 0) {
@@ -7988,7 +8027,7 @@ class SyncManager {
                 </div>
             `;
         }
-        
+
         // Collections section
         const collections = data.collections || [];
         if (collections.length > 0) {
@@ -8010,7 +8049,7 @@ class SyncManager {
                 </div>
             `;
         }
-        
+
         // Timestamps section
         const timestamps = data.timestamps || [];
         if (timestamps.length > 0) {
@@ -8032,7 +8071,7 @@ class SyncManager {
                 </div>
             `;
         }
-        
+
         // Graphs section
         const graphs = data.graphs || [];
         if (graphs.length > 0) {
@@ -8053,7 +8092,7 @@ class SyncManager {
                 </div>
             `;
         }
-        
+
         // Docs section
         const docs = data.docs || [];
         if (docs.length > 0) {
@@ -8074,7 +8113,7 @@ class SyncManager {
                 </div>
             `;
         }
-        
+
         // Storages section
         const storages = data.storages || [];
         if (storages.length > 0) {
@@ -8095,25 +8134,236 @@ class SyncManager {
                 </div>
             `;
         }
-        
+
         if (!html) {
             html = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No data found</div>';
         }
-        
+
         return html;
     }
-    
+
     /**
      * Hide conflict detail view and show main view
      */
     hideConflictDetail() {
         const mainView = document.getElementById('conflict-main-view');
         const detailView = document.getElementById('conflict-detail-view');
-        
+
         if (mainView) mainView.classList.remove('hidden');
         if (detailView) detailView.classList.add('hidden');
     }
-    
+
+    /**
+     * Hide conflict selection view and show main view
+     */
+    hideConflictSelection() {
+        document.getElementById('conflict-main-view').classList.remove('hidden');
+        document.getElementById('conflict-choose-view').classList.add('hidden');
+    }
+
+    /**
+     * Show conflict selection view
+     */
+    showConflictSelection() {
+        document.getElementById('conflict-main-view').classList.add('hidden');
+        document.getElementById('conflict-choose-view').classList.remove('hidden');
+        this.renderConflictSelectionList();
+    }
+
+    /**
+     * Logout from conflict modal (keep local data)
+     */
+    logoutFromConflict() {
+        if (confirm('Are you sure you want to logout? Local data will be kept.')) {
+            this.clearConflict();
+            this.app.modals.close();
+            this.logout();
+            window.location.reload();
+        }
+    }
+
+    /**
+     * Clear conflict state
+     */
+    clearConflict() {
+        this.pendingConflict = false;
+        this.conflictCloudData = null;
+        localStorage.removeItem(this.CONFLICT_KEY);
+
+        const modal = document.getElementById('modal-sync-conflict');
+        if (modal) modal.classList.add('hidden');
+        const backdrop = document.getElementById('modal-backdrop');
+        if (backdrop) backdrop.classList.add('hidden');
+    }
+
+    setConflictLoading(isLoading, message = '') {
+        const loading = document.getElementById('conflict-loading');
+        const actions = document.getElementById('conflict-actions');
+        const msg = document.getElementById('conflict-loading-message');
+
+        if (isLoading) {
+            loading.classList.remove('hidden');
+            actions.classList.add('hidden');
+            if (msg) msg.textContent = message;
+        } else {
+            loading.classList.add('hidden');
+            actions.classList.remove('hidden');
+        }
+    }
+
+    showConflictError(message) {
+        const error = document.getElementById('conflict-error');
+        if (error) {
+            error.textContent = message;
+            error.classList.remove('hidden');
+        }
+    }
+
+    renderConflictSelectionList() {
+        const container = document.getElementById('conflict-choose-content');
+        if (!container || !this.conflictCloudData) return;
+
+        container.innerHTML = '';
+        const data = this.conflictCloudData;
+
+        // Helper to create sections
+        const createSection = (title, items, type) => {
+            if (!items || items.length === 0) return;
+
+            const section = document.createElement('div');
+            section.style.marginBottom = '16px';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'font-weight: 600; margin-bottom: 8px; color: var(--text-primary); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;';
+            header.textContent = title;
+            section.appendChild(header);
+
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 8px; background: var(--bg-hover); border-bottom: 1px solid var(--border-color);';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'conflict-choose-checkbox';
+                checkbox.dataset.type = type;
+                checkbox.dataset.id = item.id;
+                checkbox.id = `chk-${item.id}`;
+
+                const label = document.createElement('label');
+                label.htmlFor = `chk-${item.id}`;
+                label.style.flex = '1';
+                label.style.cursor = 'pointer';
+                label.style.fontSize = '13px';
+
+                let iconClass = 'ph-file';
+                let name = item.name || item.title || 'Untitled';
+
+                if (type === 'projects') iconClass = 'ph-folder';
+                if (type === 'collections') iconClass = 'ph-cards';
+                if (type === 'files') iconClass = 'ph-file'; // Needs refinement based on file type
+
+                label.innerHTML = `<div style="display:flex; align-items:center; gap:8px;">
+                    <i class="ph-bold ${iconClass}"></i>
+                    <span>${name}</span>
+                </div>`;
+
+                row.appendChild(checkbox);
+                row.appendChild(label);
+                section.appendChild(row);
+            });
+
+            container.appendChild(section);
+        };
+
+        createSection('Projects', data.projects, 'projects');
+        createSection('Files', data.files, 'files');
+        createSection('Collections', data.collections, 'collections');
+    }
+
+    async resolveConflictChoose() {
+        const boxes = document.querySelectorAll('.conflict-choose-checkbox:checked');
+        if (boxes.length === 0) {
+            alert('Please select at least one item to merge.');
+            return;
+        }
+
+        const selectedIds = {
+            projects: new Set(),
+            files: new Set(),
+            collections: new Set()
+        };
+
+        boxes.forEach(box => {
+            selectedIds[box.dataset.type].add(box.dataset.id);
+        });
+
+        // Check for dependencies: Collection selected but files not selected
+        const warnings = [];
+
+        if (this.conflictCloudData.collections) {
+            for (const col of this.conflictCloudData.collections) {
+                if (selectedIds.collections.has(col.id)) {
+                    // Check items in this collection
+                    if (col.items && col.items.length > 0) {
+                        const missingFiles = col.items.filter(fileId => {
+                            // Only warn if the file EXISTS in cloud data but is NOT selected
+                            const fileExistsInCloud = this.conflictCloudData.files.some(f => f.id === fileId);
+                            // Also need to check if file already exists locally?
+                            // The user said: "if a collection is moved but it has a file not in the moved section"
+                            // Presumably "moved section" means "selected for import".
+                            // If file exists locally, it's fine.
+                            const fileExistsLocal = this.app.state.files.find(f => f.id === fileId);
+                            const fileSelected = selectedIds.files.has(fileId);
+
+                            return fileExistsInCloud && !fileSelected && !fileExistsLocal;
+                        });
+
+                        if (missingFiles.length > 0) {
+                            warnings.push(`Collection "${col.name}" includes ${missingFiles.length} file(s) that are not selected and not on your device.`);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (warnings.length > 0) {
+            const proceed = confirm(`Warning:\n\n${warnings.join('\n')}\n\nDo you want to proceed anyway? Missing files will show as broken links.`);
+            if (!proceed) return;
+        }
+
+        try {
+            this.setConflictLoading(true, 'Merging selected data...');
+
+            // Filter cloud data to only selected items
+            const filteredCloudData = {
+                projects: (this.conflictCloudData.projects || []).filter(i => selectedIds.projects.has(i.id)),
+                files: (this.conflictCloudData.files || []).filter(i => selectedIds.files.has(i.id)),
+                collections: (this.conflictCloudData.collections || []).filter(i => selectedIds.collections.has(i.id)),
+                timestamps: this.conflictCloudData.timestamps || [], // Timestamps usually follow files, could act smarter here
+                graphs: this.conflictCloudData.graphs || [],    // Graphs are complex, merge all or none? Let's skip for now or merge all
+                graphNodes: this.conflictCloudData.graphNodes || [],
+                graphEdges: this.conflictCloudData.graphEdges || [],
+                docs: this.conflictCloudData.docs || [],
+                storages: this.conflictCloudData.storages || []
+            };
+
+            // Merge filtered cloud data
+            this.mergeData(filteredCloudData);
+
+            // Push merged state to cloud
+            await this.syncToCloud();
+
+            this.clearConflict();
+            // Refresh UI
+            window.location.reload();
+
+        } catch (e) {
+            console.error('Merge failed:', e);
+            alert('Merge failed: ' + e.message);
+            this.setConflictLoading(false);
+        }
+    }
+
     /**
      * Escape HTML to prevent XSS
      */
@@ -8122,7 +8372,7 @@ class SyncManager {
         div.textContent = text || '';
         return div.innerHTML;
     }
-    
+
     /**
      * Format time in seconds to MM:SS or HH:MM:SS
      */
@@ -8136,7 +8386,7 @@ class SyncManager {
         }
         return `${m}:${s.toString().padStart(2, '0')}`;
     }
-    
+
     /**
      * Start TOTP setup process
      */
@@ -8144,7 +8394,7 @@ class SyncManager {
         try {
             const btn = document.getElementById('btn-totp-setup');
             if (btn) btn.disabled = true;
-            
+
             const response = await fetch(`${this.API_URL}/2fa/setup`, {
                 method: 'POST',
                 headers: {
@@ -8152,40 +8402,40 @@ class SyncManager {
                     'Authorization': `Bearer ${this.sessionToken}`
                 }
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Setup failed');
             }
-            
+
             // Store secret for confirmation
             this.totpSecret = data.secret;
-            
+
             // Show setup screen
             document.getElementById('sync-logged-in')?.classList.add('hidden');
             document.getElementById('sync-totp-setup')?.classList.remove('hidden');
-            
+
             // Display secret
             const secretDisplay = document.getElementById('totp-secret-display');
             if (secretDisplay) {
                 // Format with spaces for readability
                 secretDisplay.textContent = data.secret.match(/.{1,4}/g)?.join(' ') || data.secret;
             }
-            
+
             // Generate QR code
             this.generateQRCode(data.otpauth_url);
-            
+
             // Clear and focus input
             const input = document.getElementById('input-totp-setup');
             if (input) {
                 input.value = '';
                 input.focus();
             }
-            
+
             // Hide error
             document.getElementById('totp-setup-error')?.classList.add('hidden');
-            
+
         } catch (err) {
             console.error('TOTP setup error:', err);
             alert(err.message || 'Failed to start 2FA setup');
@@ -8194,82 +8444,82 @@ class SyncManager {
             if (btn) btn.disabled = false;
         }
     }
-    
+
     /**
      * Generate QR code for TOTP
      */
     generateQRCode(otpauthUrl) {
         const canvas = document.getElementById('totp-qr-canvas');
         if (!canvas) return;
-        
+
         const ctx = canvas.getContext('2d');
         const size = 180;
-        
+
         // Simple QR code generation using a basic encoder
         // For production, you'd want to use a library like qrcode-generator
         // But we can create a URL that Google Charts can render as a backup
-        
+
         // First, let's try to generate it ourselves using a simple approach
         // We'll use a minimal QR code implementation
-        
+
         try {
             // Create a simple visual representation
             // Since we don't have a QR library, show the URL in an alternative way
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, size, size);
-            
+
             // Draw a placeholder with instructions
             ctx.fillStyle = '#333';
             ctx.font = '12px sans-serif';
             ctx.textAlign = 'center';
-            
+
             // For a proper QR code, we'll create an image from an API
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            
+
             // Use QR Server API (free, no-signup needed)
             const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(otpauthUrl)}`;
-            
+
             img.onload = () => {
                 ctx.drawImage(img, 0, 0, size, size);
             };
-            
+
             img.onerror = () => {
                 // Fallback - show manual entry text
                 ctx.fillStyle = '#f0f0f0';
                 ctx.fillRect(0, 0, size, size);
                 ctx.fillStyle = '#666';
                 ctx.font = '11px sans-serif';
-                ctx.fillText('QR code unavailable', size/2, size/2 - 10);
-                ctx.fillText('Use manual entry below', size/2, size/2 + 10);
+                ctx.fillText('QR code unavailable', size / 2, size / 2 - 10);
+                ctx.fillText('Use manual entry below', size / 2, size / 2 + 10);
             };
-            
+
             img.src = qrApiUrl;
-            
+
         } catch (e) {
             console.error('QR generation error:', e);
         }
     }
-    
+
     /**
      * Confirm TOTP setup with verification code
      */
     async confirmTotpSetup() {
         const input = document.getElementById('input-totp-setup');
         const code = input?.value?.replace(/\s/g, '');
-        
+
         if (!code || code.length !== 6) {
             this.showTotpSetupError('Please enter the 6-digit code from your authenticator');
             return;
         }
-        
+
         try {
             const btn = document.getElementById('btn-totp-setup-confirm');
             if (btn) {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i><span>Enabling...</span>';
             }
-            
+
             const response = await fetch(`${this.API_URL}/2fa/enable`, {
                 method: 'POST',
                 headers: {
@@ -8278,20 +8528,20 @@ class SyncManager {
                 },
                 body: JSON.stringify({ totp_code: code })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Verification failed');
             }
-            
+
             // Success!
             this.totpEnabled = true;
             this.totpSecret = null;
-            
+
             // Go back to main view
             this.showMainSyncView();
-            
+
         } catch (err) {
             console.error('TOTP enable error:', err);
             this.showTotpSetupError(err.message || 'Invalid code. Please try again.');
@@ -8303,7 +8553,7 @@ class SyncManager {
             }
         }
     }
-    
+
     /**
      * Cancel TOTP setup
      */
@@ -8311,7 +8561,7 @@ class SyncManager {
         this.totpSecret = null;
         this.showMainSyncView();
     }
-    
+
     showTotpSetupError(message) {
         const errorDiv = document.getElementById('totp-setup-error');
         if (errorDiv) {
@@ -8319,44 +8569,44 @@ class SyncManager {
             errorDiv.classList.remove('hidden');
         }
     }
-    
+
     /**
      * Show TOTP disable confirmation
      */
     showTotpDisable() {
         document.getElementById('sync-logged-in')?.classList.add('hidden');
         document.getElementById('sync-totp-disable')?.classList.remove('hidden');
-        
+
         // Clear and focus input
         const input = document.getElementById('input-totp-disable');
         if (input) {
             input.value = '';
             input.focus();
         }
-        
+
         // Hide error
         document.getElementById('totp-disable-error')?.classList.add('hidden');
     }
-    
+
     /**
      * Confirm TOTP disable
      */
     async confirmTotpDisable() {
         const input = document.getElementById('input-totp-disable');
         const code = input?.value?.replace(/\s/g, '');
-        
+
         if (!code || code.length !== 6) {
             this.showTotpDisableError('Please enter your current 6-digit code');
             return;
         }
-        
+
         try {
             const btn = document.getElementById('btn-totp-disable-confirm');
             if (btn) {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i><span>Disabling...</span>';
             }
-            
+
             const response = await fetch(`${this.API_URL}/2fa/disable`, {
                 method: 'POST',
                 headers: {
@@ -8365,19 +8615,19 @@ class SyncManager {
                 },
                 body: JSON.stringify({ totp_code: code })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to disable 2FA');
             }
-            
+
             // Success!
             this.totpEnabled = false;
-            
+
             // Go back to main view
             this.showMainSyncView();
-            
+
         } catch (err) {
             console.error('TOTP disable error:', err);
             this.showTotpDisableError(err.message || 'Invalid code');
@@ -8389,14 +8639,14 @@ class SyncManager {
             }
         }
     }
-    
+
     /**
      * Cancel TOTP disable
      */
     cancelTotpDisable() {
         this.showMainSyncView();
     }
-    
+
     showTotpDisableError(message) {
         const errorDiv = document.getElementById('totp-disable-error');
         if (errorDiv) {
@@ -8404,7 +8654,7 @@ class SyncManager {
             errorDiv.classList.remove('hidden');
         }
     }
-    
+
     /**
      * Reset the Turnstile captcha widget
      */
@@ -8412,7 +8662,7 @@ class SyncManager {
         this.captchaToken = null;
         const btn = document.getElementById('btn-sync-login');
         if (btn) btn.disabled = true;
-        
+
         if (typeof turnstile !== 'undefined') {
             try {
                 turnstile.reset('#turnstile-widget');
@@ -8421,7 +8671,7 @@ class SyncManager {
             }
         }
     }
-    
+
     /**
      * Logout and clear credentials
      */
@@ -8431,34 +8681,81 @@ class SyncManager {
         this.displayName = null;
         this.lastSync = null;
         this.totpEnabled = false;
-        
+
         localStorage.removeItem(this.ACCOUNT_KEY);
         localStorage.removeItem(this.TOKEN_KEY);
         localStorage.removeItem(this.DISPLAY_NAME_KEY);
         localStorage.removeItem(this.LAST_SYNC_KEY);
-        
+
         this.stopAutoSync();
         this.updateUIState(false);
-        
+
         // Clear the input
         const input = document.getElementById('input-account-id');
         if (input) input.value = '';
-        
+
         // Hide account name
         const displayName = document.getElementById('display-account-name');
         if (displayName) displayName.classList.add('hidden');
     }
-    
+
+    /**
+     * Check for remote updates without overwriting
+     */
+    async checkForRemoteUpdates() {
+        if (!this.sessionToken || this.isSyncing || this.pendingConflict) return;
+
+        try {
+            // We use a flag to prevent multiple checks firing at once
+            if (this.isCheckingRemote) return;
+            this.isCheckingRemote = true;
+
+            const response = await fetch(`${this.API_URL}/data`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+
+            if (!response.ok) {
+                this.isCheckingRemote = false;
+                return;
+            }
+
+            const result = await response.json();
+            const dataRow = result.data?.find(d => d.key === 'whistler_data');
+
+            if (dataRow && dataRow.updated_at) {
+                const serverTime = new Date(dataRow.updated_at).getTime();
+                const lastSyncTime = this.lastSync ? new Date(this.lastSync).getTime() : 0;
+
+                // If server has newer data than our last sync (with 2s buffer for clock skew)
+                if (serverTime > lastSyncTime + 2000) {
+                    console.log('Remote changes detected!');
+                    // Stop auto-sync to prevent overwrite
+                    this.stopAutoSync();
+
+                    // Trigger conflict check (which handles fetching data and showing modal)
+                    await this.checkForConflict();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to check for remote updates:', e);
+        } finally {
+            this.isCheckingRemote = false;
+        }
+    }
+
     /**
      * Sync local data to cloud
      */
     async syncToCloud() {
         if (!this.sessionToken || this.isSyncing) return;
-        
+
         try {
             this.isSyncing = true;
             this.setSyncingState(true);
-            
+
             // Get all local data with timestamp
             const lastModified = parseInt(localStorage.getItem(this.app.storage.LAST_MODIFIED_KEY)) || Date.now();
             const data = {
@@ -8473,7 +8770,7 @@ class SyncManager {
                 storages: this.app.state.storages,
                 lastModified: lastModified
             };
-            
+
             // Save as a single key
             const response = await fetch(`${this.API_URL}/data`, {
                 method: 'PUT',
@@ -8486,18 +8783,18 @@ class SyncManager {
                     value: data
                 })
             });
-            
+
             if (response.status === 401) {
                 // Token expired, try to re-login
                 await this.reLogin();
                 return;
             }
-            
+
             if (!response.ok) {
                 const err = await response.json();
                 throw new Error(err.error || 'Sync failed');
             }
-            
+
             // Update last sync time
             this.lastSync = new Date().toISOString();
             localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
@@ -8505,7 +8802,7 @@ class SyncManager {
 
             // Show success checkmark on Push button
             this.showSyncButtonSuccess('btn-sync-to-cloud');
-            
+
         } catch (err) {
             console.error('Sync to cloud error:', err);
         } finally {
@@ -8513,46 +8810,46 @@ class SyncManager {
             this.setSyncingState(false);
         }
     }
-    
+
     /**
      * Sync from cloud to local
      */
     async syncFromCloud() {
         if (!this.sessionToken || this.isSyncing) return;
-        
+
         try {
             this.isSyncing = true;
             this.setSyncingState(true);
-            
+
             const response = await fetch(`${this.API_URL}/data`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${this.sessionToken}`
                 }
             });
-            
+
             if (response.status === 401) {
                 // Token expired, try to re-login
                 await this.reLogin();
                 return;
             }
-            
+
             if (!response.ok) {
                 const err = await response.json();
                 throw new Error(err.error || 'Sync failed');
             }
-            
+
             const result = await response.json();
-            
+
             // Find the whistler_data key
             const dataRow = result.data?.find(d => d.key === 'whistler_data');
-            
+
             if (dataRow && dataRow.value) {
                 const cloudData = JSON.parse(dataRow.value);
-                
+
                 const cloudHasData = cloudData.projects?.length > 0 || cloudData.files?.length > 0;
                 const localHasData = this.app.state.projects.length > 0 || this.app.state.files.length > 0;
-                
+
                 // Case 1: Local is empty, cloud has data → use cloud
                 if (!localHasData && cloudHasData) {
                     this.applyCloudData(cloudData);
@@ -8569,12 +8866,12 @@ class SyncManager {
                     await this.syncToCloud();
                 }
             }
-            
+
             // Update last sync time
             this.lastSync = new Date().toISOString();
             localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
             this.updateUIState(true);
-            
+
         } catch (err) {
             console.error('Sync from cloud error:', err);
         } finally {
@@ -8582,7 +8879,7 @@ class SyncManager {
             this.setSyncingState(false);
         }
     }
-    
+
     /**
      * Apply cloud data to local state
      */
@@ -8596,11 +8893,11 @@ class SyncManager {
         this.app.state.graphEdges = cloudData.graphEdges || [];
         this.app.state.docs = cloudData.docs || [];
         this.app.state.storages = cloudData.storages || [];
-        
+
         // Update local modified timestamp to match cloud
         const cloudLastModified = cloudData.lastModified || Date.now();
         localStorage.setItem(this.app.storage.LAST_MODIFIED_KEY, cloudLastModified.toString());
-        
+
         // Save to local storage (without triggering another sync)
         const data = {
             projects: this.app.state.projects,
@@ -8615,10 +8912,10 @@ class SyncManager {
             lastModified: cloudLastModified
         };
         localStorage.setItem(this.app.storage.KEY, JSON.stringify(data));
-        
+
         // Refresh UI
         this.app.ui.renderProjectDropdown();
-        
+
         // If we have projects, open the first one
         if (this.app.state.projects.length > 0) {
             if (!this.app.state.activeProjectId) {
@@ -8628,7 +8925,7 @@ class SyncManager {
             }
         }
     }
-    
+
     /**
      * Merge local and cloud data
      */
@@ -8636,22 +8933,22 @@ class SyncManager {
         // Helper to merge arrays by id, preferring the newer item
         const mergeById = (localArr, cloudArr) => {
             const merged = new Map();
-            
+
             // Add all local items
             localArr.forEach(item => {
                 merged.set(item.id, item);
             });
-            
+
             // Add cloud items (won't overwrite existing local items with same id)
             cloudArr.forEach(item => {
                 if (!merged.has(item.id)) {
                     merged.set(item.id, item);
                 }
             });
-            
+
             return Array.from(merged.values());
         };
-        
+
         // Merge all data types
         this.app.state.projects = mergeById(this.app.state.projects, cloudData.projects || []);
         this.app.state.files = mergeById(this.app.state.files, cloudData.files || []);
@@ -8662,13 +8959,13 @@ class SyncManager {
         this.app.state.graphEdges = mergeById(this.app.state.graphEdges, cloudData.graphEdges || []);
         this.app.state.docs = mergeById(this.app.state.docs, cloudData.docs || []);
         this.app.state.storages = mergeById(this.app.state.storages, cloudData.storages || []);
-        
+
         // Save merged data
         this.app.storage.save();
-        
+
         // Refresh UI
         this.app.ui.renderProjectDropdown();
-        
+
         // If we have projects, open the first one
         if (this.app.state.projects.length > 0) {
             if (!this.app.state.activeProjectId) {
@@ -8678,7 +8975,7 @@ class SyncManager {
             }
         }
     }
-    
+
     /**
      * Re-login when token expires
      */
@@ -8687,29 +8984,29 @@ class SyncManager {
             this.logout();
             return;
         }
-        
+
         try {
             const response = await fetch(`${this.API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ account_id: this.accountId })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Re-login failed');
             }
-            
+
             this.sessionToken = data.token;
             localStorage.setItem(this.TOKEN_KEY, this.sessionToken);
-            
+
         } catch (err) {
             console.error('Re-login failed:', err);
             this.logout();
         }
     }
-    
+
     /**
      * Start auto-sync interval
      */
@@ -8719,7 +9016,7 @@ class SyncManager {
             this.syncToCloud();
         }, this.SYNC_INTERVAL_MS);
     }
-    
+
     /**
      * Stop auto-sync interval
      */
@@ -8729,60 +9026,60 @@ class SyncManager {
             this.syncInterval = null;
         }
     }
-    
+
     /**
      * Toggle auto-sync on/off
      */
     toggleAutoSync(enabled) {
         this.autoSyncEnabled = enabled;
         localStorage.setItem(this.AUTO_SYNC_KEY, enabled ? 'true' : 'false');
-        
+
         // Show/hide warning
         const warning = document.getElementById('auto-sync-warning');
         if (warning) {
             warning.classList.toggle('hidden', !enabled);
         }
-        
+
         if (enabled) {
             this.startAutoSync();
         } else {
             this.stopAutoSync();
         }
     }
-    
+
     /**
      * Manual sync from cloud (pull)
      */
     async manualSyncFromCloud() {
         if (!this.sessionToken || this.isSyncing) return;
-        
+
         try {
             this.isSyncing = true;
             this.setSyncingState(true);
-            
+
             const response = await fetch(`${this.API_URL}/data`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${this.sessionToken}`
                 }
             });
-            
+
             if (response.status === 401) {
                 await this.reLogin();
                 return;
             }
-            
+
             if (!response.ok) {
                 const err = await response.json();
                 throw new Error(err.error || 'Sync failed');
             }
-            
+
             const result = await response.json();
             const dataRow = result.data?.find(d => d.key === 'whistler_data');
-            
+
             if (dataRow && dataRow.value) {
                 const cloudData = JSON.parse(dataRow.value);
-                
+
                 // Replace local data with cloud data (Pull = replace)
                 this.applyCloudData(cloudData);
 
@@ -8792,12 +9089,12 @@ class SyncManager {
                 // Show success checkmark on Pull button
                 this.showSyncButtonSuccess('btn-sync-from-cloud');
             }
-            
+
             // Update last sync time
             this.lastSync = new Date().toISOString();
             localStorage.setItem(this.LAST_SYNC_KEY, this.lastSync);
             this.updateUIState(true);
-            
+
         } catch (err) {
             console.error('Sync from cloud error:', err);
         } finally {
@@ -8887,7 +9184,7 @@ class SyncManager {
             currentBtn.classList.remove('btn-sync-success');
         }, duration);
     }
-    
+
     /**
      * Trigger sync when data changes (only if auto-sync enabled)
      */
@@ -8900,13 +9197,13 @@ class SyncManager {
             }, 2000); // Wait 2 seconds after last change
         }
     }
-    
+
     /**
      * Copy account ID to clipboard
      */
     copyAccountId() {
         if (!this.accountId) return;
-        
+
         const formatted = this.formatAccountId(this.accountId);
         navigator.clipboard.writeText(formatted).then(() => {
             const btn = document.getElementById('btn-copy-account-id');
@@ -8919,7 +9216,7 @@ class SyncManager {
             }
         });
     }
-    
+
     /**
      * Toggle reveal/hide account ID
      */
@@ -8927,9 +9224,9 @@ class SyncManager {
         const displayId = document.getElementById('display-account-id');
         const btn = document.getElementById('btn-reveal-id');
         if (!displayId || !btn) return;
-        
+
         const isRevealed = displayId.dataset.revealed === 'true';
-        
+
         if (isRevealed) {
             // Hide it
             displayId.textContent = '••••-••••-••••-••••';
@@ -8942,16 +9239,16 @@ class SyncManager {
             btn.innerHTML = '<i class="ph-bold ph-eye-slash"></i>';
         }
     }
-    
+
     /**
      * Setup sync button tooltips
      */
     setupSyncTooltips() {
         const wrappers = document.querySelectorAll('.sync-btn-wrapper');
         const tooltipText = document.getElementById('sync-tooltip-text');
-        
+
         if (!tooltipText) return;
-        
+
         wrappers.forEach(wrapper => {
             const tooltip = wrapper.dataset.tooltip;
             const isPull = wrapper.querySelector('.btn-sync-pull');
@@ -8972,7 +9269,7 @@ class SyncManager {
             });
         });
     }
-    
+
     /**
      * Show error message
      */
@@ -8983,7 +9280,7 @@ class SyncManager {
             errorDiv.classList.remove('hidden');
         }
     }
-    
+
     /**
      * Hide error message
      */
@@ -8993,7 +9290,7 @@ class SyncManager {
             errorDiv.classList.add('hidden');
         }
     }
-    
+
     /**
      * Set loading state for login button
      */
@@ -9009,14 +9306,14 @@ class SyncManager {
             }
         }
     }
-    
+
     /**
      * Set syncing state for sync button
      */
     setSyncingState(isSyncing) {
         const btn = document.getElementById('btn-sync-now');
         const icon = document.getElementById('sync-icon');
-        
+
         if (btn) {
             if (isSyncing) {
                 btn.disabled = true;
@@ -9026,7 +9323,7 @@ class SyncManager {
                 btn.innerHTML = '<i class="ph-bold ph-arrows-clockwise"></i><span>Sync Now</span>';
             }
         }
-        
+
         if (icon && isSyncing) {
             icon.style.animation = 'spin 1s linear infinite';
         } else if (icon) {
@@ -9102,7 +9399,7 @@ class ExportImportManager {
                 this.app.sync.openSyncModal();
             };
         }
-        
+
         const btnWelcomeCreate = document.getElementById('btn-welcome-create-project');
         if (btnWelcomeCreate) {
             btnWelcomeCreate.onclick = () => {
@@ -9152,7 +9449,7 @@ class ExportImportManager {
     switchTab(tab) {
         const modal = document.getElementById('modal-export-import');
         if (!modal) return;
-        
+
         // Update tab buttons
         modal.querySelectorAll('.tab-btn').forEach(btn => {
             if (btn.dataset.tab === tab) {
@@ -9193,7 +9490,7 @@ class ExportImportManager {
         const json = JSON.stringify(data);
         const base64 = btoa(unescape(encodeURIComponent(json)));
         const url = `${window.location.origin}${window.location.pathname}?import=${base64}`;
-        
+
         const urlInput = document.getElementById('export-url-input');
         const urlResult = document.getElementById('export-url-result');
         if (urlInput && urlResult) {
@@ -9267,10 +9564,10 @@ class ExportImportManager {
             try {
                 const json = decodeURIComponent(escape(atob(base64)));
                 const data = JSON.parse(json);
-                
+
                 // Clear the URL parameter
                 window.history.replaceState({}, document.title, window.location.pathname);
-                
+
                 // Show confirmation before importing
                 if (confirm('Import data from URL? This will replace all existing data.')) {
                     this.importData(data);
@@ -9305,10 +9602,10 @@ class ExportImportManager {
 
             // Refresh UI
             this.app.ui.renderProjectDropdown();
-            
+
             // Close modal
             this.app.modals.close();
-            
+
             // Show welcome page if no projects, otherwise go to storage
             if (this.app.state.projects.length === 0) {
                 this.app.router.goTo('welcome');
@@ -9318,7 +9615,7 @@ class ExportImportManager {
 
             // Show success notification
             this.showImportSuccess('Data imported successfully!');
-            
+
         } catch (err) {
             this.showImportError('Failed to import data. The file may be corrupted or in an incompatible format.');
             console.error('Import error:', err);
@@ -9372,16 +9669,16 @@ class ExportImportManager {
 class GraphController {
     constructor(app) {
         this.app = app;
-        
+
         // Canvas elements
         this.canvas = null;
         this.ctx = null;
-        
+
         // View state
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
-        
+
         // Interaction state
         this.isDragging = false;
         this.isPanning = false;
@@ -9393,43 +9690,43 @@ class GraphController {
         this.dragStartY = 0;
         this.mouseX = 0;
         this.mouseY = 0;
-        
+
         // Animation
         this.animationFrame = null;
-        
+
         // Node visual settings
         this.nodeRadius = 20;
         this.labelFont = '12px Inter, system-ui, sans-serif';
         this.labelColor = '#ededef';
         this.edgeColor = '#3f3f46';
         this.edgeWidth = 2;
-        
+
         // Initialized flag
         this.initialized = false;
     }
-    
+
     init() {
         if (this.initialized) {
             this.render();
             return;
         }
-        
+
         this.canvas = document.getElementById('graph-canvas');
         if (!this.canvas) return;
-        
+
         this.ctx = this.canvas.getContext('2d');
-        
+
         // Setup canvas size
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
-        
+
         // Setup event listeners
         this.setupEventListeners();
         this.setupToolbar();
         this.setupNodeEditor();
-        
+
         this.initialized = true;
-        
+
         // Check for nodes and arrange view
         const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
         if (nodes.length > 0) {
@@ -9438,7 +9735,7 @@ class GraphController {
             this.centerView();
         }
     }
-    
+
     resizeCanvas() {
         if (!this.canvas) return;
         const container = this.canvas.parentElement;
@@ -9446,7 +9743,7 @@ class GraphController {
         this.canvas.height = container.clientHeight;
         this.render();
     }
-    
+
     setupEventListeners() {
         // Mouse events
         this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
@@ -9456,7 +9753,7 @@ class GraphController {
         this.canvas.addEventListener('wheel', (e) => this.onWheel(e));
         this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
         this.canvas.addEventListener('contextmenu', (e) => this.onContextMenu(e));
-        
+
         // Close context menu on click elsewhere
         document.addEventListener('click', (e) => {
             const menu = document.getElementById('graph-context-menu');
@@ -9465,23 +9762,23 @@ class GraphController {
             }
         });
     }
-    
+
     setupToolbar() {
         // Add node button
         const btnAdd = document.getElementById('btn-graph-add');
         const addMenu = document.getElementById('graph-add-menu');
-        
+
         if (btnAdd && addMenu) {
             btnAdd.onclick = (e) => {
                 e.stopPropagation();
                 addMenu.classList.toggle('hidden');
             };
-            
+
             // Close menu when clicking elsewhere
             document.addEventListener('click', () => {
                 addMenu.classList.add('hidden');
             });
-            
+
             // Add menu items
             addMenu.querySelectorAll('.graph-add-item').forEach(item => {
                 item.onclick = (e) => {
@@ -9492,28 +9789,28 @@ class GraphController {
                 };
             });
         }
-        
+
         // Zoom buttons
         document.getElementById('btn-graph-zoom-in')?.addEventListener('click', () => this.zoomIn());
         document.getElementById('btn-graph-zoom-out')?.addEventListener('click', () => this.zoomOut());
         document.getElementById('btn-graph-fit')?.addEventListener('click', () => this.fitView());
         document.getElementById('btn-graph-auto-arrange')?.addEventListener('click', () => this.autoArrange());
     }
-    
+
     setupNodeEditor() {
         const editor = document.getElementById('graph-node-editor');
         if (!editor) return;
-        
+
         // Close button
         document.getElementById('btn-node-editor-close')?.addEventListener('click', () => {
             editor.classList.add('hidden');
         });
-        
+
         // Save button
         document.getElementById('btn-node-save')?.addEventListener('click', () => {
             this.saveNodeFromEditor();
         });
-        
+
         // Delete button
         document.getElementById('btn-node-delete')?.addEventListener('click', () => {
             if (this.selectedNode) {
@@ -9523,13 +9820,13 @@ class GraphController {
                 this.render();
             }
         });
-        
+
         // Color picker trigger
         document.getElementById('btn-node-color-trigger')?.addEventListener('click', () => {
             const input = document.getElementById('input-node-color');
             const preview = document.getElementById('node-color-preview');
             const currentColor = input.value || '#6366f1';
-            
+
             this.app.modals.openColorPicker(currentColor, (newColor) => {
                 if (newColor) {
                     input.value = newColor;
@@ -9539,27 +9836,27 @@ class GraphController {
                 document.getElementById('graph-node-editor').classList.remove('hidden');
             });
         });
-        
+
         // Context menu handlers
         document.getElementById('ctx-node-edit')?.addEventListener('click', () => {
             this.hideContextMenu();
             this.openNodeEditor(this.selectedNode);
         });
-        
+
         document.getElementById('ctx-node-connect')?.addEventListener('click', () => {
             this.hideContextMenu();
             if (this.selectedNode) {
                 this.startConnecting(this.selectedNode);
             }
         });
-        
+
         document.getElementById('ctx-node-open')?.addEventListener('click', () => {
             this.hideContextMenu();
             if (this.selectedNode) {
                 this.openNodeTarget(this.selectedNode);
             }
         });
-        
+
         document.getElementById('ctx-node-delete')?.addEventListener('click', () => {
             this.hideContextMenu();
             if (this.selectedNode) {
@@ -9568,22 +9865,22 @@ class GraphController {
                 this.render();
             }
         });
-        
+
         // Link selector modal listeners
         this.setupLinkSelectorListeners();
     }
-    
+
     // ============================================
     // Mouse Event Handlers
     // ============================================
-    
+
     onMouseDown(e) {
         const { x, y } = this.getMousePos(e);
         const worldPos = this.screenToWorld(x, y);
-        
+
         // Check if we clicked on a node
         const node = this.getNodeAtPosition(worldPos.x, worldPos.y);
-        
+
         if (e.button === 0) { // Left click
             if (this.isConnecting && node && node !== this.connectFromNode) {
                 // Complete connection
@@ -9605,7 +9902,7 @@ class GraphController {
                 this.dragStartY = y - this.panY;
                 this.canvas.classList.add('grabbing');
                 this.selectedNode = null;
-                
+
                 // Cancel connecting if clicking empty space
                 if (this.isConnecting) {
                     this.stopConnecting();
@@ -9614,14 +9911,14 @@ class GraphController {
             this.render();
         }
     }
-    
+
     onMouseMove(e) {
         const { x, y } = this.getMousePos(e);
         const worldPos = this.screenToWorld(x, y);
-        
+
         this.mouseX = x;
         this.mouseY = y;
-        
+
         if (this.isDragging && this.dragNode) {
             // Move node
             this.dragNode.x = worldPos.x - this.dragStartX;
@@ -9637,7 +9934,7 @@ class GraphController {
             this.render();
         }
     }
-    
+
     onMouseUp(e) {
         if (this.isDragging && this.dragNode) {
             // Save node position
@@ -9646,42 +9943,42 @@ class GraphController {
                 y: this.dragNode.y
             });
         }
-        
+
         this.isDragging = false;
         this.isPanning = false;
         this.dragNode = null;
         this.canvas.classList.remove('grabbing');
     }
-    
+
     onWheel(e) {
         e.preventDefault();
-        
+
         const { x, y } = this.getMousePos(e);
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         const newZoom = Math.max(0.1, Math.min(5, this.zoom * delta));
-        
+
         // Zoom towards mouse position
         const worldBefore = this.screenToWorld(x, y);
         this.zoom = newZoom;
         const worldAfter = this.screenToWorld(x, y);
-        
+
         this.panX += (worldAfter.x - worldBefore.x) * this.zoom;
         this.panY += (worldAfter.y - worldBefore.y) * this.zoom;
-        
+
         // Update zoom indicator
         const indicator = document.getElementById('graph-zoom-indicator');
         if (indicator) {
             indicator.textContent = Math.round(this.zoom * 100) + '%';
         }
-        
+
         this.render();
     }
-    
+
     onDoubleClick(e) {
         const { x, y } = this.getMousePos(e);
         const worldPos = this.screenToWorld(x, y);
         const node = this.getNodeAtPosition(worldPos.x, worldPos.y);
-        
+
         if (node) {
             // Open linked item or edit
             if (node.type === 'note') {
@@ -9694,25 +9991,25 @@ class GraphController {
             this.addNodeAtPosition('note', worldPos.x, worldPos.y);
         }
     }
-    
+
     onContextMenu(e) {
         e.preventDefault();
-        
+
         const { x, y } = this.getMousePos(e);
         const worldPos = this.screenToWorld(x, y);
         const node = this.getNodeAtPosition(worldPos.x, worldPos.y);
-        
+
         if (node) {
             this.selectedNode = node;
             this.showContextMenu(e.clientX, e.clientY, node);
             this.render();
         }
     }
-    
+
     // ============================================
     // Helper Methods
     // ============================================
-    
+
     getMousePos(e) {
         const rect = this.canvas.getBoundingClientRect();
         return {
@@ -9720,21 +10017,21 @@ class GraphController {
             y: e.clientY - rect.top
         };
     }
-    
+
     screenToWorld(x, y) {
         return {
             x: (x - this.panX) / this.zoom,
             y: (y - this.panY) / this.zoom
         };
     }
-    
+
     worldToScreen(x, y) {
         return {
             x: x * this.zoom + this.panX,
             y: y * this.zoom + this.panY
         };
     }
-    
+
     getNodeAtPosition(x, y) {
         const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
         // Check in reverse order (top nodes first)
@@ -9748,21 +10045,21 @@ class GraphController {
         }
         return null;
     }
-    
+
     // ============================================
     // Node Operations
     // ============================================
-    
+
     addNodeOfType(type) {
         // Add at center of viewport
         const width = this.canvas.width || 800;
         const height = this.canvas.height || 600;
         const centerX = (width / 2 - this.panX) / this.zoom;
         const centerY = (height / 2 - this.panY) / this.zoom;
-        
+
         // Offset slightly from center for multiple adds
         const offset = Math.random() * 60 - 30;
-        
+
         if (type === 'file' || type === 'collection' || type === 'timestamp') {
             this.showLinkSelector(type, centerX + offset, centerY + offset);
         } else if (type === 'link') {
@@ -9796,7 +10093,7 @@ class GraphController {
             this.render();
         }
     }
-    
+
     addNodeAtPosition(type, x, y) {
         const node = this.app.storage.addGraphNode(
             type,
@@ -9809,11 +10106,11 @@ class GraphController {
         this.openNodeEditor(node);
         this.render();
     }
-    
+
     showLinkSelector(type, x, y) {
         let items = [];
         let title = '';
-        
+
         if (type === 'file') {
             title = 'Select File';
             items = this.app.state.files.filter(
@@ -9834,12 +10131,12 @@ class GraphController {
                 t => projectCollections.some(c => c.id === t.collectionId)
             );
         }
-        
+
         if (items.length === 0) {
             this.app.modals.alert('No Items', `No ${type}s found in this project.`);
             return;
         }
-        
+
         // Use a simple selection approach - create node with first item and open editor
         // In future could create a proper selector modal
         const item = items[0];
@@ -9848,7 +10145,7 @@ class GraphController {
             collection: '#8b5cf6',
             timestamp: '#ec4899'
         };
-        
+
         const node = this.app.storage.addGraphNode(
             type,
             item.name || item.note || 'Untitled',
@@ -9857,12 +10154,12 @@ class GraphController {
             y,
             item.id
         );
-        
+
         this.selectedNode = node;
         this.openNodeEditor(node);
         this.render();
     }
-    
+
     extractDomain(url) {
         try {
             const urlObj = new URL(url);
@@ -9871,29 +10168,29 @@ class GraphController {
             return 'Link';
         }
     }
-    
+
     // ============================================
     // Node Editor
     // ============================================
-    
+
     openNodeEditor(node) {
         if (!node) return;
-        
+
         const editor = document.getElementById('graph-node-editor');
         if (!editor) return;
-        
+
         // Populate fields
         document.getElementById('input-node-title').value = node.title || '';
         document.getElementById('input-node-color').value = node.color || '#6366f1';
         document.getElementById('node-color-preview').style.backgroundColor = node.color || '#6366f1';
-        
+
         // Show/hide link selector based on type
         const linkGroup = document.getElementById('node-link-group');
         const urlGroup = document.getElementById('node-url-group');
         const selectLink = document.getElementById('select-node-link');
         const linkDisplay = document.getElementById('node-link-display');
         const inputUrl = document.getElementById('input-node-url');
-        
+
         if (node.type === 'link') {
             linkGroup.classList.add('hidden');
             urlGroup.classList.remove('hidden');
@@ -9904,27 +10201,27 @@ class GraphController {
         } else {
             linkGroup.classList.remove('hidden');
             urlGroup.classList.add('hidden');
-            
+
             // Set current link value and display
             selectLink.value = node.linkedId || '';
             this.updateLinkDisplay(node.type, node.linkedId);
         }
-        
+
         editor.classList.remove('hidden');
     }
-    
+
     updateLinkDisplay(type, linkedId) {
         const display = document.getElementById('node-link-display');
         if (!display) return;
-        
+
         if (!linkedId) {
             display.textContent = 'None';
             display.classList.add('empty');
             return;
         }
-        
+
         display.classList.remove('empty');
-        
+
         let item = null;
         if (type === 'file') {
             item = this.app.state.files.find(f => f.id === linkedId);
@@ -9933,20 +10230,20 @@ class GraphController {
         } else if (type === 'timestamp') {
             item = this.app.state.timestamps.find(t => t.id === linkedId);
         }
-        
+
         display.textContent = item ? (item.name || item.note || 'Untitled') : 'None';
     }
-    
+
     openLinkSelectorModal() {
         if (!this.selectedNode) return;
-        
+
         const type = this.selectedNode.type;
         const currentId = document.getElementById('select-node-link').value;
-        
+
         const modal = document.getElementById('modal-node-link');
         const list = document.getElementById('node-link-list');
         const title = document.getElementById('modal-node-link-title');
-        
+
         // Set title based on type
         const titles = {
             file: 'Select File',
@@ -9954,11 +10251,11 @@ class GraphController {
             timestamp: 'Select Timestamp'
         };
         title.textContent = titles[type] || 'Select Item';
-        
+
         // Get items
         let items = [];
         let icon = 'ph-file';
-        
+
         if (type === 'file') {
             items = this.app.state.files.filter(
                 f => f.projectId === this.app.state.activeProjectId && f.type !== 'folder'
@@ -9978,10 +10275,10 @@ class GraphController {
             );
             icon = 'ph-clock';
         }
-        
+
         // Populate list
         list.innerHTML = '';
-        
+
         if (items.length === 0) {
             list.innerHTML = `<div class="folder-select-item" style="color: var(--text-muted); font-style: italic;">No ${type}s available</div>`;
         } else {
@@ -9989,43 +10286,43 @@ class GraphController {
                 const el = document.createElement('div');
                 el.className = 'folder-select-item';
                 if (item.id === currentId) el.classList.add('current-folder');
-                
+
                 const itemColor = item.color || 'var(--accent)';
                 const itemName = item.name || item.note || 'Untitled';
-                
+
                 el.innerHTML = `
                     <i class="ph-fill ${icon}" style="color: ${itemColor}"></i>
                     <span>${itemName}</span>
                 `;
-                
+
                 if (item.id === currentId) {
                     el.innerHTML += `<span class="folder-path-context">Current</span>`;
                 }
-                
+
                 el.onclick = () => {
                     document.getElementById('select-node-link').value = item.id;
                     this.updateLinkDisplay(type, item.id);
                     this.app.modals.close();
                 };
-                
+
                 list.appendChild(el);
             });
         }
-        
+
         this.app.modals.show('node-link');
     }
-    
+
     setupLinkSelectorListeners() {
         // Change button
         document.getElementById('btn-node-link-change')?.addEventListener('click', () => {
             this.openLinkSelectorModal();
         });
-        
+
         // Cancel button
         document.getElementById('btn-node-link-cancel')?.addEventListener('click', () => {
             this.app.modals.close();
         });
-        
+
         // Clear button
         document.getElementById('btn-node-link-clear')?.addEventListener('click', () => {
             document.getElementById('select-node-link').value = '';
@@ -10033,85 +10330,85 @@ class GraphController {
             this.app.modals.close();
         });
     }
-    
+
     populateLinkSelector(select, type, currentId) {
         select.value = currentId || '';
         this.updateLinkDisplay(type, currentId);
     }
-    
+
     saveNodeFromEditor() {
         if (!this.selectedNode) return;
-        
+
         const title = document.getElementById('input-node-title').value;
         const color = document.getElementById('input-node-color').value;
-        
+
         const updates = { title, color };
-        
+
         if (this.selectedNode.type === 'link') {
             updates.url = document.getElementById('input-node-url').value;
         } else if (this.selectedNode.type !== 'note') {
             updates.linkedId = document.getElementById('select-node-link').value || null;
         }
-        
+
         this.app.storage.updateGraphNode(this.selectedNode.id, updates);
-        
+
         // Update local reference
         Object.assign(this.selectedNode, updates);
-        
+
         document.getElementById('graph-node-editor').classList.add('hidden');
         this.render();
     }
-    
+
     // ============================================
     // Context Menu
     // ============================================
-    
+
     showContextMenu(x, y, node) {
         const menu = document.getElementById('graph-context-menu');
         if (!menu) return;
-        
+
         // Position menu
         menu.style.left = x + 'px';
         menu.style.top = y + 'px';
-        
+
         // Show/hide open option based on node type
         const openItem = document.getElementById('ctx-node-open');
         if (openItem) {
             openItem.style.display = (node.type === 'note') ? 'none' : 'flex';
         }
-        
+
         menu.classList.remove('hidden');
     }
-    
+
     hideContextMenu() {
         const menu = document.getElementById('graph-context-menu');
         if (menu) menu.classList.add('hidden');
     }
-    
+
     // ============================================
     // Connection Mode
     // ============================================
-    
+
     startConnecting(node) {
         this.isConnecting = true;
         this.connectFromNode = node;
         this.canvas.classList.add('connecting');
         this.render();
     }
-    
+
     stopConnecting() {
         this.isConnecting = false;
         this.connectFromNode = null;
         this.canvas.classList.remove('connecting');
     }
-    
+
     // ============================================
     // Navigation
     // ============================================
-    
+
     openNodeTarget(node) {
         if (!node) return;
-        
+
         if (node.type === 'link' && node.url) {
             window.open(node.url, '_blank');
         } else if (node.type === 'file' && node.linkedId) {
@@ -10129,30 +10426,30 @@ class GraphController {
             }
         }
     }
-    
+
     // ============================================
     // View Controls
     // ============================================
-    
+
     zoomIn() {
         this.zoom = Math.min(5, this.zoom * 1.2);
         document.getElementById('graph-zoom-indicator').textContent = Math.round(this.zoom * 100) + '%';
         this.render();
     }
-    
+
     zoomOut() {
         this.zoom = Math.max(0.1, this.zoom / 1.2);
         document.getElementById('graph-zoom-indicator').textContent = Math.round(this.zoom * 100) + '%';
         this.render();
     }
-    
+
     fitView() {
         const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
         if (nodes.length === 0) {
             this.centerView();
             return;
         }
-        
+
         // Calculate bounds
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         nodes.forEach(n => {
@@ -10161,25 +10458,25 @@ class GraphController {
             maxX = Math.max(maxX, n.x);
             maxY = Math.max(maxY, n.y);
         });
-        
+
         const padding = 100;
         const width = maxX - minX + padding * 2;
         const height = maxY - minY + padding * 2;
-        
+
         const scaleX = this.canvas.width / width;
         const scaleY = this.canvas.height / height;
         this.zoom = Math.min(scaleX, scaleY, 2);
-        
+
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
-        
+
         this.panX = this.canvas.width / 2 - centerX * this.zoom;
         this.panY = this.canvas.height / 2 - centerY * this.zoom;
-        
+
         document.getElementById('graph-zoom-indicator').textContent = Math.round(this.zoom * 100) + '%';
         this.render();
     }
-    
+
     centerView() {
         this.zoom = 1;
         this.panX = this.canvas.width / 2;
@@ -10187,17 +10484,17 @@ class GraphController {
         document.getElementById('graph-zoom-indicator').textContent = '100%';
         this.render();
     }
-    
+
     autoArrange() {
         const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
         if (nodes.length === 0) return;
-        
+
         // Simple force-directed layout
         const iterations = 50;
         const repulsion = 5000;
         const attraction = 0.01;
         const edges = this.app.storage.getGraphEdges(this.app.state.activeGraphId);
-        
+
         for (let iter = 0; iter < iterations; iter++) {
             // Apply repulsion between all nodes
             for (let i = 0; i < nodes.length; i++) {
@@ -10206,17 +10503,17 @@ class GraphController {
                     const dy = nodes[j].y - nodes[i].y;
                     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
                     const force = repulsion / (dist * dist);
-                    
+
                     const fx = (dx / dist) * force;
                     const fy = (dy / dist) * force;
-                    
+
                     nodes[i].x -= fx;
                     nodes[i].y -= fy;
                     nodes[j].x += fx;
                     nodes[j].y += fy;
                 }
             }
-            
+
             // Apply attraction for connected nodes
             edges.forEach(edge => {
                 const from = nodes.find(n => n.id === edge.fromId);
@@ -10224,7 +10521,7 @@ class GraphController {
                 if (from && to) {
                     const dx = to.x - from.x;
                     const dy = to.y - from.y;
-                    
+
                     from.x += dx * attraction;
                     from.y += dy * attraction;
                     to.x -= dx * attraction;
@@ -10232,26 +10529,26 @@ class GraphController {
                 }
             });
         }
-        
+
         // Save new positions
         nodes.forEach(node => {
             this.app.storage.updateGraphNode(node.id, { x: node.x, y: node.y });
         });
-        
+
         this.fitView();
     }
-    
+
     // ============================================
     // Rendering
     // ============================================
-    
+
     render() {
         if (!this.ctx || !this.canvas) return;
-        
+
         const ctx = this.ctx;
         const width = this.canvas.width;
         const height = this.canvas.height;
-        
+
         // Clear canvas
         ctx.clearRect(0, 0, width, height);
 
@@ -10269,18 +10566,18 @@ class GraphController {
                 }
             }
         }
-        
+
         // Get data
         const nodes = this.app.storage.getGraphNodes(this.app.state.activeGraphId);
         const edges = this.app.storage.getGraphEdges(this.app.state.activeGraphId);
-        
+
         // Save context state
         ctx.save();
-        
+
         // Apply pan and zoom
         ctx.translate(this.panX, this.panY);
         ctx.scale(this.zoom, this.zoom);
-        
+
         // Draw edges
         ctx.strokeStyle = this.edgeColor;
         ctx.lineWidth = this.edgeWidth / this.zoom;
@@ -10294,7 +10591,7 @@ class GraphController {
                 ctx.stroke();
             }
         });
-        
+
         // Draw connecting line if in connect mode
         if (this.isConnecting && this.connectFromNode) {
             const worldMouse = this.screenToWorld(this.mouseX, this.mouseY);
@@ -10306,17 +10603,17 @@ class GraphController {
             ctx.stroke();
             ctx.setLineDash([]);
         }
-        
+
         // Draw nodes
         nodes.forEach(node => {
             const isSelected = this.selectedNode && this.selectedNode.id === node.id;
-            
+
             // Node circle
             ctx.beginPath();
             ctx.arc(node.x, node.y, this.nodeRadius, 0, Math.PI * 2);
             ctx.fillStyle = node.color || '#6366f1';
             ctx.fill();
-            
+
             // Selection ring
             if (isSelected) {
                 ctx.beginPath();
@@ -10325,16 +10622,16 @@ class GraphController {
                 ctx.lineWidth = 2 / this.zoom;
                 ctx.stroke();
             }
-            
+
             // Node icon based on type - draw simple geometric shapes
             ctx.fillStyle = 'rgba(255,255,255,0.95)';
             ctx.strokeStyle = 'rgba(255,255,255,0.95)';
             ctx.lineWidth = 1.5 / this.zoom;
-            
+
             const iconSize = 10;
             const cx = node.x;
             const cy = node.y;
-            
+
             if (node.type === 'note') {
                 // Document icon - rectangle with folded corner
                 ctx.beginPath();
@@ -10402,13 +10699,13 @@ class GraphController {
                 ctx.arc(cx, cy, 4, 0, Math.PI * 2);
                 ctx.fill();
             }
-            
+
             // Label below node
             ctx.fillStyle = this.labelColor;
             ctx.font = this.labelFont;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            
+
             // Truncate long labels
             let label = node.title || 'Untitled';
             if (label.length > 20) {
@@ -10416,7 +10713,7 @@ class GraphController {
             }
             ctx.fillText(label, node.x, node.y + this.nodeRadius + 8);
         });
-        
+
         // Restore context
         ctx.restore();
     }
@@ -10426,7 +10723,7 @@ class GraphController {
 const app = new WhistlerApp();
 
 // Dev: capture runtime errors and show in debug panel (temporary)
-window.addEventListener('error', function(ev) {
+window.addEventListener('error', function (ev) {
     try {
         const panel = document.getElementById('debug-errors');
         const body = document.getElementById('debug-errors-body');
@@ -10435,10 +10732,10 @@ window.addEventListener('error', function(ev) {
             const msg = `[Error] ${ev.message} at ${ev.filename}:${ev.lineno}:${ev.colno}\n${ev.error ? ev.error.stack : ''}`;
             body.textContent = (body.textContent || '') + msg + '\n\n';
         }
-    } catch (e) {}
+    } catch (e) { }
     console.error(ev);
 });
-window.addEventListener('unhandledrejection', function(ev) {
+window.addEventListener('unhandledrejection', function (ev) {
     try {
         const panel = document.getElementById('debug-errors');
         const body = document.getElementById('debug-errors-body');
@@ -10447,7 +10744,7 @@ window.addEventListener('unhandledrejection', function(ev) {
             const msg = `[UnhandledRejection] ${ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)}\n${ev.reason && ev.reason.stack ? ev.reason.stack : ''}`;
             body.textContent = (body.textContent || '') + msg + '\n\n';
         }
-    } catch (e) {}
+    } catch (e) { }
     console.error(ev);
 });
 
