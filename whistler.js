@@ -7531,8 +7531,15 @@ class SyncManager {
     setupUI() {
         // Cloud sync button in sidebar
         const btnCloudSync = document.getElementById('btn-cloud-sync');
+        const btnCloudSync = document.getElementById('btn-cloud-sync');
         if (btnCloudSync) {
             btnCloudSync.onclick = () => this.openSyncModal();
+        }
+
+        // Manage Sessions button
+        const btnManageSessions = document.getElementById('btn-manage-sessions');
+        if (btnManageSessions) {
+            btnManageSessions.onclick = () => this.toggleSessionsView();
         }
 
         // Generate account ID button
@@ -10587,6 +10594,9 @@ class SyncManager {
     /**
      * Set syncing state for sync button
      */
+    /**
+     * Set syncing state for sync button
+     */
     setSyncingState(isSyncing) {
         const btn = document.getElementById('btn-sync-now');
         const icon = document.getElementById('sync-icon');
@@ -10605,6 +10615,164 @@ class SyncManager {
             icon.style.animation = 'spin 1s linear infinite';
         } else if (icon) {
             icon.style.animation = '';
+        }
+    }
+
+    /**
+     * Toggle visibility of active sessions list
+     */
+    toggleSessionsView() {
+        const sessionsContainer = document.getElementById('sessions-container');
+        if (!sessionsContainer) return;
+
+        const manageSessionsBtn = document.getElementById('btn-manage-sessions');
+        const isHidden = sessionsContainer.classList.contains('hidden');
+
+        if (isHidden) {
+            // Show sessions
+            sessionsContainer.classList.remove('hidden');
+            if (manageSessionsBtn) {
+                manageSessionsBtn.innerHTML = '<i class="ph-bold ph-devices"></i> Hide Active Sessions';
+                manageSessionsBtn.className = 'btn-secondary btn-full'; // Ensure it looks active/toggled if we want
+            }
+
+            // Load sessions
+            this.loadSessions();
+        } else {
+            // Hide sessions
+            sessionsContainer.classList.add('hidden');
+            if (manageSessionsBtn) {
+                manageSessionsBtn.innerHTML = '<i class="ph-bold ph-devices"></i> Manage Active Sessions';
+            }
+        }
+    }
+
+    /**
+     * Fetch and display active sessions
+     */
+    async loadSessions() {
+        const list = document.getElementById('sessions-list');
+        if (!list) return;
+
+        list.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i></div>';
+
+        try {
+            const sessions = await this.getSessions();
+            this.renderSessionsList(sessions);
+        } catch (e) {
+            console.error('Failed to load sessions:', e);
+            list.innerHTML = '<div style="text-align: center; color: #ef4444;">Failed to load sessions.</div>';
+        }
+    }
+
+    /**
+     * Get active sessions from API
+     */
+    async getSessions() {
+        if (!this.sessionToken) return [];
+
+        try {
+            const response = await fetch(`${this.API_URL}/sessions`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+
+            if (response.status === 401) {
+                await this.reLogin();
+                return [];
+            }
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch sessions');
+            }
+
+            const result = await response.json();
+            return result.sessions || [];
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Render the list of active sessions
+     */
+    renderSessionsList(sessions) {
+        const list = document.getElementById('sessions-list');
+        if (!list) return;
+
+        list.innerHTML = '';
+
+        if (!sessions || sessions.length === 0) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">No active devices found.</div>';
+            return;
+        }
+
+        sessions.forEach(session => {
+            const el = document.createElement('div');
+            el.className = 'session-item';
+            el.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); margin-bottom: 8px;';
+
+            const isCurrent = session.is_current; // Assuming API returns this flag
+
+            el.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="ph-bold ${session.device_type === 'mobile' ? 'ph-device-mobile' : 'ph-monitor'}" style="font-size: 20px; color: var(--text-secondary);"></i>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 500; color: var(--text-primary); font-size: 14px;">${session.device_name || 'Unknown Device'} ${isCurrent ? '<span style="color: var(--accent); font-size: 11px; background: rgba(99, 102, 241, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Current</span>' : ''}</span>
+                        <span style="font-size: 12px; color: var(--text-muted);">Last active: ${new Date(session.last_active).toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+
+            if (!isCurrent) {
+                const btnRevoke = document.createElement('button');
+                btnRevoke.className = 'btn-ghost-small';
+                btnRevoke.style.cssText = 'color: #ef4444; padding: 6px 10px; height: auto;';
+                btnRevoke.innerHTML = '<i class="ph-bold ph-x"></i> Revoke';
+                btnRevoke.title = 'Log out this device';
+                btnRevoke.onclick = () => {
+                    if (confirm(`Are you sure you want to revoke access for ${session.device_name || 'this device'}?`)) {
+                        this.revokeSession(session.id);
+                    }
+                };
+                el.appendChild(btnRevoke);
+            }
+
+            list.appendChild(el);
+        });
+    }
+
+    /**
+     * Revoke a session
+     */
+    async revokeSession(sessionId) {
+        if (!this.sessionToken) return;
+
+        try {
+            const response = await fetch(`${this.API_URL}/sessions/${sessionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+
+            if (response.status === 401) {
+                await this.reLogin();
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('Failed to revoke session');
+            }
+
+            // Refresh list
+            this.loadSessions();
+
+        } catch (e) {
+            console.error('Error revoking session:', e);
+            alert('Failed to revoke session. Please try again.');
         }
     }
 }

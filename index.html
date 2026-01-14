@@ -1233,29 +1233,24 @@
                 </div>
 
                 <div class="sync-actions-group">
-                    <div class="sync-actions-row">
-                        <div class="sync-btn-wrapper"
-                            data-tooltip="Replaces local data with cloud data. Local-only items will be lost.">
-                            <button class="btn-sync-pull" id="btn-sync-from-cloud">
-                                <i class="ph-bold ph-cloud-arrow-down"></i>
-                                <span>Pull</span>
-                            </button>
-                        </div>
-                        <div class="sync-btn-wrapper"
-                            data-tooltip="Merges cloud data into local. Your local data stays, cloud items are added.">
-                            <button class="btn-sync-merge" id="btn-sync-merge">
-                                <i class="ph-bold ph-git-merge"></i>
-                                <span>Merge</span>
-                            </button>
-                        </div>
-                        <div class="sync-btn-wrapper"
-                            data-tooltip="Overwrites cloud with your local data. Cloud-only items will be lost.">
-                            <button class="btn-sync-push" id="btn-sync-to-cloud">
-                                <i class="ph-bold ph-cloud-arrow-up"></i>
-                                <span>Push</span>
-                            </button>
+                    <button class="btn-ghost" id="btn-manage-sessions"
+                        style="width: 100%; justify-content: center; margin-bottom: 12px; border: 1px solid var(--border);">
+                        <i class="ph-bold ph-devices"></i>
+                        <span>Manage Active Sessions</span>
+                    </button>
+
+                    <div id="sessions-container" class="hidden"
+                        style="background: var(--bg-hover); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+                        <h4
+                            style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--text-secondary);">
+                            Active Devices</h4>
+                        <div id="sessions-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="text-align: center; padding: 20px;">
+                                <i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i>
+                            </div>
                         </div>
                     </div>
+
                     <div class="sync-tooltip-container">
                         <div class="sync-tooltip-text" id="sync-tooltip-text"></div>
                     </div>
