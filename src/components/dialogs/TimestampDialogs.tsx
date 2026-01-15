@@ -293,9 +293,9 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                             <button
                                 className="text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
                                 onClick={() => {
-                                    if (videoRef.current) {
-                                        videoRef.current.currentTime = start;
-                                        videoRef.current.play();
+                                    if (videoElement) {
+                                        videoElement.currentTime = start;
+                                        videoElement.play();
                                     }
                                 }}
                             >
