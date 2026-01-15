@@ -1260,515 +1260,497 @@
                     </div>
                 </div>
 
-                <div class="sync-actions-group">
-                    <button class="btn-ghost" id="btn-manage-sessions"
-                        style="width: 100%; justify-content: center; margin-bottom: 12px; border: 1px solid var(--border);">
-                        <i class="ph-bold ph-devices"></i>
-                        <span>Manage Active Sessions</span>
-                    </button>
-
-                    <div id="sessions-container" class="hidden"
-                        style="background: var(--bg-hover); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
-                        <h4
-                            style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--text-secondary);">
-                            Active Devices</h4>
-                        <div id="sessions-list" style="display: flex; flex-direction: column; gap: 8px;">
-                            <div style="text-align: center; padding: 20px;">
-                                <i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="sync-tooltip-container">
-                        <div class="sync-tooltip-text" id="sync-tooltip-text"></div>
-                    </div>
-                </div>
-
-                <div id="sync-status"
-                    style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px;">
-                    Last synced: Never
-                </div>
 
 
-
-                <!-- 2FA Settings Section -->
-                <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 16px;">
-                    <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <i class="ph-bold ph-shield-check" style="color: var(--accent);"></i>
-                            <span style="font-weight: 500;">Two-Factor Authentication</span>
-                        </div>
-                        <span id="totp-status-badge"
-                            style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #ef4444;">Off</span>
-                    </div>
-                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
-                        Add extra security with an authenticator app like Google Authenticator or Authy.
-                    </p>
-                    <button class="btn-ghost" id="btn-totp-setup" style="width: 100%; justify-content: center;">
-                        <i class="ph-bold ph-plus"></i>
-                        <span>Enable 2FA</span>
-                    </button>
-                    <button class="btn-ghost hidden" id="btn-totp-disable"
-                        style="width: 100%; justify-content: center; color: #ef4444;">
-                        <i class="ph-bold ph-trash"></i>
-                        <span>Disable 2FA</span>
-                    </button>
-                </div>
-
-                <div class="modal-actions" style="justify-content: space-between;">
-                    <button class="btn-ghost" id="btn-sync-logout" style="color: #ef4444;">
-                        <i class="ph-bold ph-sign-out"></i>
-                        <span>Logout</span>
-                    </button>
-                    <button class="btn-ghost" onclick="app.modals.close()">Close</button>
+                <div class="sync-tooltip-container">
+                    <div class="sync-tooltip-text" id="sync-tooltip-text"></div>
                 </div>
             </div>
 
-            <!-- 2FA Setup state -->
-            <div id="sync-totp-setup" class="hidden">
-                <div style="text-align: center; margin-bottom: 16px;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Scan this QR code with your
-                        authenticator app:</p>
-                    <div id="totp-qr-container"
-                        style="background: white; padding: 16px; border-radius: var(--radius-sm); display: inline-block; margin-bottom: 16px;">
-                        <canvas id="totp-qr-canvas" width="180" height="180"></canvas>
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Or enter this secret
-                            manually:</p>
-                        <code id="totp-secret-display"
-                            style="font-family: monospace; font-size: 14px; background: var(--bg-hover); padding: 8px 12px; border-radius: var(--radius-sm); display: inline-block; letter-spacing: 2px; word-break: break-all;"></code>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Enter Code to Confirm</label>
-                    <input type="text" class="form-input" id="input-totp-setup" placeholder="000000" maxlength="6"
-                        inputmode="numeric"
-                        style="font-family: monospace; font-size: 24px; letter-spacing: 8px; text-align: center;">
-                </div>
-                <div id="totp-setup-error" class="hidden"
-                    style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;">
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-ghost" id="btn-totp-setup-cancel">Cancel</button>
-                    <button class="btn-primary" id="btn-totp-setup-confirm">
-                        <i class="ph-bold ph-check"></i>
-                        <span>Enable 2FA</span>
-                    </button>
-                </div>
+            <div id="sync-status"
+                style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px;">
+                Last synced: Never
             </div>
 
-            <!-- 2FA Disable confirmation state -->
-            <div id="sync-totp-disable" class="hidden">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <i class="ph-bold ph-warning" style="font-size: 48px; color: #ef4444;"></i>
-                    <p style="margin-top: 12px; color: var(--text-secondary);">Enter your current 2FA code to disable
-                        two-factor authentication.</p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Authentication Code</label>
-                    <input type="text" class="form-input" id="input-totp-disable" placeholder="000000" maxlength="6"
-                        inputmode="numeric"
-                        style="font-family: monospace; font-size: 24px; letter-spacing: 8px; text-align: center;">
-                </div>
-                <div id="totp-disable-error" class="hidden"
-                    style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;">
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-ghost" id="btn-totp-disable-cancel">Cancel</button>
-                    <button class="btn-primary" id="btn-totp-disable-confirm" style="background: #ef4444;">
-                        <i class="ph-bold ph-trash"></i>
-                        <span>Disable 2FA</span>
-                    </button>
-                </div>
-            </div>
-        </div>
 
-        <!-- Sync Conflict Resolution Modal (Non-dismissible) -->
-        <div class="modal hidden" id="modal-sync-conflict" style="width: 480px;">
-            <!-- Main conflict view -->
-            <div id="conflict-main-view">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <i class="ph-bold ph-warning-circle" style="font-size: 56px; color: #f59e0b;"></i>
-                    <h3 class="modal-title" style="margin-top: 12px; margin-bottom: 8px;">Data Conflict Detected</h3>
-                    <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5;">
-                        You have data on this device AND data stored in the cloud. Choose how to resolve this conflict.
-                    </p>
-                </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                    <!-- Local Data Box -->
-                    <div id="conflict-local-box" class="conflict-data-box"
-                        style="background: var(--bg-hover); border-radius: var(--radius-sm); padding: 16px; border: 2px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <i class="ph-bold ph-device-mobile" style="color: #3b82f6; font-size: 20px;"></i>
-                            <span style="font-weight: 600;">Local Data</span>
-                            <i class="ph-bold ph-caret-right"
-                                style="margin-left: auto; color: var(--text-muted); font-size: 14px;"></i>
-                        </div>
-                        <div id="conflict-local-stats"
-                            style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                            Loading...
-                        </div>
+            <!-- 2FA Settings Section -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="ph-bold ph-shield-check" style="color: var(--accent);"></i>
+                        <span style="font-weight: 500;">Two-Factor Authentication</span>
                     </div>
-
-                    <!-- Cloud Data Box -->
-                    <div id="conflict-cloud-box" class="conflict-data-box"
-                        style="background: var(--bg-hover); border-radius: var(--radius-sm); padding: 16px; border: 2px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <i class="ph-bold ph-cloud" style="color: #8b5cf6; font-size: 20px;"></i>
-                            <span style="font-weight: 600;">Cloud Data</span>
-                            <i class="ph-bold ph-caret-right"
-                                style="margin-left: auto; color: var(--text-muted); font-size: 14px;"></i>
-                        </div>
-                        <div id="conflict-cloud-stats"
-                            style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                            Loading...
-                        </div>
-                    </div>
+                    <span id="totp-status-badge"
+                        style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #ef4444;">Off</span>
                 </div>
-
-                <div id="conflict-error" class="hidden"
-                    style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;">
-                </div>
-
-                <div id="conflict-actions" style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="btn-conflict-option" id="btn-conflict-merge"
-                        style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #22c55e; background: rgba(34, 197, 94, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
-                        <i class="ph-bold ph-git-merge" style="font-size: 24px; color: #22c55e;"></i>
-                        <div>
-                            <div style="font-weight: 600; margin-bottom: 2px;">Merge Both</div>
-                            <div style="font-size: 12px; color: var(--text-muted);">Keep local data, add cloud items
-                                (Recommended)</div>
-                        </div>
-                    </button>
-
-                    <button class="btn-conflict-option" id="btn-conflict-choose"
-                        style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
-                        <i class="ph-bold ph-list-checks" style="font-size: 24px; color: #8b5cf6;"></i>
-                        <div>
-                            <div style="font-weight: 600; margin-bottom: 2px;">Choose What to Keep</div>
-                            <div style="font-size: 12px; color: var(--text-muted);">Select specific cloud items to add
-                                to local</div>
-                        </div>
-                    </button>
-
-                    <button class="btn-conflict-option" id="btn-conflict-local"
-                        style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
-                        <i class="ph-bold ph-device-mobile" style="font-size: 24px; color: #3b82f6;"></i>
-                        <div>
-                            <div style="font-weight: 600; margin-bottom: 2px;">Keep Local Only</div>
-                            <div style="font-size: 12px; color: var(--text-muted);">Discard cloud data, push local to
-                                cloud</div>
-                        </div>
-                    </button>
-
-                    <button class="btn-conflict-option" id="btn-conflict-cloud"
-                        style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
-                        <i class="ph-bold ph-cloud" style="font-size: 24px; color: #8b5cf6;"></i>
-                        <div>
-                            <div style="font-weight: 600; margin-bottom: 2px;">Keep Cloud Only</div>
-                            <div style="font-size: 12px; color: var(--text-muted);">Discard local data, replace with
-                                cloud</div>
-                        </div>
-                    </button>
-                </div>
-
-                <div id="conflict-loading" class="hidden" style="text-align: center; padding: 30px;">
-                    <i class="ph-bold ph-spinner"
-                        style="font-size: 32px; color: var(--accent); animation: spin 1s linear infinite;"></i>
-                    <p id="conflict-loading-message" style="margin-top: 12px; color: var(--text-secondary);">
-                        Processing...</p>
-                </div>
-
-                <div
-                    style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                    <button class="btn-ghost" id="btn-conflict-logout" style="color: #ef4444;">
-                        <i class="ph-bold ph-sign-out"></i>
-                        <span>Logout & Keep Local</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Detail view for local/cloud data -->
-            <div id="conflict-detail-view" class="hidden">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                    <button id="btn-conflict-back"
-                        style="background: var(--bg-hover); border: none; border-radius: var(--radius-sm); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                        <i class="ph-bold ph-arrow-left" style="font-size: 18px; color: var(--text-primary);"></i>
-                    </button>
-                    <div>
-                        <h3 id="conflict-detail-title" class="modal-title" style="margin: 0; font-size: 18px;">Local
-                            Data</h3>
-                        <p id="conflict-detail-subtitle" style="color: var(--text-muted); font-size: 12px; margin: 0;">
-                            Contents stored on this device</p>
-                    </div>
-                </div>
-
-                <div id="conflict-detail-content" style="max-height: 400px; overflow-y: auto;">
-                    <!-- Content populated by JS -->
-                </div>
-            </div>
-
-            <!-- Selection View for Selective Merge -->
-            <div id="conflict-choose-view" class="hidden">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                    <button id="btn-choose-back"
-                        style="background: var(--bg-hover); border: none; border-radius: var(--radius-sm); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                        <i class="ph-bold ph-arrow-left" style="font-size: 18px; color: var(--text-primary);"></i>
-                    </button>
-                    <div>
-                        <h3 class="modal-title" style="margin: 0; font-size: 18px;">Select Cloud Items</h3>
-                        <p style="color: var(--text-muted); font-size: 12px; margin: 0;">Checked items will be added to
-                            your local data</p>
-                    </div>
-                </div>
-
-                <div id="conflict-choose-content" style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
-                    <!-- Injected checkboxed items -->
-                </div>
-
-                <div class="modal-actions"
-                    style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                    <button class="btn-primary" id="btn-choose-confirm" style="width: 100%;">
-                        <i class="ph-bold ph-check"></i>
-                        <span>Confirm Merge</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Review View for granular diffs -->
-            <div id="conflict-review-view" class="hidden">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                    <button id="btn-review-back"
-                        style="background: var(--bg-hover); border: none; border-radius: var(--radius-sm); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                        <i class="ph-bold ph-arrow-left" style="font-size: 18px; color: var(--text-primary);"></i>
-                    </button>
-                    <div>
-                        <h3 class="modal-title" style="margin: 0; font-size: 18px;">Review Changes</h3>
-                        <p style="color: var(--text-muted); font-size: 12px; margin: 0;" id="review-project-name">
-                            Project Name</p>
-                    </div>
-                </div>
-
-                <div id="conflict-review-content" style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
-                    <!-- Injected Diff Content -->
-                </div>
-
-                <div class="modal-actions"
-                    style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                    <button class="btn-primary" id="btn-review-confirm" style="width: 100%;">
-                        <i class="ph-bold ph-check"></i>
-                        <span>Apply Selected Changes</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Export/Import Modal -->
-        <div class="modal hidden" id="modal-export-import" style="width: 420px;">
-            <h3 class="modal-title">Export / Import</h3>
-
-            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                <button class="tab-btn active" data-tab="export" style="flex: 1; justify-content: center;">
-                    <i class="ph-bold ph-export"></i>
-                    <span>Export</span>
-                </button>
-                <button class="tab-btn" data-tab="import" style="flex: 1; justify-content: center;">
-                    <i class="ph-bold ph-upload"></i>
-                    <span>Import</span>
-                </button>
-            </div>
-
-            <!-- Export Tab -->
-            <div id="tab-export" class="tab-panel">
-                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 16px;">
-                    Export all your projects, files, collections, and timestamps.
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+                    Add extra security with an authenticator app like Google Authenticator or Authy.
                 </p>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="btn-primary" id="btn-export-file" style="width: 100%; justify-content: center;">
-                        <i class="ph-bold ph-download"></i>
-                        <span>Download as File</span>
-                    </button>
-                    <button class="btn-ghost" id="btn-export-url" style="width: 100%; justify-content: center;">
-                        <i class="ph-bold ph-link"></i>
-                        <span>Generate Shareable URL</span>
-                    </button>
-                </div>
-                <div id="export-url-result" class="hidden"
-                    style="margin-top: 16px; padding: 12px; background: var(--bg-hover); border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                        <i class="ph-bold ph-check-circle" style="color: #22c55e; font-size: 16px;"></i>
-                        <span style="font-weight: 500; font-size: 13px;">URL Generated!</span>
-                    </div>
-                    <input type="text" id="export-url-input" readonly class="form-input"
-                        style="font-family: monospace; font-size: 11px; margin-bottom: 10px;">
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn-primary" id="btn-copy-url" style="flex: 1; justify-content: center;">
-                            <i class="ph-bold ph-copy"></i>
-                            <span>Copy</span>
-                        </button>
-                        <button class="btn-ghost" id="btn-open-url">
-                            <i class="ph-bold ph-arrow-square-out"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Import Tab -->
-            <div id="tab-import" class="tab-panel hidden">
-                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 16px;">
-                    Import data from a file or URL. This will merge with existing data.
-                </p>
-                <input type="file" id="import-file-input" accept=".txt,.json" style="display: none;">
-                <button class="btn-primary" id="btn-import-file"
-                    style="width: 100%; justify-content: center; margin-bottom: 10px;">
-                    <i class="ph-bold ph-upload"></i>
-                    <span>Choose File</span>
+                <button class="btn-ghost" id="btn-totp-setup" style="width: 100%; justify-content: center;">
+                    <i class="ph-bold ph-plus"></i>
+                    <span>Enable 2FA</span>
                 </button>
-                <div id="import-file-name"
-                    style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; text-align: center;">
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 12px; margin: 16px 0;">
-                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-                    <span style="color: var(--text-muted); font-size: 11px;">OR</span>
-                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-                </div>
-
-                <label class="form-label">Import from URL</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="import-url-input" class="form-input" placeholder="Paste shareable URL..."
-                        style="flex: 1;">
-                    <button class="btn-primary" id="btn-import-url">
-                        <i class="ph-bold ph-download"></i>
-                    </button>
-                </div>
-                <div id="import-error" class="hidden"
-                    style="margin-top: 12px; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px;">
-                </div>
-                <div id="import-success" class="hidden"
-                    style="margin-top: 12px; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; border-radius: var(--radius-sm); color: #22c55e; font-size: 12px;">
-                </div>
+                <button class="btn-ghost hidden" id="btn-totp-disable"
+                    style="width: 100%; justify-content: center; color: #ef4444;">
+                    <i class="ph-bold ph-trash"></i>
+                    <span>Disable 2FA</span>
+                </button>
             </div>
 
-            <div class="modal-actions" style="margin-top: 20px;">
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button class="btn-ghost" id="btn-sync-logout" style="color: #ef4444;">
+                    <i class="ph-bold ph-sign-out"></i>
+                    <span>Logout</span>
+                </button>
                 <button class="btn-ghost" onclick="app.modals.close()">Close</button>
             </div>
         </div>
 
-        <!-- Docs Link Modal -->
-        <div class="modal hidden" id="modal-docs-link" style="width: 400px;">
-            <h3 class="modal-title">Insert Link</h3>
-            <div class="docs-link-tabs">
-                <button class="docs-link-tab active" data-tab="external">External URL</button>
-                <button class="docs-link-tab" data-tab="internal">Internal Link</button>
-            </div>
-            <div id="docs-link-external" class="docs-link-panel">
-                <input type="text" class="input" id="input-docs-link-url" placeholder="https://...">
-            </div>
-            <div id="docs-link-internal" class="docs-link-panel hidden">
-                <!-- Type Select -->
-                <div class="custom-select" id="docs-link-type-dropdown">
-                    <div class="custom-select-trigger" id="docs-link-type-trigger">
-                        <span id="docs-link-type-text">Storage File</span>
-                        <i class="ph-bold ph-caret-down"></i>
-                    </div>
-                    <div class="custom-select-menu hidden" id="docs-link-type-menu">
-                        <div class="custom-select-item" data-value="file">Storage File</div>
-                        <div class="custom-select-item" data-value="collection">Collection</div>
-                        <div class="custom-select-item" data-value="timestamp">Timestamp / Highlight / Marking</div>
-                    </div>
+        <!-- 2FA Setup state -->
+        <div id="sync-totp-setup" class="hidden">
+            <div style="text-align: center; margin-bottom: 16px;">
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">Scan this QR code with your
+                    authenticator app:</p>
+                <div id="totp-qr-container"
+                    style="background: white; padding: 16px; border-radius: var(--radius-sm); display: inline-block; margin-bottom: 16px;">
+                    <canvas id="totp-qr-canvas" width="180" height="180"></canvas>
                 </div>
-
-                <!-- Item Select -->
-                <div class="custom-select" id="docs-link-item-dropdown" style="margin-top: 12px;">
-                    <div class="custom-select-trigger" id="docs-link-item-trigger">
-                        <span id="docs-link-item-text">Select item...</span>
-                        <i class="ph-bold ph-caret-down"></i>
-                    </div>
-                    <div class="custom-select-menu hidden" id="docs-link-item-menu">
-                        <!-- Populated by JS -->
-                    </div>
+                <div style="margin-bottom: 16px;">
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Or enter this secret
+                        manually:</p>
+                    <code id="totp-secret-display"
+                        style="font-family: monospace; font-size: 14px; background: var(--bg-hover); padding: 8px 12px; border-radius: var(--radius-sm); display: inline-block; letter-spacing: 2px; word-break: break-all;"></code>
                 </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Enter Code to Confirm</label>
+                <input type="text" class="form-input" id="input-totp-setup" placeholder="000000" maxlength="6"
+                    inputmode="numeric"
+                    style="font-family: monospace; font-size: 24px; letter-spacing: 8px; text-align: center;">
+            </div>
+            <div id="totp-setup-error" class="hidden"
+                style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;">
             </div>
             <div class="modal-actions">
-                <button class="btn-ghost" id="btn-docs-link-cancel">Cancel</button>
-                <button class="btn-primary" id="btn-docs-link-confirm">Insert Link</button>
+                <button class="btn-ghost" id="btn-totp-setup-cancel">Cancel</button>
+                <button class="btn-primary" id="btn-totp-setup-confirm">
+                    <i class="ph-bold ph-check"></i>
+                    <span>Enable 2FA</span>
+                </button>
             </div>
         </div>
 
-
-        <!-- Shortcuts Help Modal -->
-        <div class="modal hidden" id="modal-shortcuts" style="width: 560px;">
-            <h3 class="modal-title">Keyboard Shortcuts</h3>
-            <div class="shortcuts-grid">
-                <div class="shortcut-category">
-                    <h4>Global</h4>
-                    <div class="shortcut-item"><span class="key">?</span> <span class="action">Show this help</span>
-                    </div>
-                    <div class="shortcut-item"><span class="key">Esc</span> <span class="action">Close
-                            modal/player</span></div>
-                    <div class="shortcut-item"><span class="key">I</span> <span class="action">Toggle sidebar</span>
-                    </div>
-                    <div class="shortcut-item"><span class="key">T</span> <span class="action">Add mark/timestamp</span>
-                    </div>
-                    <div class="shortcut-item"><span class="key">1</span> <span class="action">Storage</span></div>
-                    <div class="shortcut-item"><span class="key">2</span> <span class="action">Collections</span></div>
-                    <div class="shortcut-item"><span class="key">3</span> <span class="action">Graph</span></div>
-                    <div class="shortcut-item"><span class="key">4</span> <span class="action">Docs</span></div>
-                    <div class="shortcut-item"><span class="key">Ctrl</span>+<span class="key">K</span> <span
-                            class="action">Global search</span></div>
-                    <div class="shortcut-item"><span class="key">Ctrl</span>+<span class="key">Shift</span>+<span
-                            class="key">L</span> <span class="action">Page search</span></div>
-                </div>
-                <div class="shortcut-category">
-                    <h4>Video Player</h4>
-                    <div class="shortcut-item"><span class="key">Space</span>/<span class="key">K</span> <span
-                            class="action">Play/Pause</span></div>
-                    <div class="shortcut-item"><span class="key">F</span> <span class="action">Fullscreen</span></div>
-                    <div class="shortcut-item"><span class="key">M</span> <span class="action">Mute</span></div>
-                    <div class="shortcut-item"><span class="key">J</span>/<span class="key">L</span> <span
-                            class="action">Seek ±10s</span></div>
-                    <div class="shortcut-item"><span class="key">←</span>/<span class="key">→</span> <span
-                            class="action">Seek ±5s</span></div>
-                    <div class="shortcut-item"><span class="key">↑</span>/<span class="key">↓</span> <span
-                            class="action">Volume</span></div>
-                    <div class="shortcut-item"><span class="key">,</span>/<span class="key">.</span> <span
-                            class="action">Frame/Speed</span></div>
-                </div>
-                <div class="shortcut-category">
-                    <h4>PDF Viewer</h4>
-                    <div class="shortcut-item"><span class="key">[</span>/<span class="key">]</span> <span
-                            class="action">Prev/Next page</span></div>
-                    <div class="shortcut-item"><span class="key">-</span>/<span class="key">+</span> <span
-                            class="action">Zoom</span></div>
-                    <div class="shortcut-item"><span class="key">0</span> <span class="action">Reset zoom</span></div>
-                    <div class="shortcut-item"><span class="key">H</span> <span class="action">Add highlight</span>
-                    </div>
-                </div>
+        <!-- 2FA Disable confirmation state -->
+        <div id="sync-totp-disable" class="hidden">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <i class="ph-bold ph-warning" style="font-size: 48px; color: #ef4444;"></i>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Enter your current 2FA code to disable
+                    two-factor authentication.</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Authentication Code</label>
+                <input type="text" class="form-input" id="input-totp-disable" placeholder="000000" maxlength="6"
+                    inputmode="numeric"
+                    style="font-family: monospace; font-size: 24px; letter-spacing: 8px; text-align: center;">
+            </div>
+            <div id="totp-disable-error" class="hidden"
+                style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;">
             </div>
             <div class="modal-actions">
-                <button class="btn-primary" onclick="app.modals.close()" tabindex="-1">Got it</button>
+                <button class="btn-ghost" id="btn-totp-disable-cancel">Cancel</button>
+                <button class="btn-primary" id="btn-totp-disable-confirm" style="background: #ef4444;">
+                    <i class="ph-bold ph-trash"></i>
+                    <span>Disable 2FA</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Conflict Resolution Modal (Non-dismissible) -->
+    <div class="modal hidden" id="modal-sync-conflict" style="width: 480px;">
+        <!-- Main conflict view -->
+        <div id="conflict-main-view">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <i class="ph-bold ph-warning-circle" style="font-size: 56px; color: #f59e0b;"></i>
+                <h3 class="modal-title" style="margin-top: 12px; margin-bottom: 8px;">Data Conflict Detected</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5;">
+                    You have data on this device AND data stored in the cloud. Choose how to resolve this conflict.
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <!-- Local Data Box -->
+                <div id="conflict-local-box" class="conflict-data-box"
+                    style="background: var(--bg-hover); border-radius: var(--radius-sm); padding: 16px; border: 2px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <i class="ph-bold ph-device-mobile" style="color: #3b82f6; font-size: 20px;"></i>
+                        <span style="font-weight: 600;">Local Data</span>
+                        <i class="ph-bold ph-caret-right"
+                            style="margin-left: auto; color: var(--text-muted); font-size: 14px;"></i>
+                    </div>
+                    <div id="conflict-local-stats"
+                        style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                        Loading...
+                    </div>
+                </div>
+
+                <!-- Cloud Data Box -->
+                <div id="conflict-cloud-box" class="conflict-data-box"
+                    style="background: var(--bg-hover); border-radius: var(--radius-sm); padding: 16px; border: 2px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <i class="ph-bold ph-cloud" style="color: #8b5cf6; font-size: 20px;"></i>
+                        <span style="font-weight: 600;">Cloud Data</span>
+                        <i class="ph-bold ph-caret-right"
+                            style="margin-left: auto; color: var(--text-muted); font-size: 14px;"></i>
+                    </div>
+                    <div id="conflict-cloud-stats"
+                        style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+
+            <div id="conflict-error" class="hidden"
+                style="padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px; margin-bottom: 16px;">
+            </div>
+
+            <div id="conflict-actions" style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn-conflict-option" id="btn-conflict-merge"
+                    style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #22c55e; background: rgba(34, 197, 94, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
+                    <i class="ph-bold ph-git-merge" style="font-size: 24px; color: #22c55e;"></i>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 2px;">Merge Both</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Keep local data, add cloud items
+                            (Recommended)</div>
+                    </div>
+                </button>
+
+                <button class="btn-conflict-option" id="btn-conflict-choose"
+                    style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
+                    <i class="ph-bold ph-list-checks" style="font-size: 24px; color: #8b5cf6;"></i>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 2px;">Choose What to Keep</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Select specific cloud items to add
+                            to local</div>
+                    </div>
+                </button>
+
+                <button class="btn-conflict-option" id="btn-conflict-local"
+                    style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
+                    <i class="ph-bold ph-device-mobile" style="font-size: 24px; color: #3b82f6;"></i>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 2px;">Keep Local Only</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Discard cloud data, push local to
+                            cloud</div>
+                    </div>
+                </button>
+
+                <button class="btn-conflict-option" id="btn-conflict-cloud"
+                    style="width: 100%; padding: 14px 16px; border-radius: var(--radius-sm); border: 2px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
+                    <i class="ph-bold ph-cloud" style="font-size: 24px; color: #8b5cf6;"></i>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 2px;">Keep Cloud Only</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Discard local data, replace with
+                            cloud</div>
+                    </div>
+                </button>
+            </div>
+
+            <div id="conflict-loading" class="hidden" style="text-align: center; padding: 30px;">
+                <i class="ph-bold ph-spinner"
+                    style="font-size: 32px; color: var(--accent); animation: spin 1s linear infinite;"></i>
+                <p id="conflict-loading-message" style="margin-top: 12px; color: var(--text-secondary);">
+                    Processing...</p>
+            </div>
+
+            <div
+                style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <button class="btn-ghost" id="btn-conflict-logout" style="color: #ef4444;">
+                    <i class="ph-bold ph-sign-out"></i>
+                    <span>Logout & Keep Local</span>
+                </button>
             </div>
         </div>
 
-        <!-- Navigation Toast (Rebuilt) -->
-        <div id="nav-toast" class="nav-toast">
-            <div class="nav-toast-track">
-                <div class="nav-toast-indicator"></div>
-                <div class="nav-toast-item" data-index="1"><i class="ph-bold ph-hard-drives"></i></div>
-                <div class="nav-toast-item" data-index="2"><i class="ph-bold ph-squares-four"></i></div>
-                <div class="nav-toast-item" data-index="3"><i class="ph-bold ph-graph"></i></div>
-                <div class="nav-toast-item" data-index="4"><i class="ph-bold ph-file-text"></i></div>
+        <!-- Detail view for local/cloud data -->
+        <div id="conflict-detail-view" class="hidden">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <button id="btn-conflict-back"
+                    style="background: var(--bg-hover); border: none; border-radius: var(--radius-sm); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <i class="ph-bold ph-arrow-left" style="font-size: 18px; color: var(--text-primary);"></i>
+                </button>
+                <div>
+                    <h3 id="conflict-detail-title" class="modal-title" style="margin: 0; font-size: 18px;">Local
+                        Data</h3>
+                    <p id="conflict-detail-subtitle" style="color: var(--text-muted); font-size: 12px; margin: 0;">
+                        Contents stored on this device</p>
+                </div>
+            </div>
+
+            <div id="conflict-detail-content" style="max-height: 400px; overflow-y: auto;">
+                <!-- Content populated by JS -->
             </div>
         </div>
 
-        <!-- Global Tooltip -->
-        <div id="global-tooltip" class="global-tooltip"></div>
+        <!-- Selection View for Selective Merge -->
+        <div id="conflict-choose-view" class="hidden">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <button id="btn-choose-back"
+                    style="background: var(--bg-hover); border: none; border-radius: var(--radius-sm); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <i class="ph-bold ph-arrow-left" style="font-size: 18px; color: var(--text-primary);"></i>
+                </button>
+                <div>
+                    <h3 class="modal-title" style="margin: 0; font-size: 18px;">Select Cloud Items</h3>
+                    <p style="color: var(--text-muted); font-size: 12px; margin: 0;">Checked items will be added to
+                        your local data</p>
+                </div>
+            </div>
 
-        <script src="whistler.js"></script>
+            <div id="conflict-choose-content" style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                <!-- Injected checkboxed items -->
+            </div>
+
+            <div class="modal-actions"
+                style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <button class="btn-primary" id="btn-choose-confirm" style="width: 100%;">
+                    <i class="ph-bold ph-check"></i>
+                    <span>Confirm Merge</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Review View for granular diffs -->
+        <div id="conflict-review-view" class="hidden">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <button id="btn-review-back"
+                    style="background: var(--bg-hover); border: none; border-radius: var(--radius-sm); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <i class="ph-bold ph-arrow-left" style="font-size: 18px; color: var(--text-primary);"></i>
+                </button>
+                <div>
+                    <h3 class="modal-title" style="margin: 0; font-size: 18px;">Review Changes</h3>
+                    <p style="color: var(--text-muted); font-size: 12px; margin: 0;" id="review-project-name">
+                        Project Name</p>
+                </div>
+            </div>
+
+            <div id="conflict-review-content" style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                <!-- Injected Diff Content -->
+            </div>
+
+            <div class="modal-actions"
+                style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <button class="btn-primary" id="btn-review-confirm" style="width: 100%;">
+                    <i class="ph-bold ph-check"></i>
+                    <span>Apply Selected Changes</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export/Import Modal -->
+    <div class="modal hidden" id="modal-export-import" style="width: 420px;">
+        <h3 class="modal-title">Export / Import</h3>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+            <button class="tab-btn active" data-tab="export" style="flex: 1; justify-content: center;">
+                <i class="ph-bold ph-export"></i>
+                <span>Export</span>
+            </button>
+            <button class="tab-btn" data-tab="import" style="flex: 1; justify-content: center;">
+                <i class="ph-bold ph-upload"></i>
+                <span>Import</span>
+            </button>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="tab-export" class="tab-panel">
+            <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 16px;">
+                Export all your projects, files, collections, and timestamps.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn-primary" id="btn-export-file" style="width: 100%; justify-content: center;">
+                    <i class="ph-bold ph-download"></i>
+                    <span>Download as File</span>
+                </button>
+                <button class="btn-ghost" id="btn-export-url" style="width: 100%; justify-content: center;">
+                    <i class="ph-bold ph-link"></i>
+                    <span>Generate Shareable URL</span>
+                </button>
+            </div>
+            <div id="export-url-result" class="hidden"
+                style="margin-top: 16px; padding: 12px; background: var(--bg-hover); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <i class="ph-bold ph-check-circle" style="color: #22c55e; font-size: 16px;"></i>
+                    <span style="font-weight: 500; font-size: 13px;">URL Generated!</span>
+                </div>
+                <input type="text" id="export-url-input" readonly class="form-input"
+                    style="font-family: monospace; font-size: 11px; margin-bottom: 10px;">
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-primary" id="btn-copy-url" style="flex: 1; justify-content: center;">
+                        <i class="ph-bold ph-copy"></i>
+                        <span>Copy</span>
+                    </button>
+                    <button class="btn-ghost" id="btn-open-url">
+                        <i class="ph-bold ph-arrow-square-out"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Tab -->
+        <div id="tab-import" class="tab-panel hidden">
+            <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 16px;">
+                Import data from a file or URL. This will merge with existing data.
+            </p>
+            <input type="file" id="import-file-input" accept=".txt,.json" style="display: none;">
+            <button class="btn-primary" id="btn-import-file"
+                style="width: 100%; justify-content: center; margin-bottom: 10px;">
+                <i class="ph-bold ph-upload"></i>
+                <span>Choose File</span>
+            </button>
+            <div id="import-file-name"
+                style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; text-align: center;">
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin: 16px 0;">
+                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                <span style="color: var(--text-muted); font-size: 11px;">OR</span>
+                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            </div>
+
+            <label class="form-label">Import from URL</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="import-url-input" class="form-input" placeholder="Paste shareable URL..."
+                    style="flex: 1;">
+                <button class="btn-primary" id="btn-import-url">
+                    <i class="ph-bold ph-download"></i>
+                </button>
+            </div>
+            <div id="import-error" class="hidden"
+                style="margin-top: 12px; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #ef4444; font-size: 12px;">
+            </div>
+            <div id="import-success" class="hidden"
+                style="margin-top: 12px; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; border-radius: var(--radius-sm); color: #22c55e; font-size: 12px;">
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+            <button class="btn-ghost" onclick="app.modals.close()">Close</button>
+        </div>
+    </div>
+
+    <!-- Docs Link Modal -->
+    <div class="modal hidden" id="modal-docs-link" style="width: 400px;">
+        <h3 class="modal-title">Insert Link</h3>
+        <div class="docs-link-tabs">
+            <button class="docs-link-tab active" data-tab="external">External URL</button>
+            <button class="docs-link-tab" data-tab="internal">Internal Link</button>
+        </div>
+        <div id="docs-link-external" class="docs-link-panel">
+            <input type="text" class="input" id="input-docs-link-url" placeholder="https://...">
+        </div>
+        <div id="docs-link-internal" class="docs-link-panel hidden">
+            <!-- Type Select -->
+            <div class="custom-select" id="docs-link-type-dropdown">
+                <div class="custom-select-trigger" id="docs-link-type-trigger">
+                    <span id="docs-link-type-text">Storage File</span>
+                    <i class="ph-bold ph-caret-down"></i>
+                </div>
+                <div class="custom-select-menu hidden" id="docs-link-type-menu">
+                    <div class="custom-select-item" data-value="file">Storage File</div>
+                    <div class="custom-select-item" data-value="collection">Collection</div>
+                    <div class="custom-select-item" data-value="timestamp">Timestamp / Highlight / Marking</div>
+                </div>
+            </div>
+
+            <!-- Item Select -->
+            <div class="custom-select" id="docs-link-item-dropdown" style="margin-top: 12px;">
+                <div class="custom-select-trigger" id="docs-link-item-trigger">
+                    <span id="docs-link-item-text">Select item...</span>
+                    <i class="ph-bold ph-caret-down"></i>
+                </div>
+                <div class="custom-select-menu hidden" id="docs-link-item-menu">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-ghost" id="btn-docs-link-cancel">Cancel</button>
+            <button class="btn-primary" id="btn-docs-link-confirm">Insert Link</button>
+        </div>
+    </div>
+
+
+    <!-- Shortcuts Help Modal -->
+    <div class="modal hidden" id="modal-shortcuts" style="width: 560px;">
+        <h3 class="modal-title">Keyboard Shortcuts</h3>
+        <div class="shortcuts-grid">
+            <div class="shortcut-category">
+                <h4>Global</h4>
+                <div class="shortcut-item"><span class="key">?</span> <span class="action">Show this help</span>
+                </div>
+                <div class="shortcut-item"><span class="key">Esc</span> <span class="action">Close
+                        modal/player</span></div>
+                <div class="shortcut-item"><span class="key">I</span> <span class="action">Toggle sidebar</span>
+                </div>
+                <div class="shortcut-item"><span class="key">T</span> <span class="action">Add mark/timestamp</span>
+                </div>
+                <div class="shortcut-item"><span class="key">1</span> <span class="action">Storage</span></div>
+                <div class="shortcut-item"><span class="key">2</span> <span class="action">Collections</span></div>
+                <div class="shortcut-item"><span class="key">3</span> <span class="action">Graph</span></div>
+                <div class="shortcut-item"><span class="key">4</span> <span class="action">Docs</span></div>
+                <div class="shortcut-item"><span class="key">Ctrl</span>+<span class="key">K</span> <span
+                        class="action">Global search</span></div>
+                <div class="shortcut-item"><span class="key">Ctrl</span>+<span class="key">Shift</span>+<span
+                        class="key">L</span> <span class="action">Page search</span></div>
+            </div>
+            <div class="shortcut-category">
+                <h4>Video Player</h4>
+                <div class="shortcut-item"><span class="key">Space</span>/<span class="key">K</span> <span
+                        class="action">Play/Pause</span></div>
+                <div class="shortcut-item"><span class="key">F</span> <span class="action">Fullscreen</span></div>
+                <div class="shortcut-item"><span class="key">M</span> <span class="action">Mute</span></div>
+                <div class="shortcut-item"><span class="key">J</span>/<span class="key">L</span> <span
+                        class="action">Seek ±10s</span></div>
+                <div class="shortcut-item"><span class="key">←</span>/<span class="key">→</span> <span
+                        class="action">Seek ±5s</span></div>
+                <div class="shortcut-item"><span class="key">↑</span>/<span class="key">↓</span> <span
+                        class="action">Volume</span></div>
+                <div class="shortcut-item"><span class="key">,</span>/<span class="key">.</span> <span
+                        class="action">Frame/Speed</span></div>
+            </div>
+            <div class="shortcut-category">
+                <h4>PDF Viewer</h4>
+                <div class="shortcut-item"><span class="key">[</span>/<span class="key">]</span> <span
+                        class="action">Prev/Next page</span></div>
+                <div class="shortcut-item"><span class="key">-</span>/<span class="key">+</span> <span
+                        class="action">Zoom</span></div>
+                <div class="shortcut-item"><span class="key">0</span> <span class="action">Reset zoom</span></div>
+                <div class="shortcut-item"><span class="key">H</span> <span class="action">Add highlight</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="app.modals.close()" tabindex="-1">Got it</button>
+        </div>
+    </div>
+
+    <!-- Navigation Toast (Rebuilt) -->
+    <div id="nav-toast" class="nav-toast">
+        <div class="nav-toast-track">
+            <div class="nav-toast-indicator"></div>
+            <div class="nav-toast-item" data-index="1"><i class="ph-bold ph-hard-drives"></i></div>
+            <div class="nav-toast-item" data-index="2"><i class="ph-bold ph-squares-four"></i></div>
+            <div class="nav-toast-item" data-index="3"><i class="ph-bold ph-graph"></i></div>
+            <div class="nav-toast-item" data-index="4"><i class="ph-bold ph-file-text"></i></div>
+        </div>
+    </div>
+
+    <!-- Global Tooltip -->
+    <div id="global-tooltip" class="global-tooltip"></div>
+
+    <script src="whistler.js"></script>
 </body>
 
 </html>
