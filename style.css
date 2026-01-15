@@ -6813,9 +6813,12 @@ input[type="color"]::-webkit-color-swatch {
     /* Stretch */
     width: auto;
     /* Override fixed width */
+    height: 34px;
     gap: 6px;
+    padding: 0 10px;
     font-size: 13px;
     font-weight: 600;
+    margin: 0;
 }
 
 /* Push - Green */
