@@ -13,6 +13,8 @@ import { useNavigate } from "react-router-dom"; // unused if we render condition
 import { useStore } from "@/store/useStore";
 import { WelcomeView } from "@/components/views/WelcomeView";
 
+import HomeView from "@/components/views/HomeView";
+
 export default function App() {
   const { projects } = useStore();
 
@@ -27,7 +29,7 @@ export default function App() {
       <SpotlightSearch />
       <Routes>
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Navigate to="/storage" replace />} />
+          <Route path="/" element={<HomeView />} />
           <Route path="/storage" element={<StorageView />} />
           <Route path="/file/:fileId" element={<FileView />} />
           <Route path="/docs" element={<DocsView />} />

@@ -55,6 +55,19 @@ export default function GraphView() {
         type: 'note' | 'file' | 'collection' | 'timestamp' | 'link';
         node?: GraphNode;
     }>({ open: false, mode: 'create', type: 'note' });
+    
+    // Helper to sync addNodeDialog with nodeDialog for compatibility
+    const setAddNodeDialog = (state: any) => {
+        setNodeDialog({
+            open: state.open,
+            mode: 'create',
+            type: state.type || 'note'
+        });
+    };
+    const addNodeDialog = {
+        open: nodeDialog.open && nodeDialog.mode === 'create',
+        type: nodeDialog.type
+    };
 
     // Load icons
     useEffect(() => {
@@ -514,10 +527,12 @@ export default function GraphView() {
                             </div>
                         )}
 
-                        <EditNodeDialog 
-                            open={editDialogOpen} 
-                            onOpenChange={setEditDialogOpen}
-                            node={nodeToEdit}
+                        <NodeDialog 
+                            open={nodeDialog.open} 
+                            onOpenChange={(open) => setNodeDialog(prev => ({ ...prev, open }))}
+                            mode={nodeDialog.mode}
+                            type={nodeDialog.type}
+                            node={nodeDialog.node}
                             onSave={handleSaveNode}
                         />
                     </>

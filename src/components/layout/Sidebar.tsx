@@ -21,7 +21,7 @@ import {
     Cloud,
     Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Gear
+    FilmStrip, FileText, Book, Gear, Share
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
@@ -95,7 +95,7 @@ export default function Sidebar() {
     
     // Sync view with location (only on mount to respect user navigation preference)
     useEffect(() => {
-        if (location.pathname === '/storage' || location.pathname === '/') {
+        if (location.pathname === '/storage') {
             setSidebarView('storage');
         } else if (location.pathname.startsWith('/docs')) {
             setSidebarView('docs');
@@ -429,10 +429,14 @@ export default function Sidebar() {
                     </button>
 
                     {!isSidebarCollapsed && (
-                        <motion.div
+                        <motion.button
+                            onClick={() => {
+                                navigate('/');
+                                setSidebarView('main');
+                            }}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap"
+                            className="flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
                         >
                             {activeCollection ? (
                                 <WaveSine weight="fill" className="text-primary text-xl" />
@@ -440,7 +444,7 @@ export default function Sidebar() {
                                 <WaveSine weight="fill" className="text-primary text-xl" />
                             )}
                             <span className="font-bold text-lg tracking-tight truncate">Whistlerbox</span>
-                        </motion.div>
+                        </motion.button>
                     )}
 
                     {!isSidebarCollapsed && (
@@ -505,8 +509,8 @@ export default function Sidebar() {
 
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 bg-card border-border/60" title="Settings">
-                                                    <Gear className="text-muted-foreground" />
+                                                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 bg-card border-border/60" title="Share">
+                                                    <Share className="text-muted-foreground" />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
