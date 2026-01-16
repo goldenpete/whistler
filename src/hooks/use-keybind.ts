@@ -5,6 +5,7 @@ type KeybindAction = (e: KeyboardEvent) => void;
 interface KeybindOptions {
   preventDefault?: boolean;
   stopPropagation?: boolean;
+  disableInInput?: boolean;
 }
 
 export function useKeybind(
@@ -14,6 +15,17 @@ export function useKeybind(
 ) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (options.disableInInput) {
+        const target = e.target as HTMLElement;
+        if (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+      }
+
       // Parse key string (e.g., "Ctrl+S", "Shift+ArrowUp")
       const keys = key.split('+').map((k) => k.trim().toLowerCase());
       const mainKey = keys[keys.length - 1];

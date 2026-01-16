@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import {
     Dialog,
     DialogContent,
@@ -10,6 +11,171 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    Folder,
+    Star,
+    Heart,
+    Flag,
+    Tag,
+    Bookmark,
+    Briefcase,
+    House,
+    User,
+    Users,
+    Planet,
+    Rocket,
+    Code,
+    Cpu,
+    Database,
+    GameController,
+    MusicNotes,
+    Image,
+    FilmStrip,
+    FileText,
+    Book
+} from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
+
+// Predefined Icons
+export const ICONS = [
+    { name: "Folder", icon: Folder },
+    { name: "Star", icon: Star },
+    { name: "Heart", icon: Heart },
+    { name: "Flag", icon: Flag },
+    { name: "Tag", icon: Tag },
+    { name: "Bookmark", icon: Bookmark },
+    { name: "Briefcase", icon: Briefcase },
+    { name: "House", icon: House },
+    { name: "User", icon: User },
+    { name: "Users", icon: Users },
+    { name: "Planet", icon: Planet },
+    { name: "Rocket", icon: Rocket },
+    { name: "Code", icon: Code },
+    { name: "Cpu", icon: Cpu },
+    { name: "Database", icon: Database },
+    { name: "GameController", icon: GameController },
+    { name: "MusicNotes", icon: MusicNotes },
+    { name: "Image", icon: Image },
+    { name: "FilmStrip", icon: FilmStrip },
+    { name: "FileText", icon: FileText },
+    { name: "Book", icon: Book },
+];
+
+export interface EntityFormProps {
+    defaultName?: string;
+    defaultColor?: string;
+    defaultIcon?: string;
+    onSubmit: (name: string, color: string, icon: string) => void;
+    onCancel: () => void;
+    submitLabel: string;
+    label: string;
+    placeholder: string;
+    allowNoIcon?: boolean;
+}
+
+export function EntityForm({ 
+    defaultName = "", 
+    defaultColor = PRESET_COLORS[0], 
+    defaultIcon = "Folder", 
+    onSubmit, 
+    onCancel, 
+    submitLabel,
+    label,
+    placeholder,
+    allowNoIcon = false
+}: EntityFormProps) {
+    const [name, setName] = useState(defaultName);
+    const [color, setColor] = useState(defaultColor);
+    const [iconName, setIconName] = useState(defaultIcon);
+
+    // Reset state when defaults change (e.g. opening different item)
+    useEffect(() => {
+        setName(defaultName);
+        setColor(defaultColor);
+        setIconName(defaultIcon);
+    }, [defaultName, defaultColor, defaultIcon]);
+
+    const handleSubmit = () => {
+        if (!name.trim()) return;
+        onSubmit(name.trim(), color, iconName);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleSubmit();
+        }
+    };
+
+    return (
+        <div className="space-y-6 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="entity-name">{label}</Label>
+                <Input
+                    id="entity-name"
+                    placeholder={placeholder}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                    className="bg-zinc-900 border-zinc-800"
+                />
+            </div>
+
+            <ColorPicker
+                color={color}
+                onChange={setColor}
+                label="Color"
+            />
+
+            <div className="space-y-2">
+                <Label>Icon</Label>
+                <div className="grid grid-cols-7 gap-2">
+                    {allowNoIcon && (
+                        <button
+                            type="button"
+                            onClick={() => setIconName("")}
+                            className={cn(
+                                "aspect-square flex items-center justify-center rounded-md border transition-all",
+                                !iconName
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                            )}
+                            title="None"
+                        >
+                            <span className="text-xs font-medium">None</span>
+                        </button>
+                    )}
+                    {ICONS.map(({ name: iName, icon: Icon }) => (
+                        <button
+                            key={iName}
+                            type="button"
+                            onClick={() => setIconName(iName)}
+                            className={cn(
+                                "aspect-square flex items-center justify-center rounded-md border transition-all",
+                                iconName === iName
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                            )}
+                            title={iName}
+                        >
+                            <Icon weight="regular" size={20} />
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <DialogFooter className="pt-4">
+                <Button variant="ghost" onClick={onCancel} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+                    Cancel
+                </Button>
+                <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    {submitLabel}
+                </Button>
+            </DialogFooter>
+        </div>
+    );
+}
 
 interface AddFileDialogProps {
     open: boolean;
@@ -97,56 +263,97 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
 interface NewFolderDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string) => void;
+    onSubmit: (name: string, color: string, icon: string) => void;
 }
 
 export function NewFolderDialog({ open, onOpenChange, onSubmit }: NewFolderDialogProps) {
-    const [name, setName] = useState("");
-
-    const handleSubmit = () => {
-        if (!name.trim()) return;
-        onSubmit(name.trim());
-        setName("");
-        onOpenChange(false);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            handleSubmit();
-        }
-    };
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
                     <DialogTitle>New Folder</DialogTitle>
-                    <DialogDescription>
-                        Enter a name for the new folder.
+                    <DialogDescription className="text-zinc-400">
+                        Customize your new folder.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="folder-name">Folder Name</Label>
-                        <Input
-                            id="folder-name"
-                            placeholder="My Folder"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                        />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()}>
-                        Create
-                    </Button>
-                </DialogFooter>
+                <EntityForm
+                    label="Folder Name"
+                    placeholder="My Folder"
+                    submitLabel="Create"
+                    onSubmit={(name, color, icon) => {
+                        onSubmit(name, color, icon);
+                        onOpenChange(false);
+                    }}
+                    onCancel={() => onOpenChange(false)}
+                />
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+interface CreateStorageDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (name: string, color: string, icon: string) => void;
+}
+
+export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStorageDialogProps) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Create Storage</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Customize your new storage.
+                    </DialogDescription>
+                </DialogHeader>
+                <EntityForm
+                    label="Storage Name"
+                    placeholder="My Storage"
+                    submitLabel="Create"
+                    onSubmit={(name, color, icon) => {
+                        onSubmit(name, color, icon);
+                        onOpenChange(false);
+                    }}
+                    onCancel={() => onOpenChange(false)}
+                />
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+interface EditStorageDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (name: string, color: string, icon: string) => void;
+    initialName: string;
+    initialColor?: string;
+    initialIcon?: string;
+}
+
+export function EditStorageDialog({ open, onOpenChange, onSubmit, initialName, initialColor, initialIcon }: EditStorageDialogProps) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Edit Storage</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Update storage details.
+                    </DialogDescription>
+                </DialogHeader>
+                <EntityForm
+                    label="Storage Name"
+                    placeholder="My Storage"
+                    submitLabel="Save"
+                    defaultName={initialName}
+                    defaultColor={initialColor}
+                    defaultIcon={initialIcon}
+                    onSubmit={(name, color, icon) => {
+                        onSubmit(name, color, icon);
+                        onOpenChange(false);
+                    }}
+                    onCancel={() => onOpenChange(false)}
+                />
             </DialogContent>
         </Dialog>
     );
@@ -164,4 +371,203 @@ function extractFilename(url: string): string {
         const parts = url.split('/');
         return parts[parts.length - 1]?.split('?')[0] || 'Untitled';
     }
+}
+
+interface RenameFileDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (name: string) => void;
+    initialName: string;
+}
+
+export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName }: RenameFileDialogProps) {
+    const [name, setName] = useState(initialName);
+
+    useEffect(() => {
+        setName(initialName);
+    }, [initialName, open]);
+
+    const handleSubmit = () => {
+        if (!name.trim()) return;
+        onSubmit(name.trim());
+        onOpenChange(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleSubmit();
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Rename File</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Enter a new name for the file.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="rename-file-name">File Name</Label>
+                        <Input
+                            id="rename-file-name"
+                            placeholder="My File"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            autoFocus
+                            className="bg-zinc-900 border-zinc-800"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                        Save
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+interface EditGraphDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (name: string, color: string, icon: string) => void;
+    initialName: string;
+    initialColor?: string;
+    initialIcon?: string;
+}
+
+export function EditGraphDialog({ open, onOpenChange, onSubmit, initialName, initialColor, initialIcon }: EditGraphDialogProps) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Edit Graph</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Update graph details.
+                    </DialogDescription>
+                </DialogHeader>
+                <EntityForm
+                    label="Graph Name"
+                    placeholder="My Graph"
+                    submitLabel="Save"
+                    defaultName={initialName}
+                    defaultColor={initialColor}
+                    defaultIcon={initialIcon}
+                    onSubmit={(name, color, icon) => {
+                        onSubmit(name, color, icon);
+                        onOpenChange(false);
+                    }}
+                    onCancel={() => onOpenChange(false)}
+                />
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+interface RenameDocDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (name: string) => void;
+    initialName: string;
+}
+
+export function RenameDocDialog({ open, onOpenChange, onSubmit, initialName }: RenameDocDialogProps) {
+    const [name, setName] = useState(initialName);
+
+    useEffect(() => {
+        setName(initialName);
+    }, [initialName, open]);
+
+    const handleSubmit = () => {
+        if (!name.trim()) return;
+        onSubmit(name.trim());
+        onOpenChange(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleSubmit();
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Rename Document</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Enter a new name for the document.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="rename-doc-name">Document Name</Label>
+                        <Input
+                            id="rename-doc-name"
+                            placeholder="Document Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            autoFocus
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={!name.trim()}>
+                        Rename
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+interface EditFolderDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (name: string, color: string, icon: string) => void;
+    initialName: string;
+    initialColor?: string;
+    initialIcon?: string;
+}
+
+export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, initialColor, initialIcon }: EditFolderDialogProps) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Edit Folder</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Update folder details.
+                    </DialogDescription>
+                </DialogHeader>
+                <EntityForm
+                    label="Folder Name"
+                    placeholder="My Folder"
+                    submitLabel="Save"
+                    defaultName={initialName}
+                    defaultColor={initialColor}
+                    defaultIcon={initialIcon}
+                    onSubmit={(name, color, icon) => {
+                        onSubmit(name, color, icon);
+                        onOpenChange(false);
+                    }}
+                    onCancel={() => onOpenChange(false)}
+                />
+            </DialogContent>
+        </Dialog>
+    );
 }

@@ -9,9 +9,9 @@ export function GlobalKeybinds() {
     const navigate = useNavigate();
 
     // --- Navigation Shortcuts ---
-    useKeybind("1", () => navigate("/storage"), { preventDefault: true });
-    useKeybind("2", () => navigate("/docs"), { preventDefault: true });
-    useKeybind("3", () => navigate("/graph"), { preventDefault: true });
+    useKeybind("1", () => navigate("/storage"), { preventDefault: true, disableInInput: true });
+    useKeybind("2", () => navigate("/docs"), { preventDefault: true, disableInInput: true });
+    useKeybind("3", () => navigate("/graphs"), { preventDefault: true, disableInInput: true });
 
     // --- Quick Actions ---
     // Slash to focus search (placeholder - can be wired to a search modal later)

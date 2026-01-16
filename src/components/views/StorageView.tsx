@@ -4,21 +4,22 @@ import { Link } from "react-router-dom";
 import {
     File as FileIcon,
     Folder,
-    FilmStrip,
+    FileVideo,
     FilePdf,
     MusicNote,
     Image,
-    List,
     Plus,
     FolderOpen,
     GridFour,
     Rows,
-    HardDrives,
     PencilSimple,
     Trash,
     Copy,
     Share,
-    ArrowSquareOut
+    ArrowSquareOut,
+    CheckSquare,
+    Square,
+    X,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,8 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { AddFileDialog, NewFolderDialog } from "@/components/dialogs/StorageDialogs";
+import { AddFileDialog, NewFolderDialog, RenameFileDialog, EditFolderDialog, ICONS } from "@/components/dialogs/StorageDialogs";
+import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import type { File } from "@/types";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 
@@ -49,14 +51,23 @@ export default function StorageView() {
         activeProjectId,
         files,
         storages,
-        activeStorageId
+        activeStorageId,
+        trashFile,
     } = useStore();
 
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [addFileOpen, setAddFileOpen] = useState(false);
     const [newFolderOpen, setNewFolderOpen] = useState(false);
+    const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+    const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+    const [fileToRename, setFileToRename] = useState<File | null>(null);
+    const [editFolderOpen, setEditFolderOpen] = useState(false);
+    const [folderToEdit, setFolderToEdit] = useState<File | null>(null);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+
+    // Selection Mode
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const projectStorages = storages.filter(s => s.projectId === activeProjectId && !s.deleted);
@@ -88,38 +99,68 @@ export default function StorageView() {
         !f.deleted
     );
 
-    const handleCreateStorage = () => {
-        // TODO: Replace with Shadcn dialog
-        const name = prompt("New storage name:");
-        if (name && activeProjectId) {
-            const newStorage = {
-                id: crypto.randomUUID(),
-                projectId: activeProjectId,
-                name,
-                created: Date.now(),
-                lastModified: Date.now()
-            };
+    const handleRenameInit = (file: File) => {
+        if (file.type === 'folder') {
+            setFolderToEdit(file);
+            setEditFolderOpen(true);
+        } else {
+            setFileToRename(file);
+            setRenameDialogOpen(true);
+        }
+    };
+
+    const handleRenameSubmit = (newName: string) => {
+        if (fileToRename) {
             useStore.setState(state => ({
-                storages: [...state.storages, newStorage],
-                activeStorageId: newStorage.id
+                files: state.files.map(f => f.id === fileToRename.id ? { ...f, name: newName, lastModified: Date.now() } : f)
             }));
         }
     };
 
-    const handleSelectStorage = (id: string | null) => {
-        useStore.setState({ activeStorageId: id });
-        setCurrentFolderId(null); // Reset folder when changing storage
-        setSidebarOpen(false);
+    const handleEditFolderSubmit = (name: string, color: string, icon: string) => {
+        if (folderToEdit) {
+            useStore.setState(state => ({
+                files: state.files.map(f => f.id === folderToEdit.id ? { ...f, name, color, icon, lastModified: Date.now() } : f)
+            }));
+        }
     };
 
-    const handleNewFolder = (name: string) => {
+    const handleMoveInit = (file: File) => {
+        if (!selectedIds.has(file.id)) {
+            setSelectedIds(new Set([file.id]));
+        }
+        setMoveDialogOpen(true);
+    };
+
+    const handleNewFolder = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
+
+        let targetStorageId = activeStorageId;
+        if (!targetStorageId) {
+            const projectStorages = storages.filter(s => s.projectId === activeProjectId);
+            if (projectStorages.length > 0) {
+                targetStorageId = projectStorages[0].id;
+            } else {
+                const newStorage = {
+                    id: crypto.randomUUID(),
+                    projectId: activeProjectId,
+                    name: "Main Storage",
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                useStore.setState(state => ({ storages: [...state.storages, newStorage] }));
+                targetStorageId = newStorage.id;
+            }
+        }
+
         const newFolder: File = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
-            storageId: activeStorageId || 'default',
+            storageId: targetStorageId,
             parentId: currentFolderId,
             name,
+            color,
+            icon,
             url: null,
             type: 'folder',
             order: projectFiles.length,
@@ -131,11 +172,30 @@ export default function StorageView() {
 
     const handleAddFile = (url: string, name: string) => {
         if (!activeProjectId) return;
+
+        let targetStorageId = activeStorageId;
+        if (!targetStorageId) {
+            const projectStorages = storages.filter(s => s.projectId === activeProjectId);
+            if (projectStorages.length > 0) {
+                targetStorageId = projectStorages[0].id;
+            } else {
+                const newStorage = {
+                    id: crypto.randomUUID(),
+                    projectId: activeProjectId,
+                    name: "Main Storage",
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                useStore.setState(state => ({ storages: [...state.storages, newStorage] }));
+                targetStorageId = newStorage.id;
+            }
+        }
+
         const type = getFileTypeFromUrl(url);
         const newFile: File = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
-            storageId: activeStorageId || 'default',
+            storageId: targetStorageId,
             parentId: currentFolderId,
             name,
             url,
@@ -151,12 +211,26 @@ export default function StorageView() {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
+        const targetFolderId = over.id === 'root' ? null : over.id as string;
+
+        // Don't move if dropping on itself or same parent
+        const activeFile = files.find(f => f.id === active.id);
+        if (activeFile?.parentId === targetFolderId) return;
+
+        // Verify target is a folder or root, not a file (unless dropping ON a folder in the grid)
+        // If dropping on breadcrumb (which we assume over.id is), it's valid if it's a folder or root.
+        // We need to differentiate dropping on grid folder vs breadcrumb.
+        // Grid folders are just normal IDs. Breadcrumb IDs match folder IDs (except root).
+
+        // Check if dropping onto a folder
         const overFile = files.find(f => f.id === over.id);
-        if (overFile && overFile.type === 'folder') {
+        const isTargetFolder = over.id === 'root' || (overFile && overFile.type === 'folder');
+
+        if (isTargetFolder) {
             useStore.setState(state => ({
                 files: state.files.map(f =>
                     f.id === active.id
-                        ? { ...f, parentId: over.id as string, lastModified: Date.now() }
+                        ? { ...f, parentId: targetFolderId, lastModified: Date.now() }
                         : f
                 )
             }));
@@ -175,123 +249,78 @@ export default function StorageView() {
         })
     );
 
+    // Selection Mode Handlers
+    const toggleSelectionMode = () => {
+        setSelectionMode(!selectionMode);
+        if (selectionMode) {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const toggleSelectItem = (id: string) => {
+        if (!selectionMode) {
+            setSelectionMode(true);
+        }
+        
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedIds(newSet);
+    };
+
+    const selectAll = () => {
+        const allIds = projectFiles.map(f => f.id);
+        setSelectedIds(new Set(allIds));
+    };
+
+    const deselectAll = () => {
+        setSelectedIds(new Set());
+    };
+
+    const deleteSelected = () => {
+        selectedIds.forEach(id => trashFile(id));
+        setSelectedIds(new Set());
+        setSelectionMode(false);
+    };
+
     return (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <div className="flex h-full bg-background text-foreground relative">
-                {/* Sliding Storage Sidebar */}
-                <AnimatePresence>
-                    {sidebarOpen && (
-                        <>
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                onClick={() => setSidebarOpen(false)}
-                                className="fixed inset-0 bg-black/50 z-30"
-                            />
-                            <motion.div
-                                initial={{ x: -280 }}
-                                animate={{ x: 0 }}
-                                exit={{ x: -280 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                className="fixed left-0 top-0 h-full w-72 bg-card border-r border-border z-40 flex flex-col shadow-xl"
-                            >
-                                <div className="flex items-center justify-between p-4 border-b border-border/50">
-                                    <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                        <HardDrives weight="bold" className="text-primary" />
-                                        Storages
-                                    </h2>
-                                    <Button variant="ghost" size="icon" onClick={handleCreateStorage} className="size-7">
-                                        <Plus weight="bold" />
-                                    </Button>
-                                </div>
-                                <ScrollArea className="flex-1">
-                                    <div className="p-2 space-y-1">
-                                        <button
-                                            onClick={() => handleSelectStorage(null)}
-                                            className={cn(
-                                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors",
-                                                !activeStorageId
-                                                    ? "bg-primary/20 text-primary font-medium"
-                                                    : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
-                                            )}
-                                        >
-                                            <FolderOpen weight={!activeStorageId ? "fill" : "regular"} className="text-lg shrink-0" />
-                                            <span>All Files</span>
-                                        </button>
-
-                                        {projectStorages.map(storage => (
-                                            <button
-                                                key={storage.id}
-                                                onClick={() => handleSelectStorage(storage.id)}
-                                                className={cn(
-                                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group",
-                                                    activeStorageId === storage.id
-                                                        ? "bg-primary/20 text-primary font-medium"
-                                                        : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
-                                                )}
-                                            >
-                                                <Folder weight={activeStorageId === storage.id ? "fill" : "regular"} className="text-lg shrink-0 text-orange-500" />
-                                                <span className="truncate flex-1">{storage.name}</span>
-                                            </button>
-                                        ))}
-
-                                        {projectStorages.length === 0 && (
-                                            <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">
-                                                No storages created yet
-                                            </div>
-                                        )}
-                                    </div>
-                                </ScrollArea>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>
-
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col">
                     {/* Header / Top Bar */}
                     <div className="flex items-center gap-2 p-2 h-12 border-b border-border bg-card/30">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSidebarOpen(true)}
-                            className="size-8 shrink-0"
-                        >
-                            <List weight="bold" size={18} />
-                        </Button>
-
-                        <Breadcrumb className="flex-1">
+                        <Breadcrumb className="flex-1 pl-2">
                             <BreadcrumbList>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink
-                                        onClick={() => setCurrentFolderId(null)}
-                                        className="cursor-pointer hover:text-foreground transition-colors"
-                                    >
-                                        {activeStorage?.name || "All Files"}
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
+                                <DroppableBreadcrumb id="root" name={activeStorage?.name || "All Files"} isCurrent={!currentFolderId} onClick={() => setCurrentFolderId(null)} />
 
                                 {breadcrumbs.map((folder, index) => (
                                     <div key={folder.id} className="flex items-center">
                                         <BreadcrumbSeparator />
-                                        <BreadcrumbItem>
-                                            <BreadcrumbLink
-                                                onClick={() => setCurrentFolderId(folder.id)}
-                                                className={cn(
-                                                    "cursor-pointer hover:text-foreground transition-colors",
-                                                    index === breadcrumbs.length - 1 && "text-foreground font-medium"
-                                                )}
-                                            >
-                                                {folder.name}
-                                            </BreadcrumbLink>
-                                        </BreadcrumbItem>
+                                        <DroppableBreadcrumb
+                                            id={folder.id}
+                                            name={folder.name}
+                                            isCurrent={index === breadcrumbs.length - 1}
+                                            onClick={() => setCurrentFolderId(folder.id)}
+                                        />
                                     </div>
                                 ))}
                             </BreadcrumbList>
                         </Breadcrumb>
 
                         <div className="flex items-center gap-1">
+                            <Button
+                                variant={selectionMode ? "secondary" : "ghost"}
+                                size="icon"
+                                className="size-8"
+                                title="Selection mode"
+                                onClick={toggleSelectionMode}
+                            >
+                                <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
+                            </Button>
                             <Button variant="ghost" size="icon" className="size-8" title="View as grid" onClick={() => setViewMode('grid')}>
                                 <GridFour weight={viewMode === 'grid' ? "fill" : "regular"} size={16} className={viewMode === 'grid' ? "text-primary" : ""} />
                             </Button>
@@ -310,19 +339,86 @@ export default function StorageView() {
                         </div>
                     </div>
 
+                    {/* Selection Toolbar */}
+                    <AnimatePresence>
+                        {selectionMode && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="border-b border-border bg-primary/5 overflow-hidden"
+                            >
+                                <div className="flex items-center gap-3 px-4 py-2">
+                                    <span className="text-sm font-medium text-primary">
+                                        {selectedIds.size} selected
+                                    </span>
+                                    <div className="flex-1" />
+                                    <Button variant="ghost" size="sm" onClick={selectAll} disabled={selectedIds.size === projectFiles.length}>
+                                        Select All
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={deselectAll} disabled={selectedIds.size === 0}>
+                                        Deselect All
+                                    </Button>
+                                    <div className="w-px h-5 bg-border" />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={() => setMoveDialogOpen(true)}
+                                        disabled={selectedIds.size === 0}
+                                    >
+                                        <ArrowSquareOut size={14} />
+                                        Move
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={deleteSelected}
+                                        disabled={selectedIds.size === 0}
+                                    >
+                                        <Trash size={14} />
+                                        Delete ({selectedIds.size})
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="size-7" onClick={toggleSelectionMode}>
+                                        <X size={16} />
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* File Grid/List */}
                     <div className="flex-1 overflow-auto p-4">
                         {viewMode === 'grid' ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 pb-20">
                                 {projectFiles.map(file => (
-                                    <FileCardGrid key={file.id} file={file} onNavigate={handleNavigateFolder} />
+                                    <FileCardGrid
+                                        key={file.id}
+                                        file={file}
+                                        onNavigate={handleNavigateFolder}
+                                        selectionMode={selectionMode}
+                                        isSelected={selectedIds.has(file.id)}
+                                        onToggleSelect={toggleSelectItem}
+                                        onRename={handleRenameInit}
+                                        onMove={handleMoveInit}
+                                    />
                                 ))}
                                 {projectFiles.length === 0 && <EmptyState />}
                             </div>
                         ) : (
                             <div className="space-y-1 pb-20">
                                 {projectFiles.map(file => (
-                                    <FileCardList key={file.id} file={file} onNavigate={handleNavigateFolder} />
+                                    <FileCardList
+                                        key={file.id}
+                                        file={file}
+                                        onNavigate={handleNavigateFolder}
+                                        selectionMode={selectionMode}
+                                        isSelected={selectedIds.has(file.id)}
+                                        onToggleSelect={toggleSelectItem}
+                                        onRename={handleRenameInit}
+                                        onMove={handleMoveInit}
+                                    />
                                 ))}
                                 {projectFiles.length === 0 && <EmptyState />}
                             </div>
@@ -340,6 +436,25 @@ export default function StorageView() {
                     open={newFolderOpen}
                     onOpenChange={setNewFolderOpen}
                     onSubmit={handleNewFolder}
+                />
+                <MoveFileDialog
+                    open={moveDialogOpen}
+                    onOpenChange={setMoveDialogOpen}
+                    fileIds={Array.from(selectedIds)}
+                />
+                <RenameFileDialog
+                    open={renameDialogOpen}
+                    onOpenChange={setRenameDialogOpen}
+                    onSubmit={handleRenameSubmit}
+                    initialName={fileToRename?.name || ""}
+                />
+                <EditFolderDialog
+                    open={editFolderOpen}
+                    onOpenChange={setEditFolderOpen}
+                    onSubmit={handleEditFolderSubmit}
+                    initialName={folderToEdit?.name || ""}
+                    initialColor={folderToEdit?.color}
+                    initialIcon={folderToEdit?.icon}
                 />
 
                 <DragOverlay>
@@ -360,18 +475,29 @@ function EmptyState() {
     );
 }
 
-function FileCardGrid({ file, onNavigate }: { file: File, onNavigate: (id: string) => void }) {
+interface FileCardProps {
+    file: File;
+    onNavigate: (id: string) => void;
+    selectionMode: boolean;
+    isSelected: boolean;
+    onToggleSelect: (id: string) => void;
+    onRename: (file: File) => void;
+    onMove: (file: File) => void;
+}
+
+function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove }: FileCardProps) {
     const Icon = getFileIcon(file.type);
     const linkTo = file.type === 'video' || file.type === 'pdf' ? `/file/${file.id}` : '#';
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: file.id,
-        data: file
+        data: file,
+        disabled: selectionMode,
     });
 
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
         id: file.id,
-        disabled: file.type !== 'folder',
+        disabled: file.type !== 'folder' || selectionMode,
         data: file
     });
 
@@ -382,6 +508,11 @@ function FileCardGrid({ file, onNavigate }: { file: File, onNavigate: (id: strin
     } : undefined;
 
     const handleClick = (e: React.MouseEvent) => {
+        if (selectionMode) {
+            e.preventDefault();
+            onToggleSelect(file.id);
+            return;
+        }
         if (file.type === 'folder') {
             e.preventDefault();
             onNavigate(file.id);
@@ -390,33 +521,50 @@ function FileCardGrid({ file, onNavigate }: { file: File, onNavigate: (id: strin
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+            <ContextMenuTrigger asChild disabled={selectionMode}>
+                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)}>
                     <div
                         ref={setDroppableRef}
                         onClick={handleClick}
                         className={cn(
                             "flex flex-col gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/50 transition-all duration-200 aspect-[4/3] relative group hover:shadow-lg hover:shadow-primary/5 cursor-pointer select-none",
-                            isOver && "ring-2 ring-primary bg-primary/10"
+                            isOver && "ring-2 ring-primary bg-primary/10",
+                            isSelected && "ring-2 ring-primary bg-primary/10 border-primary"
                         )}
                     >
-                        {file.type === 'video' || file.type === 'pdf' ? (
+                        {/* Selection checkbox */}
+                        {selectionMode && (
+                            <div className="absolute top-2 left-2 z-10">
+                                {isSelected ? (
+                                    <CheckSquare weight="fill" size={20} className="text-primary" />
+                                ) : (
+                                    <Square weight="regular" size={20} className="text-muted-foreground" />
+                                )}
+                            </div>
+                        )}
+
+                        {!selectionMode && (file.type === 'video' || file.type === 'pdf') ? (
                             <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => e.stopPropagation()} />
                         ) : null}
 
-                        <div className="flex-1 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors pointer-events-none">
-                            <Icon size={44} weight="light" />
+                        <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none">
+                            <FileThumbnail file={file} iconSize={44} />
                         </div>
                         <div className="text-xs font-medium truncate px-1 text-center pointer-events-none">{file.name}</div>
                     </div>
                 </div>
             </ContextMenuTrigger>
-            <FileContextMenu file={file} />
+            <FileContextMenu 
+                file={file} 
+                onRename={() => onRename(file)}
+                onMove={() => onMove(file)}
+                onSelect={() => onToggleSelect(file.id)}
+            />
         </ContextMenu>
     );
 }
 
-function FileCardList({ file, onNavigate }: { file: File, onNavigate: (id: string) => void }) {
+function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove }: FileCardProps) {
     const Icon = getFileIcon(file.type);
     const linkTo = file.type === 'video' || file.type === 'pdf' ? `/file/${file.id}` : '#';
     const dateStr = new Date(file.created).toLocaleDateString();
@@ -424,12 +572,13 @@ function FileCardList({ file, onNavigate }: { file: File, onNavigate: (id: strin
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: file.id,
-        data: file
+        data: file,
+        disabled: selectionMode,
     });
 
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
         id: file.id,
-        disabled: file.type !== 'folder',
+        disabled: file.type !== 'folder' || selectionMode,
         data: file
     });
 
@@ -440,6 +589,11 @@ function FileCardList({ file, onNavigate }: { file: File, onNavigate: (id: strin
     } : undefined;
 
     const handleClick = (e: React.MouseEvent) => {
+        if (selectionMode) {
+            e.preventDefault();
+            onToggleSelect(file.id);
+            return;
+        }
         if (file.type === 'folder') {
             e.preventDefault();
             onNavigate(file.id);
@@ -448,27 +602,35 @@ function FileCardList({ file, onNavigate }: { file: File, onNavigate: (id: strin
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+            <ContextMenuTrigger asChild disabled={selectionMode}>
+                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)}>
                     <div
                         ref={setDroppableRef}
                         onClick={handleClick}
                         className={cn(
                             "flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-md cursor-pointer select-none relative",
-                            isOver && "ring-2 ring-primary bg-primary/10"
+                            isOver && "ring-2 ring-primary bg-primary/10",
+                            isSelected && "ring-2 ring-primary bg-primary/10 border-primary"
                         )}
                     >
-                        {file.type === 'video' || file.type === 'pdf' ? (
+                        {/* Selection checkbox */}
+                        {selectionMode && (
+                            <div className="mr-2">
+                                {isSelected ? (
+                                    <CheckSquare weight="fill" size={20} className="text-primary" />
+                                ) : (
+                                    <Square weight="regular" size={20} className="text-muted-foreground" />
+                                )}
+                            </div>
+                        )}
+
+                        {!selectionMode && (file.type === 'video' || file.type === 'pdf') ? (
                             <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => e.stopPropagation()} />
                         ) : null}
 
                         {/* Thumbnail */}
                         <div className="w-16 h-12 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden pointer-events-none">
-                            {file.url && (file.type === 'video' || file.type === 'image') ? (
-                                <img src={file.url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                <Icon size={28} weight="light" className="text-muted-foreground" />
-                            )}
+                            <FileThumbnail file={file} iconSize={28} />
                         </div>
 
                         {/* Info */}
@@ -489,21 +651,24 @@ function FileCardList({ file, onNavigate }: { file: File, onNavigate: (id: strin
                     </div>
                 </div>
             </ContextMenuTrigger>
-            <FileContextMenu file={file} />
+            <FileContextMenu 
+                file={file} 
+                onRename={() => onRename(file)}
+                onMove={() => onMove(file)}
+                onSelect={() => onToggleSelect(file.id)}
+            />
         </ContextMenu>
     );
 }
 
-function FileContextMenu({ file }: { file: File }) {
-    const handleRename = () => {
-        const newName = prompt("Rename file:", file.name);
-        if (newName) {
-            useStore.setState(state => ({
-                files: state.files.map(f => f.id === file.id ? { ...f, name: newName, lastModified: Date.now() } : f)
-            }));
-        }
-    };
+interface FileContextMenuProps {
+    file: File;
+    onRename: () => void;
+    onMove: () => void;
+    onSelect: () => void;
+}
 
+function FileContextMenu({ file, onRename, onMove, onSelect }: FileContextMenuProps) {
     const handleDelete = () => {
         useStore.setState(state => ({
             files: state.files.map(f => f.id === file.id ? { ...f, deleted: true } : f)
@@ -514,18 +679,46 @@ function FileContextMenu({ file }: { file: File }) {
         if (file.url) navigator.clipboard.writeText(file.url);
     };
 
+    const handleShare = async () => {
+        if (file.url && navigator.share) {
+            try {
+                await navigator.share({
+                    title: file.name,
+                    url: file.url
+                });
+            } catch (err) {
+                // Ignore abort errors
+            }
+        } else {
+            handleCopyUrl();
+        }
+    };
+
+    const handleOpenInNewTab = () => {
+        if (file.url) {
+            window.open(file.url, '_blank');
+        }
+    };
+
     return (
-        <ContextMenuContent className="w-48">
-            <ContextMenuItem onClick={handleRename} className="gap-2">
+        <ContextMenuContent className="w-56">
+            <ContextMenuItem onClick={onSelect} className="gap-2">
+                <CheckSquare size={16} /> Select
+            </ContextMenuItem>
+            <ContextMenuItem onClick={onRename} className="gap-2">
                 <PencilSimple size={16} /> Rename
             </ContextMenuItem>
+            <ContextMenuItem onClick={onMove} className="gap-2">
+                <ArrowSquareOut size={16} /> Move to...
+            </ContextMenuItem>
+            <ContextMenuSeparator />
             <ContextMenuItem onClick={handleCopyUrl} className="gap-2">
                 <Copy size={16} /> Copy URL
             </ContextMenuItem>
-            <ContextMenuItem className="gap-2">
+            <ContextMenuItem onClick={handleShare} className="gap-2">
                 <Share size={16} /> Share
             </ContextMenuItem>
-            <ContextMenuItem className="gap-2">
+            <ContextMenuItem onClick={handleOpenInNewTab} className="gap-2">
                 <ArrowSquareOut size={16} /> Open in New Tab
             </ContextMenuItem>
             <ContextMenuSeparator />
@@ -539,7 +732,7 @@ function FileContextMenu({ file }: { file: File }) {
 function getFileIcon(type: string) {
     switch (type) {
         case 'folder': return Folder;
-        case 'video': return FilmStrip;
+        case 'video': return FileVideo;
         case 'pdf': return FilePdf;
         case 'audio': return MusicNote;
         case 'image': return Image;
@@ -556,4 +749,69 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
     // Default to video for streaming URLs (catbox, etc)
     if (lower.includes('catbox') || lower.includes('files.')) return 'video';
     return 'file';
+}
+
+function FileThumbnail({ file, iconSize }: { file: File, iconSize: number }) {
+    let Icon = getFileIcon(file.type);
+    let color: string | undefined = undefined;
+
+    if (file.type === 'folder') {
+        if (file.icon) {
+            const customIcon = ICONS.find(i => i.name === file.icon);
+            if (customIcon) Icon = customIcon.icon;
+        }
+        if (file.color) {
+            color = file.color;
+        }
+    }
+
+    const [error, setError] = useState(false);
+
+    if (error || !file.url) {
+        return <Icon size={iconSize} weight="regular" className="text-muted-foreground group-hover:text-primary transition-colors" style={color ? { color } : undefined} />;
+    }
+
+    if (file.type === 'image') {
+        return <img src={file.url} alt={file.name} className="w-full h-full object-cover" onError={() => setError(true)} />;
+    }
+
+    if (file.type === 'video') {
+        return (
+            <video
+                src={`${file.url}#t=0.1`}
+                className="w-full h-full object-cover"
+                preload="metadata"
+                muted
+                playsInline
+                onError={() => setError(true)}
+                onLoadedMetadata={(e) => {
+                    e.currentTarget.currentTime = 0.1;
+                }}
+            />
+        );
+    }
+
+    return <Icon size={iconSize} weight="regular" className="text-muted-foreground group-hover:text-primary transition-colors" />;
+}
+
+function DroppableBreadcrumb({ id, name, isCurrent, onClick }: { id: string, name: string, isCurrent: boolean, onClick: () => void }) {
+    const { setNodeRef, isOver } = useDroppable({
+        id: id,
+        data: { type: 'breadcrumb', id }
+    });
+
+    return (
+        <BreadcrumbItem ref={setNodeRef}>
+            <BreadcrumbLink
+                onClick={onClick}
+                className={cn(
+                    "cursor-pointer transition-colors px-2 py-1 rounded-md",
+                    isCurrent ? "text-foreground font-medium" : "hover:text-foreground",
+                    isOver && "bg-primary/20 text-primary" // Highlight on drag over
+                )}
+            >
+                {name}
+            </BreadcrumbLink>
+        </BreadcrumbItem>
+    );
 }

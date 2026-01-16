@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import {
     Dialog,
     DialogContent,
@@ -36,22 +37,7 @@ import {
 import { cn } from "@/lib/utils";
 import { type Collection } from "@/types";
 
-// Predefined Colors
-const COLORS = [
-    "#f59e0b", // Amber (Default)
-    "#ef4444", // Red
-    "#f97316", // Orange
-    "#84cc16", // Lime
-    "#10b981", // Emerald
-    "#06b6d4", // Cyan
-    "#3b82f6", // Blue
-    "#6366f1", // Indigo
-    "#8b5cf6", // Violet
-    "#d946ef", // Fuchsia
-    "#ec4899", // Pink
-    "#f43f5e", // Rose
-    "#71717a", // Zinc
-];
+
 
 // Predefined Icons
 const ICONS = [
@@ -88,7 +74,7 @@ interface CollectionFormProps {
     submitLabel: string;
 }
 
-function CollectionForm({ defaultName = "", defaultColor = COLORS[0], defaultIcon = "FolderPlus", onSubmit, onCancel, submitLabel }: CollectionFormProps) {
+function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], defaultIcon = "FolderPlus", onSubmit, onCancel, submitLabel }: CollectionFormProps) {
     const [name, setName] = useState(defaultName);
     const [color, setColor] = useState(defaultColor);
     const [iconName, setIconName] = useState(defaultIcon);
@@ -120,24 +106,11 @@ function CollectionForm({ defaultName = "", defaultColor = COLORS[0], defaultIco
                 />
             </div>
 
-            <div className="space-y-2">
-                <Label>Color</Label>
-                <div className="flex flex-wrap gap-2">
-                    {COLORS.map((c) => (
-                        <button
-                            key={c}
-                            type="button"
-                            onClick={() => setColor(c)}
-                            className={cn(
-                                "w-6 h-6 rounded-full transition-all border-2",
-                                color === c ? "border-white scale-110" : "border-transparent hover:scale-105"
-                            )}
-                            style={{ backgroundColor: c }}
-                            title={c}
-                        />
-                    ))}
-                </div>
-            </div>
+            <ColorPicker
+                color={color}
+                onChange={setColor}
+                label="Collection Color"
+            />
 
             <div className="space-y-2">
                 <Label>Icon</Label>

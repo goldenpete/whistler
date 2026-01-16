@@ -25,23 +25,33 @@ import {
     SpeakerHigh,
     SpeakerX,
     FilmStrip,
+    FilePdf,
     FolderPlus,
     Palette,
     Plus,
     Minus,
-    Repeat
+    Repeat,
+    Gauge,
+    ArrowsOutSimple,
+    GridFour,
+    CircleNotch
 } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
+import type { PDFPlayerHandle } from './PDFPlayer';
+import { SeekPreview } from './SeekPreview';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { ClipPlayerDialog, EditTimestampDialog } from "@/components/dialogs/TimestampDialogs";
+import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { type Timestamp } from "@/types";
 
 export default function VideoPlayer() {
     const { fileId } = useParams<{ fileId: string }>();
     const navigate = useNavigate();
-    const { files, timestamps, collections, addTimestamp, removeTimestamp, updateTimestamp, updateFile, activeCollectionId, activeProjectId } = useStore();
+    const { files, timestamps, collections, addTimestamp, removeTimestamp, updateTimestamp, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
+    const pdfRef = useRef<PDFPlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // State
@@ -51,17 +61,31 @@ export default function VideoPlayer() {
     const [volume, setVolume] = useState(1);
     const [isMuted, setIsMuted] = useState(false);
     const [showControls, setShowControls] = useState(true);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [editOpen, setEditOpen] = useState(false);
     const [isLooping, setIsLooping] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [enableSidebarAnimation, setEnableSidebarAnimation] = useState(false);
+    const [hasPdfSelection, setHasPdfSelection] = useState(false);
+
+    useEffect(() => {
+        // Enable sidebar animation after initial render
+        const timer = setTimeout(() => setEnableSidebarAnimation(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Timestamp Dialog State
     const [editTimestampOpen, setEditTimestampOpen] = useState(false);
     const [clipPlayerOpen, setClipPlayerOpen] = useState(false);
+    const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [returnToClipPlayer, setReturnToClipPlayer] = useState(false);
     const [selectedTimestampId, setSelectedTimestampId] = useState<string | null>(null);
+
+    // Seek Preview State
+    const [hoverTime, setHoverTime] = useState<number | null>(null);
+    const [hoverX, setHoverX] = useState(0);
+    const progressRef = useRef<HTMLDivElement>(null);
 
     const selectedTimestamp = timestamps.find(t => t.id === selectedTimestampId) || null;
 
@@ -77,6 +101,8 @@ export default function VideoPlayer() {
     if (!file) {
         return <div className="p-10 text-center text-zinc-500">Loading file...</div>;
     }
+
+    const isMediaFile = file.type === 'video' || file.type === 'audio';
 
     // Controls visibility timer
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -125,6 +151,7 @@ export default function VideoPlayer() {
     }
 
     const togglePlay = () => {
+        if (!isMediaFile) return;
         if (videoRef.current) {
             if (videoRef.current.paused) {
                 videoRef.current.play();
@@ -134,12 +161,61 @@ export default function VideoPlayer() {
         }
     };
 
+    const [isCollectionMode, setIsCollectionMode] = useState(false);
+
     const handleTimeUpdate = () => {
-        if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+        if (videoRef.current) {
+            const time = videoRef.current.currentTime;
+            setCurrentTime(time);
+
+            // Collection Mode Logic
+            if (isCollectionMode && isPlaying) {
+                const relevantTimestamps = activeCollectionId
+                    ? fileTimestamps.filter((t: any) => t.collectionId === activeCollectionId)
+                    : fileTimestamps;
+
+                if (relevantTimestamps.length > 0) {
+                    const sorted = [...relevantTimestamps].sort((a: any, b: any) => a.start - b.start);
+
+                    // Check if we are inside a segment
+                    const currentSegment = sorted.find((t: any) => time >= t.start && time <= (t.end || t.start + 5));
+
+                    if (!currentSegment) {
+                        // Not in a segment, find next one
+                        const nextSegment = sorted.find((t: any) => t.start > time);
+                        if (nextSegment) {
+                            videoRef.current.currentTime = nextSegment.start;
+                        } else {
+                            // End of all segments
+                            if (isLooping) {
+                                videoRef.current.currentTime = sorted[0].start;
+                            } else {
+                                videoRef.current.pause();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Save progress every 2 seconds roughly
+            if (file && Math.abs(time - (fileProgress[file.id] || 0)) > 2) {
+                setFileProgress(file.id, time);
+            }
+        }
     };
 
+    // ... existing ...
+
+
+
     const handleLoadedMetadata = () => {
-        if (videoRef.current) setDuration(videoRef.current.duration);
+        if (videoRef.current) {
+            setDuration(videoRef.current.duration);
+            // Restore progress
+            if (file && fileProgress[file.id]) {
+                videoRef.current.currentTime = fileProgress[file.id];
+            }
+        }
     };
 
     const handleClose = () => {
@@ -159,7 +235,9 @@ export default function VideoPlayer() {
     };
 
     const seekToTimestamp = (time: number) => {
-        if (videoRef.current) {
+        if (file?.type === 'pdf') {
+            pdfRef.current?.jumpToPage(time);
+        } else if (videoRef.current) {
             videoRef.current.currentTime = time;
             videoRef.current.play();
         }
@@ -180,11 +258,13 @@ export default function VideoPlayer() {
         }
     };
 
-    const togglePip = async () => {
-        if (document.pictureInPictureElement) {
-            await document.exitPictureInPicture();
-        } else if (videoRef.current) {
-            await videoRef.current.requestPictureInPicture();
+    const handleTogglePip = () => {
+        if (file) {
+            if (videoRef.current) {
+                setFileProgress(file.id, videoRef.current.currentTime);
+            }
+            setPipFile(file.id);
+            navigate(-1);
         }
     };
 
@@ -209,23 +289,51 @@ export default function VideoPlayer() {
 
     const handleAddTimestamp = () => {
         if (!fileId) return;
+
+        if (file.type === 'pdf') {
+            pdfRef.current?.addHighlightFromSelection();
+            return;
+        }
+
         addTimestamp(fileId, currentTime, activeCollectionId || undefined);
+    };
+
+    const handleSeekHover = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!progressRef.current || !file || (file.type !== 'video' && file.type !== 'audio')) return;
+
+        const rect = progressRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = Math.max(0, Math.min(1, x / rect.width));
+        const time = percentage * duration;
+
+        setHoverTime(time);
+        setHoverX(x);
     };
 
     return (
         <div ref={containerRef} className="flex h-full w-full bg-black overflow-hidden relative">
 
             {/* Player Container (Top Bar + Stage + Bottom Bar) */}
-            <div className="flex-1 flex flex-col relative min-w-0 group">
+            <motion.div
+                key={fileId}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="flex-1 flex flex-col relative min-w-0 group"
+            >
 
                 {/* Top Bar */}
                 <div className={cn(
-                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/90 via-black/60 to-transparent transition-opacity duration-300",
+                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-opacity duration-300",
                     showControls ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}>
                     {/* Left: Info */}
                     <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
-                        <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                        {file.type === 'pdf' ? (
+                            <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                        ) : (
+                            <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                        )}
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 group/edit cursor-pointer" onClick={() => setEditOpen(true)}>
                                 <h1 className="text-white font-medium text-base truncate">{file.name}</h1>
@@ -256,7 +364,7 @@ export default function VideoPlayer() {
 
                         <div className="flex items-center gap-1">
                             {/* File Management Buttons - Placeholders for now */}
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => alert('Move feature coming soon')}>
+                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => setMoveDialogOpen(true)}>
                                 <FolderPlus size={20} weight="bold" />
                             </Button>
                             <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Change Color" onClick={() => alert('Color feature coming soon')}>
@@ -276,12 +384,25 @@ export default function VideoPlayer() {
                 </div>
 
                 {/* Video/PDF Stage */}
-                <div className="flex-1 flex items-center justify-center bg-black relative overflow-hidden" onClick={togglePlay}>
+                <div
+                    className="flex-1 flex items-center justify-center bg-black relative overflow-hidden"
+                    onClick={isMediaFile ? togglePlay : undefined}
+                >
+                    {/* Loading Spinner (only for media files) */}
+                    {isMediaFile && isLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50 pointer-events-none">
+                            <CircleNotch className="animate-spin text-white/50" size={48} />
+                        </div>
+                    )}
+
                     {file.type === 'pdf' ? (
                         <div className="absolute inset-0 z-10 p-8">
                             <PDFPlayer
+                                ref={pdfRef}
                                 url={file.url || ""}
+                                fileId={file.id}
                                 onPageChange={() => { }}
+                                onSelectionChange={setHasPdfSelection}
                             />
                         </div>
                     ) : (
@@ -289,84 +410,120 @@ export default function VideoPlayer() {
                             ref={videoRef}
                             src={file.url || ""}
                             className="max-w-full max-h-full object-contain focus:outline-none"
-                            onPlay={() => setIsPlaying(true)}
+                            autoPlay
+                            onWaiting={() => setIsLoading(true)}
+                            onCanPlay={() => setIsLoading(false)}
+                            onPlay={() => {
+                                setIsPlaying(true);
+                                setIsLoading(false);
+                            }}
                             onPause={() => setIsPlaying(false)}
                             onTimeUpdate={handleTimeUpdate}
                             onLoadedMetadata={handleLoadedMetadata}
-                            onClick={(e) => e.stopPropagation()}
                             loop={isLooping}
                         />
                     )}
                 </div>
 
-                {/* Bottom Bar */}
-                <div className={cn(
-                    "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent transition-opacity duration-300 z-30 pb-4 pt-8 px-4",
-                    showControls ? "opacity-100" : "opacity-0 pointer-events-none"
-                )}>
-                    {/* Seekbar Row */}
-                    <div className="mb-4 px-2 group/seek">
-                        <Slider
-                            value={[currentTime]}
-                            max={duration}
-                            step={0.1}
-                            onValueChange={handleSeek}
-                            className="cursor-pointer"
-                        />
-                    </div>
+                {/* Bottom Bar (only for media files) */}
+                {isMediaFile && (
+                    <div
+                        className={cn(
+                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-30 pb-4 pt-8 px-4",
+                            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                        )}
+                    >
+                        {/* Seekbar Row */}
+                        <div
+                            className="mb-4 px-2 group/seek relative"
+                            ref={progressRef}
+                            onMouseMove={handleSeekHover}
+                            onMouseLeave={() => setHoverTime(null)}
+                        >
+                            {/* Timestamp Markers */}
+                            <div className="absolute top-0 bottom-0 left-2 right-2 pointer-events-none z-10">
+                                {fileTimestamps.map((ts: any) => {
+                                    const collection = collections.find(c => c.id === ts.collectionId);
+                                    const color = collection ? collection.color : '#f59e0b';
+                                    return (
+                                        <div
+                                            key={ts.id}
+                                            className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full opacity-60"
+                                            style={{
+                                                left: `${(ts.start / duration) * 100}%`,
+                                                backgroundColor: color
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </div>
 
-                    {/* Controls Row */}
-                    <div className="flex items-center justify-between px-2">
-                        {/* Left: Play/Pause, Volume */}
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={togglePlay}
-                                className="bg-white/10 hover:bg-white/20 text-white rounded-full size-10 backdrop-blur-sm"
-                            >
-                                {isPlaying ? <Pause weight="fill" size={20} /> : <Play weight="fill" size={20} />}
-                            </Button>
+                            <SeekPreview
+                                file={file}
+                                time={hoverTime}
+                                x={hoverX}
+                                visible={hoverTime !== null}
+                            />
+                            <Slider
+                                value={[currentTime]}
+                                max={duration}
+                                step={0.1}
+                                onValueChange={handleSeek}
+                                className="cursor-pointer"
+                            />
+                        </div>
 
-                            <div className="flex items-center gap-2 group/vol">
+                        {/* Controls Row */}
+                        <div className="flex items-center justify-between px-2">
+                            {/* Left: Play/Pause, Volume */}
+                            <div className="flex items-center gap-4">
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => setIsMuted(!isMuted)}
-                                    className="text-zinc-400 hover:text-white"
+                                    onClick={togglePlay}
+                                    className="bg-white/10 hover:bg-white/20 text-white rounded-full size-10 backdrop-blur-sm"
                                 >
-                                    {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
+                                    {isPlaying ? <Pause weight="fill" size={20} /> : <Play weight="fill" size={20} />}
                                 </Button>
-                                <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200">
-                                    <Slider
-                                        value={[isMuted ? 0 : volume]}
-                                        max={1}
-                                        step={0.05}
-                                        onValueChange={(val) => setVolume(val[0])}
-                                    />
+
+                                <div className="flex items-center gap-2 group/vol">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsMuted(!isMuted)}
+                                        className="text-zinc-400 hover:text-white"
+                                    >
+                                        {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
+                                    </Button>
+                                    <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200">
+                                        <Slider
+                                            value={[isMuted ? 0 : volume]}
+                                            max={1}
+                                            step={0.05}
+                                            onValueChange={(val) => setVolume(val[0])}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Center: Time Display */}
-                        <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none">
-                            {formatTime(currentTime)} <span className="text-white/40 mx-2">/</span> {formatTime(duration)}
-                        </div>
+                            {/* Center: Time Display */}
+                            <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none">
+                                {formatTime(currentTime)} <span className="text-white/40 mx-2">/</span> {formatTime(duration)}
+                            </div>
 
-                        {/* Right: Speed, PiP, Sidebar Toggle, Fullscreen */}
-                        <div className="flex items-center gap-2">
-                            {/* Loop Toggle */}
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => setIsLooping(!isLooping)}
-                                className={cn("text-zinc-400 hover:text-white", isLooping && "text-amber-500 hover:text-amber-400")}
-                                title={isLooping ? "Loop On" : "Loop Off"}
-                            >
-                                <Repeat weight="bold" size={20} />
-                            </Button>
+                            {/* Right: Speed, PiP, Sidebar Toggle, Fullscreen */}
+                            <div className="flex items-center gap-3">
+                                {/* Loop Toggle */}
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => setIsLooping(!isLooping)}
+                                    className={cn("text-zinc-400 hover:text-white", isLooping && "text-amber-500 hover:text-amber-400")}
+                                    title={isLooping ? "Loop On" : "Loop Off"}
+                                >
+                                    <Repeat weight="bold" size={20} />
+                                </Button>
 
-                            <div className="flex items-center mr-2">
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
@@ -417,114 +574,145 @@ export default function VideoPlayer() {
                                         </div>
                                     </PopoverContent>
                                 </Popover>
+
+                                <Button variant="ghost" size="icon" onClick={handleTogglePip} className="text-zinc-400 hover:text-white" title="Picture in Picture">
+                                    <GridFour weight="bold" size={20} />
+                                </Button>
+
+                                <div className="w-px h-5 bg-white/20 mx-1" />
+
+                                <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className={cn("text-zinc-400 hover:text-white", sidebarOpen && "text-amber-500 hover:text-amber-400")}>
+                                    <SidebarSimple weight="bold" size={20} />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-zinc-400 hover:text-white">
+                                    {isFullscreen ? <CornersIn weight="bold" size={20} /> : <CornersOut weight="bold" size={20} />}
+                                </Button>
                             </div>
-
-                            <Button variant="ghost" size="icon" onClick={togglePip} className="text-zinc-400 hover:text-white" title="Picture in Picture">
-                                <ArrowSquareOut weight="bold" size={20} />
-                            </Button>
-
-                            <div className="w-px h-5 bg-white/20 mx-1" />
-
-                            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className={cn("text-zinc-400 hover:text-white", sidebarOpen && "text-amber-500 hover:text-amber-400")}>
-                                <SidebarSimple weight="bold" size={20} />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-zinc-400 hover:text-white">
-                                {isFullscreen ? <CornersIn weight="bold" size={20} /> : <CornersOut weight="bold" size={20} />}
-                            </Button>
                         </div>
                     </div>
-                </div>
-            </div>
+                )}
+            </motion.div>
 
             {/* Sidebar (Full Height, Sibling to Player Container) */}
-            {sidebarOpen && (
-                <div className="w-80 bg-zinc-900 border-l border-white/10 flex flex-col shrink-0 z-20">
-                    <div className="p-4 border-b border-white/10 bg-zinc-900/50 backdrop-blur-md flex items-center justify-between">
-                        <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Timestamps</h3>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-amber-500" onClick={handleAddTimestamp} title="Add Timestamp">
-                            <Plus weight="bold" size={14} />
-                        </Button>
-                        {/* Close button for sidebar specifically if needed, likely handled by toggle above though */}
-                    </div>
-                    <ScrollArea className="flex-1 w-full">
-                        {fileTimestamps.length === 0 ? (
-                            <div className="text-zinc-500 text-xs text-center mt-4">No timestamps yet.</div>
-                        ) : (
-                            fileTimestamps.map((ts: any) => {
-                                const collection = collections.find(c => c.id === ts.collectionId);
-                                const borderColor = collection ? collection.color : 'transparent';
-                                const collectionName = collection ? collection.name : null;
+            <AnimatePresence>
+                {sidebarOpen && (
+                    <motion.div
+                        initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
+                        animate={{ width: 320, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="bg-zinc-900 border-l border-white/10 flex flex-col shrink-0 z-20 overflow-hidden"
+                    >
+                        <div className="w-80 flex flex-col h-full">
+                            <div className="p-4 border-b border-white/10 bg-zinc-900/50 backdrop-blur-md flex items-center justify-between">
+                                <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 text-zinc-400 hover:text-amber-500 disabled:opacity-30 disabled:hover:text-zinc-400" 
+                                    onClick={handleAddTimestamp} 
+                                    title="Add Highlight"
+                                    disabled={file.type === 'pdf' && !hasPdfSelection}
+                                >
+                                    <Plus weight="bold" size={14} />
+                                </Button>
+                            </div>
+                            <ScrollArea className="flex-1 w-full">
+                                {fileTimestamps.length === 0 ? (
+                                    <div className="text-zinc-500 text-xs text-center mt-4">No highlights yet.</div>
+                                ) : (
+                                    fileTimestamps.map((ts: any) => {
+                                        const collection = collections.find(c => c.id === ts.collectionId);
+                                        const borderColor = collection ? collection.color : 'transparent';
+                                        const collectionName = collection ? collection.name : null;
 
-                                return (
-                                    <div
-                                        key={ts.id}
-                                        className="group flex flex-col gap-1.5 p-2 rounded-none hover:bg-white/5 border-l-4 transition-all relative"
-                                        style={{ borderLeftColor: borderColor }}
-                                    >
-                                        {/* Header Row: Time + Collection + Controls */}
-                                        <div className="flex items-center justify-between gap-2 h-6">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <button
-                                                    className="text-amber-500 font-mono text-xs bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-amber-500 hover:text-black transition-colors"
-                                                    onClick={() => seekToTimestamp(ts.start)}
-                                                >
-                                                    {formatTime(ts.start)} - {formatTime(ts.end || ts.start + 5)}
-                                                </button>
-                                                {collectionName && (
-                                                    <span className="text-xs font-semibold truncate uppercase tracking-tight" style={{ color: collection?.color }}>
-                                                        {collectionName}
-                                                    </span>
+                                        return (
+                                            <div
+                                                key={ts.id}
+                                                className="group flex flex-col gap-1.5 p-2 rounded-none hover:bg-white/5 border-l-4 transition-all relative"
+                                                style={{ borderLeftColor: borderColor }}
+                                            >
+                                                {/* Header Row: Time + Collection + Controls */}
+                                                <div className="flex items-center justify-between gap-2 h-6">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <button
+                                                            className="text-amber-500 font-mono text-xs bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-amber-500 hover:text-black transition-colors"
+                                                            onClick={() => seekToTimestamp(ts.start)}
+                                                        >
+                                                            {file.type === 'pdf' 
+                                                                ? `Page ${ts.start}`
+                                                                : `${formatTime(ts.start)} - ${formatTime(ts.end || ts.start + 5)}`
+                                                            }
+                                                        </button>
+                                                        {collectionName && (
+                                                            <span className="text-xs font-semibold truncate uppercase tracking-tight" style={{ color: collection?.color }}>
+                                                                {collectionName}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {file.type !== 'pdf' && (
+                                                            <button
+                                                                className="p-1 px-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded flex items-center gap-1"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedTimestampId(ts.id);
+                                                                    setClipPlayerOpen(true);
+                                                                }}
+                                                                title="Open Clip"
+                                                            >
+                                                                <Play weight="fill" size={10} />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            className="p-1 text-zinc-400 hover:text-white hover:bg-white/10 rounded"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedTimestampId(ts.id);
+                                                                setEditTimestampOpen(true);
+                                                            }}
+                                                            title="Edit Timestamp"
+                                                        >
+                                                            <PencilSimple weight="bold" size={12} />
+                                                        </button>
+                                                        <button
+                                                            className="p-1 text-zinc-400 hover:text-red-400 hover:bg-white/10 rounded"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removeTimestamp(ts.id);
+                                                            }}
+                                                            title="Delete Timestamp"
+                                                        >
+                                                            <Trash weight="bold" size={12} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {file.type === 'pdf' && ts.text && (
+                                                    <div className="text-zinc-200 text-xs whitespace-pre-wrap break-all pl-1 leading-snug">
+                                                        {ts.text}
+                                                    </div>
                                                 )}
+                                                <div className="text-zinc-300 text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
+                                                    {ts.note || <span className="text-zinc-500 italic text-xs">No note</span>}
+                                                </div>
                                             </div>
+                                        );
+                                    })
+                                )}
+                            </ScrollArea>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                                            {/* Action Buttons */}
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    className="p-1 px-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded flex items-center gap-1"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedTimestampId(ts.id);
-                                                        setClipPlayerOpen(true);
-                                                    }}
-                                                    title="Open Clip"
-                                                >
-                                                    <Play weight="fill" size={10} />
-                                                </button>
-                                                <button
-                                                    className="p-1 text-zinc-400 hover:text-white hover:bg-white/10 rounded"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedTimestampId(ts.id);
-                                                        setEditTimestampOpen(true);
-                                                    }}
-                                                    title="Edit Timestamp"
-                                                >
-                                                    <PencilSimple weight="bold" size={12} />
-                                                </button>
-                                                <button
-                                                    className="p-1 text-zinc-400 hover:text-red-400 hover:bg-white/10 rounded"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        removeTimestamp(ts.id);
-                                                    }}
-                                                    title="Delete Timestamp"
-                                                >
-                                                    <Trash weight="bold" size={12} />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Note Row - Below Header */}
-                                        <div className="text-zinc-300 text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed">
-                                            {ts.note || <span className="text-zinc-500 italic text-xs">No note</span>}
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </ScrollArea>
-                </div>
-            )}
+            <MoveFileDialog
+                open={moveDialogOpen}
+                onOpenChange={setMoveDialogOpen}
+                fileIds={fileId ? [fileId] : []}
+            />
 
             <EditFileDialog
                 open={editOpen}
@@ -559,6 +747,7 @@ export default function VideoPlayer() {
                 }}
                 timestamp={selectedTimestamp}
                 collections={collections}
+                file={file || null}
                 onSave={(updates) => {
                     if (selectedTimestamp) {
                         updateTimestamp(selectedTimestamp.id, updates);

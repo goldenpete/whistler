@@ -13,7 +13,10 @@ import {
     MagnifyingGlass,
     FilePdf,
     MusicNote,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
+    Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
+    FileText, Book
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -28,6 +31,33 @@ import {
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import type { Timestamp } from "@/types";
+
+const getIcon = (name?: string) => {
+    switch (name) {
+        case "FolderPlus": return Folder;
+        case "Star": return Star;
+        case "Heart": return Heart;
+        case "Flag": return Flag;
+        case "Tag": return Tag;
+        case "Bookmark": return Bookmark;
+        case "Briefcase": return Briefcase;
+        case "House": return House;
+        case "User": return User;
+        case "Users": return Users;
+        case "Planet": return Planet;
+        case "Rocket": return Rocket;
+        case "Code": return Code;
+        case "Cpu": return Cpu;
+        case "Database": return Database;
+        case "GameController": return GameController;
+        case "MusicNotes": return MusicNotes;
+        case "Image": return Image;
+        case "FilmStrip": return FilmStrip;
+        case "FileText": return FileText;
+        case "Book": return Book;
+        default: return Folder;
+    }
+};
 
 export default function CollectionView() {
     const {
@@ -95,13 +125,15 @@ export default function CollectionView() {
         }
     };
 
+    const CollectionIcon = getIcon(activeCollection?.icon);
+
     return (
         <div className="flex flex-col h-full bg-background text-foreground">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border bg-card/30">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary">
-                        <FolderPlus weight="fill" size={24} style={{ color: activeCollection?.color }} />
+                        <CollectionIcon weight="fill" size={24} style={{ color: activeCollection?.color }} />
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold leading-none">{activeCollection?.name || "Collection"}</h1>
@@ -225,7 +257,7 @@ export default function CollectionView() {
 
                     {collectionTimestamps.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground opacity-50">
-                            <FolderPlus size={64} weight="thin" />
+                            <CollectionIcon size={64} weight="thin" />
                             <p className="mt-4 text-sm font-medium">No clips in this collection</p>
                             <p className="text-xs">Add clips from the video player</p>
                         </div>

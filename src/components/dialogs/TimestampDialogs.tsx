@@ -289,7 +289,6 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                 <div className="p-4 bg-zinc-900 border-t border-white/10 flex flex-col gap-2 shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            {/* Timestamp Range Pill (Legacy Style) */}
                             <button
                                 className="text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
                                 onClick={() => {
@@ -321,7 +320,6 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                                 {isMaximized ? <ArrowsIn weight="bold" size={14} /> : <ArrowsOut weight="bold" size={14} />}
                             </Button>
 
-                            {/* Edit Toggle */}
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -329,7 +327,7 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                                 onClick={() => {
                                     if (onEditTimestamp) onEditTimestamp();
                                 }}
-                                title="Edit Timestamp"
+                                title="Edit Highlight"
                             >
                                 <PencilSimple weight="bold" size={14} />
                             </Button>
@@ -350,7 +348,7 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
     );
 }
 
-// --- Edit Timestamp Dialog ---
+// --- Edit Highlight Dialog ---
 
 interface EditTimestampDialogProps {
     open: boolean;
@@ -358,24 +356,43 @@ interface EditTimestampDialogProps {
     timestamp: Timestamp | null;
     collections: Collection[];
     onSave: (updates: Partial<Timestamp>) => void;
+    file: File | null;
 }
 
-export function EditTimestampDialog({ open, onOpenChange, timestamp, collections, onSave }: EditTimestampDialogProps) {
+export function EditTimestampDialog({ open, onOpenChange, timestamp, collections, onSave, file }: EditTimestampDialogProps) {
     const [note, setNote] = useState("");
     const [startStr, setStartStr] = useState("");
     const [endStr, setEndStr] = useState("");
     const [collectionId, setCollectionId] = useState<string | null>("null");
+    const [highlightText, setHighlightText] = useState("");
 
     useEffect(() => {
         if (open && timestamp) {
             setNote(timestamp.note || "");
-            setStartStr(formatTime(timestamp.start));
-            setEndStr(formatTime(timestamp.end || timestamp.start)); // Fallback
             setCollectionId(timestamp.collectionId || "null");
+
+            if (file?.type === 'pdf') {
+                setHighlightText(timestamp.text || "");
+                setStartStr("");
+                setEndStr("");
+            } else {
+                setStartStr(formatTime(timestamp.start));
+                setEndStr(formatTime(timestamp.end || timestamp.start));
+                setHighlightText("");
+            }
         }
-    }, [open, timestamp]);
+    }, [open, timestamp, file]);
 
     const handleSave = () => {
+        if (file?.type === 'pdf') {
+            onSave({
+                note,
+                collectionId: collectionId === "null" ? null : collectionId
+            });
+            onOpenChange(false);
+            return;
+        }
+
         const start = parseTime(startStr);
         const end = parseTime(endStr);
 
@@ -404,7 +421,7 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[400px] bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                    <DialogTitle>Edit Timestamp</DialogTitle>
+                    <DialogTitle>Edit Highlight</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
@@ -415,24 +432,33 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
                             className="bg-zinc-900 border-zinc-800 focus:border-amber-500/50"
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    {file?.type === 'pdf' ? (
                         <div className="grid gap-2">
-                            <Label>Start</Label>
-                            <Input
-                                value={startStr}
-                                onChange={(e) => setStartStr(e.target.value)}
-                                className="bg-zinc-900 border-zinc-800 font-mono text-center"
-                            />
+                            <Label>Selected Text</Label>
+                            <div className="w-full bg-zinc-900 border border-zinc-800 text-sm text-zinc-100 rounded px-2 py-1.5 whitespace-pre-wrap max-h-40 overflow-auto">
+                                {highlightText}
+                            </div>
                         </div>
-                        <div className="grid gap-2">
-                            <Label>End</Label>
-                            <Input
-                                value={endStr}
-                                onChange={(e) => setEndStr(e.target.value)}
-                                className="bg-zinc-900 border-zinc-800 font-mono text-center"
-                            />
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Start</Label>
+                                <Input
+                                    value={startStr}
+                                    onChange={(e) => setStartStr(e.target.value)}
+                                    className="bg-zinc-900 border-zinc-800 font-mono text-center"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>End</Label>
+                                <Input
+                                    value={endStr}
+                                    onChange={(e) => setEndStr(e.target.value)}
+                                    className="bg-zinc-900 border-zinc-800 font-mono text-center"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
                     <div className="grid gap-2">
                         <Label>Collection</Label>
                         <Select value={collectionId || "null"} onValueChange={setCollectionId}>

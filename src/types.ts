@@ -13,6 +13,8 @@ export interface File {
     parentId: string | null;
     name: string;
     description?: string;
+    color?: string;
+    icon?: string;
     url: string | null;
     type: 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image';
     order: number;
@@ -41,6 +43,7 @@ export interface Timestamp {
     end: number;
     note: string;
     text?: string | null; // For PDF text selection
+    pdfRange?: { start: number; end: number } | null; // Start and end character index on the page
     created: number;
 }
 
@@ -48,6 +51,8 @@ export interface Graph {
     id: string;
     projectId: string;
     name: string;
+    color?: string;
+    icon?: string;
     created: number;
     lastModified?: number;
     deleted?: boolean;
@@ -59,6 +64,7 @@ export interface GraphNode {
     type: 'file' | 'collection' | 'timestamp' | 'link' | 'note';
     title: string;
     color: string;
+    icon?: string;
     x: number;
     y: number;
     linkedId?: string | null;
@@ -88,9 +94,22 @@ export interface Storage {
     id: string;
     projectId: string;
     name: string;
+    color?: string;
+    icon?: string;
     created: number;
     lastModified?: number;
     deleted?: boolean;
+}
+
+export interface HistoryEntry {
+    id: string;
+    projectId: string; // Global or specific project? Actions are usually project-scoped
+    action: 'create' | 'update' | 'delete' | 'restore';
+    entityType: 'file' | 'collection' | 'timestamp' | 'project' | 'graph' | 'doc';
+    entityId: string;
+    entityName?: string;
+    details?: string;
+    timestamp: number;
 }
 
 export interface AppState {
@@ -103,10 +122,21 @@ export interface AppState {
     graphEdges: GraphEdge[];
     docs: Doc[];
     storages: Storage[];
+    history: HistoryEntry[]; // Added
 
     activeProjectId: string | null;
     activeStorageId: string | null;
     activeCollectionId: string | null;
     activeGraphId: string | null;
     activeDocId: string | null;
+
+    // PiP State
+    pipFileId: string | null;
+    isPipOpen: boolean;
+
+    // Playback State
+    fileProgress: Record<string, number>; // fileId -> seconds
+
+    // UI Preferences
+    docViewMode?: 'page' | 'pageless' | 'pageless-wide';
 }
