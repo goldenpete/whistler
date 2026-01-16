@@ -22,6 +22,7 @@ declare global {
         onTurnstileExpired?: () => void;
         turnstile?: {
             reset: (container?: string | HTMLElement) => void;
+            render: (container: string | HTMLElement, options: any) => string;
         };
     }
 }
@@ -264,6 +265,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         graphEdges: cloudData.graphEdges || [],
                         docs: cloudData.docs || [],
                         storages: cloudData.storages || [],
+                        history: cloudData.history || [],
                     });
                 }
             }
@@ -399,7 +401,8 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         </div>
                         <div className="flex justify-center">
                             <div
-                                className="cf-turnstile"
+                                id="turnstile-container"
+                                className="cf-turnstile min-h-[65px]"
                                 data-sitekey={TURNSTILE_SITE_KEY}
                                 data-theme="dark"
                                 data-callback="onTurnstileSuccess"

@@ -93,7 +93,7 @@ export default function Sidebar() {
     const [createStorageOpen, setCreateStorageOpen] = useState(false);
     const [sidebarView, setSidebarView] = useState<'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync'>('main');
     
-    // Sync view with location
+    // Sync view with location (only on mount to respect user navigation preference)
     useEffect(() => {
         if (location.pathname === '/storage' || location.pathname === '/') {
             setSidebarView('storage');
@@ -102,14 +102,10 @@ export default function Sidebar() {
         } else if (location.pathname.startsWith('/graphs')) {
             setSidebarView('graphs');
         } else {
-             // Don't force 'main' if we are in history or trash mode and path hasn't changed to a specific view
-             // But simpler logic: if path is NOT storage/docs/graphs, default to main UNLESS we manually set history/trash?
-             // The effect runs on pathname change. If pathname changes to something generic, we might want main.
-             // But if I just clicked History (no path change), effect doesn't run.
-             // If I navigate to '/', it sets storage.
              setSidebarView('main');
         }
-    }, [location.pathname]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Edit State
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
