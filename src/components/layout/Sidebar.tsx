@@ -577,23 +577,22 @@ export default function Sidebar() {
                                                 exit={!isSidebarCollapsed ? { height: 0, opacity: 0 } : undefined}
                                                 className={cn("flex gap-1 overflow-hidden", isSidebarCollapsed ? "flex-col space-y-2" : "flex-row")}
                                             >
-                                                <Link
-                                                    to="/storage"
-                                                    onClick={(e) => {
+                                                <button
+                                                    onClick={() => {
                                                         if (isSidebarCollapsed) {
-                                                            e.preventDefault();
                                                             toggleSidebarCollapse && toggleSidebarCollapse();
                                                             return;
                                                         }
                                                         if (location.pathname === '/storage') {
                                                             setSidebarView('storage');
                                                         } else {
+                                                            navigate('/storage');
                                                             setSidebarView('main');
                                                         }
                                                     }}
                                                     title="Storage"
                                                     className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative",
+                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer",
                                                         isSidebarCollapsed
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
@@ -603,25 +602,24 @@ export default function Sidebar() {
                                                     )}
                                                 >
                                                     <HardDrives weight={(location.pathname === "/storage" || location.pathname === "/") ? "fill" : "regular"} size={20} className="transition-transform group-hover:scale-110" />
-                                                </Link>
+                                                </button>
 
-                                                <Link
-                                                    to="/docs"
-                                                    onClick={(e) => {
+                                                <button
+                                                    onClick={() => {
                                                         if (isSidebarCollapsed) {
-                                                            e.preventDefault();
                                                             toggleSidebarCollapse && toggleSidebarCollapse();
                                                             return;
                                                         }
                                                         if (location.pathname.startsWith('/docs')) {
                                                             setSidebarView('docs');
                                                         } else {
+                                                            navigate('/docs');
                                                             setSidebarView('main');
                                                         }
                                                     }}
                                                     title="Docs"
                                                     className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative",
+                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer",
                                                         isSidebarCollapsed
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
@@ -631,25 +629,24 @@ export default function Sidebar() {
                                                     )}
                                                 >
                                                     <NotePencil weight={location.pathname.startsWith("/docs") ? "fill" : "regular"} size={20} className="transition-transform group-hover:scale-110" />
-                                                </Link>
+                                                </button>
 
-                                                <Link
-                                                    to="/graphs"
-                                                    onClick={(e) => {
+                                                <button
+                                                    onClick={() => {
                                                         if (isSidebarCollapsed) {
-                                                            e.preventDefault();
                                                             toggleSidebarCollapse && toggleSidebarCollapse();
                                                             return;
                                                         }
                                                         if (location.pathname.startsWith('/graphs')) {
                                                             setSidebarView('graphs');
                                                         } else {
+                                                            navigate('/graphs');
                                                             setSidebarView('main');
                                                         }
                                                     }}
                                                     title="Graphs"
                                                     className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative",
+                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer",
                                                         isSidebarCollapsed
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
@@ -659,7 +656,7 @@ export default function Sidebar() {
                                                     )}
                                                 >
                                                     <Graph weight={location.pathname.startsWith("/graphs") ? "fill" : "regular"} size={20} className="transition-transform group-hover:scale-110" />
-                                                </Link>
+                                                </button>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>

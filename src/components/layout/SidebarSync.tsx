@@ -390,7 +390,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     value={syncId}
                                     onChange={(e) => setSyncId(formatAccountId(e.target.value))}
                                     className="h-8 text-sm font-mono"
-                                    maxLength={16}
+                                    maxLength={19}
                                     minLength={16}
                                     required
                                 />
