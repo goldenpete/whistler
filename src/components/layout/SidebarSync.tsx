@@ -46,6 +46,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
     const [phase, setPhase] = useState<'login' | 'totp'>('login');
     const [pendingToken, setPendingToken] = useState<string | null>(null);
     const [totpCode, setTotpCode] = useState("");
+    const [turnstileWidgetId, setTurnstileWidgetId] = useState<string | null>(null);
 
     useEffect(() => {
         window.onTurnstileSuccess = (token: string) => {
@@ -56,6 +57,26 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             setCaptchaToken(null);
         };
     }, []);
+
+    useEffect(() => {
+        if (turnstileWidgetId) return;
+        const interval = setInterval(() => {
+            if (window.turnstile) {
+                const container = document.getElementById("turnstile-container");
+                if (container) {
+                    const id = window.turnstile.render(container, {
+                        sitekey: TURNSTILE_SITE_KEY,
+                        theme: "dark",
+                        callback: (token: string) => window.onTurnstileSuccess?.(token),
+                        "expired-callback": () => window.onTurnstileExpired?.(),
+                    });
+                    setTurnstileWidgetId(id);
+                    clearInterval(interval);
+                }
+            }
+        }, 500);
+        return () => clearInterval(interval);
+    }, [turnstileWidgetId]);
 
     useEffect(() => {
         const storedAccount = localStorage.getItem("whistler_account_id");
@@ -417,7 +438,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         <Button
                             type="submit"
                             className="w-full h-8"
-                            disabled={isLoading || getCleanAccountId(syncId).length < 16 || !captchaToken}
+                            disabled={isLoading || getCleanAccountId(syncId).length < 16}
                         >
                             {isLoading ? "Connecting..." : "Connect"}
                         </Button>
