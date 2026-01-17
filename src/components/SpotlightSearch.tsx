@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     CommandDialog,
@@ -25,6 +25,7 @@ import {
 } from "@phosphor-icons/react";
 import { useStore } from "@/store/useStore";
 import type { File, Collection, Timestamp } from "@/types";
+import { useKeybind } from "@/hooks/use-keybind";
 
 export function SpotlightSearch() {
     const [open, setOpen] = useState(false);
@@ -39,7 +40,6 @@ export function SpotlightSearch() {
         projects,
     } = useStore();
 
-    // Filter by active project
     const projectFiles = useMemo(
         () => files.filter((f) => f.projectId === activeProjectId && !f.deleted),
         [files, activeProjectId]
@@ -55,18 +55,9 @@ export function SpotlightSearch() {
         return timestamps.filter((t) => fileIds.has(t.fileId));
     }, [timestamps, projectFiles]);
 
-    // Keybind: Ctrl+K or Cmd+K
-    useEffect(() => {
-        const down = (e: KeyboardEvent) => {
-            if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {
-                e.preventDefault();
-                setOpen((o) => !o);
-            }
-        };
-
-        document.addEventListener("keydown", down);
-        return () => document.removeEventListener("keydown", down);
-    }, []);
+    useKeybind("ctrl+k", () => setOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("meta+k", () => setOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("/", () => setOpen(true), { preventDefault: true, disableInInput: true });
 
     const getFileIcon = useCallback((type: string) => {
         switch (type) {
