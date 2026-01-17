@@ -399,12 +399,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     </div>
                 </div>
 
-                <div className="flex-1 p-4 flex flex-col justify-center items-center gap-4">
+                    <div className="flex-1 p-4 flex flex-col justify-center items-center gap-4">
                     <div className="text-center space-y-2 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
                             <Cloud weight="fill" size={24} />
                         </div>
-                        <h3 className="font-semibold text-foreground">Legacy Sync</h3>
+                        <h3 className="font-semibold text-foreground">Sync Access</h3>
                         <p className="text-xs text-muted-foreground max-w-[200px]">
                             Enter your 16-digit Sync ID to access your data.
                         </p>

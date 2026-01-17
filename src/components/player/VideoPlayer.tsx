@@ -134,6 +134,12 @@ export default function VideoPlayer() {
     }, [isPlaying]);
 
     useEffect(() => {
+        if (clipPlayerOpen && videoRef.current) {
+            videoRef.current.pause();
+        }
+    }, [clipPlayerOpen]);
+
+    useEffect(() => {
         if (videoRef.current) {
             videoRef.current.playbackRate = playbackRate;
         }

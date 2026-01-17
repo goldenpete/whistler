@@ -438,11 +438,11 @@ export default function Sidebar() {
                             animate={{ opacity: 1 }}
                             className="flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
                         >
-                            {activeCollection ? (
-                                <WaveSine weight="fill" className="text-primary text-xl" />
-                            ) : (
-                                <WaveSine weight="fill" className="text-primary text-xl" />
-                            )}
+                            <img
+                                src="/whistlerlogo.png"
+                                alt="Whistlerbox"
+                                className="w-6 h-6 rounded-md"
+                            />
                             <span className="font-bold text-lg tracking-tight truncate">Whistlerbox</span>
                         </motion.button>
                     )}

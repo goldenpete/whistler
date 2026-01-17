@@ -20,6 +20,7 @@ import {
     CheckSquare,
     Square,
     X,
+    MagnifyingGlass,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
 import { AddFileDialog, NewFolderDialog, RenameFileDialog, EditFolderDialog, ICONS } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import type { File } from "@/types";
+import { Input } from "@/components/ui/input";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 
 export default function StorageView() {
@@ -68,6 +70,7 @@ export default function StorageView() {
     // Selection Mode
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [searchQuery, setSearchQuery] = useState("");
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const projectStorages = storages.filter(s => s.projectId === activeProjectId && !s.deleted);
@@ -92,11 +95,14 @@ export default function StorageView() {
     };
     const breadcrumbs = getBreadcrumbs();
 
+    const normalizedQuery = searchQuery.toLowerCase();
+
     const projectFiles = files.filter(f =>
         f.projectId === activeProjectId &&
         (!activeStorageId || f.storageId === activeStorageId) &&
         f.parentId === currentFolderId &&
-        !f.deleted
+        !f.deleted &&
+        (normalizedQuery === "" || f.name.toLowerCase().includes(normalizedQuery))
     );
 
     const handleRenameInit = (file: File) => {
@@ -311,7 +317,16 @@ export default function StorageView() {
                             </BreadcrumbList>
                         </Breadcrumb>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
+                            <div className="relative w-56">
+                                <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+                                <Input
+                                    placeholder="Search in this storage..."
+                                    className="pl-8 h-8 text-xs"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
                             <Button
                                 variant={selectionMode ? "secondary" : "ghost"}
                                 size="icon"

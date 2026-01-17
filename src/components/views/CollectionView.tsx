@@ -31,6 +31,7 @@ import {
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import type { Timestamp } from "@/types";
+import { ClipPlayerDialog, EditTimestampDialog } from "@/components/dialogs/TimestampDialogs";
 
 const getIcon = (name?: string) => {
     switch (name) {
@@ -66,16 +67,23 @@ export default function CollectionView() {
         collections,
         timestamps,
         files,
-        activeCollectionId
+        activeCollectionId,
+        updateTimestamp
     } = useStore();
     const navigate = useNavigate();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [clipPlayerOpen, setClipPlayerOpen] = useState(false);
+    const [editTimestampOpen, setEditTimestampOpen] = useState(false);
+    const [returnToClipPlayer, setReturnToClipPlayer] = useState(false);
+    const [selectedTimestampId, setSelectedTimestampId] = useState<string | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const activeCollection = collections.find(c => c.id === activeCollectionId);
+    const selectedTimestamp = timestamps.find(t => t.id === selectedTimestampId) || null;
+    const selectedFile = selectedTimestamp ? files.find(f => f.id === selectedTimestamp.fileId) || null : null;
 
     // If no active collection, maybe show a "All Collections" dashboard or redirect?
     // For now, let's assume Sidebar handles "All Collections" vs specific ID.
@@ -90,11 +98,11 @@ export default function CollectionView() {
     const handleTimestampClick = (t: Timestamp) => {
         if (selectionMode) {
             toggleSelection(t.id);
-        } else {
-            // Navigate to player with this timestamp context
-            // Format: /file/:fileId?t=:start&collection=:collectionId
-            navigate(`/file/${t.fileId}?t=${t.start}&c=${activeCollectionId}`);
+            return;
         }
+
+        setSelectedTimestampId(t.id);
+        setClipPlayerOpen(true);
     };
 
     const toggleSelection = (id: string) => {
@@ -108,11 +116,11 @@ export default function CollectionView() {
     };
 
     const handleSelectAll = () => {
-        if (selectedItems.size === collectionTimestamps.length) {
-            setSelectedItems(new Set());
-        } else {
-            setSelectedItems(new Set(collectionTimestamps.map(t => t.id)));
-        }
+        setSelectedItems(new Set(collectionTimestamps.map(t => t.id)));
+    };
+
+    const handleDeselectAll = () => {
+        setSelectedItems(new Set());
     };
 
     const handleDeleteSelected = () => {
@@ -142,37 +150,67 @@ export default function CollectionView() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {selectionMode ? (
-                        <>
-                            <span className="text-sm text-muted-foreground mr-2">{selectedItems.size} selected</span>
-                            <Button variant="ghost" size="icon" onClick={() => setSelectionMode(false)}>
-                                <ArrowSquareOut size={20} />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={handleSelectAll}>
-                                <CheckSquare size={20} weight={selectedItems.size === collectionTimestamps.length ? "fill" : "regular"} />
-                            </Button>
-                            <Button variant="destructive" size="icon" onClick={handleDeleteSelected} disabled={selectedItems.size === 0}>
-                                <Trash size={20} />
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            <div className="relative w-64 mr-2">
-                                <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
-                                <Input
-                                    placeholder="Search clips..."
-                                    className="pl-9 h-9"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={() => setSelectionMode(true)}>
-                                <CheckSquare size={20} />
-                            </Button>
-                        </>
-                    )}
+                    <div className="relative w-64 mr-2">
+                        <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+                        <Input
+                            placeholder="Search clips..."
+                            className="pl-9 h-9"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <Button
+                        variant={selectionMode ? "secondary" : "ghost"}
+                        size="icon"
+                        onClick={() => {
+                            if (selectionMode) {
+                                setSelectionMode(false);
+                                setSelectedItems(new Set());
+                            } else {
+                                setSelectionMode(true);
+                            }
+                        }}
+                    >
+                        <CheckSquare weight={selectionMode ? "fill" : "regular"} size={20} />
+                    </Button>
                 </div>
             </div>
+
+            {/* Selection Toolbar */}
+            <AnimatePresence>
+                {selectionMode && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-b border-border bg-primary/5 overflow-hidden"
+                    >
+                        <div className="flex items-center gap-3 px-4 py-2">
+                            <span className="text-sm font-medium text-primary">
+                                {selectedItems.size} selected
+                            </span>
+                            <div className="flex-1" />
+                            <Button variant="ghost" size="sm" onClick={handleSelectAll} disabled={selectedItems.size === collectionTimestamps.length}>
+                                Select All
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={handleDeselectAll} disabled={selectedItems.size === 0}>
+                                Deselect All
+                            </Button>
+                            <div className="w-px h-5 bg-border" />
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="gap-2"
+                                onClick={handleDeleteSelected}
+                                disabled={selectedItems.size === 0}
+                            >
+                                <Trash size={14} />
+                                Delete ({selectedItems.size})
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Grid */}
             <ScrollArea className="flex-1 p-4">
@@ -194,9 +232,22 @@ export default function CollectionView() {
                                     >
                                         {/* Preview Area */}
                                         <div className="aspect-video bg-muted relative overflow-hidden">
-                                            {/* Media Preview (Placeholder for now) */}
+                                            {/* Media Preview */}
                                             {file.url && (file.type === 'video' || file.type === 'image') ? (
-                                                <img src={file.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                file.type === 'image' ? (
+                                                    <img
+                                                        src={file.url}
+                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                                    />
+                                                ) : (
+                                                    <video
+                                                        src={file.url}
+                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                                        preload="metadata"
+                                                        muted
+                                                        playsInline
+                                                    />
+                                                )
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                                                     <FileIconByType type={file.type} size={48} />
@@ -238,7 +289,10 @@ export default function CollectionView() {
                                     </div>
                                 </ContextMenuTrigger>
                                 <ContextMenuContent>
-                                    <ContextMenuItem onClick={() => navigate(`/file/${t.fileId}?t=${t.start}&c=${activeCollectionId}`)}>
+                                    <ContextMenuItem onClick={() => {
+                                        setSelectedTimestampId(t.id);
+                                        setClipPlayerOpen(true);
+                                    }}>
                                         Play Clip
                                     </ContextMenuItem>
                                     <ContextMenuItem>Edit Note</ContextMenuItem>
@@ -264,6 +318,44 @@ export default function CollectionView() {
                     )}
                 </div>
             </ScrollArea>
+
+            <ClipPlayerDialog
+                open={clipPlayerOpen}
+                onOpenChange={setClipPlayerOpen}
+                timestamp={selectedTimestamp}
+                file={selectedFile}
+                collection={collections.find(c => c.id === selectedTimestamp?.collectionId)}
+                collections={collections.filter(c => c.projectId === activeProjectId)}
+                onUpdate={(updates) => {
+                    if (selectedTimestamp) {
+                        updateTimestamp(selectedTimestamp.id, updates);
+                    }
+                }}
+                onEditTimestamp={() => {
+                    setClipPlayerOpen(false);
+                    setReturnToClipPlayer(true);
+                    setEditTimestampOpen(true);
+                }}
+            />
+
+            <EditTimestampDialog
+                open={editTimestampOpen}
+                onOpenChange={(open) => {
+                    setEditTimestampOpen(open);
+                    if (!open && returnToClipPlayer) {
+                        setReturnToClipPlayer(false);
+                        setClipPlayerOpen(true);
+                    }
+                }}
+                timestamp={selectedTimestamp}
+                collections={collections}
+                file={selectedFile}
+                onSave={(updates) => {
+                    if (selectedTimestamp) {
+                        updateTimestamp(selectedTimestamp.id, updates);
+                    }
+                }}
+            />
         </div>
     );
 }

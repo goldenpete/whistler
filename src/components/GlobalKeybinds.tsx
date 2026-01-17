@@ -14,12 +14,6 @@ export function GlobalKeybinds() {
     useKeybind("3", () => navigate("/graphs"), { preventDefault: true, disableInInput: true });
 
     // --- Quick Actions ---
-    // Slash to focus search (placeholder - can be wired to a search modal later)
-    useKeybind("/", () => {
-        console.log("Search triggered (not yet implemented)");
-        // Future: open command palette or search dialog
-    }, { preventDefault: true });
-
     // Escape to close modals/go back (placeholder)
     useKeybind("escape", () => {
         // Future: close any open modal or navigate back
