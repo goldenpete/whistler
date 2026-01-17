@@ -105,7 +105,7 @@ export interface HistoryEntry {
     id: string;
     projectId: string; // Global or specific project? Actions are usually project-scoped
     action: 'create' | 'update' | 'delete' | 'restore';
-    entityType: 'file' | 'collection' | 'timestamp' | 'project' | 'graph' | 'doc';
+    entityType: 'file' | 'collection' | 'timestamp' | 'project' | 'graph' | 'doc' | 'node' | 'edge';
     entityId: string;
     entityName?: string;
     details?: string;

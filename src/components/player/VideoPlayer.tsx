@@ -733,7 +733,7 @@ export default function VideoPlayer() {
                 timestamp={selectedTimestamp}
                 file={file || null}
                 collection={collections.find(c => c.id === selectedTimestamp?.collectionId)}
-                collections={collections.filter(c => c.projectId === activeProjectId)}
+                collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
                 onUpdate={(updates) => selectedTimestamp && updateTimestamp(selectedTimestamp.id, updates)}
                 onEditTimestamp={() => {
                     setClipPlayerOpen(false);

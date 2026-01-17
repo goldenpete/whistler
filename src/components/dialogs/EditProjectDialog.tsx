@@ -9,9 +9,10 @@ interface EditProjectDialogProps {
     onOpenChange: (open: boolean) => void;
     currentName: string;
     onSave: (newName: string) => void;
+    onDelete?: () => void;
 }
 
-export function EditProjectDialog({ open, onOpenChange, currentName, onSave }: EditProjectDialogProps) {
+export function EditProjectDialog({ open, onOpenChange, currentName, onSave, onDelete }: EditProjectDialogProps) {
     const [name, setName] = useState(currentName);
 
     useEffect(() => {
@@ -54,6 +55,23 @@ export function EditProjectDialog({ open, onOpenChange, currentName, onSave }: E
                             className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
                         />
                     </div>
+                    {onDelete && (
+                        <div className="pt-2 border-t border-zinc-800 flex justify-between items-center">
+                            <span className="text-xs text-red-400">Danger zone</span>
+                            <Button
+                                variant="destructive"
+                                type="button"
+                                onClick={() => {
+                                    if (confirm("Delete this project and all its data? This cannot be undone.")) {
+                                        onDelete();
+                                        onOpenChange(false);
+                                    }
+                                }}
+                            >
+                                Delete Project
+                            </Button>
+                        </div>
+                    )}
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">

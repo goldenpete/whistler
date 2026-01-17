@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { type AppState, type File, type Project, type Collection, type Timestamp, type HistoryEntry, type Storage, type Graph, type Doc } from '@/types';
+import { type AppState, type File, type Project, type Collection, type Timestamp, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge } from '@/types';
 
 interface User {
     id: string;
@@ -19,12 +19,22 @@ interface AppStore extends AppState {
     setCollections: (collections: Collection[]) => void;
     setTimestamps: (timestamps: Timestamp[]) => void;
     setActiveProject: (id: string | null) => void;
+    setActiveFile: (id: string | null) => void;
+    setActiveCollection: (id: string | null) => void;
     addProject: (name: string) => Project;
     addStorage: (name: string, projectId: string, color?: string, icon?: string) => void;
     updateStorage: (id: string, updates: Partial<Storage>) => void;
     updateGraph: (id: string, updates: Partial<Graph>) => void;
     updateDoc: (id: string, updates: Partial<Doc>) => void;
     updateProject: (id: string, updates: Partial<Project>) => void;
+    deleteProject: (id: string) => void;
+
+    // Graph editing actions
+    addNode: (node: GraphNode) => void;
+    updateNode: (id: string, updates: Partial<GraphNode>) => void;
+    removeNode: (id: string) => void;
+    addEdge: (edge: GraphEdge) => void;
+    removeEdge: (id: string) => void;
 
     // Generic setters (initially for migration/bulk updates)
     setState: (state: Partial<AppState>) => void;
@@ -44,8 +54,8 @@ interface AppStore extends AppState {
     // Sidebar Actions
     isSidebarOpen: boolean;
     toggleSidebar: (isOpen: boolean) => void;
-    isSidebarCollapsed?: boolean;
-    toggleSidebarCollapse?: () => void;
+    isSidebarCollapsed: boolean;
+    toggleSidebarCollapse: () => void;
 
     // Doc Actions
     setDocViewMode: (mode: 'page' | 'pageless' | 'pageless-wide') => void;
@@ -110,6 +120,7 @@ export const useStore = create<AppStore>()(
 
             // Sidebar State
             isSidebarOpen: true,
+            isSidebarCollapsed: false,
             
             // Doc State
             docViewMode: 'page',
@@ -324,7 +335,7 @@ export const useStore = create<AppStore>()(
                 }, ...state.history]
             })),
 
-            addNode: (node) => set((state) => ({
+            addNode: (node: GraphNode) => set((state) => ({
                 graphNodes: [...state.graphNodes, node],
                 history: [{
                     id: crypto.randomUUID(),
@@ -337,7 +348,7 @@ export const useStore = create<AppStore>()(
                 }, ...state.history]
             })),
 
-            updateNode: (id, updates) => set((state) => ({
+            updateNode: (id: string, updates: Partial<GraphNode>) => set((state) => ({
                 graphNodes: state.graphNodes.map((n) => n.id === id ? { ...n, ...updates } : n),
                 // We typically don't log every drag movement, but for significant edits we might.
                 // For now, let's skip history for position updates to avoid spam, 
@@ -355,7 +366,7 @@ export const useStore = create<AppStore>()(
                 }, ...state.history]
             })),
 
-            removeNode: (id) => set((state) => ({
+            removeNode: (id: string) => set((state) => ({
                 graphNodes: state.graphNodes.filter((n) => n.id !== id),
                 graphEdges: state.graphEdges.filter((e) => e.fromId !== id && e.toId !== id),
                 history: [{
@@ -369,7 +380,7 @@ export const useStore = create<AppStore>()(
                 }, ...state.history]
             })),
 
-            addEdge: (edge) => set((state) => ({
+            addEdge: (edge: GraphEdge) => set((state) => ({
                 graphEdges: [...state.graphEdges, edge],
                 history: [{
                     id: crypto.randomUUID(),
@@ -382,7 +393,7 @@ export const useStore = create<AppStore>()(
                 }, ...state.history]
             })),
 
-            removeEdge: (id) => set((state) => ({
+            removeEdge: (id: string) => set((state) => ({
                 graphEdges: state.graphEdges.filter((e) => e.id !== id),
                 history: [{
                     id: crypto.randomUUID(),
@@ -419,6 +430,47 @@ export const useStore = create<AppStore>()(
                     timestamp: Date.now()
                 }, ...state.history]
             })),
+            deleteProject: (id) => set((state) => {
+                const remainingProjects = state.projects.filter((p) => p.id !== id);
+                const deletedProject = state.projects.find((p) => p.id === id) || null;
+                const remainingProjectId = remainingProjects[0]?.id || null;
+
+                const projectFileIds = new Set(state.files.filter((f) => f.projectId === id).map((f) => f.id));
+                const projectCollectionIds = new Set(state.collections.filter((c) => c.projectId === id).map((c) => c.id));
+                const projectGraphIds = new Set(state.graphs.filter((g) => g.projectId === id).map((g) => g.id));
+
+                return {
+                    projects: remainingProjects,
+                    files: state.files.filter((f) => f.projectId !== id),
+                    collections: state.collections.filter((c) => c.projectId !== id),
+                    graphs: state.graphs.filter((g) => g.projectId !== id),
+                    docs: state.docs.filter((d) => d.projectId !== id),
+                    storages: state.storages.filter((s) => s.projectId !== id),
+                    timestamps: state.timestamps.filter((t) =>
+                        !projectFileIds.has(t.fileId) &&
+                        !(t.collectionId && projectCollectionIds.has(t.collectionId))
+                    ),
+                    graphNodes: state.graphNodes.filter((n) => !projectGraphIds.has(n.graphId)),
+                    graphEdges: state.graphEdges.filter((e) => !projectGraphIds.has(e.graphId)),
+                    activeProjectId: remainingProjectId,
+                    activeStorageId: remainingProjectId
+                        ? state.storages.find((s) => s.projectId === remainingProjectId)?.id || null
+                        : null,
+                    activeCollectionId: null,
+                    activeGraphId: null,
+                    activeDocId: null,
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: id,
+                        action: 'delete',
+                        entityType: 'project',
+                        entityId: id,
+                        entityName: deletedProject?.name,
+                        details: "Delete Project",
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
 
             // Trash Actions
             trashFile: (id) => set((state) => ({

@@ -52,6 +52,7 @@ import { SidebarSync } from "@/components/layout/SidebarSync";
 import { PiPPlayer } from "@/components/player/PiPPlayer";
 import { exportProject, importProject, type ProjectExportData } from "@/utils/projectData";
 import { UploadSimple, DownloadSimple, ClockCounterClockwise } from "@phosphor-icons/react";
+import whistlerLogo from "../../../whistlerlogo.png";
 
 export default function Sidebar() {
     const navigate = useNavigate();
@@ -78,6 +79,7 @@ export default function Sidebar() {
         updateDoc,
         trashDoc,
         updateProject,
+        deleteProject,
         pipFileId,
         isPipOpen,
         isSidebarCollapsed,
@@ -439,7 +441,7 @@ export default function Sidebar() {
                             className="flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
                         >
                             <img
-                                src="/whistlerlogo.png"
+                                src={whistlerLogo}
                                 alt="Whistlerbox"
                                 className="w-6 h-6 rounded-md"
                             />
@@ -697,7 +699,7 @@ export default function Sidebar() {
                                                 exit={{ height: 0, opacity: 0 }}
                                                 className="space-y-1 overflow-hidden"
                                             >
-                                                {collections.filter(c => c.projectId === activeProjectId).map(collection => {
+                                                {collections.filter(c => c.projectId === activeProjectId && !c.deleted).map(collection => {
                                                     const Icon = getIcon(collection.icon);
                                                     return (
                                                         <Link
@@ -729,7 +731,7 @@ export default function Sidebar() {
                                                         </Link>
                                                     )
                                                 })}
-                                                {collections.filter(c => c.projectId === activeProjectId).length === 0 && (
+                                                {collections.filter(c => c.projectId === activeProjectId && !c.deleted).length === 0 && (
                                                     <div className="px-3 py-4 text-xs text-muted-foreground/60 italic text-center border-2 border-dashed border-border/30 rounded-md">
                                                         No collections
                                                     </div>
@@ -1073,6 +1075,11 @@ export default function Sidebar() {
                 onSave={(newName) => {
                     if (activeProjectId) {
                         updateProject(activeProjectId, { name: newName });
+                    }
+                }}
+                onDelete={() => {
+                    if (activeProjectId) {
+                        deleteProject(activeProjectId);
                     }
                 }}
             />

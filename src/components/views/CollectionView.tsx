@@ -306,11 +306,14 @@ export default function CollectionView() {
                                         <PencilSimple size={16} /> Edit Note
                                     </ContextMenuItem>
                                     <ContextMenuSeparator />
-                                    <ContextMenuItem className="text-destructive" onClick={() => {
-                                        useStore.setState(state => ({
-                                            timestamps: state.timestamps.filter(item => item.id !== t.id)
-                                        }));
-                                    }} className="gap-2 text-destructive focus:text-destructive">
+                                    <ContextMenuItem
+                                        className="gap-2 text-destructive focus:text-destructive"
+                                        onClick={() => {
+                                            useStore.setState(state => ({
+                                                timestamps: state.timestamps.filter(item => item.id !== t.id)
+                                            }));
+                                        }}
+                                    >
                                         <Trash size={16} /> Delete
                                     </ContextMenuItem>
                                 </ContextMenuContent>
@@ -334,7 +337,7 @@ export default function CollectionView() {
                 timestamp={selectedTimestamp}
                 file={selectedFile}
                 collection={collections.find(c => c.id === selectedTimestamp?.collectionId)}
-                collections={collections.filter(c => c.projectId === activeProjectId)}
+                collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
                 onUpdate={(updates) => {
                     if (selectedTimestamp) {
                         updateTimestamp(selectedTimestamp.id, updates);
