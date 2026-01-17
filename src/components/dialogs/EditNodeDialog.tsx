@@ -58,6 +58,22 @@ export function NodeDialog({
             if (mode === 'edit' && node) {
                 setTitle(node.title);
                 setColor(node.color || PRESET_COLORS[0]);
+                if (node.type === 'file' || node.type === 'timestamp') {
+                    setSelectedFileId(node.linkedId || "");
+                } else {
+                    setSelectedFileId("");
+                }
+                if (node.type === 'collection') {
+                    setSelectedCollectionId(node.linkedId || "");
+                } else {
+                    setSelectedCollectionId("");
+                }
+                if (node.type === 'link') {
+                    setLinkUrl(node.url || "");
+                } else {
+                    setLinkUrl("");
+                }
+                setTimestampTime("");
                 // We would populate other fields if GraphNode stored them.
                 // Assuming GraphNode might store data in a 'data' field or similar.
                 // For now, we'll just handle Title/Color for edit, and specific fields for Create.
@@ -199,15 +215,29 @@ export function NodeDialog({
                     )}
 
                     {type === 'timestamp' && (
-                        <div className="space-y-2">
-                            <Label>Timestamp / Time</Label>
-                            <Input 
-                                value={timestampTime} 
-                                onChange={(e) => setTimestampTime(e.target.value)} 
-                                placeholder="00:00"
-                                className="bg-zinc-900 border-zinc-800"
-                            />
-                            {/* Ideally select a file too, but let's keep it simple or reuse file selector */}
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Timestamp / Time</Label>
+                                <Input 
+                                    value={timestampTime} 
+                                    onChange={(e) => setTimestampTime(e.target.value)} 
+                                    placeholder="00:00"
+                                    className="bg-zinc-900 border-zinc-800"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Select File</Label>
+                                <Select value={selectedFileId} onValueChange={setSelectedFileId}>
+                                    <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                        <SelectValue placeholder="Choose a file..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                        {projectFiles.map(f => (
+                                            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     )}
                 </div>

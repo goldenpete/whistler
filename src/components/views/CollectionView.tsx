@@ -16,7 +16,8 @@ import {
     Image as ImageIcon,
     Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FileText, Book
+    FileText, Book,
+    PencilSimple
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -288,21 +289,29 @@ export default function CollectionView() {
                                         </div>
                                     </div>
                                 </ContextMenuTrigger>
-                                <ContextMenuContent>
+                                <ContextMenuContent className="w-56">
                                     <ContextMenuItem onClick={() => {
                                         setSelectedTimestampId(t.id);
                                         setClipPlayerOpen(true);
-                                    }}>
-                                        Play Clip
+                                    }} className="gap-2">
+                                        <FilmStrip size={16} /> Play Clip
                                     </ContextMenuItem>
-                                    <ContextMenuItem>Edit Note</ContextMenuItem>
+                                    <ContextMenuItem
+                                        onClick={() => {
+                                            setSelectedTimestampId(t.id);
+                                            setEditTimestampOpen(true);
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <PencilSimple size={16} /> Edit Note
+                                    </ContextMenuItem>
                                     <ContextMenuSeparator />
                                     <ContextMenuItem className="text-destructive" onClick={() => {
                                         useStore.setState(state => ({
                                             timestamps: state.timestamps.filter(item => item.id !== t.id)
                                         }));
-                                    }}>
-                                        Delete
+                                    }} className="gap-2 text-destructive focus:text-destructive">
+                                        <Trash size={16} /> Delete
                                     </ContextMenuItem>
                                 </ContextMenuContent>
                             </ContextMenu>

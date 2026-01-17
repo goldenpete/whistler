@@ -17,6 +17,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 const NODE_RADIUS = 24;
 const COLORS = ["#f97316", "#8b5cf6", "#10b981", "#3b82f6", "#ef4444", "#eab308"];
@@ -25,6 +26,7 @@ export default function GraphView() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const imagesRef = useRef<Record<string, HTMLImageElement>>({});
+    const navigate = useNavigate();
     const { 
         graphs, graphNodes, graphEdges, activeProjectId, activeGraphId,
         addNode, updateNode, removeNode, addEdge, removeEdge
@@ -251,6 +253,44 @@ export default function GraphView() {
             const d = distToSegment(x, y, from.x, from.y, to.x, to.y);
             return d <= threshold;
         });
+    };
+
+    const handleNodeOpen = (node: GraphNode) => {
+        if (node.type === 'file' && node.linkedId) {
+            navigate(`/file/${node.linkedId}`);
+            return;
+        }
+
+        if (node.type === 'collection' && node.linkedId) {
+            useStore.setState({ activeCollectionId: node.linkedId });
+            navigate("/collections");
+            return;
+        }
+
+        if (node.type === 'timestamp' && node.linkedId) {
+            navigate(`/file/${node.linkedId}`);
+            return;
+        }
+
+        if (node.type === 'link' && node.url) {
+            const url = node.url;
+            window.open(url, "_blank", "noopener,noreferrer");
+        }
+    };
+
+    const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const screenX = e.clientX - rect.left;
+        const screenY = e.clientY - rect.top;
+        const worldX = (screenX - pan.x) / scale;
+        const worldY = (screenY - pan.y) / scale;
+
+        const node = getNodeAt(worldX, worldY);
+        if (!node) return;
+
+        handleNodeOpen(node);
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -498,6 +538,7 @@ export default function GraphView() {
                             onMouseLeave={handleMouseUp}
                             onContextMenu={handleContextMenu}
                             onClick={() => setContextMenu(null)}
+                            onDoubleClick={handleDoubleClick}
                             className={cn(
                                 "block w-full h-full",
                                 isPanning ? "cursor-grabbing" : draggingNode ? "cursor-grabbing" : "cursor-grab"
