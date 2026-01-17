@@ -487,9 +487,9 @@ export default function VideoPlayer() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={togglePlay}
-                                    className="bg-white/10 hover:bg-white/20 text-white rounded-full size-10 backdrop-blur-sm"
+                                    className="h-8 w-8 rounded-md bg-white/10 hover:bg-white/20 text-white"
                                 >
-                                    {isPlaying ? <Pause weight="fill" size={20} /> : <Play weight="fill" size={20} />}
+                                    {isPlaying ? <Pause weight="fill" size={18} /> : <Play weight="fill" size={18} />}
                                 </Button>
 
                                 <div className="flex items-center gap-2 group/vol">

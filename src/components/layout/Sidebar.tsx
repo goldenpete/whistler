@@ -414,10 +414,11 @@ export default function Sidebar() {
         <>
             <motion.aside
                 initial={{ width: 280 }}
-                animate={{ width: isSidebarCollapsed ? 60 : 280 }}
+                animate={{ width: isSidebarCollapsed ? 0 : 280 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className={cn(
                     "flex flex-col border-r border-border bg-sidebar h-full overflow-hidden shrink-0 z-20 relative",
+                    isSidebarCollapsed && "pointer-events-none"
                 )}
             >
                 {/* Header */}
@@ -1005,13 +1006,6 @@ export default function Sidebar() {
                             <div className="size-8 rounded-full bg-accent/20 flex items-center justify-center text-accent shrink-0">
                                 <Cloud weight="fill" />
                             </div>
-                            {!isSidebarCollapsed && (
-                                <div className="flex flex-col flex-1 min-w-0">
-                                    <span className="font-medium text-foreground text-xs truncate">Sync Active</span>
-                                    <span className="text-[10px] truncate">Last synced just now</span>
-                                </div>
-                            )}
-
                         </div>
                     )}
 
@@ -1027,6 +1021,17 @@ export default function Sidebar() {
                     )}
                 </div>
             </motion.aside>
+
+            {isSidebarCollapsed && (
+                <button
+                    onClick={toggleSidebarCollapse}
+                    className="fixed top-4 left-4 z-30 h-8 px-2 rounded-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center gap-2"
+                    title="Show sidebar"
+                >
+                    <SidebarSimple weight="bold" size={16} />
+                    <span className="text-xs font-semibold uppercase tracking-wide">Sidebar</span>
+                </button>
+            )}
 
             <CreateCollectionDialog
                 open={createCollectionOpen}

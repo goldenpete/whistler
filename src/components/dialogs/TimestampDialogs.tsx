@@ -205,8 +205,7 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            {/* Conditional sizing for Maximize logic - Overriding centering transforms for full screen with !important to beat sm:max-w-sm */}
-            <DialogContent className={`${isMaximized ? '!w-screen !h-screen !max-w-none !border-none !rounded-none !top-0 !left-0 !translate-x-0 !translate-y-0' : 'sm:max-w-[800px] border-zinc-800'} bg-black p-0 overflow-hidden text-white gap-0 flex flex-col`}>
+            <DialogContent className={`${isMaximized ? '!w-screen !h-screen !max-w-none !border-none !rounded-none !top-0 !left-0 !translate-x-0 !translate-y-0 !overflow-y-auto' : 'sm:max-w-[800px] border-zinc-800'} bg-black p-0 text-white gap-0 flex flex-col`}>
                 <div className={`relative bg-black ${isMaximized ? 'flex-1' : 'aspect-video'} w-full flex items-center justify-center`}>
                     <video
                         ref={setVideoElement}
@@ -280,10 +279,10 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                     <Button
                         size="icon"
                         variant="ghost"
-                        className="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-black/50 rounded-full z-20"
+                        className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-20"
                         onClick={() => onOpenChange(false)}
                     >
-                        <X weight="bold" />
+                        <X weight="bold" size={16} />
                     </Button>
                 </div>
                 <div className="p-4 bg-zinc-900 border-t border-white/10 flex flex-col gap-2 shrink-0">

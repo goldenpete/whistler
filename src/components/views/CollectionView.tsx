@@ -290,10 +290,24 @@ export default function CollectionView() {
                                     </div>
                                 </ContextMenuTrigger>
                                 <ContextMenuContent className="w-56">
-                                    <ContextMenuItem onClick={() => {
-                                        setSelectedTimestampId(t.id);
-                                        setClipPlayerOpen(true);
-                                    }} className="gap-2">
+                                    <ContextMenuItem
+                                        onClick={() => {
+                                            if (!selectionMode) {
+                                                setSelectionMode(true);
+                                            }
+                                            toggleSelection(t.id);
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <CheckSquare size={16} /> Select
+                                    </ContextMenuItem>
+                                    <ContextMenuItem
+                                        onClick={() => {
+                                            setSelectedTimestampId(t.id);
+                                            setClipPlayerOpen(true);
+                                        }}
+                                        className="gap-2"
+                                    >
                                         <FilmStrip size={16} /> Play Clip
                                     </ContextMenuItem>
                                     <ContextMenuItem

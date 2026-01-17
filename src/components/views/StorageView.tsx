@@ -14,8 +14,6 @@ import {
     Rows,
     PencilSimple,
     Trash,
-    Copy,
-    Share,
     ArrowSquareOut,
     CheckSquare,
     Square,
@@ -690,31 +688,6 @@ function FileContextMenu({ file, onRename, onMove, onSelect }: FileContextMenuPr
         }));
     };
 
-    const handleCopyUrl = () => {
-        if (file.url) navigator.clipboard.writeText(file.url);
-    };
-
-    const handleShare = async () => {
-        if (file.url && navigator.share) {
-            try {
-                await navigator.share({
-                    title: file.name,
-                    url: file.url
-                });
-            } catch (err) {
-                // Ignore abort errors
-            }
-        } else {
-            handleCopyUrl();
-        }
-    };
-
-    const handleOpenInNewTab = () => {
-        if (file.url) {
-            window.open(file.url, '_blank');
-        }
-    };
-
     return (
         <ContextMenuContent className="w-56">
             <ContextMenuItem onClick={onSelect} className="gap-2">
@@ -725,16 +698,6 @@ function FileContextMenu({ file, onRename, onMove, onSelect }: FileContextMenuPr
             </ContextMenuItem>
             <ContextMenuItem onClick={onMove} className="gap-2">
                 <ArrowSquareOut size={16} /> Move to...
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleCopyUrl} className="gap-2">
-                <Copy size={16} /> Copy URL
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handleShare} className="gap-2">
-                <Share size={16} /> Share
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handleOpenInNewTab} className="gap-2">
-                <ArrowSquareOut size={16} /> Open in New Tab
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem onClick={handleDelete} className="gap-2 text-destructive focus:text-destructive">
