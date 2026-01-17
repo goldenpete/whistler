@@ -11,6 +11,7 @@ interface AppStore extends AppState {
     activeFileId: string | null;
     user: User | null;
     lastSyncTime: number | null;
+    autoSyncEnabled: boolean;
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -72,6 +73,7 @@ interface AppStore extends AppState {
     login: (user: User) => void;
     logout: () => void;
     setLastSyncTime: (time: number) => void;
+    setAutoSyncEnabled: (enabled: boolean) => void;
 }
 
 const STORAGE_KEY = 'whistler_v2_data';
@@ -98,6 +100,7 @@ export const useStore = create<AppStore>()(
 
             user: null,
             lastSyncTime: null,
+            autoSyncEnabled: true,
 
             // PiP State
             pipFileId: null,
@@ -133,6 +136,7 @@ export const useStore = create<AppStore>()(
             login: (user) => set({ user }),
             logout: () => set({ user: null }),
             setLastSyncTime: (time) => set({ lastSyncTime: time }),
+            setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
 
             addProject: (name) => {
                 const newProject: Project = {

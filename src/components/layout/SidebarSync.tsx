@@ -35,7 +35,16 @@ interface SidebarSyncProps {
 }
 
 export function SidebarSync({ onBack }: SidebarSyncProps) {
-    const { user, login, logout, lastSyncTime, setLastSyncTime, setState } = useStore();
+    const { 
+        user, 
+        login, 
+        logout, 
+        lastSyncTime, 
+        setLastSyncTime, 
+        setState,
+        autoSyncEnabled,
+        setAutoSyncEnabled
+    } = useStore();
     const [syncId, setSyncId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
@@ -517,8 +526,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 <User weight="bold" className="text-muted-foreground" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium truncate">{user.email}</div>
-                                <div className="text-xs text-muted-foreground">Free Plan</div>
+                                <div className="text-sm font-medium truncate">
+                                    {user.email && user.email !== accountId ? user.email : "Anonymous"}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    {accountId ? formatAccountId(accountId) : formatAccountId(user.id)}
+                                </div>
                             </div>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleLogout} title="Sign Out">
                                 <SignOut className="text-muted-foreground" />
@@ -528,22 +541,31 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
 
                     <Separator className="bg-sidebar-border" />
 
-                    {/* Sync Settings Placeholder */}
+                    {/* Sync Settings */}
                     <div>
                         <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Configuration</div>
-                        <div className="space-y-1">
-                            <div className="flex items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer">
+                        <div className="space-y-2">
+                            <button
+                                type="button"
+                                className="flex w-full items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer"
+                                onClick={() => setAutoSyncEnabled(!autoSyncEnabled)}
+                            >
                                 <span className="text-sm text-muted-foreground">Auto-sync</span>
-                                <div className="w-8 h-4 bg-primary rounded-full relative">
-                                    <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer">
-                                <span className="text-sm text-muted-foreground">Sync media files</span>
-                                <div className="w-8 h-4 bg-zinc-700 rounded-full relative">
-                                    <div className="absolute left-0.5 top-0.5 w-3 h-3 bg-zinc-400 rounded-full"></div>
-                                </div>
-                            </div>
+                                <span
+                                    className={`w-8 h-4 rounded-full relative transition-colors ${
+                                        autoSyncEnabled ? "bg-primary" : "bg-zinc-700"
+                                    }`}
+                                >
+                                    <span
+                                        className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${
+                                            autoSyncEnabled ? "right-0.5" : "left-0.5"
+                                        }`}
+                                    />
+                                </span>
+                            </button>
+                            <p className="text-[11px] text-muted-foreground px-2">
+                                Auto-sync is enabled by default and saves changes automatically. Turn this off to require manual Push and Pull.
+                            </p>
                         </div>
                     </div>
                 </div>
