@@ -43,11 +43,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         setLastSyncTime, 
         setState,
         autoSyncEnabled,
-        setAutoSyncEnabled
+        setAutoSyncEnabled,
+        syncStatus,
+        setSyncStatus
     } = useStore();
     const [syncId, setSyncId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
     const [accountId, setAccountId] = useState<string | null>(null);
     const [sessionToken, setSessionToken] = useState<string | null>(null);

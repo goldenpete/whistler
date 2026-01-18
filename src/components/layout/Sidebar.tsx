@@ -95,6 +95,7 @@ export default function Sidebar() {
         isPipOpen,
         isSidebarCollapsed,
         toggleSidebarCollapse,
+        syncStatus,
     } = useStore();
 
     const activeCollection = collections.find(c => c.id === activeCollectionId);
@@ -619,7 +620,19 @@ export default function Sidebar() {
                                             onClick={() => setSidebarView('sync')}
                                             title="Sync"
                                          >
-                                            <ArrowsClockwise /> Sync
+                                            <motion.span
+                                                className="inline-flex items-center gap-1.5"
+                                                animate={syncStatus === 'syncing' ? { rotate: 360 } : { rotate: 0 }}
+                                                transition={syncStatus === 'syncing' ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.2 }}
+                                            >
+                                                <ArrowsClockwise
+                                                    className={cn(
+                                                        "transition-colors",
+                                                        syncStatus === 'syncing' ? "text-primary" : "text-muted-foreground"
+                                                    )}
+                                                />
+                                                <span>Sync</span>
+                                            </motion.span>
                                          </Button>
                                          <Button 
                                             variant="outline" 

@@ -7,11 +7,14 @@ interface User {
     email: string;
 }
 
+type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
+
 interface AppStore extends AppState {
     activeFileId: string | null;
     user: User | null;
     lastSyncTime: number | null;
     autoSyncEnabled: boolean;
+    syncStatus: SyncStatus;
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -91,6 +94,7 @@ interface AppStore extends AppState {
     logout: () => void;
     setLastSyncTime: (time: number) => void;
     setAutoSyncEnabled: (enabled: boolean) => void;
+    setSyncStatus: (status: SyncStatus) => void;
 }
 
 const STORAGE_KEY = 'whistler_v2_data';
@@ -118,6 +122,7 @@ export const useStore = create<AppStore>()(
             user: null,
             lastSyncTime: null,
             autoSyncEnabled: true,
+            syncStatus: 'idle',
 
             // PiP State
             pipFileId: null,
@@ -159,6 +164,7 @@ export const useStore = create<AppStore>()(
             logout: () => set({ user: null }),
             setLastSyncTime: (time) => set({ lastSyncTime: time }),
             setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
+            setSyncStatus: (status) => set({ syncStatus: status }),
 
             addProject: (name) => {
                 const newProject: Project = {

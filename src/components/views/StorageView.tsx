@@ -83,26 +83,8 @@ export default function StorageView() {
         addStorage(newStorageName, activeProjectId);
     };
 
-    // Get current folder logic
     const currentFolder = currentFolderId ? files.find(f => f.id === currentFolderId) : null;
-
-    if (!activeProject || projectStorages.length === 0) {
-        return (
-            <div className="flex h-full bg-background overflow-hidden">
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                    <div className="text-center">
-                        <HardDrives size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                        <p className="mb-4">Select or create a storage</p>
-                        {activeProject && (
-                            <Button onClick={handleCreateStorage}>
-                                <Plus className="mr-2" /> Create Storage
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    const showEmptyState = !activeProject || projectStorages.length === 0;
 
     // Breadcrumb path builder
     const getBreadcrumbs = () => {
@@ -319,188 +301,198 @@ export default function StorageView() {
 
     return (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div className="flex h-full bg-background text-foreground relative">
-                {/* Main Content */}
-                <div className="flex-1 flex flex-col">
-                    {/* Header / Top Bar */}
-                    <div className="flex items-center gap-2 p-2 h-12 border-b border-border bg-card/30">
-                        <Breadcrumb className="flex-1 pl-2">
-                            <BreadcrumbList>
-                                <DroppableBreadcrumb id="root" name={activeStorage?.name || "All Files"} isCurrent={!currentFolderId} onClick={() => setCurrentFolderId(null)} />
-
-                                {breadcrumbs.map((folder, index) => (
-                                    <div key={folder.id} className="flex items-center">
-                                        <BreadcrumbSeparator />
-                                        <DroppableBreadcrumb
-                                            id={folder.id}
-                                            name={folder.name}
-                                            isCurrent={index === breadcrumbs.length - 1}
-                                            onClick={() => setCurrentFolderId(folder.id)}
-                                        />
-                                    </div>
-                                ))}
-                            </BreadcrumbList>
-                        </Breadcrumb>
-
-                        <div className="flex items-center gap-2">
-                            <div className="relative w-56">
-                                <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
-                                <Input
-                                    placeholder="Search in this storage..."
-                                    className="pl-8 h-8 text-xs"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            <Button
-                                variant={selectionMode ? "secondary" : "ghost"}
-                                size="icon"
-                                className="size-8"
-                                title="Selection mode"
-                                onClick={toggleSelectionMode}
-                            >
-                                <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="size-8" title="View as grid" onClick={() => setViewMode('grid')}>
-                                <GridFour weight={viewMode === 'grid' ? "fill" : "regular"} size={16} className={viewMode === 'grid' ? "text-primary" : ""} />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="size-8" title="View as list" onClick={() => setViewMode('list')}>
-                                <Rows weight={viewMode === 'list' ? "fill" : "regular"} size={16} className={viewMode === 'list' ? "text-primary" : ""} />
-                            </Button>
-                            <div className="w-px h-5 bg-border mx-1" />
-                            <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => setAddFileOpen(true)}>
-                                <Plus weight="bold" size={14} />
-                                Add File
-                            </Button>
-                            <Button variant="default" size="sm" className="h-8 gap-2 text-xs" onClick={() => setNewFolderOpen(true)}>
-                                <FolderOpen weight="bold" size={14} />
-                                New Folder
-                            </Button>
+            {showEmptyState ? (
+                <div className="flex h-full bg-background overflow-hidden">
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                        <div className="text-center">
+                            <HardDrives size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
+                            <p className="mb-4">Select or create a storage</p>
+                            {activeProject && (
+                                <Button onClick={handleCreateStorage}>
+                                    <Plus className="mr-2" /> Create Storage
+                                </Button>
+                            )}
                         </div>
                     </div>
+                </div>
+            ) : (
+                <div className="flex h-full bg-background text-foreground relative">
+                    <div className="flex-1 flex flex-col">
+                        <div className="flex items-center gap-2 p-2 h-12 border-b border-border bg-card/30">
+                            <Breadcrumb className="flex-1 pl-2">
+                                <BreadcrumbList>
+                                    <DroppableBreadcrumb id="root" name={activeStorage?.name || "All Files"} isCurrent={!currentFolderId} onClick={() => setCurrentFolderId(null)} />
 
-                    {/* Selection Toolbar */}
-                    <AnimatePresence>
-                        {selectionMode && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="border-b border-border bg-primary/5 overflow-hidden"
-                            >
-                                <div className="flex items-center gap-3 px-4 py-2">
-                                    <span className="text-sm font-medium text-primary">
-                                        {selectedIds.size} selected
-                                    </span>
-                                    <div className="flex-1" />
-                                    <Button variant="ghost" size="sm" onClick={selectAll} disabled={selectedIds.size === projectFiles.length}>
-                                        Select All
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={deselectAll} disabled={selectedIds.size === 0}>
-                                        Deselect All
-                                    </Button>
-                                    <div className="w-px h-5 bg-border" />
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={() => setMoveDialogOpen(true)}
-                                        disabled={selectedIds.size === 0}
-                                    >
-                                        <ArrowSquareOut size={14} />
-                                        Move
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={deleteSelected}
-                                        disabled={selectedIds.size === 0}
-                                    >
-                                        <Trash size={14} />
-                                        Delete ({selectedIds.size})
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="size-7" onClick={toggleSelectionMode}>
-                                        <X size={16} />
-                                    </Button>
+                                    {breadcrumbs.map((folder, index) => (
+                                        <div key={folder.id} className="flex items-center">
+                                            <BreadcrumbSeparator />
+                                            <DroppableBreadcrumb
+                                                id={folder.id}
+                                                name={folder.name}
+                                                isCurrent={index === breadcrumbs.length - 1}
+                                                onClick={() => setCurrentFolderId(folder.id)}
+                                            />
+                                        </div>
+                                    ))}
+                                </BreadcrumbList>
+                            </Breadcrumb>
+
+                            <div className="flex items-center gap-2">
+                                <div className="relative w-56">
+                                    <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+                                    <Input
+                                        placeholder="Search in this storage..."
+                                        className="pl-8 h-8 text-xs"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
                                 </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                <Button
+                                    variant={selectionMode ? "secondary" : "ghost"}
+                                    size="icon"
+                                    className="size-8"
+                                    title="Selection mode"
+                                    onClick={toggleSelectionMode}
+                                >
+                                    <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="size-8" title="View as grid" onClick={() => setViewMode('grid')}>
+                                    <GridFour weight={viewMode === 'grid' ? "fill" : "regular"} size={16} className={viewMode === 'grid' ? "text-primary" : ""} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="size-8" title="View as list" onClick={() => setViewMode('list')}>
+                                    <Rows weight={viewMode === 'list' ? "fill" : "regular"} size={16} className={viewMode === 'list' ? "text-primary" : ""} />
+                                </Button>
+                                <div className="w-px h-5 bg-border mx-1" />
+                                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => setAddFileOpen(true)}>
+                                    <Plus weight="bold" size={14} />
+                                    Add File
+                                </Button>
+                                <Button variant="default" size="sm" className="h-8 gap-2 text-xs" onClick={() => setNewFolderOpen(true)}>
+                                    <FolderOpen weight="bold" size={14} />
+                                    New Folder
+                                </Button>
+                            </div>
+                        </div>
 
-                    {/* File Grid/List */}
-                    <div className="flex-1 overflow-auto p-4">
-                        {viewMode === 'grid' ? (
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 pb-20">
-                                {projectFiles.map(file => (
-                                    <FileCardGrid
-                                        key={file.id}
-                                        file={file}
-                                        onNavigate={handleNavigateFolder}
-                                        selectionMode={selectionMode}
-                                        isSelected={selectedIds.has(file.id)}
-                                        onToggleSelect={toggleSelectItem}
-                                        onRename={handleRenameInit}
-                                        onMove={handleMoveInit}
-                                    />
-                                ))}
-                                {projectFiles.length === 0 && <EmptyState />}
-                            </div>
-                        ) : (
-                            <div className="space-y-1 pb-20">
-                                {projectFiles.map(file => (
-                                    <FileCardList
-                                        key={file.id}
-                                        file={file}
-                                        onNavigate={handleNavigateFolder}
-                                        selectionMode={selectionMode}
-                                        isSelected={selectedIds.has(file.id)}
-                                        onToggleSelect={toggleSelectItem}
-                                        onRename={handleRenameInit}
-                                        onMove={handleMoveInit}
-                                    />
-                                ))}
-                                {projectFiles.length === 0 && <EmptyState />}
-                            </div>
-                        )}
+                        <AnimatePresence>
+                            {selectionMode && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="border-b border-border bg-primary/5 overflow-hidden"
+                                >
+                                    <div className="flex items-center gap-3 px-4 py-2">
+                                        <span className="text-sm font-medium text-primary">
+                                            {selectedIds.size} selected
+                                        </span>
+                                        <div className="flex-1" />
+                                        <Button variant="ghost" size="sm" onClick={selectAll} disabled={selectedIds.size === projectFiles.length}>
+                                            Select All
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={deselectAll} disabled={selectedIds.size === 0}>
+                                            Deselect All
+                                        </Button>
+                                        <div className="w-px h-5 bg-border" />
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={() => setMoveDialogOpen(true)}
+                                            disabled={selectedIds.size === 0}
+                                        >
+                                            <ArrowSquareOut size={14} />
+                                            Move
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={deleteSelected}
+                                            disabled={selectedIds.size === 0}
+                                        >
+                                            <Trash size={14} />
+                                            Delete ({selectedIds.size})
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="size-7" onClick={toggleSelectionMode}>
+                                            <X size={16} />
+                                        </Button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <div className="flex-1 overflow-auto p-4">
+                            {viewMode === 'grid' ? (
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 pb-20">
+                                    {projectFiles.map(file => (
+                                        <FileCardGrid
+                                            key={file.id}
+                                            file={file}
+                                            onNavigate={handleNavigateFolder}
+                                            selectionMode={selectionMode}
+                                            isSelected={selectedIds.has(file.id)}
+                                            onToggleSelect={toggleSelectItem}
+                                            onRename={handleRenameInit}
+                                            onMove={handleMoveInit}
+                                        />
+                                    ))}
+                                    {projectFiles.length === 0 && <EmptyState />}
+                                </div>
+                            ) : (
+                                <div className="space-y-1 pb-20">
+                                    {projectFiles.map(file => (
+                                        <FileCardList
+                                            key={file.id}
+                                            file={file}
+                                            onNavigate={handleNavigateFolder}
+                                            selectionMode={selectionMode}
+                                            isSelected={selectedIds.has(file.id)}
+                                            onToggleSelect={toggleSelectItem}
+                                            onRename={handleRenameInit}
+                                            onMove={handleMoveInit}
+                                        />
+                                    ))}
+                                    {projectFiles.length === 0 && <EmptyState />}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
+            )}
 
-                {/* Dialogs */}
-                <AddFileDialog
-                    open={addFileOpen}
-                    onOpenChange={setAddFileOpen}
-                    onSubmit={handleAddFile}
-                />
-                <NewFolderDialog
-                    open={newFolderOpen}
-                    onOpenChange={setNewFolderOpen}
-                    onSubmit={handleNewFolder}
-                />
-                <MoveFileDialog
-                    open={moveDialogOpen}
-                    onOpenChange={setMoveDialogOpen}
-                    fileIds={Array.from(selectedIds)}
-                />
-                <RenameFileDialog
-                    open={renameDialogOpen}
-                    onOpenChange={setRenameDialogOpen}
-                    onSubmit={handleRenameSubmit}
-                    initialName={fileToRename?.name || ""}
-                />
-                <EditFolderDialog
-                    open={editFolderOpen}
-                    onOpenChange={setEditFolderOpen}
-                    onSubmit={handleEditFolderSubmit}
-                    initialName={folderToEdit?.name || ""}
-                    initialColor={folderToEdit?.color}
-                    initialIcon={folderToEdit?.icon}
-                />
+            <AddFileDialog
+                open={addFileOpen}
+                onOpenChange={setAddFileOpen}
+                onSubmit={handleAddFile}
+            />
+            <NewFolderDialog
+                open={newFolderOpen}
+                onOpenChange={setNewFolderOpen}
+                onSubmit={handleNewFolder}
+            />
+            <MoveFileDialog
+                open={moveDialogOpen}
+                onOpenChange={setMoveDialogOpen}
+                fileIds={Array.from(selectedIds)}
+            />
+            <RenameFileDialog
+                open={renameDialogOpen}
+                onOpenChange={setRenameDialogOpen}
+                onSubmit={handleRenameSubmit}
+                initialName={fileToRename?.name || ""}
+            />
+            <EditFolderDialog
+                open={editFolderOpen}
+                onOpenChange={setEditFolderOpen}
+                onSubmit={handleEditFolderSubmit}
+                initialName={folderToEdit?.name || ""}
+                initialColor={folderToEdit?.color}
+                initialIcon={folderToEdit?.icon}
+            />
 
-                <DragOverlay>
-                    {/* Optional: Add drag preview if needed */}
-                </DragOverlay>
-            </div>
+            <DragOverlay>
+            </DragOverlay>
         </DndContext>
     );
 }
