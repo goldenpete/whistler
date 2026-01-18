@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 
-const NODE_RADIUS = 24;
+const NODE_RADIUS = 18;
 const COLORS = ["#f97316", "#8b5cf6", "#10b981", "#3b82f6", "#ef4444", "#eab308"];
 
 export default function GraphView() {
@@ -172,7 +172,6 @@ export default function GraphView() {
             }
         }
 
-        // Draw nodes
         nodes.forEach(node => {
             ctx.beginPath();
             ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
@@ -189,23 +188,17 @@ export default function GraphView() {
             }
             ctx.stroke();
 
-            // Icon/Label
-            // Draw icon if available
             if (node.icon && node.icon !== 'Folder' && imagesRef.current[node.icon]) {
                 const img = imagesRef.current[node.icon];
-                // Icon size relative to node radius
                 const iconSize = (NODE_RADIUS * 1.2); 
                 ctx.drawImage(img, node.x - iconSize/2, node.y - iconSize/2, iconSize, iconSize);
             } else {
-                 // No icon? Maybe draw title inside? Or just nothing.
-                 // For now, nothing inside.
             }
 
-            // Title below
-            ctx.fillStyle = '#fff';
-            ctx.font = `${10 / scale}px Inter, sans-serif`;
+            ctx.fillStyle = '#f5f5f5';
+            ctx.font = `${13 / scale}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.fillText(node.title.slice(0, 12), node.x, node.y + NODE_RADIUS + (14 / scale));
+            ctx.fillText(node.title.slice(0, 14), node.x, node.y + NODE_RADIUS + (10 / scale));
         });
     }, [nodes, edges, scale, pan, connectingNodeId, mousePos]);
 
@@ -394,6 +387,30 @@ export default function GraphView() {
         setIsPanning(false);
     };
 
+    const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+        e.preventDefault();
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const screenX = e.clientX - rect.left;
+        const screenY = e.clientY - rect.top;
+
+        const worldX = (screenX - pan.x) / scale;
+        const worldY = (screenY - pan.y) / scale;
+
+        const zoomFactor = 1.1;
+        const direction = e.deltaY < 0 ? 1 : -1;
+        const nextScale = direction > 0 ? scale * zoomFactor : scale / zoomFactor;
+        const clampedScale = Math.min(3, Math.max(0.2, nextScale));
+        if (clampedScale === scale) return;
+
+        const newPanX = screenX - worldX * clampedScale;
+        const newPanY = screenY - worldY * clampedScale;
+
+        setScale(clampedScale);
+        setPan({ x: newPanX, y: newPanY });
+    };
+
     // --- Actions ---
     const handleCreateNode = (nodeData: Partial<GraphNode>) => {
         if (!activeGraphId) return;
@@ -558,6 +575,7 @@ export default function GraphView() {
                             onContextMenu={handleContextMenu}
                             onClick={() => setContextMenu(null)}
                             onDoubleClick={handleDoubleClick}
+                            onWheel={handleWheel}
                             className={cn(
                                 "block w-full h-full",
                                 isPanning ? "cursor-grabbing" : draggingNode ? "cursor-grabbing" : "cursor-grab"

@@ -246,6 +246,62 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                             onKeyDown={handleKeyDown}
                         />
                     </div>
+                    <div className="space-y-2 text-xs text-muted-foreground">
+                        <p>
+                            Upload your file to a hosting service and paste the direct URL above:
+                        </p>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Permanent
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <a
+                                        href="https://catbox.moe/"
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
+                                    >
+                                        catbox.moe
+                                    </a>
+                                    <a
+                                        href="https://pomf2.lain.la/"
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
+                                    >
+                                        pomf2.lain.la
+                                    </a>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Temporary
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <a
+                                        href="https://litterbox.catbox.moe/"
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
+                                    >
+                                        litterbox.catbox.moe
+                                    </a>
+                                    <a
+                                        href="https://uguu.se/"
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
+                                    >
+                                        uguu.se
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-[11px]">
+                            Discord file links also work here. Any direct video, image, or PDF URL from the web can be imported.
+                        </p>
+                    </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
