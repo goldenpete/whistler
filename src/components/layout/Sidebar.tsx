@@ -860,11 +860,18 @@ export default function Sidebar() {
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
                                     {projectDocs.map(doc => (
-                                        <button
+                                        <div
                                             key={doc.id}
                                             onClick={() => handleSelectDoc(doc.id)}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                    handleSelectDoc(doc.id);
+                                                }
+                                            }}
                                             className={cn(
-                                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group",
+                                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
                                                 activeDocId === doc.id
                                                     ? "bg-primary/20 text-primary font-medium"
                                                     : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
@@ -930,11 +937,18 @@ export default function Sidebar() {
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
                                     {projectGraphs.map(graph => (
-                                        <button
+                                        <div
                                             key={graph.id}
                                             onClick={() => handleSelectGraph(graph.id)}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                    handleSelectGraph(graph.id);
+                                                }
+                                            }}
                                             className={cn(
-                                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group",
+                                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
                                                 activeGraphId === graph.id
                                                     ? "bg-primary/20 text-primary font-medium"
                                                     : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
