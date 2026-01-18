@@ -25,6 +25,17 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
     ContextMenu,
     ContextMenuContent,
     ContextMenuItem,
@@ -125,13 +136,11 @@ export default function CollectionView() {
     };
 
     const handleDeleteSelected = () => {
-        if (confirm(`Delete ${selectedItems.size} items?`)) {
-            useStore.setState(state => ({
-                timestamps: state.timestamps.filter(t => !selectedItems.has(t.id))
-            }));
-            setSelectedItems(new Set());
-            setSelectionMode(false);
-        }
+        useStore.setState(state => ({
+            timestamps: state.timestamps.filter(t => !selectedItems.has(t.id))
+        }));
+        setSelectedItems(new Set());
+        setSelectionMode(false);
     };
 
     const CollectionIcon = getIcon(activeCollection?.icon);
@@ -198,16 +207,33 @@ export default function CollectionView() {
                                 Deselect All
                             </Button>
                             <div className="w-px h-5 bg-border" />
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                className="gap-2"
-                                onClick={handleDeleteSelected}
-                                disabled={selectedItems.size === 0}
-                            >
-                                <Trash size={14} />
-                                Delete ({selectedItems.size})
-                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="gap-2"
+                                        disabled={selectedItems.size === 0}
+                                    >
+                                        <Trash size={14} />
+                                        Delete ({selectedItems.size})
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete selected clips?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will permanently delete {selectedItems.size} selected item{selectedItems.size === 1 ? "" : "s"} from this collection.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDeleteSelected}>
+                                            Delete
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </motion.div>
                 )}

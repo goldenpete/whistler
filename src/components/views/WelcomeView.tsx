@@ -25,6 +25,9 @@ export function WelcomeView() {
     const [error, setError] = useState<string | null>(null);
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
     const [turnstileWidgetId, setTurnstileWidgetId] = useState<string | null>(null);
+    const [newProjectOpen, setNewProjectOpen] = useState(false);
+    const [newProjectName, setNewProjectName] = useState("");
+    const [importError, setImportError] = useState<string | null>(null);
 
     useEffect(() => {
         window.onTurnstileSuccess = (token: string) => {
@@ -152,11 +155,8 @@ export function WelcomeView() {
     };
 
     const handleNewProject = () => {
-        const name = prompt("Project Name:"); // Ideally use a dialog
-        if (name) {
-            const p = addProject(name);
-            setActiveProject(p.id);
-        }
+        setNewProjectName("");
+        setNewProjectOpen(true);
     };
 
     const handleImportProject = () => {
@@ -188,7 +188,7 @@ export function WelcomeView() {
                 }));
             } catch (err) {
                 console.error(err);
-                alert("Failed to import project.");
+                setImportError("Failed to import project.");
             }
         };
         input.click();
@@ -279,6 +279,12 @@ export function WelcomeView() {
                         Import Project JSON
                     </Button>
 
+                    {importError && (
+                        <div className="text-xs text-red-400 text-center px-2 -mt-2">
+                            {importError}
+                        </div>
+                    )}
+
                     <Button
                         onClick={handleLoadDemo}
                         variant="outline"
@@ -337,6 +343,57 @@ export function WelcomeView() {
                             {isLoading ? "Connecting..." : "Connect & Load"}
                         </Button>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
+                <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800">
+                    <DialogHeader>
+                        <DialogTitle>New Project</DialogTitle>
+                        <DialogDescription>
+                            Enter a name for your new project.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-1 text-left">
+                            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                Project Name
+                            </div>
+                            <Input
+                                type="text"
+                                placeholder="My Project"
+                                value={newProjectName}
+                                onChange={(e) => setNewProjectName(e.target.value)}
+                                className="h-9 bg-zinc-900 border-zinc-700"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-9"
+                                onClick={() => setNewProjectOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                className="h-9 bg-primary hover:bg-primary/90"
+                                disabled={!newProjectName.trim()}
+                                onClick={() => {
+                                    const name = newProjectName.trim();
+                                    if (!name) return;
+                                    const project = addProject(name);
+                                    setActiveProject(project.id);
+                                    setNewProjectOpen(false);
+                                    setNewProjectName("");
+                                }}
+                            >
+                                Create
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

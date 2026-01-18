@@ -6,6 +6,17 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
     Popover,
     PopoverContent,
     PopoverTrigger,
@@ -369,16 +380,45 @@ export default function VideoPlayer() {
                         <div className="w-px h-6 bg-white/20 mx-1" /> {/* Divider */}
 
                         <div className="flex items-center gap-1">
-                            {/* File Management Buttons - Placeholders for now */}
                             <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => setMoveDialogOpen(true)}>
                                 <FolderPlus size={20} weight="bold" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Change Color" onClick={() => alert('Color feature coming soon')}>
-                                <Palette size={20} weight="bold" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" title="Delete" onClick={() => alert('Delete feature coming soon')}>
-                                <Trash size={20} weight="bold" />
-                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Change Color">
+                                        <Palette size={20} weight="bold" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Color feature coming soon</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            File color tagging is not available yet. This feature is coming soon.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Close</AlertDialogCancel>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" title="Delete">
+                                        <Trash size={20} weight="bold" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete feature coming soon</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Deleting files from this view is not available yet. This feature is coming soon.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Close</AlertDialogCancel>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
 
                         <div className="w-px h-6 bg-white/20 mx-1" /> {/* Divider */}

@@ -41,6 +41,16 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { CreateCollectionDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
@@ -72,6 +82,7 @@ export default function Sidebar() {
         addProject,
         addStorage,
         updateStorage,
+        deleteStorage,
         setActiveProject,
         updateCollection, // Added
         updateGraph,
@@ -119,6 +130,13 @@ export default function Sidebar() {
     const [renameDocOpen, setRenameDocOpen] = useState(false);
     const [docToRename, setDocToRename] = useState<any | null>(null);
     const [editProjectOpen, setEditProjectOpen] = useState(false);
+    const [newDocOpen, setNewDocOpen] = useState(false);
+    const [newDocName, setNewDocName] = useState("");
+    const [newGraphOpen, setNewGraphOpen] = useState(false);
+    const [newGraphName, setNewGraphName] = useState("");
+    const [newProjectOpen, setNewProjectOpen] = useState(false);
+    const [newProjectName, setNewProjectName] = useState("");
+    const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
     const handleEditGraph = (e: React.MouseEvent, graph: any) => {
         e.stopPropagation();
@@ -170,6 +188,12 @@ export default function Sidebar() {
         }
     };
 
+    const handleDeleteStorage = (e: React.MouseEvent, id: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        deleteStorage(id);
+    };
+
     const handleUpdateGraph = (name: string, color: string, icon: string) => {
         if (graphToEdit) {
             updateGraph(graphToEdit.id, { name, color, icon });
@@ -185,6 +209,15 @@ export default function Sidebar() {
     const handleEditProjectName = () => {
         if (!activeProjectId) return;
         setEditProjectOpen(true);
+    };
+
+    const handleCreateProjectSubmit = () => {
+        const name = newProjectName.trim();
+        if (!name) return;
+        const project = addProject(name);
+        setActiveProject(project.id);
+        setNewProjectOpen(false);
+        setNewProjectName("");
     };
 
     const handleExportProject = () => {
@@ -205,41 +238,46 @@ export default function Sidebar() {
     };
 
     const handleImportProject = () => {
-         const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'application/json';
-            input.onchange = async (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (!file) return;
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/json";
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
 
-                const text = await file.text();
-                try {
-                    const data = JSON.parse(text) as ProjectExportData;
-                    if (!data.version || !data.project) throw new Error("Invalid project file");
+            const text = await file.text();
+            try {
+                const data = JSON.parse(text) as ProjectExportData;
+                if (!data.version || !data.project) throw new Error("Invalid project file");
 
-                    const importedData = importProject(data);
+                const importedData = importProject(data);
 
-                    // Merge into store
-                    useStore.setState(state => ({
-                        projects: [...state.projects, importedData.project],
-                        files: [...state.files, ...importedData.files],
-                        collections: [...state.collections, ...importedData.collections],
-                        timestamps: [...state.timestamps, ...importedData.timestamps],
-                        graphs: [...state.graphs, ...importedData.graphs],
-                        graphNodes: [...state.graphNodes, ...importedData.graphNodes],
-                        graphEdges: [...state.graphEdges, ...importedData.graphEdges],
-                        docs: [...state.docs, ...importedData.docs],
-                        storages: [...state.storages, ...importedData.storages],
-                        activeProjectId: importedData.project.id
-                    }));
+                useStore.setState(state => ({
+                    projects: [...state.projects, importedData.project],
+                    files: [...state.files, ...importedData.files],
+                    collections: [...state.collections, ...importedData.collections],
+                    timestamps: [...state.timestamps, ...importedData.timestamps],
+                    graphs: [...state.graphs, ...importedData.graphs],
+                    graphNodes: [...state.graphNodes, ...importedData.graphNodes],
+                    graphEdges: [...state.graphEdges, ...importedData.graphEdges],
+                    docs: [...state.docs, ...importedData.docs],
+                    storages: [...state.storages, ...importedData.storages],
+                    activeProjectId: importedData.project.id
+                }));
 
-                    alert(`Imported project: ${importedData.project.name}`);
-                } catch (err) {
-                    console.error(err);
-                    alert("Failed to import project. Invalid file format.");
-                }
-            };
-            input.click();
+                setImportStatus({
+                    type: "success",
+                    message: `Imported project: ${importedData.project.name}`,
+                });
+            } catch (err) {
+                console.error(err);
+                setImportStatus({
+                    type: "error",
+                    message: "Failed to import project. Invalid file format.",
+                });
+            }
+        };
+        input.click();
     };
 
     const handleSelectStorage = (id: string | null) => {
@@ -247,22 +285,33 @@ export default function Sidebar() {
     };
 
     const handleCreateDoc = () => {
-        const name = prompt("New document name:");
-        if (name && activeProjectId) {
-            const newDoc = {
-                id: crypto.randomUUID(),
-                projectId: activeProjectId,
-                name,
-                content: "<p>Start writing...</p>",
-                created: Date.now(),
-                lastModified: Date.now()
-            };
-            useStore.setState(state => ({
-                docs: [...state.docs, newDoc],
-                activeDocId: newDoc.id
-            }));
-            navigate('/docs');
-        }
+        if (!activeProjectId) return;
+        setNewDocName("");
+        setNewDocOpen(true);
+    };
+
+    const handleCreateDocSubmit = () => {
+        if (!activeProjectId) return;
+        const name = newDocName.trim();
+        if (!name) return;
+
+        const newDoc = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            name,
+            content: "<p>Start writing...</p>",
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState(state => ({
+            docs: [...state.docs, newDoc],
+            activeDocId: newDoc.id
+        }));
+
+        setNewDocOpen(false);
+        setNewDocName("");
+        navigate("/docs");
     };
 
     const handleSelectDoc = (id: string) => {
@@ -270,21 +319,32 @@ export default function Sidebar() {
     };
 
     const handleCreateGraph = () => {
-        const name = prompt("New graph name:");
-        if (name && activeProjectId) {
-            const newGraph = {
-                id: crypto.randomUUID(),
-                projectId: activeProjectId,
-                name,
-                created: Date.now(),
-                lastModified: Date.now()
-            };
-            useStore.setState(state => ({
-                graphs: [...state.graphs, newGraph],
-                activeGraphId: newGraph.id
-            }));
-            navigate('/graphs');
-        }
+        if (!activeProjectId) return;
+        setNewGraphName("");
+        setNewGraphOpen(true);
+    };
+
+    const handleCreateGraphSubmit = () => {
+        if (!activeProjectId) return;
+        const name = newGraphName.trim();
+        if (!name) return;
+
+        const newGraph = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            name,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState(state => ({
+            graphs: [...state.graphs, newGraph],
+            activeGraphId: newGraph.id
+        }));
+
+        setNewGraphOpen(false);
+        setNewGraphName("");
+        navigate("/graphs");
     };
 
     const handleSelectGraph = (id: string) => {
@@ -347,12 +407,8 @@ export default function Sidebar() {
 
     const handleProjectChange = (value: string) => {
         if (value === "new") {
-            // Simple prompt for now, usually use a Dialog
-            const name = prompt("Project Name:");
-            if (name) {
-                const p = addProject(name);
-                setActiveProject(p.id);
-            }
+            setNewProjectName("");
+            setNewProjectOpen(true);
         } else if (value.startsWith("export_") && activeProjectId) {
             // EXPORT
             const data = exportProject(useStore.getState(), activeProjectId);
@@ -368,10 +424,9 @@ export default function Sidebar() {
                 URL.revokeObjectURL(url);
             }
         } else if (value === "import") {
-            // IMPORT
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'application/json';
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "application/json";
             input.onchange = async (e) => {
                 const file = (e.target as HTMLInputElement).files?.[0];
                 if (!file) return;
@@ -383,7 +438,6 @@ export default function Sidebar() {
 
                     const importedData = importProject(data);
 
-                    // Merge into store
                     useStore.setState(state => ({
                         projects: [...state.projects, importedData.project],
                         files: [...state.files, ...importedData.files],
@@ -397,10 +451,16 @@ export default function Sidebar() {
                         activeProjectId: importedData.project.id
                     }));
 
-                    alert(`Imported project: ${importedData.project.name}`);
+                    setImportStatus({
+                        type: "success",
+                        message: `Imported project: ${importedData.project.name}`,
+                    });
                 } catch (err) {
                     console.error(err);
-                    alert("Failed to import project. Invalid file format.");
+                    setImportStatus({
+                        type: "error",
+                        message: "Failed to import project. Invalid file format.",
+                    });
                 }
             };
             input.click();
@@ -530,8 +590,29 @@ export default function Sidebar() {
                                         </DropdownMenu>
                                     </div>
 
+                                    {importStatus && (
+                                        <div
+                                            className={cn(
+                                                "mt-2 text-[11px] px-2 py-1 rounded-md border",
+                                                importStatus.type === "success"
+                                                    ? "bg-emerald-500/10 border-emerald-700/60 text-emerald-300"
+                                                    : "bg-red-500/10 border-red-700/60 text-red-300"
+                                            )}
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="truncate">{importStatus.message}</span>
+                                                <button
+                                                    onClick={() => setImportStatus(null)}
+                                                    className="text-xs text-zinc-400 hover:text-zinc-200"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Project Tools Row */}
-                                    <div className="flex gap-1">
+                                <div className="flex gap-1">
                                          <Button 
                                             variant="outline" 
                                             className="flex-1 h-8 bg-card border-border/60 shadow-sm text-xs text-muted-foreground px-0 gap-1.5"
@@ -979,11 +1060,19 @@ export default function Sidebar() {
                                                     style={{ color: storage.color }}
                                                 />
                                                 <span className="truncate flex-1">{storage.name}</span>
-                                                <div
-                                                    onClick={(e) => handleEditStorageClick(e, storage)}
-                                                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-white p-1 rounded transition-all"
-                                                >
-                                                    <PencilSimple weight="bold" />
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => handleEditStorageClick(e, storage)}
+                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                    >
+                                                        <PencilSimple weight="bold" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleDeleteStorage(e, storage.id)}
+                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                                    >
+                                                        <Trash weight="bold" />
+                                                    </button>
                                                 </div>
                                             </button>
                                         );
@@ -1084,6 +1173,102 @@ export default function Sidebar() {
                     }
                 }}
             />
+
+            <Dialog open={newDocOpen} onOpenChange={setNewDocOpen}>
+                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>New Document</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Enter a name for your new document.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-doc-name">Document Name</Label>
+                            <Input
+                                id="new-doc-name"
+                                placeholder="My Document"
+                                value={newDocName}
+                                onChange={(e) => setNewDocName(e.target.value)}
+                                autoFocus
+                                className="bg-zinc-900 border-zinc-800"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewDocOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreateDocSubmit} disabled={!newDocName.trim()}>
+                            Create
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={newGraphOpen} onOpenChange={setNewGraphOpen}>
+                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>New Graph</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Enter a name for your new graph.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-graph-name">Graph Name</Label>
+                            <Input
+                                id="new-graph-name"
+                                placeholder="My Graph"
+                                value={newGraphName}
+                                onChange={(e) => setNewGraphName(e.target.value)}
+                                autoFocus
+                                className="bg-zinc-900 border-zinc-800"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewGraphOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreateGraphSubmit} disabled={!newGraphName.trim()}>
+                            Create
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
+                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>New Project</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Name your new project.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-project-name">Project Name</Label>
+                            <Input
+                                id="new-project-name"
+                                placeholder="My Project"
+                                value={newProjectName}
+                                onChange={(e) => setNewProjectName(e.target.value)}
+                                autoFocus
+                                className="bg-zinc-900 border-zinc-800"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewProjectOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreateProjectSubmit} disabled={!newProjectName.trim()}>
+                            Create
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

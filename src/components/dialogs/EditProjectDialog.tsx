@@ -2,6 +2,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useState, useEffect } from "react";
 
 interface EditProjectDialogProps {
@@ -58,18 +69,35 @@ export function EditProjectDialog({ open, onOpenChange, currentName, onSave, onD
                     {onDelete && (
                         <div className="pt-2 border-t border-zinc-800 flex justify-between items-center">
                             <span className="text-xs text-red-400">Danger zone</span>
-                            <Button
-                                variant="destructive"
-                                type="button"
-                                onClick={() => {
-                                    if (confirm("Delete this project and all its data? This cannot be undone.")) {
-                                        onDelete();
-                                        onOpenChange(false);
-                                    }
-                                }}
-                            >
-                                Delete Project
-                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="destructive"
+                                        type="button"
+                                    >
+                                        Delete Project
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete this project?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will permanently delete this project and all its data. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => {
+                                                onDelete();
+                                                onOpenChange(false);
+                                            }}
+                                        >
+                                            Delete
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     )}
                 </div>

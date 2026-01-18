@@ -364,6 +364,7 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
     const [endStr, setEndStr] = useState("");
     const [collectionId, setCollectionId] = useState<string | null>("null");
     const [highlightText, setHighlightText] = useState("");
+    const [timeError, setTimeError] = useState<string | null>(null);
 
     useEffect(() => {
         if (open && timestamp) {
@@ -396,14 +397,16 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
         const end = parseTime(endStr);
 
         if (start === null || end === null) {
-            alert("Invalid time format. Please use MM:SS");
+            setTimeError("Invalid time format. Please use MM:SS");
             return;
         }
 
         if (start > end) {
-            alert("Start time cannot be after end time.");
+            setTimeError("Start time cannot be after end time.");
             return;
         }
+
+        setTimeError(null);
 
         onSave({
             note,
@@ -439,23 +442,30 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
                             </div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Start</Label>
-                                <Input
-                                    value={startStr}
-                                    onChange={(e) => setStartStr(e.target.value)}
-                                    className="bg-zinc-900 border-zinc-800 font-mono text-center"
-                                />
+                        <div className="grid gap-2">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label>Start</Label>
+                                    <Input
+                                        value={startStr}
+                                        onChange={(e) => setStartStr(e.target.value)}
+                                        className="bg-zinc-900 border-zinc-800 font-mono text-center"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>End</Label>
+                                    <Input
+                                        value={endStr}
+                                        onChange={(e) => setEndStr(e.target.value)}
+                                        className="bg-zinc-900 border-zinc-800 font-mono text-center"
+                                    />
+                                </div>
                             </div>
-                            <div className="grid gap-2">
-                                <Label>End</Label>
-                                <Input
-                                    value={endStr}
-                                    onChange={(e) => setEndStr(e.target.value)}
-                                    className="bg-zinc-900 border-zinc-800 font-mono text-center"
-                                />
-                            </div>
+                            {timeError && (
+                                <p className="text-xs text-red-400">
+                                    {timeError}
+                                </p>
+                            )}
                         </div>
                     )}
                     <div className="grid gap-2">

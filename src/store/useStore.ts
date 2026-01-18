@@ -24,6 +24,7 @@ interface AppStore extends AppState {
     addProject: (name: string) => Project;
     addStorage: (name: string, projectId: string, color?: string, icon?: string) => void;
     updateStorage: (id: string, updates: Partial<Storage>) => void;
+    deleteStorage: (id: string) => void;
     updateGraph: (id: string, updates: Partial<Graph>) => void;
     updateDoc: (id: string, updates: Partial<Doc>) => void;
     updateProject: (id: string, updates: Partial<Project>) => void;
@@ -228,6 +229,37 @@ export const useStore = create<AppStore>()(
                     timestamp: Date.now()
                 }, ...state.history]
             })),
+
+            deleteStorage: (id) => set((state) => {
+                const storage = state.storages.find(s => s.id === id) || null;
+                const storageFileIds = new Set(state.files.filter(f => f.storageId === id).map(f => f.id));
+                const remainingStorages = state.storages.filter(s => s.id !== id);
+
+                let nextActiveStorageId = state.activeStorageId;
+                if (state.activeStorageId === id) {
+                    nextActiveStorageId = remainingStorages.find(s => s.projectId === storage?.projectId)?.id || null;
+                }
+
+                return {
+                    storages: remainingStorages,
+                    files: state.files.map(f =>
+                        storageFileIds.has(f.id)
+                            ? { ...f, deleted: true, lastModified: Date.now() }
+                            : f
+                    ),
+                    activeStorageId: nextActiveStorageId,
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: storage?.projectId ?? (state.activeProjectId || 'global'),
+                        action: 'delete',
+                        entityType: 'collection',
+                        entityId: id,
+                        entityName: storage?.name,
+                        details: 'Delete Storage',
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
 
             addTimestamp: (fileId, time) => set((state) => {
                 const collectionId = state.activeCollectionId;

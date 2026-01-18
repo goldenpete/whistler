@@ -9,6 +9,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -47,7 +55,9 @@ function DocEditor({ doc }: DocEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
     const [docName, setDocName] = useState(doc.name);
     const { docViewMode: viewMode = 'page', setDocViewMode: setViewMode } = useStore();
-    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const saveTimeoutRef = useRef<number | null>(null);
+    const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+    const [linkUrl, setLinkUrl] = useState("");
 
     useEffect(() => {
         if (editorRef.current) {
@@ -95,6 +105,14 @@ function DocEditor({ doc }: DocEditorProps) {
     const execCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
         editorRef.current?.focus();
+    };
+
+    const handleInsertLink = () => {
+        const url = linkUrl.trim();
+        if (!url) return;
+        execCommand("createLink", url);
+        setLinkDialogOpen(false);
+        setLinkUrl("");
     };
 
     const getContainerClass = () => {
@@ -169,10 +187,16 @@ function DocEditor({ doc }: DocEditorProps) {
                     <Button variant="ghost" size="icon" onClick={() => execCommand('insertUnorderedList')} className="size-8" title="Bullet List">
                         <ListBullets />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                        const url = prompt("Enter link URL:");
-                        if (url) execCommand('createLink', url);
-                    }} className="size-8" title="Insert Link">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            setLinkUrl("");
+                            setLinkDialogOpen(true);
+                        }}
+                        className="size-8"
+                        title="Insert Link"
+                    >
                         <Link />
                     </Button>
                 </div>
@@ -219,6 +243,37 @@ function DocEditor({ doc }: DocEditorProps) {
                     />
                 </div>
             </div>
+
+            <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+                <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Insert Link</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Enter the URL to link to.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-1">
+                            <Input
+                                type="url"
+                                placeholder="https://example.com"
+                                value={linkUrl}
+                                onChange={(e) => setLinkUrl(e.target.value)}
+                                className="h-9 bg-zinc-900 border-zinc-700"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleInsertLink} disabled={!linkUrl.trim()}>
+                            Insert
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
