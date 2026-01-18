@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
     NotePencil, TextB, TextItalic, ListBullets,
     TextUnderline, TextStrikethrough, TextAlignLeft, TextAlignCenter, TextAlignRight,
-    ArrowCounterClockwise, ArrowClockwise, Link, File, Rows, ArrowsOutSimple, Layout
+    ArrowCounterClockwise, ArrowClockwise, Link, File, Rows, ArrowsOutSimple, Layout, Plus
 } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,8 +25,26 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function DocsView() {
-    const { docs, activeDocId } = useStore();
+    const { docs, activeDocId, activeProjectId } = useStore();
     const activeDoc = docs.find(d => d.id === activeDocId);
+
+    const handleCreateDoc = () => {
+        if (!activeProjectId) return;
+
+        const newDoc = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            name: "New Document",
+            content: "<p>Start writing...</p>",
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState(state => ({
+            docs: [...state.docs, newDoc],
+            activeDocId: newDoc.id
+        }));
+    };
 
     return (
         <div className="flex h-full bg-background overflow-hidden">
@@ -38,7 +56,10 @@ export default function DocsView() {
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
                             <NotePencil size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p>Select or create a document</p>
+                            <p className="mb-4">Select or create a document</p>
+                            <Button onClick={handleCreateDoc}>
+                                <Plus className="mr-2" /> Create Document
+                            </Button>
                         </div>
                     </div>
                 )}

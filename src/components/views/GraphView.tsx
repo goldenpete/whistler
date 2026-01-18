@@ -487,6 +487,25 @@ export default function GraphView() {
         }
     };
 
+    const handleCreateGraph = () => {
+        if (!activeProjectId) return;
+
+        const newGraph = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            name: "New Graph",
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState(state => ({
+            graphs: [...state.graphs, newGraph],
+            activeGraphId: newGraph.id
+        }));
+
+        navigate("/graphs");
+    };
+
     return (
         <div className="flex h-full bg-background overflow-hidden">
             <div ref={containerRef} className="flex-1 relative bg-neutral-950 flex flex-col">
@@ -581,7 +600,10 @@ export default function GraphView() {
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
                             <Circle size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p>Select or create a graph</p>
+                            <p className="mb-4">Select or create a graph</p>
+                            <Button variant="default" size="sm" onClick={handleCreateGraph}>
+                                <Plus className="mr-2" /> Create Graph
+                            </Button>
                         </div>
                     </div>
                 )}

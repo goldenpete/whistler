@@ -19,6 +19,7 @@ import {
     Square,
     X,
     MagnifyingGlass,
+    HardDrives,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ export default function StorageView() {
         storages,
         activeStorageId,
         trashFile,
+        addStorage,
     } = useStore();
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -74,8 +76,33 @@ export default function StorageView() {
     const projectStorages = storages.filter(s => s.projectId === activeProjectId && !s.deleted);
     const activeStorage = storages.find(s => s.id === activeStorageId);
 
+    const handleCreateStorage = () => {
+        if (!activeProjectId) return;
+
+        const newStorageName = projectStorages.length === 0 ? "Main Storage" : "New Storage";
+        addStorage(newStorageName, activeProjectId);
+    };
+
     // Get current folder logic
     const currentFolder = currentFolderId ? files.find(f => f.id === currentFolderId) : null;
+
+    if (!activeProject || projectStorages.length === 0) {
+        return (
+            <div className="flex h-full bg-background overflow-hidden">
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                        <HardDrives size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
+                        <p className="mb-4">Select or create a storage</p>
+                        {activeProject && (
+                            <Button onClick={handleCreateStorage}>
+                                <Plus className="mr-2" /> Create Storage
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Breadcrumb path builder
     const getBreadcrumbs = () => {
