@@ -236,8 +236,24 @@ export const useStore = create<AppStore>()(
                 const remainingStorages = state.storages.filter(s => s.id !== id);
 
                 let nextActiveStorageId = state.activeStorageId;
-                if (state.activeStorageId === id) {
-                    nextActiveStorageId = remainingStorages.find(s => s.projectId === storage?.projectId)?.id || null;
+                
+                // If the deleted storage was the active one, or if we have no active storage but should have one
+                if (state.activeStorageId === id || (!state.activeStorageId && remainingStorages.length > 0)) {
+                    // Try to find another storage in the same project
+                    const projectId = storage?.projectId || state.activeProjectId;
+                    if (projectId) {
+                        // Prefer other storages in the same project
+                        const projectStorages = remainingStorages.filter(s => s.projectId === projectId);
+                        nextActiveStorageId = projectStorages.length > 0 ? projectStorages[0].id : null;
+                        
+                        // If no storages in project, try any storage (fallback, though unlikely to be desired)
+                        if (!nextActiveStorageId && remainingStorages.length > 0) {
+                             // Actually, better to leave it null if no storages in project
+                             nextActiveStorageId = null; 
+                        }
+                    } else {
+                        nextActiveStorageId = null;
+                    }
                 }
 
                 return {
