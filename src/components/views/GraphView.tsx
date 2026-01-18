@@ -32,7 +32,7 @@ export default function GraphView() {
         addNode, updateNode, removeNode, addEdge, removeEdge
     } = useStore();
 
-    const activeGraph = graphs.find(g => g.id === activeGraphId);
+    const activeGraph = graphs.find(g => g.id === activeGraphId && !g.deleted);
     const nodes = graphNodes.filter(n => n.graphId === activeGraphId);
     const edges = graphEdges.filter(e => e.graphId === activeGraphId);
 

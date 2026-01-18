@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 export default function DocsView() {
     const { docs, activeDocId, activeProjectId } = useStore();
-    const activeDoc = docs.find(d => d.id === activeDocId);
+    const activeDoc = docs.find(d => d.id === activeDocId && !d.deleted);
 
     const handleCreateDoc = () => {
         if (!activeProjectId) return;

@@ -587,18 +587,22 @@ export const useStore = create<AppStore>()(
                     timestamp: Date.now()
                 }, ...state.history]
             })),
-            trashGraph: (id) => set((state) => ({
-                graphs: state.graphs.map((g) => g.id === id ? { ...g, deleted: true, lastModified: Date.now() } : g),
-                history: [{
-                    id: crypto.randomUUID(),
-                    projectId: state.activeProjectId || 'global',
-                    action: 'delete',
-                    entityType: 'graph',
-                    entityId: id,
-                    entityName: state.graphs.find(g => g.id === id)?.name,
-                    timestamp: Date.now()
-                }, ...state.history]
-            })),
+            trashGraph: (id) => set((state) => {
+                const updatedGraphs = state.graphs.map((g) => g.id === id ? { ...g, deleted: true, lastModified: Date.now() } : g);
+                return {
+                    graphs: updatedGraphs,
+                    activeGraphId: state.activeGraphId === id ? null : state.activeGraphId,
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: state.activeProjectId || 'global',
+                        action: 'delete',
+                        entityType: 'graph',
+                        entityId: id,
+                        entityName: state.graphs.find(g => g.id === id)?.name,
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
             restoreGraph: (id) => set((state) => ({
                 graphs: state.graphs.map((g) => g.id === id ? { ...g, deleted: false, lastModified: Date.now() } : g),
                 history: [{
@@ -626,18 +630,22 @@ export const useStore = create<AppStore>()(
                     timestamp: Date.now()
                 }, ...state.history]
             })),
-            trashDoc: (id) => set((state) => ({
-                docs: state.docs.map((d) => d.id === id ? { ...d, deleted: true, lastModified: Date.now() } : d),
-                history: [{
-                    id: crypto.randomUUID(),
-                    projectId: state.activeProjectId || 'global',
-                    action: 'delete',
-                    entityType: 'doc',
-                    entityId: id,
-                    entityName: state.docs.find(d => d.id === id)?.name,
-                    timestamp: Date.now()
-                }, ...state.history]
-            })),
+            trashDoc: (id) => set((state) => {
+                const updatedDocs = state.docs.map((d) => d.id === id ? { ...d, deleted: true, lastModified: Date.now() } : d);
+                return {
+                    docs: updatedDocs,
+                    activeDocId: state.activeDocId === id ? null : state.activeDocId,
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: state.activeProjectId || 'global',
+                        action: 'delete',
+                        entityType: 'doc',
+                        entityId: id,
+                        entityName: state.docs.find(d => d.id === id)?.name,
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
             restoreDoc: (id) => set((state) => ({
                 docs: state.docs.map((d) => d.id === id ? { ...d, deleted: false, lastModified: Date.now() } : d),
                 history: [{
