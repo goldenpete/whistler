@@ -1,7 +1,4 @@
-/**
- * @deprecated This component has been replaced by SidebarTrash.tsx and is no longer used.
- */
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import {

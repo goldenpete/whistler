@@ -71,6 +71,9 @@ interface AppStore extends AppState {
     trashCollection: (id: string) => void;
     restoreCollection: (id: string) => void;
     permanentDeleteCollection: (id: string) => void;
+    trashStorage: (id: string) => void;
+    restoreStorage: (id: string) => void;
+    permanentDeleteStorage: (id: string) => void;
     trashGraph: (id: string) => void;
     restoreGraph: (id: string) => void;
     permanentDeleteGraph: (id: string) => void;
@@ -232,37 +235,27 @@ export const useStore = create<AppStore>()(
 
             deleteStorage: (id) => set((state) => {
                 const storage = state.storages.find(s => s.id === id) || null;
-                const storageFileIds = new Set(state.files.filter(f => f.storageId === id).map(f => f.id));
-                const remainingStorages = state.storages.filter(s => s.id !== id);
-
+                // Soft delete: Mark as deleted instead of removing
+                // We also need to decide what to do with activeStorageId
+                
                 let nextActiveStorageId = state.activeStorageId;
                 
                 // If the deleted storage was the active one, or if we have no active storage but should have one
-                if (state.activeStorageId === id || (!state.activeStorageId && remainingStorages.length > 0)) {
+                if (state.activeStorageId === id) {
                     // Try to find another storage in the same project
                     const projectId = storage?.projectId || state.activeProjectId;
                     if (projectId) {
-                        // Prefer other storages in the same project
-                        const projectStorages = remainingStorages.filter(s => s.projectId === projectId);
+                        // Prefer other storages in the same project that are NOT deleted
+                        const projectStorages = state.storages.filter(s => s.projectId === projectId && s.id !== id && !s.deleted);
                         nextActiveStorageId = projectStorages.length > 0 ? projectStorages[0].id : null;
-                        
-                        // If no storages in project, try any storage (fallback, though unlikely to be desired)
-                        if (!nextActiveStorageId && remainingStorages.length > 0) {
-                             // Actually, better to leave it null if no storages in project
-                             nextActiveStorageId = null; 
-                        }
                     } else {
                         nextActiveStorageId = null;
                     }
                 }
 
                 return {
-                    storages: remainingStorages,
-                    files: state.files.map(f =>
-                        storageFileIds.has(f.id)
-                            ? { ...f, deleted: true, lastModified: Date.now() }
-                            : f
-                    ),
+                    storages: state.storages.map(s => s.id === id ? { ...s, deleted: true, lastModified: Date.now() } : s),
+                    // We do NOT delete files when soft-deleting storage, so they can be recovered with the storage
                     activeStorageId: nextActiveStorageId,
                     history: [{
                         id: crypto.randomUUID(),
@@ -271,7 +264,46 @@ export const useStore = create<AppStore>()(
                         entityType: 'collection',
                         entityId: id,
                         entityName: storage?.name,
-                        details: 'Delete Storage',
+                        details: 'Moved to Trash',
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
+
+            trashStorage: (id) => {
+                // Alias for deleteStorage (soft delete)
+                useStore.getState().deleteStorage(id);
+            },
+
+            restoreStorage: (id) => set((state) => ({
+                storages: state.storages.map(s => s.id === id ? { ...s, deleted: false, lastModified: Date.now() } : s),
+                history: [{
+                    id: crypto.randomUUID(),
+                    projectId: state.activeProjectId || 'global',
+                    action: 'restore',
+                    entityType: 'collection',
+                    entityId: id,
+                    entityName: state.storages.find(s => s.id === id)?.name,
+                    timestamp: Date.now()
+                }, ...state.history]
+            })),
+
+            permanentDeleteStorage: (id) => set((state) => {
+                // Hard delete storage AND its files
+                const storageFileIds = new Set(state.files.filter(f => f.storageId === id).map(f => f.id));
+                return {
+                    storages: state.storages.filter(s => s.id !== id),
+                    files: state.files.filter(f => !storageFileIds.has(f.id)), // Hard delete files too? Or just mark them? Usually permanent delete means GONE.
+                    // If we hard delete files, we should also remove their timestamps, etc.
+                    // For simplicity, let's just remove the storage. Orphaned files?
+                    // Ideally we remove files.
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: state.activeProjectId || 'global',
+                        action: 'delete',
+                        entityType: 'collection',
+                        entityId: id,
+                        details: 'Permanently Deleted',
                         timestamp: Date.now()
                     }, ...state.history]
                 };
@@ -692,14 +724,22 @@ export const useStore = create<AppStore>()(
                 const deletedCollectionIds = new Set(state.collections.filter((c) => c.deleted).map((c) => c.id));
                 const deletedGraphIds = new Set(state.graphs.filter((g) => g.deleted).map((g) => g.id));
                 const deletedDocIds = new Set(state.docs.filter((d) => d.deleted).map((d) => d.id));
+                const deletedStorageIds = new Set(state.storages.filter((s) => s.deleted).map((s) => s.id));
+                const storageDeletedFileIds = new Set(
+                    state.files
+                        .filter((f) => f.storageId && deletedStorageIds.has(f.storageId))
+                        .map((f) => f.id)
+                );
+                const allDeletedFileIds = new Set([...deletedFileIds, ...storageDeletedFileIds]);
 
                 return {
-                    files: state.files.filter((f) => !f.deleted),
+                    files: state.files.filter((f) => !allDeletedFileIds.has(f.id)),
                     collections: state.collections.filter((c) => !c.deleted),
+                    storages: state.storages.filter((s) => !s.deleted),
                     graphs: state.graphs.filter((g) => !g.deleted),
                     docs: state.docs.filter((d) => !d.deleted),
                     timestamps: state.timestamps.filter((t) =>
-                        !deletedFileIds.has(t.fileId) && !deletedCollectionIds.has(t.collectionId || '')
+                        !allDeletedFileIds.has(t.fileId) && !deletedCollectionIds.has(t.collectionId || '')
                     ),
                     graphNodes: state.graphNodes.filter(n => !deletedGraphIds.has(n.graphId)),
                     graphEdges: state.graphEdges.filter(e => !deletedGraphIds.has(e.graphId)),

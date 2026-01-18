@@ -11,6 +11,7 @@ import {
     Graph,
     NotePencil,
     CaretLeft,
+    HardDrives,
 } from "@phosphor-icons/react";
 import {
     AlertDialog,
@@ -35,6 +36,7 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
         collections,
         graphs,
         docs,
+        storages,
         activeProjectId,
         restoreFile,
         permanentDeleteFile,
@@ -44,6 +46,8 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
         permanentDeleteGraph,
         restoreDoc,
         permanentDeleteDoc,
+        restoreStorage,
+        permanentDeleteStorage,
         emptyTrash,
     } = useStore();
 
@@ -57,6 +61,11 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
         [collections, activeProjectId]
     );
 
+    const trashedStorages = useMemo(
+        () => storages.filter((s) => s.projectId === activeProjectId && s.deleted),
+        [storages, activeProjectId]
+    );
+
     const trashedGraphs = useMemo(
         () => graphs.filter((g) => g.projectId === activeProjectId && g.deleted),
         [graphs, activeProjectId]
@@ -67,7 +76,12 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
         [docs, activeProjectId]
     );
 
-    const hasTrash = trashedFiles.length > 0 || trashedCollections.length > 0 || trashedGraphs.length > 0 || trashedDocs.length > 0;
+    const hasTrash =
+        trashedFiles.length > 0 ||
+        trashedCollections.length > 0 ||
+        trashedGraphs.length > 0 ||
+        trashedDocs.length > 0 ||
+        trashedStorages.length > 0;
 
     const formatRelativeTime = (timestamp: number) => {
         const now = Date.now();
@@ -201,6 +215,25 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                     </div>
                 ) : (
                     <div className="space-y-4">
+                        {trashedStorages.length > 0 && (
+                            <div>
+                                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 px-2">Storages</h3>
+                                <div className="space-y-0.5">
+                                    {trashedStorages.map(s => (
+                                        <TrashItem
+                                            key={s.id}
+                                            icon={HardDrives}
+                                            name={s.name}
+                                            date={s.lastModified || s.created}
+                                            color={s.color}
+                                            onRestore={() => restoreStorage(s.id)}
+                                            onDelete={() => permanentDeleteStorage(s.id)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {trashedCollections.length > 0 && (
                             <div>
                                 <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 px-2">Collections</h3>
@@ -247,7 +280,7 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                                             key={d.id}
                                             icon={NotePencil}
                                             name={d.name}
-                                            date={d.lastModified}
+                                            date={d.lastModified || d.created}
                                             onRestore={() => restoreDoc(d.id)}
                                             onDelete={() => permanentDeleteDoc(d.id)}
                                         />
@@ -265,7 +298,7 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                                             key={g.id}
                                             icon={Graph}
                                             name={g.name}
-                                            date={g.lastModified}
+                                            date={g.lastModified || g.created}
                                             onRestore={() => restoreGraph(g.id)}
                                             onDelete={() => permanentDeleteGraph(g.id)}
                                         />
