@@ -1004,13 +1004,7 @@ export default function Sidebar() {
                 <div className="p-3 border-t border-border/40 bg-card/30">
                     {isPipOpen && pipFileId ? (
                         <PiPPlayer isCollapsed={isSidebarCollapsed} />
-                    ) : (
-                        <div className="flex items-center gap-3 px-2 py-2 text-sm text-muted-foreground group relative">
-                            <div className="size-8 rounded-full bg-accent/20 flex items-center justify-center text-accent shrink-0">
-                                <Cloud weight="fill" />
-                            </div>
-                        </div>
-                    )}
+                    ) : null}
 
                     {/* Collapsed Mode History Button */}
                     {isSidebarCollapsed && !isPipOpen && (
@@ -1028,11 +1022,10 @@ export default function Sidebar() {
             {isSidebarCollapsed && (
                 <button
                     onClick={toggleSidebarCollapse}
-                    className="fixed top-4 left-4 z-30 h-8 px-2 rounded-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center gap-2"
+                    className="fixed top-1/2 -translate-y-1/2 -left-2 z-30 h-10 w-8 rounded-r-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center justify-center"
                     title="Show sidebar"
                 >
-                    <SidebarSimple weight="bold" size={16} />
-                    <span className="text-xs font-semibold uppercase tracking-wide">Sidebar</span>
+                    <SidebarSimple weight="bold" size={18} />
                 </button>
             )}
 
