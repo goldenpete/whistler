@@ -605,110 +605,103 @@ export default function VideoPlayer() {
                     initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
                     animate={{ width: 320, opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="bg-zinc-900 border-l border-white/10 flex flex-col shrink-0 z-20 overflow-hidden"
+                    className="bg-zinc-900 border-l border-white/10 flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full"
                 >
-                    <div className="w-80 flex flex-col h-full">
-                            <div className="p-4 border-b border-white/10 bg-zinc-900/50 backdrop-blur-md flex items-center justify-between">
-                                <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-6 w-6 text-zinc-400 hover:text-amber-500 disabled:opacity-30 disabled:hover:text-zinc-400" 
-                                    onClick={handleAddTimestamp} 
-                                    title="Add Highlight"
-                                    disabled={file.type === 'pdf' && !hasPdfSelection}
-                                >
-                                    <Plus weight="bold" size={14} />
-                                </Button>
-                            </div>
-                            <ScrollArea className="flex-1 w-full">
-                                {fileTimestamps.length === 0 ? (
-                                    <div className="text-zinc-500 text-xs text-center mt-4">No highlights yet.</div>
-                                ) : (
-                                    fileTimestamps.map((ts: any) => {
-                                        const collection = collections.find(c => c.id === ts.collectionId);
-                                        const borderColor = collection ? collection.color : 'transparent';
-                                        const collectionName = collection ? collection.name : null;
-
-                                        return (
-                                            <div
-                                                key={ts.id}
-                                                className="group flex flex-col gap-1.5 p-2 rounded-none hover:bg-white/5 border-l-4 transition-all relative"
-                                                style={{ borderLeftColor: borderColor }}
-                                            >
-                                                {/* Header Row: Time + Collection + Controls */}
-                                                <div className="flex items-center justify-between gap-2 h-6">
-                                                    <div className="flex items-center gap-3 min-w-0">
-                                                        <button
-                                                            className="text-amber-500 font-mono text-xs bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-amber-500 hover:text-black transition-colors"
-                                                            onClick={() => seekToTimestamp(ts.start)}
-                                                        >
-                                                            {file.type === 'pdf' 
-                                                                ? `Page ${ts.start}`
-                                                                : `${formatTime(ts.start)} - ${formatTime(ts.end || ts.start + 5)}`
-                                                            }
-                                                        </button>
-                                                        {collectionName && (
-                                                            <span className="text-xs font-semibold truncate uppercase tracking-tight" style={{ color: collection?.color }}>
-                                                                {collectionName}
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Action Buttons */}
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        {file.type !== 'pdf' && (
-                                                            <button
-                                                                className="p-1 px-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded flex items-center gap-1"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setSelectedTimestampId(ts.id);
-                                                                    setClipPlayerOpen(true);
-                                                                }}
-                                                                title="Open Clip"
-                                                            >
-                                                                <Play weight="fill" size={10} />
-                                                            </button>
-                                                        )}
-                                                        <button
-                                                            className="p-1 text-zinc-400 hover:text-white hover:bg-white/10 rounded"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedTimestampId(ts.id);
-                                                                setEditTimestampOpen(true);
-                                                            }}
-                                                            title="Edit Timestamp"
-                                                        >
-                                                            <PencilSimple weight="bold" size={12} />
-                                                        </button>
-                                                        <button
-                                                            className="p-1 text-zinc-400 hover:text-red-400 hover:bg-white/10 rounded"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                removeTimestamp(ts.id);
-                                                            }}
-                                                            title="Delete Timestamp"
-                                                        >
-                                                            <Trash weight="bold" size={12} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {file.type === 'pdf' && ts.text && (
-                                                    <div className="text-zinc-200 text-xs whitespace-pre-wrap break-all pl-1 leading-snug">
-                                                        {ts.text}
-                                                    </div>
-                                                )}
-                                                <div className="text-zinc-300 text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
-                                                    {ts.note || <span className="text-zinc-500 italic text-xs">No note</span>}
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </ScrollArea>
-                        </div>
+                    <div className="p-4 border-b border-white/10 bg-zinc-900/50 backdrop-blur-md flex items-center justify-between">
+                        <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-zinc-400 hover:text-amber-500 disabled:opacity-30 disabled:hover:text-zinc-400"
+                            onClick={handleAddTimestamp}
+                            title="Add Highlight"
+                            disabled={file.type === 'pdf' && !hasPdfSelection}
+                        >
+                            <Plus weight="bold" size={14} />
+                        </Button>
                     </div>
+                    <ScrollArea className="flex-1 w-full">
+                        {fileTimestamps.length === 0 ? (
+                            <div className="text-zinc-500 text-xs text-center mt-4">No highlights yet.</div>
+                        ) : (
+                            fileTimestamps.map((ts: any) => {
+                                const collection = collections.find(c => c.id === ts.collectionId);
+                                const borderColor = collection ? collection.color : 'transparent';
+                                const collectionName = collection ? collection.name : null;
+
+                                return (
+                                    <div
+                                        key={ts.id}
+                                        className="group flex flex-col gap-1.5 p-2 rounded-none hover:bg-white/5 border-l-4 transition-all relative"
+                                        style={{ borderLeftColor: borderColor }}
+                                    >
+                                        <div className="flex items-center justify-between gap-2 h-6">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <button
+                                                    className="text-amber-500 font-mono text-xs bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-amber-500 hover:text-black transition-colors"
+                                                    onClick={() => seekToTimestamp(ts.start)}
+                                                >
+                                                    {file.type === 'pdf'
+                                                        ? `Page ${ts.start}`
+                                                        : `${formatTime(ts.start)} - ${formatTime(ts.end || ts.start + 5)}`
+                                                    }
+                                                </button>
+                                                {collectionName && (
+                                                    <span className="text-xs font-semibold truncate uppercase tracking-tight" style={{ color: collection?.color }}>
+                                                        {collectionName}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {file.type !== 'pdf' && (
+                                                    <button
+                                                        className="p-1 px-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded flex items-center gap-1"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedTimestampId(ts.id);
+                                                            setClipPlayerOpen(true);
+                                                        }}
+                                                        title="Open Clip"
+                                                    >
+                                                        <Play weight="fill" size={10} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className="p-1 text-zinc-400 hover:text-white hover:bg-white/10 rounded"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTimestampId(ts.id);
+                                                        setEditTimestampOpen(true);
+                                                    }}
+                                                    title="Edit Timestamp"
+                                                >
+                                                    <PencilSimple weight="bold" size={12} />
+                                                </button>
+                                                <button
+                                                    className="p-1 text-zinc-400 hover:text-red-400 hover:bg-white/10 rounded"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeTimestamp(ts.id);
+                                                    }}
+                                                    title="Delete Timestamp"
+                                                >
+                                                    <Trash weight="bold" size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {file.type === 'pdf' && ts.text && (
+                                            <div className="text-zinc-200 text-xs whitespace-pre-wrap break-all pl-1 leading-snug">
+                                                {ts.text}
+                                            </div>
+                                        )}
+                                        <div className="text-zinc-300 text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
+                                            {ts.note || <span className="text-zinc-500 italic text-xs">No note</span>}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </ScrollArea>
                 </motion.div>
             )}
 
