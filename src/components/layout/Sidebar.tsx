@@ -413,7 +413,7 @@ export default function Sidebar() {
     return (
         <>
             <motion.aside
-                initial={{ width: 280 }}
+                initial={{ width: isSidebarCollapsed ? 0 : 280 }}
                 animate={{ width: isSidebarCollapsed ? 0 : 280 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className={cn(
@@ -1022,7 +1022,7 @@ export default function Sidebar() {
             {isSidebarCollapsed && (
                 <button
                     onClick={toggleSidebarCollapse}
-                    className="fixed top-1/2 -translate-y-1/2 -left-2 z-30 h-10 w-8 rounded-r-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center justify-center"
+                    className="fixed top-1/2 -translate-y-1/2 left-4 z-30 h-10 w-8 rounded-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center justify-center"
                     title="Show sidebar"
                 >
                     <SidebarSimple weight="bold" size={18} />

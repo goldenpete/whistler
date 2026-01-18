@@ -36,7 +36,7 @@ import {
     GridFour,
     CircleNotch
 } from "@phosphor-icons/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
 import type { PDFPlayerHandle } from './PDFPlayer';
 import { SeekPreview } from './SeekPreview';
@@ -600,16 +600,14 @@ export default function VideoPlayer() {
             </motion.div>
 
             {/* Sidebar (Full Height, Sibling to Player Container) */}
-            <AnimatePresence>
-                {sidebarOpen && (
-                    <motion.div
-                        initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
-                        animate={{ width: 320, opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="bg-zinc-900 border-l border-white/10 flex flex-col shrink-0 z-20 overflow-hidden"
-                    >
-                        <div className="w-80 flex flex-col h-full">
+            {sidebarOpen && (
+                <motion.div
+                    initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
+                    animate={{ width: 320, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-zinc-900 border-l border-white/10 flex flex-col shrink-0 z-20 overflow-hidden"
+                >
+                    <div className="w-80 flex flex-col h-full">
                             <div className="p-4 border-b border-white/10 bg-zinc-900/50 backdrop-blur-md flex items-center justify-between">
                                 <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
                                 <Button 
@@ -710,9 +708,9 @@ export default function VideoPlayer() {
                                 )}
                             </ScrollArea>
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                </motion.div>
+            )}
 
             <MoveFileDialog
                 open={moveDialogOpen}
