@@ -889,7 +889,7 @@ export default function Sidebar() {
                                                     <Trash weight="bold" />
                                                 </button>
                                             </div>
-                                        </button>
+                                        </div>
                                     ))}
 
                                     {projectDocs.length === 0 && (
@@ -959,7 +959,7 @@ export default function Sidebar() {
                                                     <Trash weight="bold" />
                                                 </button>
                                             </div>
-                                        </button>
+                                        </div>
                                     ))}
 
                                     {projectGraphs.length === 0 && (

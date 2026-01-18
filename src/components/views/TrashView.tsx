@@ -87,8 +87,15 @@ export default function TrashView() {
         }
     };
 
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        setNow(Date.now());
+        const interval = setInterval(() => setNow(Date.now()), 60000);
+        return () => clearInterval(interval);
+    }, []);
+
     const formatRelativeTime = (timestamp: number) => {
-        const now = Date.now();
         const diff = now - timestamp;
         const minutes = Math.floor(diff / 60000);
         const hours = Math.floor(diff / 3600000);
