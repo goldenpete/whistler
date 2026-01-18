@@ -451,7 +451,10 @@ export default function Sidebar() {
                     )}
 
                     {!isSidebarCollapsed && (
-                        <button className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-3">
+                        <button
+                            onClick={() => useStore.getState().setSpotlightOpen(true)}
+                            className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-3"
+                        >
                             <MagnifyingGlass weight="bold" size={18} />
                         </button>
                     )}

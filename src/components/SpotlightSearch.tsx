@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     CommandDialog,
@@ -28,7 +28,6 @@ import type { File, Collection, Timestamp } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
 
 export function SpotlightSearch() {
-    const [open, setOpen] = useState(false);
     const navigate = useNavigate();
 
     const {
@@ -38,6 +37,8 @@ export function SpotlightSearch() {
         activeProjectId,
         setActiveProject,
         projects,
+        isSpotlightOpen,
+        setSpotlightOpen,
     } = useStore();
 
     const projectFiles = useMemo(
@@ -55,9 +56,9 @@ export function SpotlightSearch() {
         return timestamps.filter((t) => fileIds.has(t.fileId));
     }, [timestamps, projectFiles]);
 
-    useKeybind("ctrl+k", () => setOpen(true), { preventDefault: true, disableInInput: true });
-    useKeybind("meta+k", () => setOpen(true), { preventDefault: true, disableInInput: true });
-    useKeybind("/", () => setOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("ctrl+k", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("meta+k", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("/", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
 
     const getFileIcon = useCallback((type: string) => {
         switch (type) {
@@ -83,7 +84,7 @@ export function SpotlightSearch() {
     };
 
     const handleSelectFile = (file: File) => {
-        setOpen(false);
+        setSpotlightOpen(false);
         if (file.type === "folder") {
             // Navigate to storage with folder open (future: add folder navigation state)
             navigate("/storage");
@@ -93,24 +94,24 @@ export function SpotlightSearch() {
     };
 
     const handleSelectCollection = (collection: Collection) => {
-        setOpen(false);
+        setSpotlightOpen(false);
         useStore.setState({ activeCollectionId: collection.id });
         navigate("/collections");
     };
 
     const handleSelectTimestamp = (timestamp: Timestamp) => {
-        setOpen(false);
+        setSpotlightOpen(false);
         // Navigate to the file at the timestamp
         navigate(`/file/${timestamp.fileId}?t=${timestamp.start}`);
     };
 
     const handleNavigation = (path: string) => {
-        setOpen(false);
+        setSpotlightOpen(false);
         navigate(path);
     };
 
     return (
-        <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandDialog open={isSpotlightOpen} onOpenChange={setSpotlightOpen}>
             <CommandInput placeholder="Search files, collections, timestamps..." />
             <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
@@ -209,7 +210,7 @@ export function SpotlightSearch() {
                                     value={`project ${project.name}`}
                                     onSelect={() => {
                                         setActiveProject(project.id);
-                                        setOpen(false);
+                                        setSpotlightOpen(false);
                                     }}
                                 >
                                     <Folder className="mr-2 h-4 w-4 text-primary" />

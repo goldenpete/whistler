@@ -51,6 +51,9 @@ interface AppStore extends AppState {
     togglePip: (isOpen: boolean) => void;
     setFileProgress: (fileId: string, time: number) => void;
     
+    // Spotlight Actions
+    isSpotlightOpen: boolean;
+    setSpotlightOpen: (open: boolean) => void;
     // Sidebar Actions
     isSidebarOpen: boolean;
     toggleSidebar: (isOpen: boolean) => void;
@@ -122,6 +125,9 @@ export const useStore = create<AppStore>()(
             isSidebarOpen: true,
             isSidebarCollapsed: false,
             
+            // Spotlight State
+            isSpotlightOpen: false,
+            
             // Doc State
             docViewMode: 'page',
 
@@ -139,6 +145,7 @@ export const useStore = create<AppStore>()(
                 fileProgress: { ...state.fileProgress, [fileId]: time }
             })),
             
+            setSpotlightOpen: (open) => set({ isSpotlightOpen: open }),
             toggleSidebar: (isOpen) => set({ isSidebarOpen: isOpen }),
             toggleSidebarCollapse: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
 
