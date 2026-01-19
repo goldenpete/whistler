@@ -24,6 +24,8 @@ import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon } from "@phosphor
 import { FilePickerDialog } from "./FilePickerDialog";
 import { HighlightPickerDialog } from "./HighlightPickerDialog";
 import { useNavigate } from "react-router-dom";
+import { ICONS } from "./StorageDialogs";
+import { cn } from "@/lib/utils";
 
 interface NodeDialogProps {
     open: boolean;
@@ -57,6 +59,7 @@ export function NodeDialog({
     // Form State
     const [title, setTitle] = useState("");
     const [color, setColor] = useState(PRESET_COLORS[0]);
+    const [iconName, setIconName] = useState("");
     const [selectedFileId, setSelectedFileId] = useState("");
     const [selectedCollectionId, setSelectedCollectionId] = useState("");
     const [selectedHighlightId, setSelectedHighlightId] = useState("");
@@ -73,6 +76,7 @@ export function NodeDialog({
             if (mode === 'edit' && node) {
                 setTitle(node.title);
                 setColor(node.color || PRESET_COLORS[0]);
+                setIconName(node.icon || "");
                 if (node.type === 'file') {
                     const linkedId = node.linkedId || "";
                     setSelectedFileId(linkedId);
@@ -162,6 +166,7 @@ export function NodeDialog({
         const updates: Partial<GraphNode> = {
             title: finalTitle,
             color,
+            icon: iconName,
             type, // Ensure type is set/updated
             url: type === 'link' ? linkUrl : undefined,
             linkedId: type === 'file'

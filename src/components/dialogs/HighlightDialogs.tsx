@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEffect, useRef, useState } from "react";
 import { type Highlight, type File, type Collection } from "@/types";
 import { Play, Pause, X, CaretDown, PencilSimple, SpeakerHigh, SpeakerSlash, Repeat, ArrowsOut, ArrowsIn, CornersOut, Gauge } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 
 // --- Time Formatting Helper ---
 const formatTime = (seconds: number) => {
@@ -201,15 +202,105 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         }
     };
 
+    const renderPlayerControls = (isSidebar: boolean) => (
+        <div className={cn(
+            isSidebar ? "flex flex-col gap-4 p-4 border-b border-white/10 shrink-0" : "absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-2 z-10"
+        )}>
+            {isSidebar && (
+                <div className="w-full flex flex-col gap-1">
+                     <div className="flex justify-between text-xs font-mono text-zinc-400">
+                        <span>{formatTime(currentTime)}</span>
+                        <span>{formatTime(end)}</span>
+                    </div>
+                    <Slider
+                        value={[progress]}
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        onValueChange={handleSeek}
+                        className="cursor-pointer"
+                    />
+                </div>
+            )}
+
+            <div className={cn("flex items-center gap-3", isSidebar && "justify-between")}>
+                 <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20" onClick={togglePlay}>
+                    {isPlaying ? <Pause weight="fill" /> : <Play weight="fill" />}
+                </Button>
+
+                {/* Volume Toggle */}
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20" onClick={toggleMute}>
+                    {isMuted ? <SpeakerSlash weight="fill" /> : <SpeakerHigh weight="fill" />}
+                </Button>
+
+                {!isSidebar && (
+                    <>
+                        <span className="text-xs font-mono text-zinc-300">{formatTime(currentTime)} / {formatTime(end)}</span>
+                        <div className="flex-1">
+                            <Slider
+                                value={[progress]}
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                onValueChange={handleSeek}
+                                className="cursor-pointer"
+                            />
+                        </div>
+                    </>
+                )}
+
+                {/* Speed Toggle */}
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-auto px-2 text-white/70 hover:text-white hover:bg-white/20 font-mono text-xs"
+                    onClick={toggleSpeed}
+                    title="Playback Speed"
+                >
+                    {playbackSpeed}x
+                </Button>
+
+                {/* Loop Toggle */}
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className={cn("h-8 w-8 hover:bg-white/20", isLooping ? 'text-primary hover:text-primary/80' : 'text-white/50')}
+                    onClick={toggleLoop}
+                    title={isLooping ? "Loop On" : "Loop Off"}
+                >
+                    <Repeat weight="bold" />
+                </Button>
+
+                {/* Fullscreen Video Toggle */}
+                 {!isSidebar && (
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/20"
+                        onClick={toggleFullscreen}
+                        title="Fullscreen Video"
+                    >
+                        <CornersOut weight="bold" />
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+
     if (!highlight || !file) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 showCloseButton={false}
-                className={`${isMaximized ? '!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !top-0 !left-0 !translate-x-0 !translate-y-0 !overflow-hidden' : 'sm:max-w-[800px] border-zinc-800'} bg-black p-0 text-white gap-0 flex flex-col`}
+                className={cn(
+                    "bg-black p-0 text-white gap-0 flex transition-all duration-300",
+                    isMaximized 
+                        ? "!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !top-0 !left-0 !translate-x-0 !translate-y-0 !overflow-hidden flex-row" 
+                        : "sm:max-w-[800px] border-zinc-800 flex-col"
+                )}
             >
-                <div className={`relative bg-black ${isMaximized ? 'flex-1' : 'aspect-video'} w-full flex items-center justify-center`}>
+                <div className={cn("relative bg-black flex items-center justify-center group", isMaximized ? "flex-1 h-full" : "aspect-video w-full")}>
                     <video
                         ref={setVideoElement}
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -220,66 +311,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     />
 
                     {/* Overlay Controls */}
-                    <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-2 z-10">
-                        <div className="flex items-center gap-3">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20" onClick={togglePlay}>
-                                {isPlaying ? <Pause weight="fill" /> : <Play weight="fill" />}
-                            </Button>
-
-                            {/* Volume Toggle */}
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20" onClick={toggleMute}>
-                                {isMuted ? <SpeakerSlash weight="fill" /> : <SpeakerHigh weight="fill" />}
-                            </Button>
-
-                            <span className="text-xs font-mono text-zinc-300">{formatTime(currentTime)} / {formatTime(end)}</span>
-
-                            <div className="flex-1">
-                                <Slider
-                                    value={[progress]}
-                                    min={0}
-                                    max={100}
-                                    step={0.1}
-                                    onValueChange={handleSeek}
-                                    className="cursor-pointer"
-                                />
-                            </div>
-
-                            {/* Speed Toggle */}
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-auto px-2 text-white/70 hover:text-white hover:bg-white/20 font-mono text-xs"
-                                onClick={toggleSpeed}
-                                title="Playback Speed"
-                            >
-                                {playbackSpeed}x
-                            </Button>
-
-                            {/* Loop Toggle */}
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className={`h-8 w-8 hover:bg-white/20 ${
-                                    isLooping ? 'text-primary hover:text-primary/80' : 'text-white/50'
-                                }`}
-                                onClick={toggleLoop}
-                                title={isLooping ? "Loop On" : "Loop Off"}
-                            >
-                                <Repeat weight="bold" />
-                            </Button>
-
-                            {/* Fullscreen Video Toggle */}
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/20"
-                                onClick={toggleFullscreen}
-                                title="Fullscreen Video"
-                            >
-                                <CornersOut weight="bold" />
-                            </Button>
-                        </div>
-                    </div>
+                    {!isMaximized && renderPlayerControls(false)}
 
                     <Button
                         size="icon"
@@ -290,8 +322,16 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         <X weight="bold" size={16} />
                     </Button>
                 </div>
-                <div className="p-4 bg-zinc-900 border-t border-white/10 flex flex-col gap-2 shrink-0">
-                    <div className="flex items-center justify-between">
+                
+                <div className={cn(
+                    "bg-zinc-900 flex flex-col gap-2 shrink-0 transition-all", 
+                    isMaximized 
+                        ? "w-80 h-full border-l border-zinc-800" 
+                        : "w-full border-t border-white/10 p-4"
+                )}>
+                    {isMaximized && renderPlayerControls(true)}
+
+                    <div className={cn("flex items-center justify-between", isMaximized && "px-4 pt-2")}>
                         <div className="flex items-center gap-3">
                             <button
                                 className="text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
@@ -308,7 +348,16 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             {/* Collection Display (Static) */}
                             <div
                                 className="font-bold text-sm tracking-wide uppercase transition-colors"
-                                style={{ color: collection?.color || 'hsl(var(--primary))' }}
+                                style={{ 
+                                    color: collection?.color 
+                                        ? (['#facc15', '#fde047', '#bef264', '#86efac'].includes(collection.color) 
+                                            ? 'hsl(var(--primary))' // Fallback for very bright colors if needed, or maybe just let it be? 
+                                            // The user said "overly bright highlight colors". 
+                                            // Let's use a filter to dim it if we can, or just opacity.
+                                            : collection.color) 
+                                        : 'hsl(var(--primary))',
+                                    filter: 'brightness(0.9)' // Slightly dim
+                                }}
                             >
                                 {collection?.name || "Uncategorized"}
                             </div>
@@ -341,14 +390,16 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         </div>
                     </div>
 
-                    <textarea
-                        value={note}
-                        onChange={handleNoteChange}
-                        onBlur={handleNoteBlur}
-                        placeholder="Add a note..."
-                        className="w-full bg-transparent border-none text-zinc-200 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-white/20 rounded p-1 -ml-1 placeholder:text-zinc-600"
-                        rows={3}
-                    />
+                    <div className={cn("flex-1", isMaximized && "px-4 pb-4")}>
+                         <textarea
+                            value={note}
+                            onChange={handleNoteChange}
+                            onBlur={handleNoteBlur}
+                            placeholder="Add a note..."
+                            className="w-full h-full bg-transparent border-none text-zinc-200 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-white/20 rounded p-1 -ml-1 placeholder:text-zinc-600"
+                            rows={isMaximized ? undefined : 3}
+                        />
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

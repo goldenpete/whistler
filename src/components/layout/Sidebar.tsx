@@ -131,6 +131,8 @@ export default function Sidebar() {
         isPipOpen,
         isSidebarCollapsed,
         toggleSidebarCollapse,
+        sidebarMode,
+        setSidebarMode,
         syncStatus,
         sidebarView,
         setSidebarView,
@@ -145,6 +147,8 @@ export default function Sidebar() {
     } = useStore();
 
     const activeCollection = collections.find(c => c.id === activeCollectionId);
+
+    const isSlim = sidebarMode === 'slim' && sidebarView === 'main';
 
     const [projectsOpen, setProjectsOpen] = useState(true);
     const [assetsOpen, setAssetsOpen] = useState(true);
@@ -533,26 +537,28 @@ export default function Sidebar() {
 
                     {!isSidebarCollapsed && (
                         <>
-                            <motion.button
-                                onClick={() => {
-                                    navigate('/');
-                                    setSidebarView('main');
-                                }}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
-                            >
-                                <img
-                                    src={LOGO_MAP[accentTheme as AccentTheme] || whistlerLogoOrange}
-                                    alt="Whistlerbox"
-                                    className="w-6 h-6 rounded-md"
-                                />
-                                <span className="font-bold text-lg tracking-tight truncate">
-                                    Whistlerbox
-                                </span>
-                            </motion.button>
+                            {!isSlim && (
+                                <motion.button
+                                    onClick={() => {
+                                        navigate('/');
+                                        setSidebarView('main');
+                                    }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
+                                >
+                                    <img
+                                        src={LOGO_MAP[accentTheme as AccentTheme] || whistlerLogoOrange}
+                                        alt="Whistlerbox"
+                                        className="w-6 h-6 rounded-md"
+                                    />
+                                    <span className="font-bold text-lg tracking-tight truncate">
+                                        Whistlerbox
+                                    </span>
+                                </motion.button>
+                            )}
 
-                            <div className="flex items-center gap-2 z-10">
+                            <div className={cn("flex items-center gap-2 z-10", isSlim && "flex-col")}>
                                 <button
                                     onClick={() => useStore.getState().setSpotlightOpen(true)}
                                     className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
@@ -580,10 +586,10 @@ export default function Sidebar() {
                                 <div className="p-3 pb-2 animate-in fade-in duration-300 shrink-0 space-y-1">
                                     <button
                                         onClick={() => setProjectsOpen(!projectsOpen)}
-                                        className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 hover:text-foreground transition-colors w-full text-left"
+                                        className={cn("flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 hover:text-foreground transition-colors w-full text-left", isSlim && "justify-center")}
                                     >
                                         <CaretDown weight="bold" className={cn("transition-transform text-xs", !projectsOpen && "-rotate-90")} />
-                                        Project
+                                        {!isSlim && "Project"}
                                     </button>
                                     
                                     <AnimatePresence initial={false}>
@@ -594,10 +600,10 @@ export default function Sidebar() {
                                                 exit={{ height: 0, opacity: 0 }}
                                                 className="space-y-1 overflow-hidden"
                                             >
-                                                <div className="flex gap-1 items-center pt-1">
+                                                <div className={cn("flex gap-1 items-center pt-1", isSlim && "flex-col")}>
                                         <Select value={activeProjectId || ""} onValueChange={handleProjectChange}>
-                                            <SelectTrigger className="flex-1 h-8 bg-card border-border/60 shadow-sm">
-                                                <SelectValue placeholder="Select Project" />
+                                            <SelectTrigger className={cn("flex-1 h-8 bg-card border-border/60 shadow-sm", isSlim && "px-1 justify-center")}>
+                                                {isSlim ? <FolderOpen weight="bold" /> : <SelectValue placeholder="Select Project" />}
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {projects.map(p => (
@@ -678,12 +684,12 @@ export default function Sidebar() {
                                     )}
                                     
                                     <AnimatePresence initial={false}>
-                                        {(assetsOpen || isSidebarCollapsed) && (
+                                        {(assetsOpen || isSidebarCollapsed || isSlim) && (
                                             <motion.div
                                                 initial={!isSidebarCollapsed ? { height: 0, opacity: 0 } : undefined}
                                                 animate={!isSidebarCollapsed ? { height: "auto", opacity: 1 } : undefined}
                                                 exit={!isSidebarCollapsed ? { height: 0, opacity: 0 } : undefined}
-                                                className={cn("flex gap-1 overflow-hidden", isSidebarCollapsed ? "flex-col space-y-2" : "flex-row")}
+                                                className={cn("flex gap-1 overflow-hidden", (isSidebarCollapsed || isSlim) ? "flex-col space-y-2" : "flex-row")}
                                             >
                                                 <button
                                                     onClick={() => {
@@ -701,7 +707,7 @@ export default function Sidebar() {
                                                     title="Storage"
                                                 className={cn(
                                                     "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
-                                                        isSidebarCollapsed
+                                                        (isSidebarCollapsed || isSlim)
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
                                                         (location.pathname === "/storage" || location.pathname === "/")
@@ -714,7 +720,7 @@ export default function Sidebar() {
                                                         size={18}
                                                         className="transition-transform group-hover:scale-110"
                                                     />
-                                                    {!isSidebarCollapsed && (
+                                                    {!isSidebarCollapsed && !isSlim && (
                                                         <span className="ml-2 text-xs font-medium tracking-tight">
                                                             Storage
                                                         </span>
@@ -737,7 +743,7 @@ export default function Sidebar() {
                                                     title="Docs"
                                                     className={cn(
                                                         "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
-                                                        isSidebarCollapsed
+                                                        (isSidebarCollapsed || isSlim)
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
                                                         location.pathname.startsWith("/docs")
@@ -750,7 +756,7 @@ export default function Sidebar() {
                                                             size={18}
                                                             className="transition-transform group-hover:scale-110"
                                                         />
-                                                        {!isSidebarCollapsed && (
+                                                        {!isSidebarCollapsed && !isSlim && (
                                                             <span className="ml-2 text-xs font-medium tracking-tight">
                                                                 Docs
                                                             </span>
@@ -773,7 +779,7 @@ export default function Sidebar() {
                                                     title="Graphs"
                                                     className={cn(
                                                         "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
-                                                        isSidebarCollapsed
+                                                        (isSidebarCollapsed || isSlim)
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
                                                         location.pathname.startsWith("/graphs")
@@ -786,7 +792,7 @@ export default function Sidebar() {
                                                             size={18}
                                                             className="transition-transform group-hover:scale-110"
                                                         />
-                                                        {!isSidebarCollapsed && (
+                                                        {!isSidebarCollapsed && !isSlim && (
                                                             <span className="ml-2 text-xs font-medium tracking-tight">
                                                                 Graphs
                                                             </span>
@@ -803,20 +809,22 @@ export default function Sidebar() {
                                 {/* Collections Section */}
                                 <div className="mb-6">
                                     {!isSidebarCollapsed && (
-                                        <div className="flex items-center justify-between mb-2 px-1 group">
+                                        <div className={cn("flex items-center justify-between mb-2 px-1 group", isSlim && "justify-center")}>
                                             <button
                                                 onClick={() => setCollectionsOpen(!collectionsOpen)}
-                                                className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                                                className={cn("flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors", isSlim && "justify-center")}
                                             >
                                                 <CaretDown weight="bold" className={cn("transition-transform text-xs", !collectionsOpen && "-rotate-90")} />
-                                                Collections
+                                                {!isSlim && "Collections"}
                                             </button>
-                                            <button
-                                                onClick={handleAddCollection}
-                                                className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Plus weight="bold" className="size-3.5" />
-                                            </button>
+                                            {!isSlim && (
+                                                <button
+                                                    onClick={handleAddCollection}
+                                                    className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Plus weight="bold" className="size-3.5" />
+                                                </button>
+                                            )}
                                         </div>
                                     )}
 
@@ -836,41 +844,45 @@ export default function Sidebar() {
                                                             to="/collections"
                                                             onClick={() => handleSelectCollection(collection.id)}
                                                             className="block w-full group/item"
+                                                            title={isSlim ? collection.name : undefined}
                                                         >
                                                             <div className={cn(
                                                                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors relative",
                                                                 (activeCollectionId === collection.id && location.pathname.startsWith("/collections"))
                                                                     ? "bg-primary/20 text-primary font-medium"
-                                                                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                                                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                                                                isSlim && "justify-center px-1"
                                                             )}>
                                                                 <Icon
                                                                     className={cn("text-lg transition-colors")}
                                                                     weight="fill"
                                                                     style={{ color: (activeCollectionId === collection.id && location.pathname.startsWith("/collections")) ? undefined : collection.color }}
                                                                 />
-                                                                <span className="truncate flex-1">{collection.name}</span>
+                                                                {!isSlim && <span className="truncate flex-1">{collection.name}</span>}
 
-                                                                <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                                    <button
-                                                                        onClick={(e) => handleEditCollectionClick(e, collection)}
-                                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                                    >
-                                                                        <PencilSimple weight="bold" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={(e) => handleDeleteCollection(e, collection.id)}
-                                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
-                                                                    >
-                                                                        <Trash weight="bold" />
-                                                                    </button>
-                                                                </div>
+                                                                {!isSlim && (
+                                                                    <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                                        <button
+                                                                            onClick={(e) => handleEditCollectionClick(e, collection)}
+                                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                                        >
+                                                                            <PencilSimple weight="bold" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => handleDeleteCollection(e, collection.id)}
+                                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                                                        >
+                                                                            <Trash weight="bold" />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </Link>
                                                     )
                                                 })}
                                                 {collections.filter(c => c.projectId === activeProjectId && !c.deleted).length === 0 && (
-                                                    <div className="px-3 py-4 text-xs text-muted-foreground/60 italic text-center border-2 border-dashed border-border/30 rounded-md">
-                                                        No collections
+                                                    <div className={cn("px-3 py-4 text-xs text-muted-foreground/60 italic text-center border-2 border-dashed border-border/30 rounded-md", isSlim && "px-1 text-[10px]")}>
+                                                        {isSlim ? "No col." : "No collections"}
                                                     </div>
                                                 )}
                                             </motion.div>
@@ -1120,36 +1132,43 @@ export default function Sidebar() {
                                                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group",
                                                     activeStorageId === storage.id
                                                         ? "bg-primary/20 text-primary font-medium"
-                                                        : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
+                                                        : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground",
+                                                    isSlim && "justify-center px-0 py-3"
                                                 )}
+                                                title={isSlim ? storage.name : undefined}
                                             >
                                                 <Icon 
                                                     weight="regular" 
                                                     className={cn("text-lg shrink-0 transition-colors", !storage.color && "text-primary")}
                                                     style={{ color: storage.color }}
                                                 />
-                                                <span className="truncate flex-1">{storage.name}</span>
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={(e) => handleEditStorageClick(e, storage)}
-                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                    >
-                                                        <PencilSimple weight="bold" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => handleDeleteStorage(e, storage.id)}
-                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
-                                                    >
-                                                        <Trash weight="bold" />
-                                                    </button>
-                                                </div>
+                                                {!isSlim && <span className="truncate flex-1">{storage.name}</span>}
+                                                {!isSlim && (
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={(e) => handleEditStorageClick(e, storage)}
+                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                        >
+                                                            <PencilSimple weight="bold" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => handleDeleteStorage(e, storage.id)}
+                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                                        >
+                                                            <Trash weight="bold" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </button>
                                         );
                                     })}
 
                                     {projectStorages.length === 0 && (
-                                        <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">
-                                            No storages created yet
+                                        <div className={cn(
+                                            "text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2 flex items-center justify-center",
+                                            isSlim ? "p-2 h-10" : "p-4 text-center text-xs"
+                                        )}>
+                                            {isSlim ? <HardDrives className="opacity-50" /> : "No storages created yet"}
                                         </div>
                                     )}
                                 </div>
@@ -1164,8 +1183,8 @@ export default function Sidebar() {
                         <PiPPlayer isCollapsed={isSidebarCollapsed} />
                     ) : (
                         <>
-                            <div className={cn("flex items-center gap-1", isSidebarCollapsed ? "flex-col justify-center" : "justify-between w-full")}>
-                                {!isSidebarCollapsed ? (
+                            <div className={cn("flex items-center gap-1", isSidebarCollapsed || isSlim ? "flex-col justify-center" : "justify-between w-full")}>
+                                {!isSidebarCollapsed && !isSlim ? (
                                     <div className="flex-1 min-w-0">
                                         <SyncStatusFooter />
                                     </div>
@@ -1179,7 +1198,7 @@ export default function Sidebar() {
                                     </button>
                                 )}
 
-                                <div className={cn("flex gap-1", isSidebarCollapsed && "flex-col")}>
+                                <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col")}>
                                     <button
                                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
                                         title="Change accent theme"
@@ -1322,6 +1341,37 @@ export default function Sidebar() {
                                 )}
                             </button>
                         ))}
+                        <div className="pt-3 space-y-1 border-t border-border mt-3">
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">
+                                Sidebar Mode
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => setSidebarMode('full')}
+                                    className={cn(
+                                        "flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors border",
+                                        sidebarMode === 'full'
+                                            ? "bg-primary/10 text-primary border-primary/20"
+                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
+                                    )}
+                                >
+                                    <SidebarSimple weight="fill" className="text-lg" />
+                                    <span>Full</span>
+                                </button>
+                                <button
+                                    onClick={() => setSidebarMode('slim')}
+                                    className={cn(
+                                        "flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors border",
+                                        sidebarMode === 'slim'
+                                            ? "bg-primary/10 text-primary border-primary/20"
+                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
+                                    )}
+                                >
+                                    <SidebarSimple weight="regular" className="text-lg" />
+                                    <span>Slim</span>
+                                </button>
+                            </div>
+                        </div>
                         <div className="pt-3 space-y-1 border-t border-border mt-3">
                             <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">
                                 Base Color

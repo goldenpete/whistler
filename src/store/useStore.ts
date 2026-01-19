@@ -64,6 +64,8 @@ interface AppStore extends AppState {
     toggleSidebar: (isOpen: boolean) => void;
     isSidebarCollapsed: boolean;
     toggleSidebarCollapse: () => void;
+    sidebarMode: 'full' | 'slim';
+    setSidebarMode: (mode: 'full' | 'slim') => void;
     sidebarView: SidebarView;
     setSidebarView: (view: SidebarView) => void;
 
@@ -142,6 +144,7 @@ export const useStore = create<AppStore>()(
             // Sidebar State
             isSidebarOpen: true,
             isSidebarCollapsed: false,
+            sidebarMode: 'slim',
             sidebarView: 'main',
             
             // Spotlight State
@@ -177,6 +180,7 @@ export const useStore = create<AppStore>()(
             setSpotlightOpen: (open) => set({ isSpotlightOpen: open }),
             toggleSidebar: (isOpen) => set({ isSidebarOpen: isOpen }),
             toggleSidebarCollapse: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+            setSidebarMode: (mode) => set({ sidebarMode: mode }),
             setSidebarView: (view) => set({ sidebarView: view }),
 
             setDocViewMode: (mode) => set({ docViewMode: mode }),

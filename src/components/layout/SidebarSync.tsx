@@ -13,7 +13,11 @@ import {
     SignOut,
     User,
     CheckCircle,
-    Shuffle
+    Shuffle,
+    ShieldCheck,
+    Copy,
+    Warning,
+    QrCode
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 
@@ -58,6 +62,13 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
     const [pendingToken, setPendingToken] = useState<string | null>(null);
     const [totpCode, setTotpCode] = useState("");
     const [turnstileWidgetId, setTurnstileWidgetId] = useState<string | null>(null);
+    
+    // 2FA Management State
+    const [totpEnabled, setTotpEnabled] = useState(false);
+    const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+    const [setupMode, setSetupMode] = useState<'enable' | 'disable'>('enable');
+    const [setupSecret, setSetupSecret] = useState<string | null>(null);
+    const [setupStep, setSetupStep] = useState<'intro' | 'scan' | 'verify'>('intro');
 
     useEffect(() => {
         window.onTurnstileSuccess = (token: string) => {
@@ -94,10 +105,17 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         const storedToken = localStorage.getItem("whistler_session_token");
         const storedLastSync = localStorage.getItem("whistler_last_sync");
         const storedDisplayName = localStorage.getItem("whistler_display_name");
+        const storedTotpEnabled = localStorage.getItem("whistler_totp_enabled");
+        
         if (storedAccount && storedToken) {
             setAccountId(storedAccount);
             setSessionToken(storedToken);
             login({ id: storedAccount, email: storedDisplayName || storedAccount });
+            
+            if (storedTotpEnabled === "true") {
+                setTotpEnabled(true);
+            }
+            
             if (storedLastSync) {
                 const asNumber = Number(storedLastSync);
                 if (!Number.isNaN(asNumber)) {
@@ -164,6 +182,10 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             if (displayName) {
                 localStorage.setItem("whistler_display_name", displayName);
             }
+            // If we logged in without 2FA challenge, it means 2FA is disabled
+            setTotpEnabled(false);
+            localStorage.removeItem("whistler_totp_enabled");
+            
             login({ id: cleanId, email: displayName || cleanId });
         } catch (err) {
             setError(err instanceof Error ? err.message : "Login error");
@@ -218,6 +240,10 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             if (displayName) {
                 localStorage.setItem("whistler_display_name", displayName);
             }
+            // If we successfully verified TOTP, it means 2FA is enabled
+            setTotpEnabled(true);
+            localStorage.setItem("whistler_totp_enabled", "true");
+
             login({ id: account, email: displayName || account });
             setPhase("login");
             setPendingToken(null);
@@ -337,7 +363,102 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         localStorage.removeItem("whistler_account_id");
         localStorage.removeItem("whistler_session_token");
         localStorage.removeItem("whistler_display_name");
+        localStorage.removeItem("whistler_totp_enabled");
         logout();
+    };
+
+    const handleStart2FASetup = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${SYNC_API_URL}/2fa/setup`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                if (data.error === "2FA is already enabled") {
+                    setTotpEnabled(true);
+                    localStorage.setItem("whistler_totp_enabled", "true");
+                }
+                setError(data.error || "Setup failed");
+                return;
+            }
+            setSetupSecret(data.secret);
+            setSetupStep('scan');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Setup error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleEnable2FA = async () => {
+        if (totpCode.length !== 6) {
+            setError("Enter a 6-digit code");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${SYNC_API_URL}/2fa/enable`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+                body: JSON.stringify({ totp_code: totpCode }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || "Failed to enable 2FA");
+                return;
+            }
+            setTotpEnabled(true);
+            localStorage.setItem("whistler_totp_enabled", "true");
+            setSetupStep('intro');
+            setShowTwoFactorSetup(false);
+            setTotpCode("");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Error enabling 2FA");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDisable2FA = async () => {
+        if (totpCode.length !== 6) {
+            setError("Enter a 6-digit code");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${SYNC_API_URL}/2fa/disable`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+                body: JSON.stringify({ totp_code: totpCode }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || "Failed to disable 2FA");
+                return;
+            }
+            setTotpEnabled(false);
+            localStorage.setItem("whistler_totp_enabled", "false");
+            setTotpCode("");
+            setShowTwoFactorSetup(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Error disabling 2FA");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (!user) {
@@ -486,6 +607,142 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         );
     }
 
+    if (showTwoFactorSetup) {
+        return (
+            <div className="flex flex-col h-full bg-sidebar-background">
+                <div className="p-3 border-b border-sidebar-border flex items-center gap-2">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 -ml-1" 
+                        onClick={() => {
+                            setShowTwoFactorSetup(false);
+                            setSetupStep('intro');
+                            setTotpCode("");
+                            setError(null);
+                        }}
+                    >
+                        <CaretLeft className="text-muted-foreground" />
+                    </Button>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
+                        <ShieldCheck weight="bold" />
+                        {setupMode === 'enable' ? 'Setup 2FA' : 'Disable 2FA'}
+                    </div>
+                </div>
+
+                <div className="flex-1 p-4 flex flex-col items-center gap-4 overflow-y-auto">
+                    {setupMode === 'enable' && setupStep === 'intro' && (
+                        <div className="text-center space-y-4 pt-8">
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+                                <ShieldCheck weight="fill" size={32} />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="font-semibold text-foreground">Secure your account</h3>
+                                <p className="text-sm text-muted-foreground max-w-[240px] mx-auto">
+                                    Two-factor authentication adds an extra layer of security to your sync account.
+                                </p>
+                            </div>
+                            <Button 
+                                onClick={handleStart2FASetup} 
+                                disabled={isLoading}
+                                className="w-full"
+                            >
+                                {isLoading ? "Starting..." : "Start Setup"}
+                            </Button>
+                        </div>
+                    )}
+
+                    {setupMode === 'enable' && setupStep === 'scan' && (
+                        <div className="w-full space-y-6">
+                            <div className="space-y-2 text-center">
+                                <p className="text-sm font-medium">1. Copy Secret Key</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Enter this key into your authenticator app (Google Authenticator, Authy, etc).
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <code className="flex-1 bg-zinc-900 p-2 rounded text-xs font-mono break-all border border-zinc-800">
+                                        {setupSecret}
+                                    </code>
+                                    <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-8 w-8 shrink-0"
+                                        onClick={() => {
+                                            if (setupSecret) navigator.clipboard.writeText(setupSecret);
+                                        }}
+                                        title="Copy Secret"
+                                    >
+                                        <Copy size={14} />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Separator className="bg-sidebar-border" />
+
+                            <div className="space-y-3 text-center">
+                                <p className="text-sm font-medium">2. Enter Verification Code</p>
+                                <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    value={totpCode}
+                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    className="h-10 text-center tracking-[0.5em] text-lg font-mono"
+                                    placeholder="000000"
+                                />
+                                {error && (
+                                    <div className="text-xs text-red-400 px-2">{error}</div>
+                                )}
+                                <Button 
+                                    onClick={handleEnable2FA} 
+                                    disabled={isLoading || totpCode.length !== 6}
+                                    className="w-full"
+                                >
+                                    {isLoading ? "Verifying..." : "Verify & Enable"}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {setupMode === 'disable' && (
+                        <div className="w-full space-y-4 pt-4">
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-3 items-start">
+                                <Warning className="text-red-500 shrink-0 mt-0.5" weight="fill" size={16} />
+                                <div className="text-xs text-red-200">
+                                    Disabling 2FA will make your account less secure. You will need to enter a code one last time.
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Label className="text-xs">Enter Code</Label>
+                                <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    value={totpCode}
+                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    className="h-10 text-center tracking-[0.5em] text-lg font-mono"
+                                    placeholder="000000"
+                                />
+                                {error && (
+                                    <div className="text-xs text-red-400 text-center px-2">{error}</div>
+                                )}
+                                <Button 
+                                    onClick={handleDisable2FA} 
+                                    disabled={isLoading || totpCode.length !== 6}
+                                    className="w-full bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 border-red-500/20"
+                                    variant="outline"
+                                >
+                                    {isLoading ? "Disabling..." : "Disable 2FA"}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col h-full bg-sidebar-background">
             <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
@@ -559,6 +816,51 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleLogout} title="Sign Out">
                                 <SignOut className="text-muted-foreground" />
                             </Button>
+                        </div>
+                    </div>
+
+                    <Separator className="bg-sidebar-border" />
+
+                    {/* Security Settings */}
+                    <div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Security</div>
+                        <div className="space-y-2">
+                            <div className="flex w-full items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors">
+                                <div className="flex items-center gap-2">
+                                    <ShieldCheck weight={totpEnabled ? "fill" : "regular"} className={totpEnabled ? "text-green-500" : "text-muted-foreground"} size={18} />
+                                    <span className="text-sm">Two-Factor Auth</span>
+                                </div>
+                                {totpEnabled ? (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-6 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                        onClick={() => {
+                                            setSetupMode('disable');
+                                            setShowTwoFactorSetup(true);
+                                            setError(null);
+                                            setTotpCode("");
+                                        }}
+                                    >
+                                        Disable
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-6 text-[10px] text-primary hover:text-primary hover:bg-primary/10"
+                                        onClick={() => {
+                                            setSetupMode('enable');
+                                            setSetupStep('intro');
+                                            setShowTwoFactorSetup(true);
+                                            setError(null);
+                                            setTotpCode("");
+                                        }}
+                                    >
+                                        Enable
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
 

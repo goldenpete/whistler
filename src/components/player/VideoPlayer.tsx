@@ -497,7 +497,8 @@ export default function VideoPlayer() {
                                             className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full opacity-60"
                                             style={{
                                                 left: `${(h.start / duration) * 100}%`,
-                                                backgroundColor: color
+                                                backgroundColor: color,
+                                                filter: 'brightness(0.9)'
                                             }}
                                         />
                                     );
