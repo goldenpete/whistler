@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import StorageView from "@/components/views/StorageView";
@@ -16,7 +17,16 @@ import { WelcomeView } from "@/components/views/WelcomeView";
 import HomeView from "@/components/views/HomeView";
 
 export default function App() {
-  const { projects } = useStore();
+  const { projects, accentTheme } = useStore();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (accentTheme) {
+      root.setAttribute("data-accent", accentTheme);
+    } else {
+      root.removeAttribute("data-accent");
+    }
+  }, [accentTheme]);
 
   if (projects.length === 0) {
     return <WelcomeView />;

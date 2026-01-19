@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,11 +22,12 @@ import {
     Cloud,
     Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Gear, Share
+    FilmStrip, FileText, Book, Gear, Share,
+    CheckCircle, WarningCircle, CloudCheck, CloudWarning
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
-import type { Collection, Storage } from "@/types";
+import type { Collection, Storage, AccentTheme } from "@/types";
 import { getIcon } from "@/utils/iconMap";
 import {
     Select,
@@ -64,6 +66,13 @@ import { exportProject, importProject, type ProjectExportData } from "@/utils/pr
 import { UploadSimple, DownloadSimple, ClockCounterClockwise } from "@phosphor-icons/react";
 import whistlerLogo from "../../../whistlerlogo.png";
 
+const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
+    { id: "orange", label: "Orange", previewClass: "bg-orange-500" },
+    { id: "emerald", label: "Emerald", previewClass: "bg-emerald-500" },
+    { id: "violet", label: "Violet", previewClass: "bg-violet-500" },
+    { id: "sky", label: "Sky", previewClass: "bg-sky-500" },
+];
+
 export default function Sidebar() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -99,6 +108,8 @@ export default function Sidebar() {
         syncStatus,
         sidebarView,
         setSidebarView,
+        accentTheme,
+        setAccentTheme,
     } = useStore();
 
     const activeCollection = collections.find(c => c.id === activeCollectionId);
@@ -505,12 +516,54 @@ export default function Sidebar() {
                     )}
 
                     {!isSidebarCollapsed && (
-                        <button
-                            onClick={() => useStore.getState().setSpotlightOpen(true)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-3"
-                        >
-                            <MagnifyingGlass weight="bold" size={18} />
-                        </button>
+                        <>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-10"
+                                        title="Change accent theme"
+                                    >
+                                        <span className="flex items-center justify-center">
+                                            <span
+                                                className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+                                                style={{ backgroundColor: "var(--primary)" }}
+                                            />
+                                        </span>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                    {ACCENT_OPTIONS.map((option) => (
+                                        <DropdownMenuItem
+                                            key={option.id}
+                                            onClick={() => setAccentTheme(option.id)}
+                                            className="flex items-center gap-2"
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "h-3.5 w-3.5 rounded-full border border-border/60",
+                                                    option.previewClass
+                                                )}
+                                            />
+                                            <span className="flex-1 text-xs">{option.label}</span>
+                                            {accentTheme === option.id && (
+                                                <CheckCircle
+                                                    weight="bold"
+                                                    className="text-primary"
+                                                    size={14}
+                                                />
+                                            )}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <button
+                                onClick={() => useStore.getState().setSpotlightOpen(true)}
+                                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-3"
+                            >
+                                <MagnifyingGlass weight="bold" size={18} />
+                            </button>
+                        </>
                     )}
                 </div>
 
@@ -688,8 +741,8 @@ export default function Sidebar() {
                                                         }
                                                     }}
                                                     title="Storage"
-                                                    className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer",
+                                                className={cn(
+                                                    "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
                                                         isSidebarCollapsed
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
@@ -698,7 +751,16 @@ export default function Sidebar() {
                                                             : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                                     )}
                                                 >
-                                                    <HardDrives weight={(location.pathname === "/storage" || location.pathname === "/") ? "fill" : "regular"} size={20} className="transition-transform group-hover:scale-110" />
+                                                    <HardDrives
+                                                        weight={(location.pathname === "/storage" || location.pathname === "/") ? "fill" : "regular"}
+                                                        size={18}
+                                                        className="transition-transform group-hover:scale-110"
+                                                    />
+                                                    {!isSidebarCollapsed && (
+                                                        <span className="ml-2 text-xs font-medium tracking-tight">
+                                                            Storage
+                                                        </span>
+                                                    )}
                                                 </button>
 
                                                 <button
@@ -716,7 +778,7 @@ export default function Sidebar() {
                                                     }}
                                                     title="Docs"
                                                     className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer",
+                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
                                                         isSidebarCollapsed
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
@@ -724,8 +786,17 @@ export default function Sidebar() {
                                                             ? "bg-primary/20 text-primary shadow-sm"
                                                             : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                                     )}
-                                                >
-                                                    <NotePencil weight={location.pathname.startsWith("/docs") ? "fill" : "regular"} size={20} className="transition-transform group-hover:scale-110" />
+                                                    >
+                                                        <NotePencil
+                                                            weight={location.pathname.startsWith("/docs") ? "fill" : "regular"}
+                                                            size={18}
+                                                            className="transition-transform group-hover:scale-110"
+                                                        />
+                                                        {!isSidebarCollapsed && (
+                                                            <span className="ml-2 text-xs font-medium tracking-tight">
+                                                                Docs
+                                                            </span>
+                                                        )}
                                                 </button>
 
                                                 <button
@@ -743,7 +814,7 @@ export default function Sidebar() {
                                                     }}
                                                     title="Graphs"
                                                     className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer",
+                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
                                                         isSidebarCollapsed
                                                             ? "w-10 h-10 mx-auto"
                                                             : "flex-1 h-9",
@@ -751,8 +822,17 @@ export default function Sidebar() {
                                                             ? "bg-primary/20 text-primary shadow-sm"
                                                             : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                                     )}
-                                                >
-                                                    <Graph weight={location.pathname.startsWith("/graphs") ? "fill" : "regular"} size={20} className="transition-transform group-hover:scale-110" />
+                                                    >
+                                                        <Graph
+                                                            weight={location.pathname.startsWith("/graphs") ? "fill" : "regular"}
+                                                            size={18}
+                                                            className="transition-transform group-hover:scale-110"
+                                                        />
+                                                        {!isSidebarCollapsed && (
+                                                            <span className="ml-2 text-xs font-medium tracking-tight">
+                                                                Graphs
+                                                            </span>
+                                                        )}
                                                 </button>
                                             </motion.div>
                                         )}
@@ -1121,20 +1201,27 @@ export default function Sidebar() {
                 </AnimatePresence>
 
                 {/* Footer / PiP Placeholder */}
-                <div className="p-3 border-t border-border/40 bg-card/30">
+                <div className="p-3 border-t border-border/40 bg-card/30 min-h-[50px] flex flex-col justify-center">
                     {isPipOpen && pipFileId ? (
                         <PiPPlayer isCollapsed={isSidebarCollapsed} />
-                    ) : null}
+                    ) : (
+                        <>
+                            {/* Collapsed Mode History Button */}
+                            {isSidebarCollapsed && (
+                                <button
+                                    onClick={() => setSidebarView('history')}
+                                    className="w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                                    title="View History"
+                                >
+                                    <ClockCounterClockwise weight="bold" size={18} />
+                                </button>
+                            )}
 
-                    {/* Collapsed Mode History Button */}
-                    {isSidebarCollapsed && !isPipOpen && (
-                        <button
-                            onClick={() => setSidebarView('history')}
-                            className="mt-2 w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                            title="View History"
-                        >
-                            <ClockCounterClockwise weight="bold" size={18} />
-                        </button>
+                            {/* Expanded Mode Sync Status */}
+                            {!isSidebarCollapsed && (
+                                <SyncStatusFooter />
+                            )}
+                        </>
                     )}
                 </div>
             </motion.aside>
@@ -1301,5 +1388,70 @@ export default function Sidebar() {
                 </DialogContent>
             </Dialog>
         </>
+    );
+}
+
+function SyncStatusFooter() {
+    const { syncStatus, lastSyncTime, setSidebarView } = useStore();
+    const [timeString, setTimeString] = useState("");
+
+    useEffect(() => {
+        const updateTime = () => {
+            if (lastSyncTime) {
+                setTimeString(formatDistanceToNow(lastSyncTime, { addSuffix: true }));
+            } else {
+                setTimeString("Not synced");
+            }
+        };
+        
+        updateTime();
+        const interval = setInterval(updateTime, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, [lastSyncTime]);
+
+    const getStatusColor = () => {
+        switch (syncStatus) {
+            case 'syncing': return 'text-blue-400';
+            case 'error': return 'text-red-400';
+            case 'success': return 'text-green-400';
+            default: return lastSyncTime ? 'text-green-400' : 'text-zinc-500';
+        }
+    };
+
+    const getStatusIcon = () => {
+        switch (syncStatus) {
+            case 'syncing': return <ArrowsClockwise className="animate-spin" weight="bold" />;
+            case 'error': return <WarningCircle weight="fill" />;
+            case 'success': return <CheckCircle weight="fill" />;
+            default: return lastSyncTime ? <CloudCheck weight="fill" /> : <Cloud weight="regular" />;
+        }
+    };
+
+    return (
+        <button
+            onClick={() => setSidebarView('sync')}
+            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all group"
+            title="Click to manage sync settings"
+        >
+            <div className={cn("text-base shrink-0 transition-colors flex items-center justify-center", getStatusColor())}>
+                {getStatusIcon()}
+            </div>
+            <div className="flex flex-col items-start min-w-0 flex-1 leading-none gap-1">
+                <span className={cn("font-medium truncate w-full text-left transition-colors text-[10px] uppercase tracking-wider opacity-80", 
+                    syncStatus === 'error' ? "text-red-400" : 
+                    syncStatus === 'syncing' ? "text-blue-400" : "group-hover:text-primary"
+                )}>
+                    {syncStatus === 'syncing' ? "Syncing..." :
+                     syncStatus === 'error' ? "Sync Error" :
+                     "Last Sync"}
+                </span>
+                <span className="text-[11px] truncate w-full text-left font-medium">
+                    {syncStatus === 'syncing' ? "Updating..." :
+                     syncStatus === 'error' ? "Check connection" :
+                     lastSyncTime ? timeString :
+                     "Not connected"}
+                </span>
+            </div>
+        </button>
     );
 }

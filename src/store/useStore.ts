@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { type AppState, type File, type Project, type Collection, type Timestamp, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge } from '@/types';
+import { type AppState, type File, type Project, type Collection, type Timestamp, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme } from '@/types';
 
 interface User {
     id: string;
@@ -69,6 +69,9 @@ interface AppStore extends AppState {
 
     // Doc Actions
     setDocViewMode: (mode: 'page' | 'pageless' | 'pageless-wide') => void;
+
+    // Theme Actions
+    setAccentTheme: (theme: AccentTheme) => void;
 
     // Trash Actions
     trashFile: (id: string) => void;
@@ -143,6 +146,7 @@ export const useStore = create<AppStore>()(
             
             // Doc State
             docViewMode: 'page',
+            accentTheme: 'orange',
 
             setProjects: (projects: Project[]) => set({ projects }),
             setFiles: (files: File[]) => set({ files }),
@@ -164,6 +168,7 @@ export const useStore = create<AppStore>()(
             setSidebarView: (view) => set({ sidebarView: view }),
 
             setDocViewMode: (mode) => set({ docViewMode: mode }),
+            setAccentTheme: (theme) => set({ accentTheme: theme }),
 
             login: (user) => set({ user }),
             logout: () => set({ user: null }),

@@ -112,6 +112,8 @@ export interface HistoryEntry {
     timestamp: number;
 }
 
+export type AccentTheme = 'orange' | 'emerald' | 'violet' | 'sky';
+
 export interface AppState {
     projects: Project[];
     files: File[];
@@ -139,4 +141,5 @@ export interface AppState {
 
     // UI Preferences
     docViewMode?: 'page' | 'pageless' | 'pageless-wide';
+    accentTheme?: AccentTheme;
 }
