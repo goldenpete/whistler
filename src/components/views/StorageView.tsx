@@ -139,10 +139,10 @@ export default function StorageView() {
         }
     };
 
-    const handleRenameSubmit = (newName: string) => {
+    const handleRenameSubmit = (newName: string, newDescription: string) => {
         if (fileToRename) {
             useStore.setState(state => ({
-                files: state.files.map(f => f.id === fileToRename.id ? { ...f, name: newName, lastModified: Date.now() } : f)
+                files: state.files.map(f => f.id === fileToRename.id ? { ...f, name: newName, description: newDescription, lastModified: Date.now() } : f)
             }));
         }
     };
@@ -498,6 +498,7 @@ export default function StorageView() {
                 onOpenChange={setRenameDialogOpen}
                 onSubmit={handleRenameSubmit}
                 initialName={fileToRename?.name || ""}
+                initialDescription={fileToRename?.description || ""}
             />
             <EditFolderDialog
                 open={editFolderOpen}

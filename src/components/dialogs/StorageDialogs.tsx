@@ -429,28 +429,33 @@ function extractFilename(url: string): string {
     }
 }
 
+import { Textarea } from "@/components/ui/textarea";
+
 interface RenameFileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string) => void;
+    onSubmit: (name: string, description: string) => void;
     initialName: string;
+    initialDescription?: string;
 }
 
-export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName }: RenameFileDialogProps) {
+export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "" }: RenameFileDialogProps) {
     const [name, setName] = useState(initialName);
+    const [description, setDescription] = useState(initialDescription);
 
     useEffect(() => {
         setName(initialName);
-    }, [initialName, open]);
+        setDescription(initialDescription || "");
+    }, [initialName, initialDescription, open]);
 
     const handleSubmit = () => {
         if (!name.trim()) return;
-        onSubmit(name.trim());
+        onSubmit(name.trim(), description.trim());
         onOpenChange(false);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSubmit();
         }
@@ -460,22 +465,29 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName }: 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                    <DialogTitle>Rename File</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
-                        Enter a new name for the file.
-                    </DialogDescription>
+                    <DialogTitle>Edit File Details</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="rename-file-name">File Name</Label>
+                        <Label htmlFor="rename-file-name">Name</Label>
                         <Input
                             id="rename-file-name"
-                            placeholder="My File"
+                            placeholder="File Name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
                             className="bg-zinc-900 border-zinc-800"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="rename-file-description">Description</Label>
+                        <Textarea
+                            id="rename-file-description"
+                            placeholder="Add a description..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="bg-zinc-900 border-zinc-800 resize-none h-32"
                         />
                     </div>
                 </div>
@@ -484,7 +496,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName }: 
                         Cancel
                     </Button>
                     <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                        Save
+                        Save Changes
                     </Button>
                 </DialogFooter>
             </DialogContent>
