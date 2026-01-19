@@ -34,6 +34,7 @@ export default function App() {
       emerald: "whistler-green-favicon",
       violet: "whistler-violet-favicon",
       sky: "whistler-blue-favicon",
+      orange: "whistler-orange-favicon",
     };
 
     const folder = accentTheme ? map[accentTheme as AccentTheme] : undefined;
