@@ -140,10 +140,10 @@ export interface AppState {
     // Playback State
     fileProgress: Record<string, number>; // fileId -> seconds
 
-    // UI Preferences
     docViewMode?: 'page' | 'pageless' | 'pageless-wide';
     accentTheme?: AccentTheme;
     baseTheme?: BaseTheme;
+    enableDefaultColorControls?: boolean;
     defaultColors?: {
         file?: string;
         collection?: string;

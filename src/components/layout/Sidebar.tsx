@@ -58,6 +58,7 @@ import { Separator } from "@/components/ui/separator";
 import { CreateCollectionDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, RenameDocDialog } from "@/components/dialogs/StorageDialogs";
 import { EditProjectDialog } from "@/components/dialogs/EditProjectDialog";
+import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
 import { SidebarTrash } from "@/components/layout/SidebarTrash";
 import { SidebarSync } from "@/components/layout/SidebarSync";
@@ -76,6 +77,14 @@ const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[]
 const BASE_OPTIONS: { id: BaseTheme; label: string }[] = [
     { id: "zinc", label: "Zinc" },
     { id: "stone", label: "Stone" },
+];
+
+const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph' | 'node'; label: string }[] = [
+    { key: 'file', label: 'Files' },
+    { key: 'collection', label: 'Collections' },
+    { key: 'storage', label: 'Storage' },
+    { key: 'graph', label: 'Graphs' },
+    { key: 'node', label: 'Nodes' },
 ];
 
 export default function Sidebar() {
@@ -117,6 +126,10 @@ export default function Sidebar() {
         setAccentTheme,
         baseTheme,
         setBaseTheme,
+        enableDefaultColorControls,
+        defaultColors,
+        setEnableDefaultColorControls,
+        setDefaultColor,
     } = useStore();
 
     const activeCollection = collections.find(c => c.id === activeCollectionId);
@@ -144,6 +157,8 @@ export default function Sidebar() {
     const [newProjectName, setNewProjectName] = useState("");
     const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
     const [accentDialogOpen, setAccentDialogOpen] = useState(false);
+    const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
+    const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
 
     const handleEditGraph = (e: React.MouseEvent, graph: any) => {
         e.stopPropagation();
@@ -1327,10 +1342,91 @@ export default function Sidebar() {
                                     )}
                                 </button>
                             ))}
+                            <div className="pt-3 space-y-2 border-t border-zinc-800 mt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setEnableDefaultColorControls(!enableDefaultColorControls)}
+                                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-colors text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                                >
+                                    <span className="text-[11px] font-medium">
+                                        Advanced default colors
+                                    </span>
+                                    <span
+                                        className={cn(
+                                            "w-8 h-4 rounded-full relative transition-colors",
+                                            enableDefaultColorControls ? "bg-primary" : "bg-zinc-700"
+                                        )}
+                                    >
+                                        <span
+                                            className={cn(
+                                                "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                enableDefaultColorControls ? "right-0.5" : "left-0.5"
+                                            )}
+                                        />
+                                    </span>
+                                </button>
+                                {enableDefaultColorControls && (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase font-bold text-zinc-500 px-1">
+                                            Default colors
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {DEFAULT_COLOR_ENTITIES.map((entity) => (
+                                                <button
+                                                    key={entity.key}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveDefaultColorEntity(entity.key);
+                                                        setDefaultColorDialogOpen(true);
+                                                    }}
+                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] transition-colors text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                                                >
+                                                    <span
+                                                        className="h-3.5 w-3.5 rounded-full border border-border/60"
+                                                        style={{
+                                                            backgroundColor:
+                                                                (defaultColors && defaultColors[entity.key]) ||
+                                                                "hsl(var(--primary))",
+                                                        }}
+                                                    />
+                                                    <span className="flex-1 text-left">
+                                                        {entity.label}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] text-zinc-500 px-1">
+                                            Used when creating new items.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {activeDefaultColorEntity && (
+                <ColorPickerDialog
+                    open={defaultColorDialogOpen}
+                    onOpenChange={(open) => {
+                        setDefaultColorDialogOpen(open);
+                        if (!open) {
+                            setActiveDefaultColorEntity(null);
+                        }
+                    }}
+                    title={`Default color for ${DEFAULT_COLOR_ENTITIES.find(e => e.key === activeDefaultColorEntity)?.label ?? ""}`}
+                    initialColor={
+                        (defaultColors && defaultColors[activeDefaultColorEntity]) ||
+                        "#f59e0b"
+                    }
+                    onColorSelect={(color) => {
+                        if (activeDefaultColorEntity) {
+                            setDefaultColor(activeDefaultColorEntity, color);
+                        }
+                    }}
+                />
+            )}
 
             <Dialog open={newDocOpen} onOpenChange={setNewDocOpen}>
                 <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">

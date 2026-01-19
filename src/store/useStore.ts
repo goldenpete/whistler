@@ -73,6 +73,7 @@ interface AppStore extends AppState {
     // Theme Actions
     setAccentTheme: (theme: AccentTheme) => void;
     setBaseTheme: (theme: BaseTheme) => void;
+    setEnableDefaultColorControls: (enabled: boolean) => void;
     setDefaultColor: (entity: 'file' | 'collection' | 'storage' | 'graph' | 'node', color: string) => void;
 
     // Trash Actions
@@ -150,6 +151,7 @@ export const useStore = create<AppStore>()(
             docViewMode: 'page',
             accentTheme: 'orange',
             baseTheme: 'zinc',
+            enableDefaultColorControls: false,
             defaultColors: {
                 file: '#f59e0b',
                 collection: '#f59e0b',
@@ -180,6 +182,7 @@ export const useStore = create<AppStore>()(
             setDocViewMode: (mode) => set({ docViewMode: mode }),
             setAccentTheme: (theme) => set({ accentTheme: theme }),
             setBaseTheme: (theme) => set({ baseTheme: theme }),
+            setEnableDefaultColorControls: (enabled) => set({ enableDefaultColorControls: enabled }),
             setDefaultColor: (entity, color) =>
                 set((state) => ({
                     defaultColors: {
