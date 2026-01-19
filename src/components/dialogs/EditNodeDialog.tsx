@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -20,8 +20,9 @@ import {
 import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import { useStore } from "@/store/useStore";
 import type { GraphNode } from "@/types";
-import { File as FileIcon, FolderOpen } from "@phosphor-icons/react";
+import { File as FileIcon, FolderOpen, Clock } from "@phosphor-icons/react";
 import { FilePickerDialog } from "./FilePickerDialog";
+import { TimestampPickerDialog } from "./TimestampPickerDialog";
 
 interface NodeDialogProps {
     open: boolean;
@@ -40,18 +41,19 @@ export function NodeDialog({
     node,
     onSave
 }: NodeDialogProps) {
-    const { files, collections, activeProjectId } = useStore();
+    const { files, collections, timestamps, activeProjectId } = useStore();
     
     // Form State
     const [title, setTitle] = useState("");
     const [color, setColor] = useState(PRESET_COLORS[0]);
     const [selectedFileId, setSelectedFileId] = useState("");
     const [selectedCollectionId, setSelectedCollectionId] = useState("");
-    const [timestampTime, setTimestampTime] = useState("");
+    const [selectedTimestampId, setSelectedTimestampId] = useState("");
     const [linkUrl, setLinkUrl] = useState("");
     
     // File Picker State
     const [filePickerOpen, setFilePickerOpen] = useState(false);
+    const [timestampPickerOpen, setTimestampPickerOpen] = useState(false);
 
     // Initialize state
     useEffect(() => {
@@ -59,11 +61,18 @@ export function NodeDialog({
             if (mode === 'edit' && node) {
                 setTitle(node.title);
                 setColor(node.color || PRESET_COLORS[0]);
-                if (node.type === 'file' || node.type === 'timestamp') {
+                if (node.type === 'file') {
                     const linkedId = node.linkedId || "";
                     setSelectedFileId(linkedId);
                 } else {
                     setSelectedFileId("");
+                }
+                if (node.type === 'timestamp') {
+                    const linkedId = node.linkedId || "";
+                    const tsExists = timestamps.some(t => t.id === linkedId);
+                    setSelectedTimestampId(tsExists ? linkedId : "");
+                } else {
+                    setSelectedTimestampId("");
                 }
                 if (node.type === 'collection') {
                     setSelectedCollectionId(node.linkedId || "");
@@ -75,18 +84,17 @@ export function NodeDialog({
                 } else {
                     setLinkUrl("");
                 }
-                setTimestampTime("");
             } else {
                 // Create Mode Defaults
                 setTitle("");
                 setColor(PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)]);
                 setSelectedFileId("");
                 setSelectedCollectionId("");
-                setTimestampTime("");
+                setSelectedTimestampId("");
                 setLinkUrl("");
             }
         }
-    }, [open, mode, node, type]);
+    }, [open, mode, node, type, timestamps]);
 
     // Update title when selection changes (if title is empty or matches previous selection)
     useEffect(() => {
@@ -102,14 +110,27 @@ export function NodeDialog({
     }, [selectedFileId, selectedCollectionId, type, mode, files, collections]);
 
     const handleSubmit = () => {
-        if (!title.trim() && type === 'note') return; // Note needs title
+        if (!title.trim() && type === 'note') return;
+        if (type === 'file' && !selectedFileId) return;
+        if (type === 'timestamp' && !selectedTimestampId) return;
         
         let finalTitle = title;
         if (!finalTitle.trim()) {
             if (type === 'file') finalTitle = files.find(f => f.id === selectedFileId)?.name || "File";
             else if (type === 'collection') finalTitle = collections.find(c => c.id === selectedCollectionId)?.name || "Collection";
             else if (type === 'link') finalTitle = linkUrl;
-            else if (type === 'timestamp') finalTitle = timestampTime || "Timestamp";
+            else if (type === 'timestamp') {
+                const ts = timestamps.find(t => t.id === selectedTimestampId);
+                const file = ts ? files.find(f => f.id === ts.fileId) : undefined;
+                if (ts) {
+                    const mins = Math.floor(ts.start / 60);
+                    const secs = Math.floor(ts.start % 60);
+                    const timeLabel = `${mins}:${secs.toString().padStart(2, "0")}`;
+                    finalTitle = ts.note || (file ? `${file.name} @ ${timeLabel}` : `Timestamp @ ${timeLabel}`);
+                } else {
+                    finalTitle = "Timestamp";
+                }
+            }
         }
 
         const updates: Partial<GraphNode> = {
@@ -117,18 +138,23 @@ export function NodeDialog({
             color,
             type, // Ensure type is set/updated
             url: type === 'link' ? linkUrl : undefined,
-            linkedId: (type === 'file' || type === 'timestamp') ? selectedFileId : (type === 'collection' ? selectedCollectionId : undefined)
+            linkedId: type === 'file'
+                ? selectedFileId
+                : type === 'timestamp'
+                    ? selectedTimestampId
+                    : (type === 'collection' ? selectedCollectionId : undefined)
         };
 
         onSave(updates);
         onOpenChange(false);
     };
 
-    // Filtered lists
     const projectCollections = collections.filter(c => c.projectId === activeProjectId && !c.deleted);
     
     // Helpers to display selected file
     const selectedFile = files.find(f => f.id === selectedFileId);
+    const selectedTimestamp = timestamps.find(t => t.id === selectedTimestampId);
+    const selectedTimestampFile = selectedTimestamp ? files.find(f => f.id === selectedTimestamp.fileId) : undefined;
 
     const fileSelector = (
         <div className="space-y-2">
@@ -160,6 +186,56 @@ export function NodeDialog({
                 onOpenChange={setFilePickerOpen}
                 onSelect={(fileId) => setSelectedFileId(fileId)}
                 initialFileId={selectedFileId}
+            />
+        </div>
+    );
+
+    const timestampSelector = (
+        <div className="space-y-2">
+            <Label>Select Timestamp</Label>
+            <div className="flex items-center gap-2">
+                <div className="flex-1 h-11 px-3 py-1.5 flex items-center gap-3 border border-zinc-800 rounded-md bg-zinc-900 text-sm text-muted-foreground overflow-hidden">
+                    {selectedTimestamp && selectedTimestampFile ? (
+                        <>
+                            <div className="flex flex-col items-center justify-center gap-1">
+                                <Clock className="text-amber-400" size={16} />
+                                <span className="font-mono text-[10px] text-muted-foreground">
+                                    {(() => {
+                                        const mins = Math.floor(selectedTimestamp.start / 60);
+                                        const secs = Math.floor(selectedTimestamp.start % 60);
+                                        return `${mins}:${secs.toString().padStart(2, "0")}`;
+                                    })()}
+                                </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-xs font-medium truncate text-foreground">
+                                    {selectedTimestamp.note || selectedTimestampFile.name}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground truncate">
+                                    {selectedTimestampFile.name}
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <span className="opacity-50 text-xs">No timestamp selected</span>
+                    )}
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => setTimestampPickerOpen(true)}
+                >
+                    <Clock className="mr-2" />
+                    Browse...
+                </Button>
+            </div>
+
+            <TimestampPickerDialog
+                open={timestampPickerOpen}
+                onOpenChange={setTimestampPickerOpen}
+                onSelect={(id) => setSelectedTimestampId(id)}
+                initialTimestampId={selectedTimestampId}
             />
         </div>
     );
@@ -219,20 +295,7 @@ export function NodeDialog({
                         </div>
                     )}
 
-                    {type === 'timestamp' && (
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Timestamp / Time</Label>
-                                <Input 
-                                    value={timestampTime} 
-                                    onChange={(e) => setTimestampTime(e.target.value)} 
-                                    placeholder="00:00"
-                                    className="bg-zinc-900 border-zinc-800"
-                                />
-                            </div>
-                            {fileSelector}
-                        </div>
-                    )}
+                    {type === 'timestamp' && timestampSelector}
                 </div>
 
                 <DialogFooter>

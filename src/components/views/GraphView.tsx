@@ -35,7 +35,7 @@ export default function GraphView() {
     const imagesRef = useRef<Record<string, HTMLImageElement>>({});
     const navigate = useNavigate();
     const { 
-        graphs, graphNodes, graphEdges, activeProjectId, activeGraphId,
+        graphs, graphNodes, graphEdges, timestamps, activeProjectId, activeGraphId,
         addNode, updateNode, removeNode, addEdge, removeEdge
     } = useStore();
 
@@ -268,7 +268,12 @@ export default function GraphView() {
         }
 
         if (node.type === 'timestamp' && node.linkedId) {
-            navigate(`/file/${node.linkedId}`);
+            const ts = timestamps.find(t => t.id === node.linkedId);
+            if (ts) {
+                navigate(`/file/${ts.fileId}?t=${ts.start}`);
+            } else {
+                navigate(`/file/${node.linkedId}`);
+            }
             return;
         }
 
