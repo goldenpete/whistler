@@ -27,7 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
-import type { Collection, Storage, AccentTheme } from "@/types";
+import type { Collection, Storage, AccentTheme, BaseTheme } from "@/types";
 import { getIcon } from "@/utils/iconMap";
 import {
     Select,
@@ -73,6 +73,11 @@ const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[]
     { id: "sky", label: "Sky", previewClass: "bg-sky-500" },
 ];
 
+const BASE_OPTIONS: { id: BaseTheme; label: string }[] = [
+    { id: "zinc", label: "Zinc" },
+    { id: "stone", label: "Stone" },
+];
+
 export default function Sidebar() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -110,6 +115,8 @@ export default function Sidebar() {
         setSidebarView,
         accentTheme,
         setAccentTheme,
+        baseTheme,
+        setBaseTheme,
     } = useStore();
 
     const activeCollection = collections.find(c => c.id === activeCollectionId);
@@ -1246,12 +1253,15 @@ export default function Sidebar() {
             <Dialog open={accentDialogOpen} onOpenChange={setAccentDialogOpen}>
                 <DialogContent className="sm:max-w-xs bg-zinc-950 border-zinc-800 text-white">
                     <DialogHeader>
-                        <DialogTitle>Accent Color</DialogTitle>
+                        <DialogTitle>Theme Colors</DialogTitle>
                         <DialogDescription className="text-zinc-400 text-xs">
-                            Choose the highlight color used across the app.
+                            Choose base and accent colors used across the app.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-2 space-y-1">
+                        <p className="text-[10px] uppercase font-bold text-zinc-500 px-1">
+                            Accent Color
+                        </p>
                         {ACCENT_OPTIONS.map((option) => (
                             <button
                                 key={option.id}
@@ -1283,6 +1293,41 @@ export default function Sidebar() {
                                 )}
                             </button>
                         ))}
+                        <div className="pt-3 space-y-1 border-t border-zinc-800 mt-3">
+                            <p className="text-[10px] uppercase font-bold text-zinc-500 px-1">
+                                Base Color
+                            </p>
+                            {BASE_OPTIONS.map((option) => (
+                                <button
+                                    key={option.id}
+                                    type="button"
+                                    onClick={() => {
+                                        setBaseTheme(option.id);
+                                    }}
+                                    className={cn(
+                                        "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
+                                        baseTheme === option.id
+                                            ? "bg-zinc-800 text-white"
+                                            : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                                    )}
+                                >
+                                    <span
+                                        className={cn(
+                                            "h-3.5 w-3.5 rounded-full border border-border/60",
+                                            option.id === "zinc" ? "bg-zinc-700" : "bg-stone-700"
+                                        )}
+                                    />
+                                    <span className="flex-1">{option.label}</span>
+                                    {baseTheme === option.id && (
+                                        <CheckCircle
+                                            weight="bold"
+                                            className="text-primary"
+                                            size={14}
+                                        />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

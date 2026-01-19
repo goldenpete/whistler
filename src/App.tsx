@@ -17,7 +17,7 @@ import { WelcomeView } from "@/components/views/WelcomeView";
 import HomeView from "@/components/views/HomeView";
 
 export default function App() {
-  const { projects, accentTheme } = useStore();
+  const { projects, accentTheme, baseTheme } = useStore();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -27,6 +27,15 @@ export default function App() {
       root.removeAttribute("data-accent");
     }
   }, [accentTheme]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (baseTheme && baseTheme !== "zinc") {
+      root.setAttribute("data-base", baseTheme);
+    } else {
+      root.removeAttribute("data-base");
+    }
+  }, [baseTheme]);
 
   if (projects.length === 0) {
     return <WelcomeView />;

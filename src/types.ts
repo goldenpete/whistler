@@ -113,6 +113,7 @@ export interface HistoryEntry {
 }
 
 export type AccentTheme = 'orange' | 'emerald' | 'violet' | 'sky';
+export type BaseTheme = 'zinc' | 'stone';
 
 export interface AppState {
     projects: Project[];
@@ -142,6 +143,7 @@ export interface AppState {
     // UI Preferences
     docViewMode?: 'page' | 'pageless' | 'pageless-wide';
     accentTheme?: AccentTheme;
+    baseTheme?: BaseTheme;
     defaultColors?: {
         file?: string;
         collection?: string;
