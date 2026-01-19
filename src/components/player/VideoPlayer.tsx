@@ -54,6 +54,7 @@ import { SeekPreview } from './SeekPreview';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
+import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { type Highlight } from "@/types";
 
@@ -90,6 +91,7 @@ export default function VideoPlayer() {
     const [editHighlightOpen, setEditHighlightOpen] = useState(false);
     const [highlightPlayerOpen, setHighlightPlayerOpen] = useState(false);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+    const [colorPickerOpen, setColorPickerOpen] = useState(false);
     const [returnToHighlightPlayer, setReturnToHighlightPlayer] = useState(false);
     const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
@@ -383,24 +385,18 @@ export default function VideoPlayer() {
                             <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => setMoveDialogOpen(true)}>
                                 <FolderPlus size={20} weight="bold" />
                             </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Change Color">
-                                        <Palette size={20} weight="bold" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Color feature coming soon</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            File color tagging is not available yet. This feature is coming soon.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Close</AlertDialogCancel>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-zinc-400 hover:text-white hover:bg-white/10" 
+                                title="Change Color"
+                                onClick={() => setColorPickerOpen(true)}
+                                style={{ color: file.color || undefined }}
+                            >
+                                <Palette size={20} weight={file.color ? "fill" : "bold"} />
+                            </Button>
+
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" title="Delete">
@@ -804,6 +800,15 @@ export default function VideoPlayer() {
                     if (selectedHighlight) {
                         updateHighlight(selectedHighlight.id, updates);
                     }
+                }}
+            />
+
+            <ColorPickerDialog
+                open={colorPickerOpen}
+                onOpenChange={setColorPickerOpen}
+                initialColor={file.color || "#ffffff"}
+                onColorSelect={(color) => {
+                    updateFile(file.id, { color });
                 }}
             />
         </div>

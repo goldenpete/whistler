@@ -20,6 +20,7 @@ import {
     X,
     MagnifyingGlass,
     HardDrives,
+    Palette,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/context-menu";
 import { AddFileDialog, NewFolderDialog, RenameFileDialog, EditFolderDialog, ICONS } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
+import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import type { File } from "@/types";
 import { Input } from "@/components/ui/input";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
@@ -71,6 +73,8 @@ export default function StorageView() {
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const [fileToRename, setFileToRename] = useState<File | null>(null);
+    const [colorPickerDialogOpen, setColorPickerDialogOpen] = useState(false);
+    const [fileToColor, setFileToColor] = useState<File | null>(null);
     const [editFolderOpen, setEditFolderOpen] = useState(false);
     const [folderToEdit, setFolderToEdit] = useState<File | null>(null);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -160,6 +164,11 @@ export default function StorageView() {
             setSelectedIds(new Set([file.id]));
         }
         setMoveDialogOpen(true);
+    };
+
+    const handleColorInit = (file: File) => {
+        setFileToColor(file);
+        setColorPickerDialogOpen(true);
     };
 
     const handleNewFolder = (name: string, color: string, icon: string) => {
@@ -452,6 +461,7 @@ export default function StorageView() {
                                             onToggleSelect={toggleSelectItem}
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
+                                            onColor={handleColorInit}
                                         />
                                     ))}
                                     {projectFiles.length === 0 && <EmptyState />}
@@ -468,6 +478,7 @@ export default function StorageView() {
                                             onToggleSelect={toggleSelectItem}
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
+                                            onColor={handleColorInit}
                                         />
                                     ))}
                                     {projectFiles.length === 0 && <EmptyState />}
@@ -508,6 +519,18 @@ export default function StorageView() {
                 initialColor={folderToEdit?.color}
                 initialIcon={folderToEdit?.icon}
             />
+            <ColorPickerDialog
+                open={colorPickerDialogOpen}
+                onOpenChange={setColorPickerDialogOpen}
+                initialColor={fileToColor?.color || "#ffffff"}
+                onColorSelect={(color) => {
+                    if (fileToColor) {
+                        useStore.setState(state => ({
+                            files: state.files.map(f => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
+                        }));
+                    }
+                }}
+            />
 
             <DragOverlay>
             </DragOverlay>
@@ -533,9 +556,10 @@ interface FileCardProps {
     onToggleSelect: (id: string) => void;
     onRename: (file: File) => void;
     onMove: (file: File) => void;
+    onColor: (file: File) => void;
 }
 
-function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove }: FileCardProps) {
+function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColor }: FileCardProps) {
     const Icon = getFileIcon(file.type);
     const linkTo = file.type === 'video' || file.type === 'pdf' ? `/file/${file.id}` : '#';
 
@@ -581,6 +605,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
                             isOver && "ring-2 ring-primary bg-primary/10",
                             isSelected && "ring-2 ring-primary bg-primary/10 border-primary"
                         )}
+                        style={file.color ? { borderColor: file.color, boxShadow: `0 0 10px ${file.color}20` } : undefined}
                     >
                         {/* Selection checkbox */}
                         {selectionMode && (
@@ -609,12 +634,13 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
                 onRename={() => onRename(file)}
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
+                onColor={() => onColor(file)}
             />
         </ContextMenu>
     );
 }
 
-function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove }: FileCardProps) {
+function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColor }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' ? `/file/${file.id}` : '#';
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
@@ -661,6 +687,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
                             isOver && "ring-2 ring-primary bg-primary/10",
                             isSelected && "ring-2 ring-primary bg-primary/10 border-primary"
                         )}
+                        style={file.color ? { borderColor: file.color, boxShadow: `0 0 10px ${file.color}20` } : undefined}
                     >
                         {/* Selection checkbox */}
                         {selectionMode && (
@@ -705,6 +732,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
                 onRename={() => onRename(file)}
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
+                onColor={() => onColor(file)}
             />
         </ContextMenu>
     );
@@ -715,9 +743,10 @@ interface FileContextMenuProps {
     onRename: () => void;
     onMove: () => void;
     onSelect: () => void;
+    onColor: () => void;
 }
 
-function FileContextMenu({ file, onRename, onMove, onSelect }: FileContextMenuProps) {
+function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileContextMenuProps) {
     const handleDelete = () => {
         useStore.setState(state => ({
             files: state.files.map(f => f.id === file.id ? { ...f, deleted: true } : f)
@@ -728,6 +757,9 @@ function FileContextMenu({ file, onRename, onMove, onSelect }: FileContextMenuPr
         <ContextMenuContent className="w-56">
             <ContextMenuItem onClick={onSelect} className="gap-2">
                 <CheckSquare size={16} /> Select
+            </ContextMenuItem>
+            <ContextMenuItem onClick={onColor} className="gap-2">
+                <Palette size={16} /> Change Color
             </ContextMenuItem>
             <ContextMenuItem onClick={onRename} className="gap-2">
                 <PencilSimple size={16} /> Rename
