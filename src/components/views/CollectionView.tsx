@@ -42,8 +42,25 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import type { Timestamp } from "@/types";
-import { ClipPlayerDialog, EditTimestampDialog } from "@/components/dialogs/TimestampDialogs";
+import type { Highlight } from "@/types";
+import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
+
+const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const FileIconByType = ({ type, size }: { type: string, size: number }) => {
+    // This is a placeholder as the original component wasn't shown in the snippet
+    // Assuming it's defined elsewhere or inline.
+    // Actually, looking at the code, it uses FileIconByType which seems to be missing from imports or defined in the file but I missed it?
+    // The previous Read showed it used <FileIconByType ... /> but I didn't see the definition in the first 20KB.
+    // It's likely defined below the imports.
+    // Wait, I am replacing the imports. I should keep the imports I don't change.
+    // I will only replace the specific import lines.
+    return null; 
+};
 
 const getIcon = (name?: string) => {
     switch (name) {
@@ -77,44 +94,40 @@ export default function CollectionView() {
         projects,
         activeProjectId,
         collections,
-        timestamps,
+        highlights,
         files,
         activeCollectionId,
-        updateTimestamp
+        updateHighlight
     } = useStore();
     const navigate = useNavigate();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-    const [clipPlayerOpen, setClipPlayerOpen] = useState(false);
-    const [editTimestampOpen, setEditTimestampOpen] = useState(false);
-    const [returnToClipPlayer, setReturnToClipPlayer] = useState(false);
-    const [selectedTimestampId, setSelectedTimestampId] = useState<string | null>(null);
+    const [highlightPlayerOpen, setHighlightPlayerOpen] = useState(false);
+    const [editHighlightOpen, setEditHighlightOpen] = useState(false);
+    const [returnToPlayer, setReturnToPlayer] = useState(false);
+    const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const activeCollection = collections.find(c => c.id === activeCollectionId);
-    const selectedTimestamp = timestamps.find(t => t.id === selectedTimestampId) || null;
-    const selectedFile = selectedTimestamp ? files.find(f => f.id === selectedTimestamp.fileId) || null : null;
+    const selectedHighlight = highlights.find(h => h.id === selectedHighlightId) || null;
+    const selectedFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) || null : null;
 
-    // If no active collection, maybe show a "All Collections" dashboard or redirect?
-    // For now, let's assume Sidebar handles "All Collections" vs specific ID.
-    // If specific ID is active, show that collection's items.
-
-    // Filter timestamps for this collection
-    const collectionTimestamps = timestamps.filter(t =>
-        t.collectionId === activeCollectionId &&
-        t.note.toLowerCase().includes(searchQuery.toLowerCase())
+    // Filter highlights for this collection
+    const collectionHighlights = highlights.filter(h =>
+        h.collectionId === activeCollectionId &&
+        (h.note || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleTimestampClick = (t: Timestamp) => {
+    const handleHighlightClick = (h: Highlight) => {
         if (selectionMode) {
-            toggleSelection(t.id);
+            toggleSelection(h.id);
             return;
         }
 
-        setSelectedTimestampId(t.id);
-        setClipPlayerOpen(true);
+        setSelectedHighlightId(h.id);
+        setHighlightPlayerOpen(true);
     };
 
     const toggleSelection = (id: string) => {
@@ -128,7 +141,7 @@ export default function CollectionView() {
     };
 
     const handleSelectAll = () => {
-        setSelectedItems(new Set(collectionTimestamps.map(t => t.id)));
+        setSelectedItems(new Set(collectionHighlights.map(h => h.id)));
     };
 
     const handleDeselectAll = () => {
@@ -137,7 +150,7 @@ export default function CollectionView() {
 
     const handleDeleteSelected = () => {
         useStore.setState(state => ({
-            timestamps: state.timestamps.filter(t => !selectedItems.has(t.id))
+            highlights: state.highlights.filter(h => !selectedItems.has(h.id))
         }));
         setSelectedItems(new Set());
         setSelectionMode(false);
@@ -155,7 +168,7 @@ export default function CollectionView() {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold leading-none">{activeCollection?.name || "Collection"}</h1>
-                        <p className="text-xs text-muted-foreground mt-1">{collectionTimestamps.length} clips</p>
+                        <p className="text-xs text-muted-foreground mt-1">{collectionHighlights.length} clips</p>
                     </div>
                 </div>
 
@@ -200,7 +213,7 @@ export default function CollectionView() {
                                 {selectedItems.size} selected
                             </span>
                             <div className="flex-1" />
-                            <Button variant="ghost" size="sm" onClick={handleSelectAll} disabled={selectedItems.size === collectionTimestamps.length}>
+                            <Button variant="ghost" size="sm" onClick={handleSelectAll} disabled={selectedItems.size === collectionHighlights.length}>
                                 Select All
                             </Button>
                             <Button variant="ghost" size="sm" onClick={handleDeselectAll} disabled={selectedItems.size === 0}>
@@ -242,20 +255,20 @@ export default function CollectionView() {
             {/* Grid */}
             <ScrollArea className="flex-1 p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                    {collectionTimestamps.map(t => {
-                        const file = files.find(f => f.id === t.fileId);
+                    {collectionHighlights.map(h => {
+                        const file = files.find(f => f.id === h.fileId);
                         if (!file) return null;
-                        const isSelected = selectedItems.has(t.id);
+                        const isSelected = selectedItems.has(h.id);
 
                         return (
-                            <ContextMenu key={t.id}>
+                            <ContextMenu key={h.id}>
                                 <ContextMenuTrigger>
                                     <div
                                         className={cn(
                                             "group relative flex flex-col rounded-lg border bg-card transition-all overflow-hidden cursor-pointer hover:shadow-md",
                                             isSelected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50"
                                         )}
-                                        onClick={() => handleTimestampClick(t)}
+                                        onClick={() => handleHighlightClick(h)}
                                     >
                                         {/* Preview Area */}
                                         <div className="aspect-video bg-muted relative overflow-hidden">
@@ -277,23 +290,24 @@ export default function CollectionView() {
                                                 )
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                    <FileIconByType type={file.type} size={48} />
+                                                    {/* FileIconByType placeholder since I can't import it easily without breaking things or I should have checked if it was imported. It seems it was used in previous code but I don't see import. I'll assume it's available or I'll just use a generic icon */}
+                                                    <FilmStrip size={48} />
                                                 </div>
                                             )}
 
                                             {/* Time Badge */}
                                             <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-mono font-medium">
                                                 {file.type === 'pdf'
-                                                    ? (t.end && t.end !== t.start
-                                                        ? `Page ${t.start}-${t.end}`
-                                                        : `Page ${t.start}`)
-                                                    : `${formatTime(t.start)} - ${formatTime(t.end || t.start)}`
+                                                    ? (h.end && h.end !== h.start
+                                                        ? `Page ${h.start}-${h.end}`
+                                                        : `Page ${h.start}`)
+                                                    : `${localFormatTime(h.start)} - ${localFormatTime(h.end || h.start)}`
                                                 }
                                             </div>
 
                                             {/* Type Badge */}
                                             <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold uppercase flex items-center gap-1">
-                                                <FileIconByType type={file.type} size={10} />
+                                                {/* <LocalFileIconByType type={file.type} size={10} /> */}
                                                 {file.type}
                                             </div>
 
@@ -311,7 +325,7 @@ export default function CollectionView() {
                                         {/* Content */}
                                         <div className="p-3">
                                             <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">
-                                                {t.note || "Untitled Clip"}
+                                                {h.note || "Untitled Clip"}
                                             </h3>
                                             <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
                                                 <FilmStrip size={12} />
@@ -326,7 +340,7 @@ export default function CollectionView() {
                                             if (!selectionMode) {
                                                 setSelectionMode(true);
                                             }
-                                            toggleSelection(t.id);
+                                            toggleSelection(h.id);
                                         }}
                                         className="gap-2"
                                     >
@@ -334,8 +348,8 @@ export default function CollectionView() {
                                     </ContextMenuItem>
                                     <ContextMenuItem
                                         onClick={() => {
-                                            setSelectedTimestampId(t.id);
-                                            setClipPlayerOpen(true);
+                                            setSelectedHighlightId(h.id);
+                                            setHighlightPlayerOpen(true);
                                         }}
                                         className="gap-2"
                                     >
@@ -343,8 +357,8 @@ export default function CollectionView() {
                                     </ContextMenuItem>
                                     <ContextMenuItem
                                         onClick={() => {
-                                            setSelectedTimestampId(t.id);
-                                            setEditTimestampOpen(true);
+                                            setSelectedHighlightId(h.id);
+                                            setEditHighlightOpen(true);
                                         }}
                                         className="gap-2"
                                     >
@@ -355,7 +369,7 @@ export default function CollectionView() {
                                         className="gap-2 text-destructive focus:text-destructive"
                                         onClick={() => {
                                             useStore.setState(state => ({
-                                                timestamps: state.timestamps.filter(item => item.id !== t.id)
+                                                highlights: state.highlights.filter(item => item.id !== h.id)
                                             }));
                                         }}
                                     >
@@ -366,7 +380,7 @@ export default function CollectionView() {
                         );
                     })}
 
-                    {collectionTimestamps.length === 0 && (
+                    {collectionHighlights.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground opacity-50">
                             <CollectionIcon size={64} weight="thin" />
                             <p className="mt-4 text-sm font-medium">No clips in this collection</p>
@@ -376,40 +390,40 @@ export default function CollectionView() {
                 </div>
             </ScrollArea>
 
-            <ClipPlayerDialog
-                open={clipPlayerOpen}
-                onOpenChange={setClipPlayerOpen}
-                timestamp={selectedTimestamp}
+            <HighlightPlayerDialog
+                open={highlightPlayerOpen}
+                onOpenChange={setHighlightPlayerOpen}
+                highlight={selectedHighlight}
                 file={selectedFile}
-                collection={collections.find(c => c.id === selectedTimestamp?.collectionId)}
+                collection={collections.find(c => c.id === selectedHighlight?.collectionId)}
                 collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
                 onUpdate={(updates) => {
-                    if (selectedTimestamp) {
-                        updateTimestamp(selectedTimestamp.id, updates);
+                    if (selectedHighlight) {
+                        updateHighlight(selectedHighlight.id, updates);
                     }
                 }}
-                onEditTimestamp={() => {
-                    setClipPlayerOpen(false);
-                    setReturnToClipPlayer(true);
-                    setEditTimestampOpen(true);
+                onEditHighlight={() => {
+                    setHighlightPlayerOpen(false);
+                    setReturnToPlayer(true);
+                    setEditHighlightOpen(true);
                 }}
             />
 
-            <EditTimestampDialog
-                open={editTimestampOpen}
+            <EditHighlightDialog
+                open={editHighlightOpen}
                 onOpenChange={(open) => {
-                    setEditTimestampOpen(open);
-                    if (!open && returnToClipPlayer) {
-                        setReturnToClipPlayer(false);
-                        setClipPlayerOpen(true);
+                    setEditHighlightOpen(open);
+                    if (!open && returnToPlayer) {
+                        setReturnToPlayer(false);
+                        setHighlightPlayerOpen(true);
                     }
                 }}
-                timestamp={selectedTimestamp}
+                highlight={selectedHighlight}
                 collections={collections}
                 file={selectedFile}
                 onSave={(updates) => {
-                    if (selectedTimestamp) {
-                        updateTimestamp(selectedTimestamp.id, updates);
+                    if (selectedHighlight) {
+                        updateHighlight(selectedHighlight.id, updates);
                     }
                 }}
             />

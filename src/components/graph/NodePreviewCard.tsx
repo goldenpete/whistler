@@ -22,7 +22,7 @@ interface NodePreviewCardProps {
 }
 
 export function NodePreviewCard({ node, onClose, onEdit, style, className }: NodePreviewCardProps) {
-    const { files, collections, timestamps, docs } = useStore();
+    const { files, collections, highlights, docs } = useStore();
     const navigate = useNavigate();
 
     const type = node.type;
@@ -32,15 +32,15 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
     const selectedFile = type === 'file' && node.linkedId ? files.find(f => f.id === node.linkedId) : null;
     const selectedCollection = type === 'collection' && node.linkedId ? collections.find(c => c.id === node.linkedId) : null;
     const selectedDoc = type === 'doc' && node.linkedId ? docs.find(d => d.id === node.linkedId) : null;
-    const selectedTimestamp = type === 'timestamp' && node.linkedId ? timestamps.find(t => t.id === node.linkedId) : null;
-    const selectedTimestampFile = selectedTimestamp ? files.find(f => f.id === selectedTimestamp.fileId) : null;
+    const selectedHighlight = type === 'highlight' && node.linkedId ? highlights.find(t => t.id === node.linkedId) : null;
+    const selectedHighlightFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) : null;
     const linkUrl = type === 'link' ? node.url || "" : "";
 
     const canOpen = 
         (type === 'file' && selectedFile) ||
         (type === 'collection' && selectedCollection) ||
         (type === 'doc' && selectedDoc) ||
-        (type === 'timestamp' && selectedTimestamp && selectedTimestampFile) ||
+        (type === 'highlight' && selectedHighlight && selectedHighlightFile) ||
         (type === 'link' && linkUrl);
 
     const handleOpen = () => {
@@ -52,8 +52,8 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
         } else if (type === 'doc' && selectedDoc) {
             useStore.setState({ activeDocId: selectedDoc.id });
             navigate("/docs");
-        } else if (type === 'timestamp' && selectedTimestamp) {
-            navigate(`/file/${selectedTimestamp.fileId}?t=${selectedTimestamp.start}`);
+        } else if (type === 'highlight' && selectedHighlight) {
+            navigate(`/file/${selectedHighlight.fileId}?t=${selectedHighlight.start}`);
         } else if (type === 'link' && linkUrl) {
             window.open(linkUrl, "_blank", "noopener,noreferrer");
         }
@@ -88,7 +88,7 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
                     <div className="mt-0.5 shrink-0 text-muted-foreground">
                         {type === 'file' && <FileIcon size={20} />}
                         {type === 'collection' && <FolderOpen size={20} />}
-                        {type === 'timestamp' && <Clock size={20} className="text-primary" />}
+                        {type === 'highlight' && <Clock size={20} className="text-primary" />}
                         {type === 'doc' && <FileIcon size={20} />}
                         {type === 'link' && <LinkIcon size={20} />}
                         {type === 'note' && <Note size={20} />}
@@ -101,25 +101,25 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
                                     {type === 'file' && (selectedFile?.name || "Unknown File")}
                                     {type === 'collection' && (selectedCollection?.name || "Unknown Collection")}
                                     {type === 'doc' && (selectedDoc?.name || "Unknown Doc")}
-                                    {type === 'timestamp' && (selectedTimestamp?.note || selectedTimestampFile?.name || "Unknown Timestamp")}
+                                    {type === 'highlight' && (selectedHighlight?.note || selectedHighlight?.text || selectedHighlightFile?.name || "Unknown Highlight")}
                                     {type === 'link' && (linkUrl || "No URL")}
                                 </>
                             )}
                         </div>
                         
-                        {type === 'timestamp' && selectedTimestamp && (
+                        {type === 'highlight' && selectedHighlight && (
                             <div className="text-xs text-muted-foreground mt-0.5">
                                 {(() => {
-                                    const file = selectedTimestampFile;
+                                    const file = selectedHighlightFile;
                                     if (file?.type === "pdf") {
-                                        const startPage = selectedTimestamp.start;
-                                        const endPage = selectedTimestamp.end ?? startPage;
+                                        const startPage = selectedHighlight.start;
+                                        const endPage = selectedHighlight.end ?? startPage;
                                         return endPage !== startPage
                                             ? `Page ${startPage}-${endPage}`
                                             : `Page ${startPage}`;
                                     }
-                                    const start = selectedTimestamp.start;
-                                    const end = selectedTimestamp.end ?? start;
+                                    const start = selectedHighlight.start;
+                                    const end = selectedHighlight.end ?? start;
                                     const minsStart = Math.floor(start / 60);
                                     const secsStart = Math.floor(start % 60);
                                     const minsEnd = Math.floor(end / 60);
@@ -127,11 +127,11 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
                                     const startLabel = `${minsStart}:${secsStart.toString().padStart(2, "0")}`;
                                     const endLabel = `${minsEnd}:${secsEnd.toString().padStart(2, "0")}`;
                                     return `${startLabel} - ${endLabel}`;
-                                })()} • {selectedTimestampFile?.name}
+                                })()} • {selectedHighlightFile?.name}
                             </div>
                         )}
 
-                        {(type !== 'note' && type !== 'timestamp') && (
+                        {(type !== 'note' && type !== 'highlight') && (
                             <div className="text-xs text-muted-foreground mt-0.5 truncate">
                                 {title !== (
                                     type === 'file' ? selectedFile?.name :

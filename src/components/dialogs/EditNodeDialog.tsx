@@ -22,14 +22,14 @@ import { useStore } from "@/store/useStore";
 import type { GraphNode } from "@/types";
 import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon } from "@phosphor-icons/react";
 import { FilePickerDialog } from "./FilePickerDialog";
-import { TimestampPickerDialog } from "./TimestampPickerDialog";
+import { HighlightPickerDialog } from "./HighlightPickerDialog";
 import { useNavigate } from "react-router-dom";
 
 interface NodeDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     mode: 'create' | 'edit';
-    type: 'note' | 'file' | 'collection' | 'timestamp' | 'link' | 'doc';
+    type: 'note' | 'file' | 'collection' | 'highlight' | 'link' | 'doc';
     node?: GraphNode;
     onSave: (data: Partial<GraphNode>) => void;
 }
@@ -45,7 +45,7 @@ export function NodeDialog({
     const {
         files,
         collections,
-        timestamps,
+        highlights,
         docs,
         activeProjectId,
         accentTheme,
@@ -59,13 +59,13 @@ export function NodeDialog({
     const [color, setColor] = useState(PRESET_COLORS[0]);
     const [selectedFileId, setSelectedFileId] = useState("");
     const [selectedCollectionId, setSelectedCollectionId] = useState("");
-    const [selectedTimestampId, setSelectedTimestampId] = useState("");
+    const [selectedHighlightId, setSelectedHighlightId] = useState("");
     const [selectedDocId, setSelectedDocId] = useState("");
     const [linkUrl, setLinkUrl] = useState("");
     
     // File Picker State
     const [filePickerOpen, setFilePickerOpen] = useState(false);
-    const [timestampPickerOpen, setTimestampPickerOpen] = useState(false);
+    const [highlightPickerOpen, setHighlightPickerOpen] = useState(false);
 
     // Initialize state
     useEffect(() => {
@@ -79,12 +79,12 @@ export function NodeDialog({
                 } else {
                     setSelectedFileId("");
                 }
-                if (node.type === 'timestamp') {
+                if (node.type === 'highlight') {
                     const linkedId = node.linkedId || "";
-                    const tsExists = timestamps.some(t => t.id === linkedId);
-                    setSelectedTimestampId(tsExists ? linkedId : "");
+                    const hExists = highlights.some(t => t.id === linkedId);
+                    setSelectedHighlightId(hExists ? linkedId : "");
                 } else {
-                    setSelectedTimestampId("");
+                    setSelectedHighlightId("");
                 }
                 if (node.type === 'collection') {
                     setSelectedCollectionId(node.linkedId || "");
@@ -110,12 +110,12 @@ export function NodeDialog({
                 setColor(nodeColor);
                 setSelectedFileId("");
                 setSelectedCollectionId("");
-                setSelectedTimestampId("");
+                setSelectedHighlightId("");
                 setSelectedDocId("");
                 setLinkUrl("");
             }
         }
-    }, [open, mode, node, type, timestamps, accentTheme, enableDefaultColorControls, defaultColors]);
+    }, [open, mode, node, type, highlights, accentTheme, enableDefaultColorControls, defaultColors]);
 
     // Update title when selection changes (if title is empty or matches previous selection)
     useEffect(() => {
@@ -136,7 +136,7 @@ export function NodeDialog({
     const handleSubmit = () => {
         if (!title.trim() && type === 'note') return;
         if (type === 'file' && !selectedFileId) return;
-        if (type === 'timestamp' && !selectedTimestampId) return;
+        if (type === 'highlight' && !selectedHighlightId) return;
         if (type === 'doc' && !selectedDocId) return;
         
         let finalTitle = title;
@@ -145,16 +145,16 @@ export function NodeDialog({
             else if (type === 'collection') finalTitle = collections.find(c => c.id === selectedCollectionId)?.name || "Collection";
             else if (type === 'link') finalTitle = linkUrl;
             else if (type === 'doc') finalTitle = docs.find(d => d.id === selectedDocId)?.name || "Document";
-            else if (type === 'timestamp') {
-                const ts = timestamps.find(t => t.id === selectedTimestampId);
-                const file = ts ? files.find(f => f.id === ts.fileId) : undefined;
-                if (ts) {
-                    const mins = Math.floor(ts.start / 60);
-                    const secs = Math.floor(ts.start % 60);
+            else if (type === 'highlight') {
+                const h = highlights.find(t => t.id === selectedHighlightId);
+                const file = h ? files.find(f => f.id === h.fileId) : undefined;
+                if (h) {
+                    const mins = Math.floor(h.start / 60);
+                    const secs = Math.floor(h.start % 60);
                     const timeLabel = `${mins}:${secs.toString().padStart(2, "0")}`;
-                    finalTitle = ts.note || (file ? `${file.name} @ ${timeLabel}` : `Timestamp @ ${timeLabel}`);
+                    finalTitle = h.note || h.text || (file ? `${file.name} @ ${timeLabel}` : `Highlight @ ${timeLabel}`);
                 } else {
-                    finalTitle = "Timestamp";
+                    finalTitle = "Highlight";
                 }
             }
         }
@@ -166,8 +166,8 @@ export function NodeDialog({
             url: type === 'link' ? linkUrl : undefined,
             linkedId: type === 'file'
                 ? selectedFileId
-                : type === 'timestamp'
-                    ? selectedTimestampId
+                : type === 'highlight'
+                    ? selectedHighlightId
                     : type === 'collection'
                         ? selectedCollectionId
                         : type === 'doc'
@@ -184,8 +184,8 @@ export function NodeDialog({
     
     // Helpers to display selected file
     const selectedFile = files.find(f => f.id === selectedFileId);
-    const selectedTimestamp = timestamps.find(t => t.id === selectedTimestampId);
-    const selectedTimestampFile = selectedTimestamp ? files.find(f => f.id === selectedTimestamp.fileId) : undefined;
+    const selectedHighlight = highlights.find(t => t.id === selectedHighlightId);
+    const selectedHighlightFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) : undefined;
     const selectedDoc = docs.find(d => d.id === selectedDocId);
     const selectedCollection = projectCollections.find(c => c.id === selectedCollectionId);
 
@@ -233,8 +233,8 @@ export function NodeDialog({
             navigate("/collections");
             return;
         }
-        if (type === "timestamp" && selectedTimestamp && selectedTimestampFile) {
-            navigate(`/file/${selectedTimestampFile.id}?t=${selectedTimestamp.start}`);
+        if (type === "highlight" && selectedHighlight && selectedHighlightFile) {
+            navigate(`/file/${selectedHighlightFile.id}?t=${selectedHighlight.start}`);
             return;
         }
         if (type === "doc" && selectedDocId) {
@@ -251,56 +251,56 @@ export function NodeDialog({
     const canOpen =
         (type === "file" && !!selectedFile) ||
         (type === "collection" && !!selectedCollection) ||
-        (type === "timestamp" && !!selectedTimestamp && !!selectedTimestampFile) ||
+        (type === "highlight" && !!selectedHighlight && !!selectedHighlightFile) ||
         (type === "doc" && !!selectedDoc) ||
         (type === "link" && !!linkUrl.trim());
 
-    const timestampSelector = (
+    const highlightSelector = (
         <div className="space-y-2">
-            <Label>Select Timestamp</Label>
+            <Label>Select Highlight</Label>
             <div className="flex items-center gap-2">
                 <div className="flex-1 h-11 px-3 py-1.5 flex items-center gap-3 border border-zinc-800 rounded-md bg-zinc-900 text-sm text-muted-foreground overflow-hidden">
-                    {selectedTimestamp && selectedTimestampFile ? (
+                    {selectedHighlight && selectedHighlightFile ? (
                         <>
                             <div className="flex flex-col items-center justify-center gap-1">
                                 <Clock className="text-primary" size={16} />
                                 <span className="font-mono text-[10px] text-muted-foreground">
                                     {(() => {
-                                        const mins = Math.floor(selectedTimestamp.start / 60);
-                                        const secs = Math.floor(selectedTimestamp.start % 60);
+                                        const mins = Math.floor(selectedHighlight.start / 60);
+                                        const secs = Math.floor(selectedHighlight.start % 60);
                                         return `${mins}:${secs.toString().padStart(2, "0")}`;
                                     })()}
                                 </span>
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="text-xs font-medium truncate text-foreground">
-                                    {selectedTimestamp.note || selectedTimestampFile.name}
+                                    {selectedHighlight.note || selectedHighlight.text || selectedHighlightFile.name}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground truncate">
-                                    {selectedTimestampFile.name}
+                                    {selectedHighlightFile.name}
                                 </div>
                             </div>
                         </>
                     ) : (
-                        <span className="opacity-50 text-xs">No timestamp selected</span>
+                        <span className="opacity-50 text-xs">No highlight selected</span>
                     )}
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() => setTimestampPickerOpen(true)}
+                    onClick={() => setHighlightPickerOpen(true)}
                 >
                     <Clock className="mr-2" />
                     Browse...
                 </Button>
             </div>
 
-            <TimestampPickerDialog
-                open={timestampPickerOpen}
-                onOpenChange={setTimestampPickerOpen}
-                onSelect={(id) => setSelectedTimestampId(id)}
-                initialTimestampId={selectedTimestampId}
+            <HighlightPickerDialog
+                open={highlightPickerOpen}
+                onOpenChange={setHighlightPickerOpen}
+                onSelect={(id) => setSelectedHighlightId(id)}
+                initialHighlightId={selectedHighlightId}
             />
         </div>
     );
@@ -376,7 +376,7 @@ export function NodeDialog({
                         </div>
                     )}
 
-                    {type === 'timestamp' && timestampSelector}
+                    {type === 'highlight' && highlightSelector}
 
                     {type === 'doc' && docSelector}
 
@@ -409,19 +409,19 @@ export function NodeDialog({
                                     </div>
                                 </div>
                             )}
-                            {type === 'timestamp' && selectedTimestamp && selectedTimestampFile && (
+                            {type === 'highlight' && selectedHighlight && selectedHighlightFile && (
                                 <div className="flex items-center gap-3">
                                     <Clock className="text-primary" />
                                     <div className="min-w-0">
                                         <div className="text-sm font-medium truncate text-foreground">
-                                            {selectedTimestamp.note || selectedTimestampFile.name}
+                                            {selectedHighlight.note || selectedHighlight.text || selectedHighlightFile.name}
                                         </div>
                                         <div className="text-xs text-muted-foreground truncate">
                                             {(() => {
-                                                const mins = Math.floor(selectedTimestamp.start / 60);
-                                                const secs = Math.floor(selectedTimestamp.start % 60);
+                                                const mins = Math.floor(selectedHighlight.start / 60);
+                                                const secs = Math.floor(selectedHighlight.start % 60);
                                                 return `${mins}:${secs.toString().padStart(2, "0")}`;
-                                            })()} • {selectedTimestampFile.name}
+                                            })()} • {selectedHighlightFile.name}
                                         </div>
                                     </div>
                                 </div>

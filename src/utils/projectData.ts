@@ -1,4 +1,4 @@
-import type { Project, File, Collection, Timestamp, Graph, GraphNode, GraphEdge, Doc, Storage, AppState } from "@/types";
+import type { Project, File, Collection, Highlight, Graph, GraphNode, GraphEdge, Doc, Storage, AppState } from "@/types";
 
 export interface ProjectExportData {
     version: number;
@@ -6,7 +6,7 @@ export interface ProjectExportData {
     project: Project;
     files: File[];
     collections: Collection[];
-    timestamps: Timestamp[];
+    highlights: Highlight[];
     graphs: Graph[];
     graphNodes: GraphNode[];
     graphEdges: GraphEdge[];
@@ -26,8 +26,8 @@ export function exportProject(state: AppState, projectId: string): ProjectExport
         project,
         files: state.files.filter(f => f.projectId === projectId && !f.deleted),
         collections: state.collections.filter(c => c.projectId === projectId && !c.deleted),
-        timestamps: state.timestamps.filter(t => {
-            const file = state.files.find(f => f.id === t.fileId);
+        highlights: state.highlights.filter(h => {
+            const file = state.files.find(f => f.id === h.fileId);
             return file && file.projectId === projectId;
         }),
         graphs: state.graphs.filter(g => g.projectId === projectId && !g.deleted),
@@ -67,7 +67,7 @@ export function importProject(data: ProjectExportData): Omit<ProjectExportData, 
     data.graphs.forEach(g => mapId(g.id));
     data.graphNodes.forEach(n => mapId(n.id));
     data.graphEdges.forEach(e => mapId(e.id));
-    data.timestamps.forEach(t => mapId(t.id));
+    data.highlights.forEach(h => mapId(h.id));
 
     // 2. Remap IDs and References
 
@@ -122,18 +122,18 @@ export function importProject(data: ProjectExportData): Omit<ProjectExportData, 
         toId: get(e.toId)
     }));
 
-    const newTimestamps = data.timestamps.map(t => ({
-        ...t,
-        id: get(t.id),
-        fileId: get(t.fileId),
-        collectionId: t.collectionId ? get(t.collectionId) : null
+    const newHighlights = data.highlights.map(h => ({
+        ...h,
+        id: get(h.id),
+        fileId: get(h.fileId),
+        collectionId: h.collectionId ? get(h.collectionId) : null
     }));
 
     return {
         project: newProject,
         files: newFiles,
         collections: newCollections,
-        timestamps: newTimestamps,
+        highlights: newHighlights,
         graphs: newGraphs,
         graphNodes: newGraphNodes,
         graphEdges: newGraphEdges,

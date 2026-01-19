@@ -270,7 +270,7 @@ export default function TrashView() {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                "{collection.name}" will be permanently deleted along with all timestamps. This cannot be undone.
+                                                                "{collection.name}" will be permanently deleted along with all highlights. This cannot be undone.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>

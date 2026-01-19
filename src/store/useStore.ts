@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { type AppState, type File, type Project, type Collection, type Timestamp, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type BaseTheme } from '@/types';
+import { type AppState, type File, type Project, type Collection, type Highlight, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type BaseTheme } from '@/types';
 
 interface User {
     id: string;
@@ -21,7 +21,7 @@ interface AppStore extends AppState {
     setProjects: (projects: Project[]) => void;
     setFiles: (files: File[]) => void;
     setCollections: (collections: Collection[]) => void;
-    setTimestamps: (timestamps: Timestamp[]) => void;
+    setHighlights: (highlights: Highlight[]) => void;
     setActiveProject: (id: string | null) => void;
     setActiveFile: (id: string | null) => void;
     setActiveCollection: (id: string | null) => void;
@@ -44,10 +44,10 @@ interface AppStore extends AppState {
     // Generic setters (initially for migration/bulk updates)
     setState: (state: Partial<AppState>) => void;
 
-    addTimestamp: (fileId: string, time: number, collectionId?: string) => void;
+    addVideoHighlight: (fileId: string, time: number, collectionId?: string) => void;
     addHighlight: (fileId: string, page: number, text: string, collectionId?: string | null, pdfRange?: { start: number; end: number } | null) => void;
-    removeTimestamp: (id: string) => void;
-    updateTimestamp: (id: string, updates: Partial<Timestamp>) => void;
+    removeHighlight: (id: string) => void;
+    updateHighlight: (id: string, updates: Partial<Highlight>) => void;
     updateFile: (id: string, updates: Partial<File>) => void;
     updateCollection: (id: string, updates: Partial<Collection>) => void;
 
@@ -114,7 +114,7 @@ export const useStore = create<AppStore>()(
             projects: [],
             files: [],
             collections: [],
-            timestamps: [],
+            highlights: [],
             graphs: [],
             graphNodes: [],
             graphEdges: [],
@@ -163,7 +163,7 @@ export const useStore = create<AppStore>()(
             setProjects: (projects: Project[]) => set({ projects }),
             setFiles: (files: File[]) => set({ files }),
             setCollections: (collections: Collection[]) => set({ collections }),
-            setTimestamps: (timestamps: Timestamp[]) => set({ timestamps }),
+            setHighlights: (highlights: Highlight[]) => set({ highlights }),
             setActiveProject: (id: string | null) => set({ activeProjectId: id }),
             setActiveFile: (id: string | null) => set({ activeFileId: id }),
             setActiveCollection: (id: string | null) => set({ activeCollectionId: id }),
@@ -346,9 +346,9 @@ export const useStore = create<AppStore>()(
                 };
             }),
 
-            addTimestamp: (fileId, time) => set((state) => {
+            addVideoHighlight: (fileId, time) => set((state) => {
                 const collectionId = state.activeCollectionId;
-                const newTimestamp: Timestamp = {
+                const newHighlight: Highlight = {
                     id: crypto.randomUUID(),
                     fileId,
                     collectionId,
@@ -359,21 +359,21 @@ export const useStore = create<AppStore>()(
                     created: Date.now()
                 };
                 return {
-                    timestamps: [...state.timestamps, newTimestamp],
+                    highlights: [...state.highlights, newHighlight],
                     history: [{
                         id: crypto.randomUUID(),
                         projectId: state.activeProjectId || 'global',
                         action: 'create',
-                        entityType: 'timestamp',
-                        entityId: newTimestamp.id,
-                        entityName: 'Timestamp',
+                        entityType: 'highlight',
+                        entityId: newHighlight.id,
+                        entityName: 'Highlight',
                         timestamp: Date.now()
                     }, ...state.history]
                 };
             }),
             addHighlight: (fileId, page, text, collectionIdOverride, pdfRange) => set((state) => {
                 const collectionId = collectionIdOverride ?? state.activeCollectionId ?? null;
-                const newTimestamp: Timestamp = {
+                const newHighlight: Highlight = {
                     id: crypto.randomUUID(),
                     fileId,
                     collectionId,
@@ -385,36 +385,36 @@ export const useStore = create<AppStore>()(
                     created: Date.now()
                 };
                 return {
-                    timestamps: [...state.timestamps, newTimestamp],
+                    highlights: [...state.highlights, newHighlight],
                     history: [{
                         id: crypto.randomUUID(),
                         projectId: state.activeProjectId || 'global',
                         action: 'create',
-                        entityType: 'timestamp',
-                        entityId: newTimestamp.id,
+                        entityType: 'highlight',
+                        entityId: newHighlight.id,
                         entityName: 'Highlight',
                         timestamp: Date.now()
                     }, ...state.history]
                 };
             }),
-            removeTimestamp: (id) => set((state) => ({
-                timestamps: state.timestamps.filter((t) => t.id !== id),
+            removeHighlight: (id) => set((state) => ({
+                highlights: state.highlights.filter((t) => t.id !== id),
                 history: [{
                     id: crypto.randomUUID(),
                     projectId: state.activeProjectId || 'global',
                     action: 'delete',
-                    entityType: 'timestamp',
+                    entityType: 'highlight',
                     entityId: id,
                     timestamp: Date.now()
                 }, ...state.history]
             })),
-            updateTimestamp: (id, updates) => set((state) => ({
-                timestamps: state.timestamps.map((t) => t.id === id ? { ...t, ...updates } : t),
+            updateHighlight: (id, updates) => set((state) => ({
+                highlights: state.highlights.map((t) => t.id === id ? { ...t, ...updates } : t),
                 history: [{
                     id: crypto.randomUUID(),
                     projectId: state.activeProjectId || 'global',
                     action: 'update',
-                    entityType: 'timestamp',
+                    entityType: 'highlight',
                     entityId: id,
                     timestamp: Date.now()
                 }, ...state.history]
@@ -570,9 +570,9 @@ export const useStore = create<AppStore>()(
                     graphs: state.graphs.filter((g) => g.projectId !== id),
                     docs: state.docs.filter((d) => d.projectId !== id),
                     storages: state.storages.filter((s) => s.projectId !== id),
-                    timestamps: state.timestamps.filter((t) =>
-                        !projectFileIds.has(t.fileId) &&
-                        !(t.collectionId && projectCollectionIds.has(t.collectionId))
+                    highlights: state.highlights.filter((h) =>
+                        !projectFileIds.has(h.fileId) &&
+                        !(h.collectionId && projectCollectionIds.has(h.collectionId))
                     ),
                     graphNodes: state.graphNodes.filter((n) => !projectGraphIds.has(n.graphId)),
                     graphEdges: state.graphEdges.filter((e) => !projectGraphIds.has(e.graphId)),
@@ -622,8 +622,8 @@ export const useStore = create<AppStore>()(
                 }, ...state.history]
             })),
             permanentDeleteFile: (id) => set((state) => ({
-                files: state.files.filter((f) => f.id !== id),
-                timestamps: state.timestamps.filter((t) => t.fileId !== id),
+                files: state.files.filter(f => f.id !== id),
+                highlights: state.highlights.filter(t => t.fileId !== id),
                 history: [{
                     id: crypto.randomUUID(),
                     projectId: state.activeProjectId || 'global',
@@ -661,7 +661,7 @@ export const useStore = create<AppStore>()(
             })),
             permanentDeleteCollection: (id) => set((state) => ({
                 collections: state.collections.filter((c) => c.id !== id),
-                timestamps: state.timestamps.filter((t) => t.collectionId !== id),
+                highlights: state.highlights.filter((h) => h.collectionId !== id),
                 history: [{
                     id: crypto.randomUUID(),
                     projectId: state.activeProjectId || 'global',
@@ -775,8 +775,8 @@ export const useStore = create<AppStore>()(
                     storages: state.storages.filter((s) => !s.deleted),
                     graphs: state.graphs.filter((g) => !g.deleted),
                     docs: state.docs.filter((d) => !d.deleted),
-                    timestamps: state.timestamps.filter((t) =>
-                        !allDeletedFileIds.has(t.fileId) && !deletedCollectionIds.has(t.collectionId || '')
+                    highlights: state.highlights.filter((h) =>
+                        !allDeletedFileIds.has(h.fileId) && !deletedCollectionIds.has(h.collectionId || '')
                     ),
                     graphNodes: state.graphNodes.filter(n => !deletedGraphIds.has(n.graphId)),
                     graphEdges: state.graphEdges.filter(e => !deletedGraphIds.has(e.graphId)),

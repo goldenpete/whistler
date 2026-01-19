@@ -53,14 +53,14 @@ import type { PDFPlayerHandle } from './PDFPlayer';
 import { SeekPreview } from './SeekPreview';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
-import { ClipPlayerDialog, EditTimestampDialog } from "@/components/dialogs/TimestampDialogs";
+import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
-import { type Timestamp } from "@/types";
+import { type Highlight } from "@/types";
 
 export default function VideoPlayer() {
     const { fileId } = useParams<{ fileId: string }>();
     const navigate = useNavigate();
-    const { files, timestamps, collections, addTimestamp, removeTimestamp, updateTimestamp, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen } = useStore();
+    const { files, highlights, collections, addVideoHighlight, removeHighlight, updateHighlight, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -86,31 +86,31 @@ export default function VideoPlayer() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Timestamp Dialog State
-    const [editTimestampOpen, setEditTimestampOpen] = useState(false);
-    const [clipPlayerOpen, setClipPlayerOpen] = useState(false);
+    // Highlight Dialog State
+    const [editHighlightOpen, setEditHighlightOpen] = useState(false);
+    const [highlightPlayerOpen, setHighlightPlayerOpen] = useState(false);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-    const [returnToClipPlayer, setReturnToClipPlayer] = useState(false);
-    const [selectedTimestampId, setSelectedTimestampId] = useState<string | null>(null);
+    const [returnToHighlightPlayer, setReturnToHighlightPlayer] = useState(false);
+    const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
     // Seek Preview State
     const [hoverTime, setHoverTime] = useState<number | null>(null);
     const [hoverX, setHoverX] = useState(0);
     const progressRef = useRef<HTMLDivElement>(null);
 
-    const selectedTimestamp = timestamps.find(t => t.id === selectedTimestampId) || null;
+    const selectedHighlight = highlights.find(t => t.id === selectedHighlightId) || null;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const file = files.find((f: any) => f.id === fileId);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fileTimestamps = timestamps.filter((t: any) => t.fileId === fileId);
+    const fileHighlights = highlights.filter((t: Highlight) => t.fileId === fileId);
 
-    const handleCreateTimestamp = (time: number) => {
-        addTimestamp(fileId!, time, activeCollectionId || undefined);
+    const handleCreateHighlight = (time: number) => {
+        addVideoHighlight(fileId!, time, activeCollectionId || undefined);
     };
 
     if (!file) {
-        return <div className="p-10 text-center text-zinc-500">Loading file...</div>;
+        return <div className="p-10 text-center text-muted-foreground">Loading file...</div>;
     }
 
     const isMediaFile = file.type === 'video' || file.type === 'audio';
@@ -145,10 +145,10 @@ export default function VideoPlayer() {
     }, [isPlaying]);
 
     useEffect(() => {
-        if (clipPlayerOpen && videoRef.current) {
+        if (highlightPlayerOpen && videoRef.current) {
             videoRef.current.pause();
         }
-    }, [clipPlayerOpen]);
+    }, [highlightPlayerOpen]);
 
     useEffect(() => {
         if (videoRef.current) {
@@ -187,19 +187,19 @@ export default function VideoPlayer() {
 
             // Collection Mode Logic
             if (isCollectionMode && isPlaying) {
-                const relevantTimestamps = activeCollectionId
-                    ? fileTimestamps.filter((t: any) => t.collectionId === activeCollectionId)
-                    : fileTimestamps;
+                const relevantHighlights = activeCollectionId
+                    ? fileHighlights.filter((t: Highlight) => t.collectionId === activeCollectionId)
+                    : fileHighlights;
 
-                if (relevantTimestamps.length > 0) {
-                    const sorted = [...relevantTimestamps].sort((a: any, b: any) => a.start - b.start);
+                if (relevantHighlights.length > 0) {
+                    const sorted = [...relevantHighlights].sort((a: Highlight, b: Highlight) => a.start - b.start);
 
                     // Check if we are inside a segment
-                    const currentSegment = sorted.find((t: any) => time >= t.start && time <= (t.end || t.start + 5));
+                    const currentSegment = sorted.find((t: Highlight) => time >= t.start && time <= (t.end || t.start + 5));
 
                     if (!currentSegment) {
                         // Not in a segment, find next one
-                        const nextSegment = sorted.find((t: any) => t.start > time);
+                        const nextSegment = sorted.find((t: Highlight) => t.start > time);
                         if (nextSegment) {
                             videoRef.current.currentTime = nextSegment.start;
                         } else {
@@ -251,7 +251,7 @@ export default function VideoPlayer() {
         if (file.url) navigator.clipboard.writeText(file.url);
     };
 
-    const seekToTimestamp = (time: number) => {
+    const seekToHighlight = (time: number) => {
         if (file?.type === 'pdf') {
             pdfRef.current?.jumpToPage(time);
         } else if (videoRef.current) {
@@ -304,7 +304,7 @@ export default function VideoPlayer() {
         }
     };
 
-    const handleAddTimestamp = () => {
+    const handleAddHighlight = () => {
         if (!fileId) return;
 
         if (file.type === 'pdf') {
@@ -312,7 +312,7 @@ export default function VideoPlayer() {
             return;
         }
 
-        addTimestamp(fileId, currentTime, activeCollectionId || undefined);
+        addVideoHighlight(fileId, currentTime, activeCollectionId || undefined);
     };
 
     const handleSeekHover = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -421,9 +421,9 @@ export default function VideoPlayer() {
                             </AlertDialog>
                         </div>
 
-                        <div className="w-px h-6 bg-white/20 mx-1" /> {/* Divider */}
+                        <div className="w-px h-6 bg-border mx-1" /> {/* Divider */}
 
-                        <Button variant="ghost" size="icon" onClick={handleClose} className="text-zinc-400 hover:text-white hover:bg-white/10" title="Close">
+                        <Button variant="ghost" size="icon" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close">
                             <X weight="bold" size={24} />
                         </Button>
                     </div>
@@ -488,15 +488,15 @@ export default function VideoPlayer() {
                         >
                             {/* Timestamp Markers */}
                             <div className="absolute top-0 bottom-0 left-2 right-2 pointer-events-none z-10">
-                                {fileTimestamps.map((ts: any) => {
-                                    const collection = collections.find(c => c.id === ts.collectionId);
+                                {fileHighlights.map((h: any) => {
+                                    const collection = collections.find(c => c.id === h.collectionId);
                                     const color = collection ? collection.color : 'var(--primary)';
                                     return (
                                         <div
-                                            key={ts.id}
+                                            key={h.id}
                                             className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full opacity-60"
                                             style={{
-                                                left: `${(ts.start / duration) * 100}%`,
+                                                left: `${(h.start / duration) * 100}%`,
                                                 backgroundColor: color
                                             }}
                                         />
@@ -564,7 +564,7 @@ export default function VideoPlayer() {
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => setIsLooping(!isLooping)}
-                                    className={cn("text-zinc-400 hover:text-white", isLooping && "text-primary hover:text-primary/80")}
+                                    className={cn("text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
                                     title={isLooping ? "Loop On" : "Loop Off"}
                                 >
                                     <Repeat weight="bold" size={20} />
@@ -575,18 +575,18 @@ export default function VideoPlayer() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-zinc-400 hover:text-white font-mono text-xs w-16"
+                                            className="text-muted-foreground hover:text-foreground font-mono text-xs w-16"
                                         >
                                             {playbackRate}x
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-64 bg-zinc-900 border-zinc-800 p-4" side="top">
+                                    <PopoverContent className="w-64 bg-popover border-border p-4" side="top">
                                         <div className="flex flex-col gap-4">
-                                            <div className="flex items-center justify-between text-white font-mono text-xl font-medium border-b border-white/10 pb-2">
+                                            <div className="flex items-center justify-between text-foreground font-mono text-xl font-medium border-b border-border pb-2">
                                                 <span>{playbackRate.toFixed(2)}x</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white" onClick={() => setPlaybackRate(Math.max(0.25, playbackRate - 0.05))}>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackRate(Math.max(0.25, playbackRate - 0.05))}>
                                                     <Minus weight="bold" />
                                                 </Button>
                                                 <Slider
@@ -597,7 +597,7 @@ export default function VideoPlayer() {
                                                     onValueChange={(val) => setPlaybackRate(val[0])}
                                                     className="flex-1"
                                                 />
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white" onClick={() => setPlaybackRate(Math.min(8, playbackRate + 0.05))}>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackRate(Math.min(8, playbackRate + 0.05))}>
                                                     <Plus weight="bold" />
                                                 </Button>
                                             </div>
@@ -610,7 +610,7 @@ export default function VideoPlayer() {
                                                             "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
                                                             playbackRate === rate
                                                                 ? "bg-primary/10 text-primary border-primary/50"
-                                                                : "bg-zinc-800/50 text-zinc-400 border-transparent hover:bg-zinc-800 hover:text-white"
+                                                                : "bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground"
                                                         )}
                                                     >
                                                         {rate}
@@ -621,24 +621,24 @@ export default function VideoPlayer() {
                                     </PopoverContent>
                                 </Popover>
 
-                                <Button variant="ghost" size="icon" onClick={handleTogglePip} className="text-zinc-400 hover:text-white" title="Picture in Picture">
+                                <Button variant="ghost" size="icon" onClick={handleTogglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
                                     <GridFour weight="bold" size={20} />
                                 </Button>
 
-                                <div className="w-px h-5 bg-white/20 mx-1" />
+                                <div className="w-px h-5 bg-border mx-1" />
 
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setSidebarOpen(!sidebarOpen)}
                                     className={cn(
-                                        "text-zinc-400 hover:text-white",
+                                        "text-muted-foreground hover:text-foreground",
                                         sidebarOpen && "text-primary hover:text-primary"
                                     )}
                                 >
                                     <SidebarSimple weight="bold" size={20} />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-zinc-400 hover:text-white">
+                                <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-muted-foreground hover:text-foreground">
                                     {isFullscreen ? <CornersIn weight="bold" size={20} /> : <CornersOut weight="bold" size={20} />}
                                 </Button>
                             </div>
@@ -653,15 +653,15 @@ export default function VideoPlayer() {
                     initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
                     animate={{ width: 320, opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="bg-zinc-900 border-l border-white/10 flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full"
+                    className="bg-background border-l border-border flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full"
                 >
-                    <div className="p-4 border-b border-white/10 bg-zinc-900/50 backdrop-blur-md flex items-center justify-between">
+                    <div className="p-4 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between">
                         <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-zinc-400 hover:text-primary disabled:opacity-30 disabled:hover:text-zinc-400"
-                            onClick={handleAddTimestamp}
+                            className="h-6 w-6 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:hover:text-muted-foreground"
+                            onClick={handleAddHighlight}
                             title="Add Highlight"
                             disabled={file.type === 'pdf' && !hasPdfSelection}
                         >
@@ -669,31 +669,31 @@ export default function VideoPlayer() {
                         </Button>
                     </div>
                     <ScrollArea className="flex-1 w-full">
-                        {fileTimestamps.length === 0 ? (
-                            <div className="text-zinc-500 text-xs text-center mt-4">No highlights yet.</div>
+                        {fileHighlights.length === 0 ? (
+                            <div className="text-muted-foreground text-xs text-center mt-4">No highlights yet.</div>
                         ) : (
-                            fileTimestamps.map((ts: any) => {
-                                const collection = collections.find(c => c.id === ts.collectionId);
+                            fileHighlights.map((h: any) => {
+                                const collection = collections.find(c => c.id === h.collectionId);
                                 const borderColor = collection ? collection.color : 'transparent';
                                 const collectionName = collection ? collection.name : null;
 
                                 return (
                                     <div
-                                        key={ts.id}
-                                        className="group flex flex-col gap-1.5 p-2 rounded-none hover:bg-white/5 border-l-4 transition-all relative"
+                                        key={h.id}
+                                        className="group flex flex-col gap-1.5 p-2 rounded-none hover:bg-accent border-l-4 transition-all relative"
                                         style={{ borderLeftColor: borderColor }}
                                     >
                                         <div className="flex items-center justify-between gap-2 h-6">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <button
                                                     className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
-                                                    onClick={() => seekToTimestamp(ts.start)}
+                                                    onClick={() => seekToHighlight(h.start)}
                                                 >
                                                     {file.type === 'pdf'
-                                                        ? (ts.end && ts.end !== ts.start
-                                                            ? `Page ${ts.start}-${ts.end}`
-                                                            : `Page ${ts.start}`)
-                                                        : `${formatTime(ts.start)} - ${formatTime(ts.end || ts.start + 5)}`
+                                                        ? (h.end && h.end !== h.start
+                                                            ? `Page ${h.start}-${h.end}`
+                                                            : `Page ${h.start}`)
+                                                        : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
                                                     }
                                                 </button>
                                                 {collectionName && (
@@ -705,47 +705,47 @@ export default function VideoPlayer() {
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 {file.type !== 'pdf' && (
                                                     <button
-                                                        className="p-1 px-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded flex items-center gap-1"
+                                                        className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            setSelectedTimestampId(ts.id);
-                                                            setClipPlayerOpen(true);
+                                                            setSelectedHighlightId(h.id);
+                                                            setHighlightPlayerOpen(true);
                                                         }}
-                                                        title="Open Clip"
+                                                        title="Open Highlight"
                                                     >
                                                         <Play weight="fill" size={10} />
                                                     </button>
                                                 )}
                                                 <button
-                                                    className="p-1 text-zinc-400 hover:text-white hover:bg-white/10 rounded"
+                                                    className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setSelectedTimestampId(ts.id);
-                                                        setEditTimestampOpen(true);
+                                                        setSelectedHighlightId(h.id);
+                                                        setEditHighlightOpen(true);
                                                     }}
-                                                    title="Edit Timestamp"
+                                                    title="Edit Highlight"
                                                 >
                                                     <PencilSimple weight="bold" size={12} />
                                                 </button>
                                                 <button
-                                                    className="p-1 text-zinc-400 hover:text-red-400 hover:bg-white/10 rounded"
+                                                    className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        removeTimestamp(ts.id);
+                                                        removeHighlight(h.id);
                                                     }}
-                                                    title="Delete Timestamp"
+                                                    title="Delete Highlight"
                                                 >
                                                     <Trash weight="bold" size={12} />
                                                 </button>
                                             </div>
                                         </div>
-                                        {file.type === 'pdf' && ts.text && (
-                                            <div className="text-zinc-200 text-xs whitespace-pre-wrap break-all pl-1 leading-snug">
-                                                {ts.text}
+                                        {file.type === 'pdf' && h.text && (
+                                            <div className="text-foreground text-xs whitespace-pre-wrap break-all pl-1 leading-snug">
+                                                {h.text}
                                             </div>
                                         )}
-                                        <div className="text-zinc-300 text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
-                                            {ts.note || <span className="text-zinc-500 italic text-xs">No note</span>}
+                                        <div className="text-muted-foreground text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
+                                            {h.note || <span className="text-muted-foreground/50 italic text-xs">No note</span>}
                                         </div>
                                     </div>
                                 );
@@ -768,36 +768,36 @@ export default function VideoPlayer() {
                 onSave={(updates) => updateFile(file.id, updates)}
             />
 
-            <ClipPlayerDialog
-                open={clipPlayerOpen}
-                onOpenChange={setClipPlayerOpen}
-                timestamp={selectedTimestamp}
+            <HighlightPlayerDialog
+                open={highlightPlayerOpen}
+                onOpenChange={setHighlightPlayerOpen}
+                highlight={selectedHighlight}
                 file={file || null}
-                collection={collections.find(c => c.id === selectedTimestamp?.collectionId)}
+                collection={collections.find(c => c.id === selectedHighlight?.collectionId)}
                 collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
-                onUpdate={(updates) => selectedTimestamp && updateTimestamp(selectedTimestamp.id, updates)}
-                onEditTimestamp={() => {
-                    setClipPlayerOpen(false);
-                    setReturnToClipPlayer(true);
-                    setEditTimestampOpen(true);
+                onUpdate={(updates) => selectedHighlight && updateHighlight(selectedHighlight.id, updates)}
+                onEditHighlight={() => {
+                    setHighlightPlayerOpen(false);
+                    setReturnToHighlightPlayer(true);
+                    setEditHighlightOpen(true);
                 }}
             />
 
-            <EditTimestampDialog
-                open={editTimestampOpen}
+            <EditHighlightDialog
+                open={editHighlightOpen}
                 onOpenChange={(open) => {
-                    setEditTimestampOpen(open);
-                    if (!open && returnToClipPlayer) {
-                        setReturnToClipPlayer(false);
-                        setClipPlayerOpen(true);
+                    setEditHighlightOpen(open);
+                    if (!open && returnToHighlightPlayer) {
+                        setReturnToHighlightPlayer(false);
+                        setHighlightPlayerOpen(true);
                     }
                 }}
-                timestamp={selectedTimestamp}
+                highlight={selectedHighlight}
                 collections={collections}
                 file={file || null}
                 onSave={(updates) => {
-                    if (selectedTimestamp) {
-                        updateTimestamp(selectedTimestamp.id, updates);
+                    if (selectedHighlight) {
+                        updateHighlight(selectedHighlight.id, updates);
                     }
                 }}
             />

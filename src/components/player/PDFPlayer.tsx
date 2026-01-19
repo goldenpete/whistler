@@ -35,15 +35,15 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
     const [selectedText, setSelectedText] = useState<string>("");
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
-    const { addHighlight, activeCollectionId, timestamps } = useStore();
+    const { addHighlight, activeCollectionId, highlights } = useStore();
 
     const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
     const pageHighlights = useMemo(
         () =>
-            timestamps
+            highlights
                 .filter((t) => t.fileId === fileId && t.start === pageNumber && t.text),
-        [timestamps, fileId, pageNumber]
+        [highlights, fileId, pageNumber]
     );
 
     useEffect(() => {

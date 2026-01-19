@@ -89,13 +89,13 @@ function DocEditor({ doc }: DocEditorProps) {
         setDocViewMode: setViewMode,
         files,
         collections,
-        timestamps,
+        highlights,
     } = useStore();
     const saveTimeoutRef = useRef<number | null>(null);
     const [linkDialogOpen, setLinkDialogOpen] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
     const [linkMode, setLinkMode] = useState<"external" | "internal">("external");
-    const [internalType, setInternalType] = useState<"file" | "collection" | "timestamp">("file");
+    const [internalType, setInternalType] = useState<"file" | "collection" | "highlight">("file");
     const [internalId, setInternalId] = useState<string>("");
     const [formatState, setFormatState] = useState({
         bold: false,
@@ -204,7 +204,7 @@ function DocEditor({ doc }: DocEditorProps) {
     const projectCollections = collections.filter(
         (c) => c.projectId === doc.projectId && !c.deleted
     );
-    const projectTimestamps = timestamps.filter((t) => {
+    const projectHighlights = highlights.filter((t) => {
         const file = files.find((f) => f.id === t.fileId && !f.deleted);
         return !!file && file.projectId === doc.projectId;
     });
@@ -223,8 +223,8 @@ function DocEditor({ doc }: DocEditorProps) {
                 const target = projectCollections.find((c) => c.id === internalId);
                 if (!target) return;
                 href = `/collections?collectionId=${target.id}`;
-            } else if (internalType === "timestamp") {
-                const target = projectTimestamps.find((t) => t.id === internalId);
+            } else if (internalType === "highlight") {
+                const target = projectHighlights.find((t) => t.id === internalId);
                 if (!target) return;
                 href = `/file/${target.fileId}?t=${target.start}`;
             }
@@ -523,18 +523,18 @@ function DocEditor({ doc }: DocEditorProps) {
                                     <Button
                                         type="button"
                                         variant={
-                                            internalType === "timestamp" ? "secondary" : "ghost"
+                                            internalType === "highlight" ? "secondary" : "ghost"
                                         }
                                         size="sm"
                                         className={cn(
                                             "h-7 px-3",
-                                            internalType === "timestamp"
+                                            internalType === "highlight"
                                                 ? "bg-zinc-100 text-black hover:bg-zinc-200"
                                                 : "text-zinc-300 hover:text-white"
                                         )}
-                                        onClick={() => setInternalType("timestamp")}
+                                        onClick={() => setInternalType("highlight")}
                                     >
-                                        Timestamps
+                                        Highlights
                                     </Button>
                                 </div>
                                 <ScrollArea className="max-h-56 rounded-md border border-zinc-800 bg-zinc-900/60">
@@ -589,9 +589,9 @@ function DocEditor({ doc }: DocEditorProps) {
                                                     No collections in this project
                                                 </div>
                                             ))}
-                                        {internalType === "timestamp" &&
-                                            (projectTimestamps.length > 0 ? (
-                                                projectTimestamps.map((t) => {
+                                        {internalType === "highlight" &&
+                                            (projectHighlights.length > 0 ? (
+                                                projectHighlights.map((t) => {
                                                     const file = files.find(
                                                         (f) => f.id === t.fileId
                                                     );
@@ -612,7 +612,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                                             )}
                                                         >
                                                             <span className="truncate">
-                                                                {t.note || "Timestamp"}
+                                                                {t.note || "Highlight"}
                                                             </span>
                                                             <span className="text-[10px] text-zinc-400 truncate">
                                                                 {file?.name || "File"} • {mins}:
@@ -623,7 +623,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                                 })
                                             ) : (
                                                 <div className="px-2 py-1.5 text-xs text-zinc-500">
-                                                    No timestamps in this project
+                                                    No highlights in this project
                                                 </div>
                                             ))}
                                     </div>

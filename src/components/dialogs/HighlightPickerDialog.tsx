@@ -9,15 +9,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
-import type { Timestamp, Collection, File } from "@/types";
-import { Clock, Folder, Tag, FilmStrip } from "@phosphor-icons/react";
+import type { Highlight, Collection, File } from "@/types";
+import { Clock, Folder, Tag, FilmStrip, TextT } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
-interface TimestampPickerDialogProps {
+interface HighlightPickerDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSelect: (timestampId: string) => void;
-    initialTimestampId?: string;
+    onSelect: (highlightId: string) => void;
+    initialHighlightId?: string;
     title?: string;
 }
 
@@ -27,49 +27,49 @@ function formatTime(seconds: number) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export function TimestampPickerDialog({
+export function HighlightPickerDialog({
     open,
     onOpenChange,
     onSelect,
-    initialTimestampId,
-    title = "Select Timestamp"
-}: TimestampPickerDialogProps) {
-    const { timestamps, collections, files, activeProjectId } = useStore();
+    initialHighlightId,
+    title = "Select Highlight"
+}: HighlightPickerDialogProps) {
+    const { highlights, collections, files, activeProjectId } = useStore();
 
     const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
-    const [selectedTimestampId, setSelectedTimestampId] = useState<string>("");
+    const [selectedHighlightId, setSelectedHighlightId] = useState<string>("");
 
     const projectCollections = useMemo(
         () => collections.filter(c => c.projectId === activeProjectId && !c.deleted),
         [collections, activeProjectId]
     );
 
-    const timestampsByCollection = useMemo(() => {
-        const map = new Map<string, Timestamp[]>();
-        for (const t of timestamps) {
-            if (!t.collectionId) continue;
-            const col = collections.find(c => c.id === t.collectionId && c.projectId === activeProjectId && !c.deleted);
+    const highlightsByCollection = useMemo(() => {
+        const map = new Map<string, Highlight[]>();
+        for (const h of highlights) {
+            if (!h.collectionId) continue;
+            const col = collections.find(c => c.id === h.collectionId && c.projectId === activeProjectId && !c.deleted);
             if (!col) continue;
             if (!map.has(col.id)) {
                 map.set(col.id, []);
             }
-            map.get(col.id)!.push(t);
+            map.get(col.id)!.push(h);
         }
         for (const [key, list] of map.entries()) {
             list.sort((a, b) => a.start - b.start);
             map.set(key, list);
         }
         return map;
-    }, [timestamps, collections, activeProjectId]);
+    }, [highlights, collections, activeProjectId]);
 
-    const collectionsWithTimestamps: Collection[] = useMemo(() => {
-        return projectCollections.filter(c => timestampsByCollection.has(c.id));
-    }, [projectCollections, timestampsByCollection]);
+    const collectionsWithHighlights: Collection[] = useMemo(() => {
+        return projectCollections.filter(c => highlightsByCollection.has(c.id));
+    }, [projectCollections, highlightsByCollection]);
 
-    const displayedTimestamps: Timestamp[] = useMemo(() => {
+    const displayedHighlights: Highlight[] = useMemo(() => {
         if (!selectedCollectionId) return [];
-        return timestampsByCollection.get(selectedCollectionId) || [];
-    }, [timestampsByCollection, selectedCollectionId]);
+        return highlightsByCollection.get(selectedCollectionId) || [];
+    }, [highlightsByCollection, selectedCollectionId]);
 
     const getFile = (fileId: string): File | undefined => {
         return files.find(f => f.id === fileId);
@@ -77,24 +77,24 @@ export function TimestampPickerDialog({
 
     useEffect(() => {
         if (open) {
-            setSelectedTimestampId(initialTimestampId || "");
+            setSelectedHighlightId(initialHighlightId || "");
 
-            if (initialTimestampId) {
-                const ts = timestamps.find(t => t.id === initialTimestampId);
-                if (ts && ts.collectionId && timestampsByCollection.has(ts.collectionId)) {
-                    setSelectedCollectionId(ts.collectionId);
+            if (initialHighlightId) {
+                const h = highlights.find(t => t.id === initialHighlightId);
+                if (h && h.collectionId && highlightsByCollection.has(h.collectionId)) {
+                    setSelectedCollectionId(h.collectionId);
                     return;
                 }
             }
 
-            const firstCollection = collectionsWithTimestamps[0];
+            const firstCollection = collectionsWithHighlights[0];
             setSelectedCollectionId(firstCollection ? firstCollection.id : null);
         }
-    }, [open, initialTimestampId, timestamps, timestampsByCollection, collectionsWithTimestamps]);
+    }, [open, initialHighlightId, highlights, highlightsByCollection, collectionsWithHighlights]);
 
     const handleConfirm = () => {
-        if (selectedTimestampId) {
-            onSelect(selectedTimestampId);
+        if (selectedHighlightId) {
+            onSelect(selectedHighlightId);
             onOpenChange(false);
         }
     };
@@ -112,13 +112,13 @@ export function TimestampPickerDialog({
                     <div className="w-48 flex flex-col gap-2">
                         <div className="text-xs font-medium text-muted-foreground px-1">Collections</div>
                         <ScrollArea className="h-[260px] border border-zinc-800 rounded-md p-1">
-                            {collectionsWithTimestamps.length === 0 ? (
+                            {collectionsWithHighlights.length === 0 ? (
                                 <div className="flex items-center justify-center h-full text-xs text-muted-foreground px-2 text-center">
-                                    No collections with timestamps.
+                                    No collections with highlights.
                                 </div>
                             ) : (
                                 <div className="space-y-1">
-                                    {collectionsWithTimestamps.map((collection) => (
+                                    {collectionsWithHighlights.map((collection) => (
                                         <button
                                             key={collection.id}
                                             className={cn(
@@ -143,7 +143,7 @@ export function TimestampPickerDialog({
                     <div className="flex-1 flex flex-col gap-2">
                         <div className="flex items-center justify-between px-1">
                             <div className="text-xs font-medium text-muted-foreground">
-                                {selectedCollection ? selectedCollection.name : "Timestamps"}
+                                {selectedCollection ? selectedCollection.name : "Highlights"}
                             </div>
                             {selectedCollection && (
                                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -156,39 +156,47 @@ export function TimestampPickerDialog({
                         </div>
 
                         <ScrollArea className="h-[260px] border border-zinc-800 rounded-md p-1">
-                            {displayedTimestamps.length === 0 ? (
+                            {displayedHighlights.length === 0 ? (
                                 <div className="flex items-center justify-center h-full text-xs text-muted-foreground px-2 text-center">
-                                    No timestamps in this collection.
+                                    No highlights in this collection.
                                 </div>
                             ) : (
                                 <div className="space-y-1">
-                                    {displayedTimestamps.map((t) => {
-                                        const file = getFile(t.fileId);
+                                    {displayedHighlights.map((h) => {
+                                        const file = getFile(h.fileId);
+                                        const isPdf = file?.type === 'pdf';
+                                        
                                         return (
                                             <button
-                                                key={t.id}
+                                                key={h.id}
                                                 className={cn(
                                                     "w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs text-left transition-colors",
-                                                    selectedTimestampId === t.id
+                                                    selectedHighlightId === h.id
                                                         ? "bg-primary/20 text-primary"
                                                         : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
                                                 )}
-                                                onClick={() => setSelectedTimestampId(t.id)}
+                                                onClick={() => setSelectedHighlightId(h.id)}
                                                 onDoubleClick={() => {
-                                                    setSelectedTimestampId(t.id);
-                                                    onSelect(t.id);
+                                                    setSelectedHighlightId(h.id);
+                                                    onSelect(h.id);
                                                     onOpenChange(false);
                                                 }}
                                             >
                                                 <div className="flex flex-col items-center justify-center gap-1">
-                                                    <Clock className="text-primary" size={14} />
-                                                    <span className="font-mono text-[10px]">
-                                                        {formatTime(t.start)}
-                                                    </span>
+                                                    {isPdf ? (
+                                                        <TextT className="text-primary" size={14} />
+                                                    ) : (
+                                                        <Clock className="text-primary" size={14} />
+                                                    )}
+                                                    {!isPdf && (
+                                                        <span className="font-mono text-[10px]">
+                                                            {formatTime(h.start)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="text-[11px] font-medium truncate">
-                                                        {t.note || (file ? file.name : "Untitled")}
+                                                        {h.note || h.text || (file ? file.name : "Untitled")}
                                                     </div>
                                                     {file && (
                                                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate">
@@ -211,7 +219,7 @@ export function TimestampPickerDialog({
                     <Button
                         onClick={handleConfirm}
                         className="bg-primary text-primary-foreground"
-                        disabled={!selectedTimestampId}
+                        disabled={!selectedHighlightId}
                     >
                         Select
                     </Button>
@@ -220,4 +228,3 @@ export function TimestampPickerDialog({
         </Dialog>
     );
 }
-

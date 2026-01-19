@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useRef, useState } from "react";
-import { type Timestamp, type File, type Collection } from "@/types";
+import { type Highlight, type File, type Collection } from "@/types";
 import { Play, Pause, X, CaretDown, PencilSimple, SpeakerHigh, SpeakerSlash, Repeat, ArrowsOut, ArrowsIn, CornersOut, Gauge } from "@phosphor-icons/react";
 
 // --- Time Formatting Helper ---
@@ -25,20 +25,20 @@ const parseTime = (timeStr: string): number | null => {
 };
 
 
-// --- Clip Player Dialog ---
+// --- Highlight Player Dialog ---
 
-interface ClipPlayerDialogProps {
+interface HighlightPlayerDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    timestamp: Timestamp | null;
+    highlight: Highlight | null;
     file: File | null;
     collection?: Collection;
     collections?: Collection[];
-    onUpdate?: (updates: Partial<Timestamp>) => void;
-    onEditTimestamp?: () => void; // Added
+    onUpdate?: (updates: Partial<Highlight>) => void;
+    onEditHighlight?: () => void; // Added
 }
 
-export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collection, collections, onUpdate, onEditTimestamp }: ClipPlayerDialogProps) {
+export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
     // Use a callback ref to handle the video element's lifecycle within the Dialog Portal
     const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -55,18 +55,18 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
     const [isMaximized, setIsMaximized] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
-    const start = timestamp?.start || 0;
-    const end = timestamp?.end || 0;
+    const start = highlight?.start || 0;
+    const end = highlight?.end || 0;
     const duration = end - start;
 
     useEffect(() => {
-        if (open && timestamp) {
-            setNote(timestamp.note || "");
+        if (open && highlight) {
+            setNote(highlight.note || "");
         }
-    }, [open, timestamp]);
+    }, [open, highlight]);
 
     useEffect(() => {
-        if (open && file && timestamp && videoElement) {
+        if (open && file && highlight && videoElement) {
             videoElement.currentTime = start;
             videoElement.volume = isMuted ? 0 : volume; // Apply volume
             videoElement.playbackRate = playbackSpeed; // Apply speed
@@ -75,7 +75,7 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
         } else {
             setIsPlaying(false);
         }
-    }, [open, file, timestamp, start, videoElement]);
+    }, [open, file, highlight, start, videoElement]);
 
     useEffect(() => {
         if (!videoElement) return;
@@ -196,12 +196,12 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
     };
 
     const handleNoteBlur = () => {
-        if (onUpdate && timestamp && note !== timestamp.note) {
+        if (onUpdate && highlight && note !== highlight.note) {
             onUpdate({ note });
         }
     };
 
-    if (!timestamp || !file) return null;
+    if (!highlight || !file) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -332,7 +332,7 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                                 size="icon"
                                 className="h-6 w-6 text-zinc-400 hover:text-white"
                                 onClick={() => {
-                                    if (onEditTimestamp) onEditTimestamp();
+                                    if (onEditHighlight) onEditHighlight();
                                 }}
                                 title="Edit Highlight"
                             >
@@ -357,16 +357,16 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
 
 // --- Edit Highlight Dialog ---
 
-interface EditTimestampDialogProps {
+interface EditHighlightDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    timestamp: Timestamp | null;
+    highlight: Highlight | null;
     collections: Collection[];
-    onSave: (updates: Partial<Timestamp>) => void;
+    onSave: (updates: Partial<Highlight>) => void;
     file: File | null;
 }
 
-export function EditTimestampDialog({ open, onOpenChange, timestamp, collections, onSave, file }: EditTimestampDialogProps) {
+export function EditHighlightDialog({ open, onOpenChange, highlight, collections, onSave, file }: EditHighlightDialogProps) {
     const [note, setNote] = useState("");
     const [startStr, setStartStr] = useState("");
     const [endStr, setEndStr] = useState("");
@@ -375,21 +375,21 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
     const [timeError, setTimeError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (open && timestamp) {
-            setNote(timestamp.note || "");
-            setCollectionId(timestamp.collectionId || "null");
+        if (open && highlight) {
+            setNote(highlight.note || "");
+            setCollectionId(highlight.collectionId || "null");
 
             if (file?.type === 'pdf') {
-                setHighlightText(timestamp.text || "");
+                setHighlightText(highlight.text || "");
                 setStartStr("");
                 setEndStr("");
             } else {
-                setStartStr(formatTime(timestamp.start));
-                setEndStr(formatTime(timestamp.end || timestamp.start));
+                setStartStr(formatTime(highlight.start));
+                setEndStr(formatTime(highlight.end || highlight.start));
                 setHighlightText("");
             }
         }
-    }, [open, timestamp, file]);
+    }, [open, highlight, file]);
 
     const handleSave = () => {
         if (file?.type === 'pdf') {
@@ -425,7 +425,7 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
         onOpenChange(false);
     };
 
-    if (!timestamp) return null;
+    if (!highlight) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

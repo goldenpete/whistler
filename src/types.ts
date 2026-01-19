@@ -35,7 +35,7 @@ export interface Collection {
     deleted?: boolean;
 }
 
-export interface Timestamp {
+export interface Highlight {
     id: string;
     collectionId: string | null;
     fileId: string;
@@ -61,7 +61,7 @@ export interface Graph {
 export interface GraphNode {
     id: string;
     graphId: string;
-    type: 'file' | 'collection' | 'timestamp' | 'link' | 'note' | 'doc';
+    type: 'file' | 'collection' | 'highlight' | 'link' | 'note' | 'doc';
     title: string;
     color: string;
     icon?: string;
@@ -105,7 +105,7 @@ export interface HistoryEntry {
     id: string;
     projectId: string; // Global or specific project? Actions are usually project-scoped
     action: 'create' | 'update' | 'delete' | 'restore';
-    entityType: 'file' | 'collection' | 'timestamp' | 'project' | 'graph' | 'doc' | 'node' | 'edge';
+    entityType: 'file' | 'collection' | 'highlight' | 'project' | 'graph' | 'doc' | 'node' | 'edge';
     entityId: string;
     entityName?: string;
     details?: string;
@@ -119,7 +119,7 @@ export interface AppState {
     projects: Project[];
     files: File[];
     collections: Collection[];
-    timestamps: Timestamp[];
+    highlights: Highlight[];
     graphs: Graph[];
     graphNodes: GraphNode[];
     graphEdges: GraphEdge[];

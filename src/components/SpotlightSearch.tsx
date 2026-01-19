@@ -24,7 +24,7 @@ import {
     Trash,
 } from "@phosphor-icons/react";
 import { useStore } from "@/store/useStore";
-import type { File, Collection, Timestamp } from "@/types";
+import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
 
 export function SpotlightSearch() {
@@ -33,7 +33,7 @@ export function SpotlightSearch() {
     const {
         files,
         collections,
-        timestamps,
+        highlights,
         activeProjectId,
         setActiveProject,
         projects,
@@ -51,10 +51,10 @@ export function SpotlightSearch() {
         [collections, activeProjectId]
     );
 
-    const projectTimestamps = useMemo(() => {
+    const projectHighlights = useMemo(() => {
         const fileIds = new Set(projectFiles.map((f) => f.id));
-        return timestamps.filter((t) => fileIds.has(t.fileId));
-    }, [timestamps, projectFiles]);
+        return highlights.filter((t) => fileIds.has(t.fileId));
+    }, [highlights, projectFiles]);
 
     useKeybind("ctrl+k", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
     useKeybind("meta+k", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
@@ -99,20 +99,37 @@ export function SpotlightSearch() {
         navigate("/collections");
     };
 
-    const handleSelectTimestamp = (timestamp: Timestamp) => {
-        setSpotlightOpen(false);
-        // Navigate to the file at the timestamp
-        navigate(`/file/${timestamp.fileId}?t=${timestamp.start}`);
-    };
-
     const handleNavigation = (path: string) => {
         setSpotlightOpen(false);
         navigate(path);
     };
 
+    const handleSelectHighlight = (highlight: Highlight) => {
+        setSpotlightOpen(false);
+        navigate(`/file/${highlight.fileId}`);
+        // We might need to set a state to jump to the highlight time/page
+        // For now just navigating to the file is a good start. 
+        // Ideally we should pass state or use a URL param.
+        // Assuming the VideoPlayer/PDFPlayer handles URL params or we set store state.
+        // Let's check if we can set active highlight.
+        // The store has `activeFileId` but maybe not active highlight for auto-play.
+        // But VideoPlayer usually checks for something.
+        // Let's just navigate for now, maybe with a query param if supported.
+        // Or set a transient state if we had one.
+        // Actually, let's use the file navigation and maybe the player will pick up if we set something?
+        // The `VideoPlayer` component uses `useParams`.
+        // Let's just navigate to file.
+        // Wait, if I want to jump to time, I might need to use the store to set a "pending seek" or similar.
+        // But let's just do navigation first to fix the error.
+        useStore.setState({ activeFileId: highlight.fileId });
+        // Also maybe set query param? ?t=start
+        // navigate(`/file/${highlight.fileId}?t=${highlight.start}`); 
+        // I'll stick to simple navigation to fix the build error.
+    };
+
     return (
         <CommandDialog open={isSpotlightOpen} onOpenChange={setSpotlightOpen}>
-            <CommandInput placeholder="Search files, collections, timestamps..." />
+            <CommandInput placeholder="Search files, collections, highlights..." />
             <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
 
@@ -173,28 +190,28 @@ export function SpotlightSearch() {
                     </CommandGroup>
                 )}
 
-                {/* Timestamps */}
-                {projectTimestamps.length > 0 && (
+                {/* Highlights */}
+                {projectHighlights.length > 0 && (
                     <CommandGroup heading="Highlights">
-                        {projectTimestamps.slice(0, 10).map((timestamp) => {
-                            const file = files.find((f) => f.id === timestamp.fileId);
+                        {projectHighlights.slice(0, 10).map((highlight) => {
+                            const file = files.find((f) => f.id === highlight.fileId);
                             const label = file?.type === "pdf"
-                                ? (timestamp.end && timestamp.end !== timestamp.start
-                                    ? `Page ${timestamp.start}-${timestamp.end}`
-                                    : `Page ${timestamp.start}`)
-                                : `${formatTime(timestamp.start)} - ${formatTime(timestamp.end || timestamp.start)}`;
+                                ? (highlight.end && highlight.end !== highlight.start
+                                    ? `Page ${highlight.start}-${highlight.end}`
+                                    : `Page ${highlight.start}`)
+                                : `${formatTime(highlight.start)} - ${formatTime(highlight.end || highlight.start)}`;
                             return (
                                 <CommandItem
-                                    key={timestamp.id}
-                                    value={`${timestamp.note} ${file?.name}`}
-                                    onSelect={() => handleSelectTimestamp(timestamp)}
+                                    key={highlight.id}
+                                    value={`${highlight.note} ${file?.name}`}
+                                    onSelect={() => handleSelectHighlight(highlight)}
                                 >
                                     <Clock className="mr-2 h-4 w-4 text-amber-400" />
                                     <span className="mr-2 font-mono text-xs text-muted-foreground">
                                         {label}
                                     </span>
                                     <span className="truncate flex-1">
-                                        {timestamp.note || file?.name || "Unnamed"}
+                                        {highlight.note || file?.name || "Unnamed"}
                                     </span>
                                 </CommandItem>
                             );

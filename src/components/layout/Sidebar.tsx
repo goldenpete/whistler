@@ -290,7 +290,7 @@ export default function Sidebar() {
                     projects: [...state.projects, importedData.project],
                     files: [...state.files, ...importedData.files],
                     collections: [...state.collections, ...importedData.collections],
-                    timestamps: [...state.timestamps, ...importedData.timestamps],
+                    highlights: [...state.highlights, ...importedData.highlights],
                     graphs: [...state.graphs, ...importedData.graphs],
                     graphNodes: [...state.graphNodes, ...importedData.graphNodes],
                     graphEdges: [...state.graphEdges, ...importedData.graphEdges],
@@ -482,7 +482,7 @@ export default function Sidebar() {
                         projects: [...state.projects, importedData.project],
                         files: [...state.files, ...importedData.files],
                         collections: [...state.collections, ...importedData.collections],
-                        timestamps: [...state.timestamps, ...importedData.timestamps],
+                        highlights: [...state.highlights, ...importedData.highlights],
                         graphs: [...state.graphs, ...importedData.graphs],
                         graphNodes: [...state.graphNodes, ...importedData.graphNodes],
                         graphEdges: [...state.graphEdges, ...importedData.graphEdges],
@@ -1017,13 +1017,13 @@ export default function Sidebar() {
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={(e) => handleEditGraph(e, graph)}
-                                                    className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                    className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-accent-foreground transition-colors"
                                                 >
                                                     <PencilSimple weight="bold" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => handleDeleteGraph(e, graph.id)}
-                                                    className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                                    className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-destructive transition-colors"
                                                 >
                                                     <Trash weight="bold" />
                                                 </button>
@@ -1280,15 +1280,15 @@ export default function Sidebar() {
             />
 
             <Dialog open={accentDialogOpen} onOpenChange={setAccentDialogOpen}>
-                <DialogContent className="sm:max-w-xs bg-zinc-950 border-zinc-800 text-white">
+                <DialogContent className="sm:max-w-xs bg-popover border-border text-popover-foreground">
                     <DialogHeader>
                         <DialogTitle>Theme Colors</DialogTitle>
-                        <DialogDescription className="text-zinc-400 text-xs">
+                        <DialogDescription className="text-muted-foreground text-xs">
                             Choose base and accent colors used across the app.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-2 space-y-1">
-                        <p className="text-[10px] uppercase font-bold text-zinc-500 px-1">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">
                             Accent Color
                         </p>
                         {ACCENT_OPTIONS.map((option) => (
@@ -1303,7 +1303,7 @@ export default function Sidebar() {
                                     "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
                                     accentTheme === option.id
                                         ? "bg-primary/10 text-primary"
-                                        : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                 )}
                             >
                                 <span
@@ -1322,8 +1322,8 @@ export default function Sidebar() {
                                 )}
                             </button>
                         ))}
-                        <div className="pt-3 space-y-1 border-t border-zinc-800 mt-3">
-                            <p className="text-[10px] uppercase font-bold text-zinc-500 px-1">
+                        <div className="pt-3 space-y-1 border-t border-border mt-3">
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">
                                 Base Color
                             </p>
                             {BASE_OPTIONS.map((option) => (
@@ -1336,8 +1336,8 @@ export default function Sidebar() {
                                     className={cn(
                                         "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
                                         baseTheme === option.id
-                                            ? "bg-zinc-800 text-white"
-                                            : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                                            ? "bg-accent text-accent-foreground"
+                                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
                                      <span

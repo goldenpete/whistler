@@ -38,7 +38,7 @@ export default function GraphView() {
     const imagesRef = useRef<Record<string, HTMLImageElement>>({});
     const navigate = useNavigate();
     const { 
-        graphs, graphNodes, graphEdges, timestamps, activeProjectId, activeGraphId,
+        graphs, graphNodes, graphEdges, highlights, activeProjectId, activeGraphId,
         addNode, updateNode, removeNode, addEdge, removeEdge
     } = useStore();
 
@@ -109,7 +109,7 @@ export default function GraphView() {
     const [nodeDialog, setNodeDialog] = useState<{
         open: boolean;
         mode: 'create' | 'edit';
-        type: 'note' | 'file' | 'collection' | 'timestamp' | 'link' | 'doc';
+        type: 'note' | 'file' | 'collection' | 'highlight' | 'link' | 'doc';
         node?: GraphNode;
     }>({ open: false, mode: 'create', type: 'note' });
     
@@ -321,8 +321,8 @@ export default function GraphView() {
             return;
         }
 
-        if (node.type === 'timestamp' && node.linkedId) {
-            const ts = timestamps.find(t => t.id === node.linkedId);
+        if (node.type === 'highlight' && node.linkedId) {
+            const ts = highlights.find(t => t.id === node.linkedId);
             if (ts) {
                 navigate(`/file/${ts.fileId}?t=${ts.start}`);
             } else {
@@ -561,7 +561,7 @@ export default function GraphView() {
         setAddNodeDialog({ ...addNodeDialog, open: false });
     };
 
-    const handleAddNode = (type: 'note' | 'file' | 'collection' | 'timestamp' | 'link' | 'doc' = 'note') => {
+    const handleAddNode = (type: 'note' | 'file' | 'collection' | 'highlight' | 'link' | 'doc' = 'note') => {
         setAddNodeDialog({ open: true, type });
     };
 
@@ -680,8 +680,8 @@ export default function GraphView() {
                                     <DropdownMenuItem onClick={() => handleAddNode('collection')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
                                         <Folder className="mr-2" /> Collection
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleAddNode('timestamp')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
-                                        <Clock className="mr-2" /> Timestamp
+                                    <DropdownMenuItem onClick={() => handleAddNode('highlight')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
+                                        <Clock className="mr-2" /> Highlight
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleAddNode('doc')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
                                         <NotePencil className="mr-2" /> Doc
