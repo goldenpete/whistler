@@ -289,7 +289,7 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <button
-                                className="text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
+                                className="text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
                                 onClick={() => {
                                     if (videoElement) {
                                         videoElement.currentTime = start;

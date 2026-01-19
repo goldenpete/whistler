@@ -1167,7 +1167,7 @@ export default function Sidebar() {
                                             >
                                                 <Icon 
                                                     weight="regular" 
-                                                    className={cn("text-lg shrink-0 transition-colors", !storage.color && "text-orange-500")}
+                                                    className={cn("text-lg shrink-0 transition-colors", !storage.color && "text-primary")}
                                                     style={{ color: storage.color }}
                                                 />
                                                 <span className="truncate flex-1">{storage.name}</span>
@@ -1206,21 +1206,38 @@ export default function Sidebar() {
                         <PiPPlayer isCollapsed={isSidebarCollapsed} />
                     ) : (
                         <>
-                            {/* Collapsed Mode History Button */}
-                            {isSidebarCollapsed && (
-                                <button
-                                    onClick={() => setSidebarView('history')}
-                                    className="w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                    title="View History"
-                                >
-                                    <ClockCounterClockwise weight="bold" size={18} />
-                                </button>
-                            )}
+                            <div className={cn("flex items-center gap-1", isSidebarCollapsed ? "flex-col justify-center" : "justify-between w-full")}>
+                                {!isSidebarCollapsed ? (
+                                    <div className="flex-1 min-w-0">
+                                        <SyncStatusFooter />
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setSidebarView('sync')}
+                                        className="w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                                        title="Sync Status"
+                                    >
+                                        <ArrowsClockwise weight="bold" size={18} className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} />
+                                    </button>
+                                )}
 
-                            {/* Expanded Mode Sync Status */}
-                            {!isSidebarCollapsed && (
-                                <SyncStatusFooter />
-                            )}
+                                <div className={cn("flex gap-1", isSidebarCollapsed && "flex-col")}>
+                                    <button
+                                        onClick={() => setSidebarView('history')}
+                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                                        title="History"
+                                    >
+                                        <ClockCounterClockwise weight="bold" size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => setSidebarView('trash')}
+                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
+                                        title="Trash"
+                                    >
+                                        <Trash weight="bold" size={18} />
+                                    </button>
+                                </div>
+                            </div>
                         </>
                     )}
                 </div>

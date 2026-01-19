@@ -490,7 +490,7 @@ export default function VideoPlayer() {
                             <div className="absolute top-0 bottom-0 left-2 right-2 pointer-events-none z-10">
                                 {fileTimestamps.map((ts: any) => {
                                     const collection = collections.find(c => c.id === ts.collectionId);
-                                    const color = collection ? collection.color : '#f59e0b';
+                                    const color = collection ? collection.color : 'var(--primary)';
                                     return (
                                         <div
                                             key={ts.id}
@@ -564,7 +564,7 @@ export default function VideoPlayer() {
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => setIsLooping(!isLooping)}
-                                    className={cn("text-zinc-400 hover:text-white", isLooping && "text-amber-500 hover:text-amber-400")}
+                                    className={cn("text-zinc-400 hover:text-white", isLooping && "text-primary hover:text-primary/80")}
                                     title={isLooping ? "Loop On" : "Loop Off"}
                                 >
                                     <Repeat weight="bold" size={20} />
@@ -609,7 +609,7 @@ export default function VideoPlayer() {
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
                                                             playbackRate === rate
-                                                                ? "bg-amber-500/10 text-amber-500 border-amber-500/50"
+                                                                ? "bg-primary/10 text-primary border-primary/50"
                                                                 : "bg-zinc-800/50 text-zinc-400 border-transparent hover:bg-zinc-800 hover:text-white"
                                                         )}
                                                     >
@@ -652,7 +652,7 @@ export default function VideoPlayer() {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-zinc-400 hover:text-amber-500 disabled:opacity-30 disabled:hover:text-zinc-400"
+                            className="h-6 w-6 text-zinc-400 hover:text-primary disabled:opacity-30 disabled:hover:text-zinc-400"
                             onClick={handleAddTimestamp}
                             title="Add Highlight"
                             disabled={file.type === 'pdf' && !hasPdfSelection}
@@ -678,7 +678,7 @@ export default function VideoPlayer() {
                                         <div className="flex items-center justify-between gap-2 h-6">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <button
-                                                    className="text-amber-500 font-mono text-xs bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-amber-500 hover:text-black transition-colors"
+                                                    className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
                                                     onClick={() => seekToTimestamp(ts.start)}
                                                 >
                                                     {file.type === 'pdf'

@@ -88,7 +88,7 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
                     <div className="mt-0.5 shrink-0 text-muted-foreground">
                         {type === 'file' && <FileIcon size={20} />}
                         {type === 'collection' && <FolderOpen size={20} />}
-                        {type === 'timestamp' && <Clock size={20} className="text-amber-400" />}
+                        {type === 'timestamp' && <Clock size={20} className="text-primary" />}
                         {type === 'doc' && <FileIcon size={20} />}
                         {type === 'link' && <LinkIcon size={20} />}
                         {type === 'note' && <Note size={20} />}

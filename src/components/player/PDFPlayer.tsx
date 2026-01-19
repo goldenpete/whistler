@@ -306,7 +306,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
                                             top: rect.y,
                                             width: rect.width,
                                             height: rect.height,
-                                            backgroundColor: 'rgba(255, 255, 0, 0.4)',
+                                            backgroundColor: 'hsl(var(--primary) / 0.4)',
                                             borderRadius: '2px',
                                         }}
                                     />

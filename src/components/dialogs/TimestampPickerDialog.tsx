@@ -181,7 +181,7 @@ export function TimestampPickerDialog({
                                                 }}
                                             >
                                                 <div className="flex flex-col items-center justify-center gap-1">
-                                                    <Clock className="text-amber-400" size={14} />
+                                                    <Clock className="text-primary" size={14} />
                                                     <span className="font-mono text-[10px]">
                                                         {formatTime(t.start)}
                                                     </span>
