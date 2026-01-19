@@ -45,6 +45,14 @@ import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import type { File } from "@/types";
 import { Input } from "@/components/ui/input";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
+).toString();
 
 export default function StorageView() {
     const {
@@ -606,7 +614,6 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
 }
 
 function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove }: FileCardProps) {
-    const Icon = getFileIcon(file.type);
     const linkTo = file.type === 'video' || file.type === 'pdf' ? `/file/${file.id}` : '#';
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
@@ -796,8 +803,39 @@ function FileThumbnail({ file, iconSize }: { file: File, iconSize: number }) {
             />
         );
     }
+    if (file.type === "pdf") {
+        return (
+            <PdfThumbnail
+                url={file.url}
+                onError={() => setError(true)}
+            />
+        );
+    }
 
     return <Icon size={iconSize} weight="regular" className="text-muted-foreground group-hover:text-primary transition-colors" />;
+}
+
+function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-muted overflow-hidden">
+            <Document
+                file={url}
+                loading={
+                    <div className="text-xs text-muted-foreground">
+                        Loading PDF...
+                    </div>
+                }
+                onLoadError={() => onError()}
+            >
+                <Page
+                    pageNumber={1}
+                    width={160}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                />
+            </Document>
+        </div>
+    );
 }
 
 function DroppableBreadcrumb({ id, name, isCurrent, onClick }: { id: string, name: string, isCurrent: boolean, onClick: () => void }) {

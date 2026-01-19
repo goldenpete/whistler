@@ -46,7 +46,7 @@ export function SidebarHistory({ onBack }: SidebarHistoryProps) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-sidebar-background">
+        <div className="flex flex-col h-full min-h-0 bg-sidebar-background">
             <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack}>
@@ -67,7 +67,7 @@ export function SidebarHistory({ onBack }: SidebarHistoryProps) {
                 )}
             </div>
 
-            <ScrollArea className="flex-1 p-2">
+            <ScrollArea className="flex-1 p-2 overflow-y-auto">
                 {history.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8 text-xs italic">
                         No history records found.

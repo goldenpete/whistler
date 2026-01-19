@@ -1,5 +1,5 @@
 import { useStore } from "@/store/useStore";
-import { GraphNode } from "@/types";
+import type { GraphNode } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
     File as FileIcon,

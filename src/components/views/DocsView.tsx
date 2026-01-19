@@ -78,16 +78,25 @@ export default function DocsView() {
 }
 
 interface DocEditorProps {
-    doc: { id: string; name: string; content: string };
+    doc: { id: string; name: string; content: string; projectId: string };
 }
 
 function DocEditor({ doc }: DocEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
     const [docName, setDocName] = useState(doc.name);
-    const { docViewMode: viewMode = 'page', setDocViewMode: setViewMode } = useStore();
+    const {
+        docViewMode: viewMode = "page",
+        setDocViewMode: setViewMode,
+        files,
+        collections,
+        timestamps,
+    } = useStore();
     const saveTimeoutRef = useRef<number | null>(null);
     const [linkDialogOpen, setLinkDialogOpen] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
+    const [linkMode, setLinkMode] = useState<"external" | "internal">("external");
+    const [internalType, setInternalType] = useState<"file" | "collection" | "timestamp">("file");
+    const [internalId, setInternalId] = useState<string>("");
     const [formatState, setFormatState] = useState({
         bold: false,
         italic: false,
@@ -189,13 +198,42 @@ function DocEditor({ doc }: DocEditorProps) {
         editorRef.current?.focus();
         updateFormatState();
     };
-
+    const projectFiles = files.filter(
+        (f) => f.projectId === doc.projectId && !f.deleted
+    );
+    const projectCollections = collections.filter(
+        (c) => c.projectId === doc.projectId && !c.deleted
+    );
+    const projectTimestamps = timestamps.filter((t) => {
+        const file = files.find((f) => f.id === t.fileId && !f.deleted);
+        return !!file && file.projectId === doc.projectId;
+    });
     const handleInsertLink = () => {
-        const url = linkUrl.trim();
-        if (!url) return;
-        execCommand("createLink", url);
+        if (linkMode === "external") {
+            const url = linkUrl.trim();
+            if (!url) return;
+            execCommand("createLink", url);
+        } else {
+            let href = "";
+            if (internalType === "file") {
+                const target = projectFiles.find((f) => f.id === internalId);
+                if (!target) return;
+                href = `/file/${target.id}`;
+            } else if (internalType === "collection") {
+                const target = projectCollections.find((c) => c.id === internalId);
+                if (!target) return;
+                href = `/collections?collectionId=${target.id}`;
+            } else if (internalType === "timestamp") {
+                const target = projectTimestamps.find((t) => t.id === internalId);
+                if (!target) return;
+                href = `/file/${target.fileId}?t=${target.start}`;
+            }
+            if (!href) return;
+            execCommand("createLink", href);
+        }
         setLinkDialogOpen(false);
         setLinkUrl("");
+        setInternalId("");
     };
 
     const getContainerClass = () => {
@@ -404,26 +442,207 @@ function DocEditor({ doc }: DocEditorProps) {
                     <DialogHeader>
                         <DialogTitle>Insert Link</DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Enter the URL to link to.
+                            Choose an external URL or an internal link.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
-                        <div className="space-y-1">
-                            <Input
-                                type="url"
-                                placeholder="https://example.com"
-                                value={linkUrl}
-                                onChange={(e) => setLinkUrl(e.target.value)}
-                                className="h-9 bg-zinc-900 border-zinc-700"
-                                autoFocus
-                            />
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant={linkMode === "external" ? "default" : "ghost"}
+                                size="sm"
+                                className={cn(
+                                    "h-8 px-3 text-xs",
+                                    linkMode === "external"
+                                        ? "bg-white text-black hover:bg-white/90"
+                                        : "text-zinc-300 hover:text-white"
+                                )}
+                                onClick={() => setLinkMode("external")}
+                            >
+                                External URL
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={linkMode === "internal" ? "default" : "ghost"}
+                                size="sm"
+                                className={cn(
+                                    "h-8 px-3 text-xs",
+                                    linkMode === "internal"
+                                        ? "bg-white text-black hover:bg-white/90"
+                                        : "text-zinc-300 hover:text-white"
+                                )}
+                                onClick={() => setLinkMode("internal")}
+                            >
+                                Internal link
+                            </Button>
                         </div>
+                        {linkMode === "external" ? (
+                            <div className="space-y-1">
+                                <Input
+                                    type="url"
+                                    placeholder="https://example.com"
+                                    value={linkUrl}
+                                    onChange={(e) => setLinkUrl(e.target.value)}
+                                    className="h-9 bg-zinc-900 border-zinc-700"
+                                    autoFocus
+                                />
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-xs">
+                                    <Button
+                                        type="button"
+                                        variant={internalType === "file" ? "secondary" : "ghost"}
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 px-3",
+                                            internalType === "file"
+                                                ? "bg-zinc-100 text-black hover:bg-zinc-200"
+                                                : "text-zinc-300 hover:text-white"
+                                        )}
+                                        onClick={() => setInternalType("file")}
+                                    >
+                                        Storage files
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={
+                                            internalType === "collection" ? "secondary" : "ghost"
+                                        }
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 px-3",
+                                            internalType === "collection"
+                                                ? "bg-zinc-100 text-black hover:bg-zinc-200"
+                                                : "text-zinc-300 hover:text-white"
+                                        )}
+                                        onClick={() => setInternalType("collection")}
+                                    >
+                                        Collections
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={
+                                            internalType === "timestamp" ? "secondary" : "ghost"
+                                        }
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 px-3",
+                                            internalType === "timestamp"
+                                                ? "bg-zinc-100 text-black hover:bg-zinc-200"
+                                                : "text-zinc-300 hover:text-white"
+                                        )}
+                                        onClick={() => setInternalType("timestamp")}
+                                    >
+                                        Timestamps
+                                    </Button>
+                                </div>
+                                <ScrollArea className="max-h-56 rounded-md border border-zinc-800 bg-zinc-900/60">
+                                    <div className="p-2 space-y-1">
+                                        {internalType === "file" &&
+                                            (projectFiles.length > 0 ? (
+                                                projectFiles.map((f) => (
+                                                    <button
+                                                        key={f.id}
+                                                        type="button"
+                                                        onClick={() => setInternalId(f.id)}
+                                                        className={cn(
+                                                            "w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left transition-colors",
+                                                            internalId === f.id
+                                                                ? "bg-primary/20 text-primary"
+                                                                : "hover:bg-zinc-800/80 text-zinc-200"
+                                                        )}
+                                                    >
+                                                        <span className="truncate">{f.name}</span>
+                                                        <span className="ml-2 text-[10px] text-zinc-400 uppercase">
+                                                            {f.type}
+                                                        </span>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="px-2 py-1.5 text-xs text-zinc-500">
+                                                    No files in this project
+                                                </div>
+                                            ))}
+                                        {internalType === "collection" &&
+                                            (projectCollections.length > 0 ? (
+                                                projectCollections.map((c) => (
+                                                    <button
+                                                        key={c.id}
+                                                        type="button"
+                                                        onClick={() => setInternalId(c.id)}
+                                                        className={cn(
+                                                            "w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left transition-colors",
+                                                            internalId === c.id
+                                                                ? "bg-primary/20 text-primary"
+                                                                : "hover:bg-zinc-800/80 text-zinc-200"
+                                                        )}
+                                                    >
+                                                        <span className="truncate">{c.name}</span>
+                                                        <span className="ml-2 text-[10px] text-zinc-400 uppercase">
+                                                            collection
+                                                        </span>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="px-2 py-1.5 text-xs text-zinc-500">
+                                                    No collections in this project
+                                                </div>
+                                            ))}
+                                        {internalType === "timestamp" &&
+                                            (projectTimestamps.length > 0 ? (
+                                                projectTimestamps.map((t) => {
+                                                    const file = files.find(
+                                                        (f) => f.id === t.fileId
+                                                    );
+                                                    const mins = Math.floor(t.start / 60);
+                                                    const secs = Math.floor(t.start % 60)
+                                                        .toString()
+                                                        .padStart(2, "0");
+                                                    return (
+                                                        <button
+                                                            key={t.id}
+                                                            type="button"
+                                                            onClick={() => setInternalId(t.id)}
+                                                            className={cn(
+                                                                "w-full flex flex-col px-2 py-1.5 rounded text-xs text-left transition-colors",
+                                                                internalId === t.id
+                                                                    ? "bg-primary/20 text-primary"
+                                                                    : "hover:bg-zinc-800/80 text-zinc-200"
+                                                            )}
+                                                        >
+                                                            <span className="truncate">
+                                                                {t.note || "Timestamp"}
+                                                            </span>
+                                                            <span className="text-[10px] text-zinc-400 truncate">
+                                                                {file?.name || "File"} • {mins}:
+                                                                {secs}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="px-2 py-1.5 text-xs text-zinc-500">
+                                                    No timestamps in this project
+                                                </div>
+                                            ))}
+                                    </div>
+                                </ScrollArea>
+                            </div>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={handleInsertLink} disabled={!linkUrl.trim()}>
+                        <Button
+                            onClick={handleInsertLink}
+                            disabled={
+                                linkMode === "external"
+                                    ? !linkUrl.trim()
+                                    : !internalId
+                            }
+                        >
                             Insert
                         </Button>
                     </DialogFooter>

@@ -6,7 +6,7 @@ import {
     Plus, Circle,
     Note, File, Folder, Clock, Link as LinkIcon,
     NotePencil,
-    MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash
+    MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash, ArrowsOutSimple
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { GraphNode } from "@/types";
@@ -30,6 +30,7 @@ import { useNavigate } from "react-router-dom";
 
 const NODE_RADIUS = 18;
 const COLORS = ["#f97316", "#8b5cf6", "#10b981", "#3b82f6", "#ef4444", "#eab308"];
+const GRAPH_VIEW_KEY_PREFIX = "graph_view_";
 
 export default function GraphView() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -64,6 +65,39 @@ export default function GraphView() {
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 }); // Screen coords for panning delta
+
+    // Restore saved view (pan/zoom) when switching graphs
+    useEffect(() => {
+        if (!activeGraphId) return;
+        try {
+            const raw = localStorage.getItem(`${GRAPH_VIEW_KEY_PREFIX}${activeGraphId}`);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (
+                typeof parsed.scale === "number" &&
+                typeof parsed.panX === "number" &&
+                typeof parsed.panY === "number"
+            ) {
+                setScale(parsed.scale);
+                setPan({ x: parsed.panX, y: parsed.panY });
+            }
+        } catch {
+        }
+    }, [activeGraphId]);
+
+    // Persist view when pan/zoom changes
+    useEffect(() => {
+        if (!activeGraphId) return;
+        try {
+            const payload = {
+                scale,
+                panX: pan.x,
+                panY: pan.y,
+            };
+            localStorage.setItem(`${GRAPH_VIEW_KEY_PREFIX}${activeGraphId}`, JSON.stringify(payload));
+        } catch {
+        }
+    }, [activeGraphId, pan, scale]);
 
     // Context Menu State
     const [contextMenu, setContextMenu] = useState<{ type: 'node' | 'edge', id: string } | null>(null);
@@ -454,6 +488,55 @@ export default function GraphView() {
         setPan({ x: newPanX, y: newPanY });
     };
 
+    const handleFitToView = () => {
+        if (!activeGraphId) return;
+        const container = containerRef.current;
+        if (!container) return;
+        if (nodes.length === 0) {
+            setScale(1);
+            setPan({ x: 0, y: 0 });
+            return;
+        }
+
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+
+        nodes.forEach(node => {
+            if (node.x < minX) minX = node.x;
+            if (node.x > maxX) maxX = node.x;
+            if (node.y < minY) minY = node.y;
+            if (node.y > maxY) maxY = node.y;
+        });
+
+        const boundsWidth = maxX - minX + NODE_RADIUS * 2;
+        const boundsHeight = maxY - minY + NODE_RADIUS * 2;
+        if (boundsWidth <= 0 || boundsHeight <= 0) return;
+
+        const padding = 80;
+        const viewWidth = container.clientWidth;
+        const viewHeight = container.clientHeight;
+        if (viewWidth <= padding * 2 || viewHeight <= padding * 2) return;
+
+        const scaleX = (viewWidth - padding * 2) / boundsWidth;
+        const scaleY = (viewHeight - padding * 2) / boundsHeight;
+        let nextScale = Math.min(scaleX, scaleY);
+        nextScale = Math.min(3, Math.max(0.2, nextScale));
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        const screenCenterX = viewWidth / 2;
+        const screenCenterY = viewHeight / 2;
+
+        const nextPanX = screenCenterX - centerX * nextScale;
+        const nextPanY = screenCenterY - centerY * nextScale;
+
+        setScale(nextScale);
+        setPan({ x: nextPanX, y: nextPanY });
+    };
+
     // --- Actions ---
     const handleCreateNode = (nodeData: Partial<GraphNode>) => {
         if (!activeGraphId) return;
@@ -617,6 +700,15 @@ export default function GraphView() {
                             <span className="text-xs text-muted-foreground w-8 text-center select-none">{Math.round(scale * 100)}%</span>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white hover:bg-white/10" onClick={() => setScale(s => Math.max(s - 0.1, 0.2))}>
                                 <MagnifyingGlassMinus />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-white hover:bg-white/10"
+                                onClick={handleFitToView}
+                                title="Fit to view"
+                            >
+                                <ArrowsOutSimple />
                             </Button>
                         </div>
 
