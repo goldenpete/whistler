@@ -498,7 +498,7 @@ export default function VideoPlayer() {
                                             style={{
                                                 left: `${(h.start / duration) * 100}%`,
                                                 backgroundColor: color,
-                                                filter: 'brightness(0.9)'
+                                                filter: 'brightness(0.9) saturate(0.9)'
                                             }}
                                         />
                                     );
@@ -681,10 +681,14 @@ export default function VideoPlayer() {
                                 return (
                                     <div
                                         key={h.id}
-                                        className="group flex flex-col gap-1.5 p-2 rounded-none hover:bg-accent border-l-4 transition-all relative"
+                                        className="group flex flex-col gap-1.5 p-2 rounded-none border-l-4 transition-all relative overflow-hidden"
                                         style={{ borderLeftColor: borderColor }}
                                     >
-                                        <div className="flex items-center justify-between gap-2 h-6">
+                                        <div 
+                                            className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"
+                                            style={{ backgroundColor: borderColor }}
+                                        />
+                                        <div className="flex items-center justify-between gap-2 h-6 relative z-10">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <button
                                                     className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"

@@ -219,6 +219,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         step={0.1}
                         onValueChange={handleSeek}
                         className="cursor-pointer"
+                        fillColor={collection?.color}
                     />
                 </div>
             )}
@@ -244,6 +245,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 step={0.1}
                                 onValueChange={handleSeek}
                                 className="cursor-pointer"
+                                fillColor={collection?.color}
                             />
                         </div>
                     </>

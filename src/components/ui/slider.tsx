@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils"
 
 const Slider = React.forwardRef<
     React.ElementRef<typeof SliderPrimitive.Root>,
-    React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
->(({ className, ...props }, ref) => (
+    React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & { fillColor?: string }
+>(({ className, fillColor, ...props }, ref) => (
     <SliderPrimitive.Root
         ref={ref}
         className={cn(
@@ -16,9 +16,15 @@ const Slider = React.forwardRef<
         {...props}
     >
         <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-secondary/50">
-            <SliderPrimitive.Range className="absolute h-full bg-primary" />
+            <SliderPrimitive.Range 
+                className="absolute h-full bg-primary" 
+                style={fillColor ? { backgroundColor: fillColor } : undefined}
+            />
         </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb className="block h-4 w-4 rounded-full border border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:scale-110 duration-200" />
+        <SliderPrimitive.Thumb 
+            className="block h-4 w-4 rounded-full border border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:scale-110 duration-200"
+            style={fillColor ? { borderColor: fillColor } : undefined}
+        />
     </SliderPrimitive.Root>
 ))
 Slider.displayName = SliderPrimitive.Root.displayName
