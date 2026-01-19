@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
     Plus, Circle,
     Note, File, Folder, Clock, Link as LinkIcon,
-    MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple
+    MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { GraphNode } from "@/types";
@@ -17,6 +17,13 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { useNavigate } from "react-router-dom";
 
 const NODE_RADIUS = 18;
@@ -48,7 +55,7 @@ export default function GraphView() {
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 }); // Screen coords for panning delta
 
     // Context Menu State
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'node' | 'edge', id: string } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ type: 'node' | 'edge', id: string } | null>(null);
     
     // Node Dialog State
     const [nodeDialog, setNodeDialog] = useState<{
@@ -287,6 +294,9 @@ export default function GraphView() {
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
+        if (connectingNodeId) {
+            return;
+        }
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
         
@@ -301,14 +311,13 @@ export default function GraphView() {
         const node = getNodeAt(worldX, worldY);
         
         if (node) {
-            // Check for Shift key to start connection
             if (e.shiftKey) {
                 setConnectingNodeId(node.id);
                 setMousePos({ x: worldX, y: worldY });
-            } else {
-                setDraggingNode(node.id);
-                setOffset({ x: worldX - node.x, y: worldY - node.y });
+                return;
             }
+            setDraggingNode(node.id);
+            setOffset({ x: worldX - node.x, y: worldY - node.y });
         } else {
             setIsPanning(true);
             setDragStart({ x: e.clientX, y: e.clientY }); // Global client coords for delta
@@ -441,7 +450,6 @@ export default function GraphView() {
 
 
     const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
         
@@ -453,21 +461,30 @@ export default function GraphView() {
         const node = getNodeAt(worldX, worldY);
 
         if (node) {
-            setContextMenu({ x: e.clientX, y: e.clientY, type: 'node', id: node.id });
-        } else {
-            const edge = getEdgeAt(worldX, worldY);
-            if (edge) {
-                setContextMenu({ x: e.clientX, y: e.clientY, type: 'edge', id: edge.id });
-            } else {
-                setContextMenu(null);
-            }
+            setContextMenu({ type: 'node', id: node.id });
+            return;
         }
+        const edge = getEdgeAt(worldX, worldY);
+        if (edge) {
+            setContextMenu({ type: 'edge', id: edge.id });
+            return;
+        }
+        setContextMenu(null);
     };
 
-    const handleAction = (action: 'edit' | 'delete') => {
+    const handleAction = (action: 'edit' | 'delete' | 'connect') => {
         if (!contextMenu) return;
         const { type, id } = contextMenu;
-        setContextMenu(null); // Close menu
+        setContextMenu(null);
+
+        if (action === 'connect' && type === 'node') {
+            const node = graphNodes.find(n => n.id === id);
+            if (node) {
+                setConnectingNodeId(id);
+                setMousePos({ x: node.x, y: node.y });
+            }
+            return;
+        }
 
         if (action === 'delete') {
             if (type === 'node') {
@@ -566,44 +583,59 @@ export default function GraphView() {
                             </Button>
                         </div>
 
-                        <canvas
-                            ref={canvasRef}
-                            onMouseDown={handleMouseDown}
-                            onMouseMove={handleMouseMove}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseUp}
-                            onContextMenu={handleContextMenu}
-                            onClick={() => setContextMenu(null)}
-                            onDoubleClick={handleDoubleClick}
-                            onWheel={handleWheel}
-                            className={cn(
-                                "block w-full h-full",
-                                isPanning ? "cursor-grabbing" : draggingNode ? "cursor-grabbing" : "cursor-grab"
+                        <ContextMenu
+                            onOpenChange={(open) => {
+                                if (!open) {
+                                    setContextMenu(null);
+                                }
+                            }}
+                        >
+                            <ContextMenuTrigger asChild>
+                                <canvas
+                                    ref={canvasRef}
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    onContextMenu={handleContextMenu}
+                                    onDoubleClick={handleDoubleClick}
+                                    onWheel={handleWheel}
+                                    className={cn(
+                                        "block w-full h-full",
+                                        isPanning ? "cursor-grabbing" : draggingNode ? "cursor-grabbing" : "cursor-grab"
+                                    )}
+                                />
+                            </ContextMenuTrigger>
+
+                            {contextMenu && (
+                                <ContextMenuContent className="w-48">
+                                    {contextMenu.type === 'node' && (
+                                        <>
+                                            <ContextMenuItem onClick={() => handleAction('edit')} inset className="gap-2">
+                                                <PencilSimple /> Edit node
+                                            </ContextMenuItem>
+                                            <ContextMenuItem onClick={() => handleAction('connect')} inset className="gap-2">
+                                                <LinkIcon /> Connect to...
+                                            </ContextMenuItem>
+                                            <ContextMenuSeparator />
+                                        </>
+                                    )}
+                                    <ContextMenuItem
+                                        onClick={() => handleAction('delete')}
+                                        variant="destructive"
+                                        inset
+                                        className="gap-2"
+                                    >
+                                        <Trash /> Delete
+                                    </ContextMenuItem>
+                                </ContextMenuContent>
                             )}
-                        />
+                        </ContextMenu>
 
                         {/* Node Count / Info */}
                         <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-xs text-white/50 px-2 py-1 rounded select-none pointer-events-none border border-white/5">
                             {nodes.length} nodes • {edges.length} edges
                         </div>
-
-                        {/* Context Menu */}
-                        {contextMenu && (
-                            <div
-                                className="absolute bg-zinc-900 border border-zinc-800 rounded-md shadow-xl py-1 z-50 min-w-[120px]"
-                                style={{ top: contextMenu.y - (containerRef.current?.getBoundingClientRect().top || 0), left: contextMenu.x - (containerRef.current?.getBoundingClientRect().left || 0) }}
-                            >
-                                {contextMenu.type === 'node' && (
-                                    <>
-                                        <button onClick={() => handleAction('edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-white/10 text-white transition-colors flex items-center gap-2">
-                                            <PencilSimple /> Edit Node
-                                        </button>
-                                        <div className="h-px bg-white/10 my-1" />
-                                    </>
-                                )}
-                                <button onClick={() => handleAction('delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-red-500/20 text-red-400 transition-colors">Delete</button>
-                            </div>
-                        )}
 
                         <NodeDialog 
                             open={nodeDialog.open} 
