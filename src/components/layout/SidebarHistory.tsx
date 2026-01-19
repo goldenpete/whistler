@@ -40,7 +40,7 @@ export function SidebarHistory({ onBack }: SidebarHistoryProps) {
             case 'create': return 'text-green-400 bg-green-400/10';
             case 'update': return 'text-blue-400 bg-blue-400/10';
             case 'delete': return 'text-red-400 bg-red-400/10';
-            case 'restore': return 'text-amber-400 bg-amber-400/10';
+            case 'restore': return 'text-primary bg-primary/10';
             default: return 'text-zinc-400 bg-zinc-400/10';
         }
     };

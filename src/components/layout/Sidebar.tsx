@@ -657,46 +657,6 @@ export default function Sidebar() {
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* Project Tools Row */}
-                                <div className="flex gap-1">
-                                         <Button 
-                                            variant="outline" 
-                                            className="flex-1 h-8 bg-card border-border/60 shadow-sm text-xs text-muted-foreground px-0 gap-1.5"
-                                            onClick={() => setSidebarView('sync')}
-                                            title="Sync"
-                                         >
-                                            <motion.span
-                                                className="inline-flex items-center gap-1.5"
-                                                animate={syncStatus === 'syncing' ? { rotate: 360 } : { rotate: 0 }}
-                                                transition={syncStatus === 'syncing' ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.2 }}
-                                            >
-                                                <ArrowsClockwise
-                                                    className={cn(
-                                                        "transition-colors",
-                                                        syncStatus === 'syncing' ? "text-primary" : "text-muted-foreground"
-                                                    )}
-                                                />
-                                                <span>Sync</span>
-                                            </motion.span>
-                                         </Button>
-                                         <Button 
-                                            variant="outline" 
-                                            className="flex-1 h-8 bg-card border-border/60 shadow-sm text-xs text-muted-foreground px-0 gap-1.5"
-                                            onClick={() => setSidebarView('history')}
-                                            title="History"
-                                         >
-                                            <ClockCounterClockwise /> History
-                                         </Button>
-                                         <Button 
-                                            variant="outline" 
-                                            className="flex-1 h-8 bg-card border-border/60 shadow-sm text-xs text-muted-foreground px-0 gap-1.5"
-                                            onClick={() => setSidebarView('trash')}
-                                            title="Trash"
-                                         >
-                                            <Trash /> Trash
-                                         </Button>
-                                    </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
