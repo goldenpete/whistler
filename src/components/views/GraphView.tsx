@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
     Plus, Circle,
     Note, File, Folder, Clock, Link as LinkIcon,
+    NotePencil,
     MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -61,7 +62,7 @@ export default function GraphView() {
     const [nodeDialog, setNodeDialog] = useState<{
         open: boolean;
         mode: 'create' | 'edit';
-        type: 'note' | 'file' | 'collection' | 'timestamp' | 'link';
+        type: 'note' | 'file' | 'collection' | 'timestamp' | 'link' | 'doc';
         node?: GraphNode;
     }>({ open: false, mode: 'create', type: 'note' });
     
@@ -267,6 +268,12 @@ export default function GraphView() {
             return;
         }
 
+        if (node.type === 'doc' && node.linkedId) {
+            useStore.setState({ activeDocId: node.linkedId });
+            navigate("/docs");
+            return;
+        }
+
         if (node.type === 'timestamp' && node.linkedId) {
             const ts = timestamps.find(t => t.id === node.linkedId);
             if (ts) {
@@ -449,7 +456,7 @@ export default function GraphView() {
         setAddNodeDialog({ ...addNodeDialog, open: false });
     };
 
-    const handleAddNode = (type: 'note' | 'file' | 'collection' | 'timestamp' | 'link' = 'note') => {
+    const handleAddNode = (type: 'note' | 'file' | 'collection' | 'timestamp' | 'link' | 'doc' = 'note') => {
         setAddNodeDialog({ open: true, type });
     };
 
@@ -570,6 +577,9 @@ export default function GraphView() {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleAddNode('timestamp')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
                                         <Clock className="mr-2" /> Timestamp
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleAddNode('doc')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
+                                        <NotePencil className="mr-2" /> Doc
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleAddNode('link')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
                                         <LinkIcon className="mr-2" /> Link

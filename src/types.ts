@@ -61,7 +61,7 @@ export interface Graph {
 export interface GraphNode {
     id: string;
     graphId: string;
-    type: 'file' | 'collection' | 'timestamp' | 'link' | 'note';
+    type: 'file' | 'collection' | 'timestamp' | 'link' | 'note' | 'doc';
     title: string;
     color: string;
     icon?: string;
