@@ -77,20 +77,21 @@ export default function Sidebar() {
         activeStorageId,
         docs,
         activeDocId,
-        graphs, // Added
-        activeGraphId, // Added
+        graphs,
+        activeGraphId,
         addProject,
         addStorage,
         updateStorage,
         deleteStorage,
         setActiveProject,
-        updateCollection, // Added
+        updateCollection,
         updateGraph,
         trashGraph,
         updateDoc,
         trashDoc,
         updateProject,
         deleteProject,
+        trashCollection,
         pipFileId,
         isPipOpen,
         isSidebarCollapsed,
@@ -382,6 +383,12 @@ export default function Sidebar() {
         e.stopPropagation();
         setCollectionToEdit(collection);
         setEditCollectionOpen(true);
+    };
+
+    const handleDeleteCollection = (e: React.MouseEvent, id: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        trashCollection(id);
     };
 
     const handleUpdateCollection = (id: string, updates: { name: string, color: string, icon: string }) => {
@@ -805,12 +812,20 @@ export default function Sidebar() {
                                                                 />
                                                                 <span className="truncate flex-1">{collection.name}</span>
 
-                                                                <button
-                                                                    onClick={(e) => handleEditCollectionClick(e, collection)}
-                                                                    className="opacity-0 group-hover/item:opacity-100 text-zinc-400 hover:text-white p-1 rounded transition-all"
-                                                                >
-                                                                    <PencilSimple weight="bold" />
-                                                                </button>
+                                                                <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        onClick={(e) => handleEditCollectionClick(e, collection)}
+                                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                                    >
+                                                                        <PencilSimple weight="bold" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => handleDeleteCollection(e, collection.id)}
+                                                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                                                    >
+                                                                        <Trash weight="bold" />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </Link>
                                                     )
