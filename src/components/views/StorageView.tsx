@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
 import { Link } from "react-router-dom";
 import {
@@ -75,6 +75,15 @@ export default function StorageView() {
     const activeProject = projects.find(p => p.id === activeProjectId);
     const projectStorages = storages.filter(s => s.projectId === activeProjectId && !s.deleted);
     const activeStorage = storages.find(s => s.id === activeStorageId);
+
+    // Auto-select first storage if none active
+    useEffect(() => {
+        if (!activeProjectId) return;
+        const projectStorages = storages.filter(s => s.projectId === activeProjectId && !s.deleted);
+        if (!activeStorageId && projectStorages.length > 0) {
+            useStore.setState({ activeStorageId: projectStorages[0].id });
+        }
+    }, [activeStorageId, activeProjectId, storages]);
 
     const handleCreateStorage = () => {
         if (!activeProjectId) return;

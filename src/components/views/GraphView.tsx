@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { GraphNode } from "@/types";
 import { NodeDialog } from "@/components/dialogs/EditNodeDialog";
+import { NodePreviewCard } from "@/components/graph/NodePreviewCard";
 import { iconMap } from "@/utils/iconMap";
 import {
     DropdownMenu,
@@ -44,6 +45,15 @@ export default function GraphView() {
     const nodes = graphNodes.filter(n => n.graphId === activeGraphId);
     const edges = graphEdges.filter(e => e.graphId === activeGraphId);
 
+    // Auto-select first graph if none active
+    useEffect(() => {
+        if (!activeProjectId) return;
+        const projectGraphs = graphs.filter(g => g.projectId === activeProjectId && !g.deleted);
+        if (!activeGraphId && projectGraphs.length > 0) {
+            useStore.setState({ activeGraphId: projectGraphs[0].id });
+        }
+    }, [activeGraphId, activeProjectId, graphs]);
+
     const [draggingNode, setDraggingNode] = useState<string | null>(null);
     const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -58,6 +68,9 @@ export default function GraphView() {
     // Context Menu State
     const [contextMenu, setContextMenu] = useState<{ type: 'node' | 'edge', id: string } | null>(null);
     
+    // Preview Node State
+    const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
+
     // Node Dialog State
     const [nodeDialog, setNodeDialog] = useState<{
         open: boolean;
@@ -302,16 +315,19 @@ export default function GraphView() {
         const node = getNodeAt(worldX, worldY);
         if (!node) return;
 
-        // Open edit dialog instead of navigating
-        setNodeDialog({
-            open: true,
-            mode: 'edit',
-            type: node.type,
-            node
-        });
+        // Open preview card instead of full edit dialog
+        setPreviewNodeId(node.id);
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
+        // Close preview if clicking elsewhere (will be handled by overlay click if not on card, 
+        // but if we click canvas, we should close it)
+        if (previewNodeId) {
+             // Check if we clicked on the preview card? 
+             // The preview card stops propagation, so if we are here, we clicked the canvas.
+             setPreviewNodeId(null);
+        }
+
         if (connectingNodeId) {
             return;
         }
@@ -657,6 +673,36 @@ export default function GraphView() {
                         <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-xs text-white/50 px-2 py-1 rounded select-none pointer-events-none border border-white/5">
                             {nodes.length} nodes • {edges.length} edges
                         </div>
+
+                        {/* Node Preview Card */}
+                        {previewNodeId && (() => {
+                            const node = nodes.find(n => n.id === previewNodeId);
+                            if (node) {
+                                const screenX = node.x * scale + pan.x;
+                                const screenY = node.y * scale + pan.y;
+                                return (
+                                    <NodePreviewCard
+                                        node={node}
+                                        onClose={() => setPreviewNodeId(null)}
+                                        onEdit={() => {
+                                            setPreviewNodeId(null);
+                                            setNodeDialog({
+                                                open: true,
+                                                mode: 'edit',
+                                                type: node.type,
+                                                node
+                                            });
+                                        }}
+                                        style={{
+                                            left: screenX,
+                                            top: screenY - NODE_RADIUS - 10,
+                                            transform: 'translate(-50%, -100%)'
+                                        }}
+                                    />
+                                );
+                            }
+                            return null;
+                        })()}
 
                         <NodeDialog 
                             open={nodeDialog.open} 

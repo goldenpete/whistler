@@ -20,7 +20,7 @@ import {
 import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import { useStore } from "@/store/useStore";
 import type { GraphNode } from "@/types";
-import { File as FileIcon, FolderOpen, Clock } from "@phosphor-icons/react";
+import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon } from "@phosphor-icons/react";
 import { FilePickerDialog } from "./FilePickerDialog";
 import { TimestampPickerDialog } from "./TimestampPickerDialog";
 import { useNavigate } from "react-router-dom";

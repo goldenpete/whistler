@@ -28,6 +28,15 @@ export default function DocsView() {
     const { docs, activeDocId, activeProjectId } = useStore();
     const activeDoc = docs.find(d => d.id === activeDocId && !d.deleted);
 
+    // Auto-select first doc if none active
+    useEffect(() => {
+        if (!activeProjectId) return;
+        const projectDocs = docs.filter(d => d.projectId === activeProjectId && !d.deleted);
+        if (!activeDocId && projectDocs.length > 0) {
+            useStore.setState({ activeDocId: projectDocs[0].id });
+        }
+    }, [activeDocId, activeProjectId, docs]);
+
     const handleCreateDoc = () => {
         if (!activeProjectId) return;
 
