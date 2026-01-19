@@ -682,7 +682,9 @@ export default function VideoPlayer() {
                                                     onClick={() => seekToTimestamp(ts.start)}
                                                 >
                                                     {file.type === 'pdf'
-                                                        ? `Page ${ts.start}`
+                                                        ? (ts.end && ts.end !== ts.start
+                                                            ? `Page ${ts.start}-${ts.end}`
+                                                            : `Page ${ts.start}`)
                                                         : `${formatTime(ts.start)} - ${formatTime(ts.end || ts.start + 5)}`
                                                     }
                                                 </button>

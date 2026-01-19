@@ -110,9 +110,23 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
                         {type === 'timestamp' && selectedTimestamp && (
                             <div className="text-xs text-muted-foreground mt-0.5">
                                 {(() => {
-                                    const mins = Math.floor(selectedTimestamp.start / 60);
-                                    const secs = Math.floor(selectedTimestamp.start % 60);
-                                    return `${mins}:${secs.toString().padStart(2, "0")}`;
+                                    const file = selectedTimestampFile;
+                                    if (file?.type === "pdf") {
+                                        const startPage = selectedTimestamp.start;
+                                        const endPage = selectedTimestamp.end ?? startPage;
+                                        return endPage !== startPage
+                                            ? `Page ${startPage}-${endPage}`
+                                            : `Page ${startPage}`;
+                                    }
+                                    const start = selectedTimestamp.start;
+                                    const end = selectedTimestamp.end ?? start;
+                                    const minsStart = Math.floor(start / 60);
+                                    const secsStart = Math.floor(start % 60);
+                                    const minsEnd = Math.floor(end / 60);
+                                    const secsEnd = Math.floor(end % 60);
+                                    const startLabel = `${minsStart}:${secsStart.toString().padStart(2, "0")}`;
+                                    const endLabel = `${minsEnd}:${secsEnd.toString().padStart(2, "0")}`;
+                                    return `${startLabel} - ${endLabel}`;
                                 })()} • {selectedTimestampFile?.name}
                             </div>
                         )}

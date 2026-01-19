@@ -178,6 +178,11 @@ export function SpotlightSearch() {
                     <CommandGroup heading="Highlights">
                         {projectTimestamps.slice(0, 10).map((timestamp) => {
                             const file = files.find((f) => f.id === timestamp.fileId);
+                            const label = file?.type === "pdf"
+                                ? (timestamp.end && timestamp.end !== timestamp.start
+                                    ? `Page ${timestamp.start}-${timestamp.end}`
+                                    : `Page ${timestamp.start}`)
+                                : `${formatTime(timestamp.start)} - ${formatTime(timestamp.end || timestamp.start)}`;
                             return (
                                 <CommandItem
                                     key={timestamp.id}
@@ -186,7 +191,7 @@ export function SpotlightSearch() {
                                 >
                                     <Clock className="mr-2 h-4 w-4 text-amber-400" />
                                     <span className="mr-2 font-mono text-xs text-muted-foreground">
-                                        {formatTime(timestamp.start)}
+                                        {label}
                                     </span>
                                     <span className="truncate flex-1">
                                         {timestamp.note || file?.name || "Unnamed"}

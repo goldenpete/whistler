@@ -283,7 +283,12 @@ export default function CollectionView() {
 
                                             {/* Time Badge */}
                                             <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-mono font-medium">
-                                                {formatTime(t.start)}
+                                                {file.type === 'pdf'
+                                                    ? (t.end && t.end !== t.start
+                                                        ? `Page ${t.start}-${t.end}`
+                                                        : `Page ${t.start}`)
+                                                    : `${formatTime(t.start)} - ${formatTime(t.end || t.start)}`
+                                                }
                                             </div>
 
                                             {/* Type Badge */}
