@@ -152,6 +152,17 @@ export function WelcomeView() {
                     docs: cloudData.docs || [],
                     storages: cloudData.storages || [],
                     history: cloudData.history || [],
+                    // Theme Settings
+                    accentTheme: cloudData.accentTheme || 'orange',
+                    baseTheme: cloudData.baseTheme || 'zinc',
+                    enableDefaultColorControls: cloudData.enableDefaultColorControls || false,
+                    defaultColors: cloudData.defaultColors || {
+                        file: '#f59e0b',
+                        collection: '#f59e0b',
+                        storage: '#f59e0b',
+                        graph: '#f59e0b',
+                        node: '#f59e0b',
+                    },
                 });
             }
             const now = Date.now();

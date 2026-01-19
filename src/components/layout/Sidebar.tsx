@@ -553,19 +553,6 @@ export default function Sidebar() {
                             >
                                 <MagnifyingGlass weight="bold" size={18} />
                             </button>
-
-                            <button
-                                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                title="Change accent theme"
-                                onClick={() => setAccentDialogOpen(true)}
-                            >
-                                <span className="flex items-center justify-center">
-                                    <span
-                                        className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-                                        style={{ backgroundColor: "var(--primary)" }}
-                                    />
-                                </span>
-                            </button>
                         </div>
                     )}
                 </div>
@@ -1185,6 +1172,18 @@ export default function Sidebar() {
                                 )}
 
                                 <div className={cn("flex gap-1", isSidebarCollapsed && "flex-col")}>
+                                    <button
+                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                                        title="Change accent theme"
+                                        onClick={() => setAccentDialogOpen(true)}
+                                    >
+                                        <span className="flex items-center justify-center">
+                                            <span
+                                                className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+                                                style={{ backgroundColor: "var(--primary)" }}
+                                            />
+                                        </span>
+                                    </button>
                                     <button
                                         onClick={() => setSidebarView('history')}
                                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
