@@ -42,7 +42,16 @@ export function NodeDialog({
     node,
     onSave
 }: NodeDialogProps) {
-    const { files, collections, timestamps, docs, activeProjectId, accentTheme } = useStore();
+    const {
+        files,
+        collections,
+        timestamps,
+        docs,
+        activeProjectId,
+        accentTheme,
+        enableDefaultColorControls,
+        defaultColors,
+    } = useStore();
     const navigate = useNavigate();
     
     // Form State
@@ -95,7 +104,10 @@ export function NodeDialog({
             } else {
                 setTitle("");
                 const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
-                setColor(accentColor);
+                const nodeColor = enableDefaultColorControls && defaultColors?.node
+                    ? defaultColors.node
+                    : accentColor;
+                setColor(nodeColor);
                 setSelectedFileId("");
                 setSelectedCollectionId("");
                 setSelectedTimestampId("");
@@ -103,7 +115,7 @@ export function NodeDialog({
                 setLinkUrl("");
             }
         }
-    }, [open, mode, node, type, timestamps]);
+    }, [open, mode, node, type, timestamps, accentTheme, enableDefaultColorControls, defaultColors]);
 
     // Update title when selection changes (if title is empty or matches previous selection)
     useEffect(() => {

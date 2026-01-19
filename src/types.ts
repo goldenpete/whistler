@@ -113,7 +113,7 @@ export interface HistoryEntry {
 }
 
 export type AccentTheme = 'orange' | 'emerald' | 'violet' | 'sky';
-export type BaseTheme = 'zinc' | 'stone';
+export type BaseTheme = 'zinc' | 'stone' | 'neutral' | 'gray';
 
 export interface AppState {
     projects: Project[];

@@ -155,8 +155,11 @@ interface CreateCollectionDialogProps {
 }
 
 export function CreateCollectionDialog({ open, onOpenChange, onSubmit }: CreateCollectionDialogProps) {
-    const { accentTheme } = useStore();
+    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
     const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+    const collectionColor = enableDefaultColorControls && defaultColors?.collection
+        ? defaultColors.collection
+        : accentColor;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,7 +171,7 @@ export function CreateCollectionDialog({ open, onOpenChange, onSubmit }: CreateC
                     </DialogDescription>
                 </DialogHeader>
                 <CollectionForm
-                    defaultColor={accentColor}
+                    defaultColor={collectionColor}
                     onSubmit={(name, color, icon) => {
                         onSubmit(name, color, icon);
                         onOpenChange(false);

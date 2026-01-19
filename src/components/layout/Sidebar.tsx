@@ -74,9 +74,11 @@ const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[]
     { id: "sky", label: "Sky", previewClass: "bg-sky-500" },
 ];
 
-const BASE_OPTIONS: { id: BaseTheme; label: string }[] = [
-    { id: "zinc", label: "Zinc" },
-    { id: "stone", label: "Stone" },
+const BASE_OPTIONS: { id: BaseTheme; label: string; previewClass: string }[] = [
+    { id: "neutral", label: "Neutral", previewClass: "bg-neutral-700" },
+    { id: "stone", label: "Stone", previewClass: "bg-stone-700" },
+    { id: "zinc", label: "Zinc", previewClass: "bg-zinc-700" },
+    { id: "gray", label: "Gray", previewClass: "bg-gray-700" },
 ];
 
 const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph' | 'node'; label: string }[] = [
@@ -1326,12 +1328,12 @@ export default function Sidebar() {
                                             : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
                                     )}
                                 >
-                                    <span
-                                        className={cn(
-                                            "h-3.5 w-3.5 rounded-full border border-border/60",
-                                            option.id === "zinc" ? "bg-zinc-700" : "bg-stone-700"
-                                        )}
-                                    />
+                                     <span
+                                         className={cn(
+                                             "h-3.5 w-3.5 rounded-full border border-border/60",
+                                             option.previewClass
+                                         )}
+                                     />
                                     <span className="flex-1">{option.label}</span>
                                     {baseTheme === option.id && (
                                         <CheckCircle

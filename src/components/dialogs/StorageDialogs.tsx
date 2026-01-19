@@ -355,8 +355,11 @@ interface CreateStorageDialogProps {
 }
 
 export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStorageDialogProps) {
-    const { accentTheme } = useStore();
+    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
     const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+    const storageColor = enableDefaultColorControls && defaultColors?.storage
+        ? defaultColors.storage
+        : accentColor;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -371,7 +374,7 @@ export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStor
                     label="Storage Name"
                     placeholder="My Storage"
                     submitLabel="Create"
-                    defaultColor={accentColor}
+                    defaultColor={storageColor}
                     onSubmit={(name, color, icon) => {
                         onSubmit(name, color, icon);
                         onOpenChange(false);
