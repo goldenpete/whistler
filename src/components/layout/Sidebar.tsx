@@ -148,7 +148,8 @@ export default function Sidebar() {
 
     const activeCollection = collections.find(c => c.id === activeCollectionId);
 
-    const isSlim = sidebarMode === 'slim' && sidebarView === 'main';
+    // Slim mode is active when sidebar is collapsed and mode is set to 'slim'
+    const isSlim = isSidebarCollapsed && sidebarMode === 'slim';
 
     const [projectsOpen, setProjectsOpen] = useState(true);
     const [assetsOpen, setAssetsOpen] = useState(true);
@@ -517,12 +518,13 @@ export default function Sidebar() {
     return (
         <>
             <motion.aside
-                initial={{ width: isSidebarCollapsed ? 0 : 280 }}
-                animate={{ width: isSidebarCollapsed ? 0 : 280 }}
+                initial={{ width: isSidebarCollapsed ? (sidebarMode === 'slim' ? 60 : 0) : 280 }}
+                animate={{ width: isSidebarCollapsed ? (sidebarMode === 'slim' ? 60 : 0) : 280 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className={cn(
                     "flex flex-col border-r border-border bg-sidebar h-full overflow-hidden shrink-0 z-20 relative",
-                    isSidebarCollapsed && "pointer-events-none"
+                    // Only disable pointer events if collapsed AND NOT in slim mode (i.e. hidden)
+                    isSidebarCollapsed && sidebarMode !== 'slim' && "pointer-events-none"
                 )}
             >
                 {/* Header */}
@@ -1386,7 +1388,7 @@ export default function Sidebar() {
                                     className={cn(
                                         "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
                                         baseTheme === option.id
-                                            ? "bg-accent text-accent-foreground"
+                                            ? "bg-primary/10 text-primary"
                                             : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
