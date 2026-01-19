@@ -512,38 +512,50 @@ export default function Sidebar() {
                 )}
             >
                 {/* Header */}
-                <div className="flex items-center gap-2 p-3 h-12 border-b border-border/40 shrink-0 relative justify-center">
-                    <button
-                        onClick={toggleSidebarCollapse}
-                        className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute left-3"
-                        title="Collapse sidebar"
-                    >
-                        <SidebarSimple weight="bold" size={18} />
-                    </button>
-
-                    {!isSidebarCollapsed && (
-                        <motion.button
-                            onClick={() => {
-                                navigate('/');
-                                setSidebarView('main');
-                            }}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
+                <div className="flex items-center justify-between p-3 h-12 border-b border-border/40 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleSidebarCollapse}
+                            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                            title="Collapse sidebar"
                         >
-                            <img
-                                src={whistlerLogo}
-                                alt="Whistlerbox"
-                                className="w-6 h-6 rounded-md"
-                            />
-                            <span className="font-bold text-lg tracking-tight truncate">Whistlerbox</span>
-                        </motion.button>
-                    )}
+                            <SidebarSimple weight="bold" size={18} />
+                        </button>
+
+                        {!isSidebarCollapsed && (
+                            <motion.button
+                                onClick={() => {
+                                    navigate('/');
+                                    setSidebarView('main');
+                                }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
+                            >
+                                <img
+                                    src={whistlerLogo}
+                                    alt="Whistlerbox"
+                                    className="w-6 h-6 rounded-md"
+                                />
+                                <span className="font-bold text-lg tracking-tight truncate">
+                                    Whistlerbox
+                                </span>
+                            </motion.button>
+                        )}
+                    </div>
 
                     {!isSidebarCollapsed && (
-                        <>
+                        <div className="flex items-center gap-2">
                             <button
-                                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-10"
+                                onClick={() => useStore.getState().setSpotlightOpen(true)}
+                                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                title="Search"
+                            >
+                                <MagnifyingGlass weight="bold" size={18} />
+                            </button>
+
+                            <button
+                                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 title="Change accent theme"
                                 onClick={() => setAccentDialogOpen(true)}
                             >
@@ -554,14 +566,7 @@ export default function Sidebar() {
                                     />
                                 </span>
                             </button>
-
-                            <button
-                                onClick={() => useStore.getState().setSpotlightOpen(true)}
-                                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-3"
-                            >
-                                <MagnifyingGlass weight="bold" size={18} />
-                            </button>
-                        </>
+                        </div>
                     )}
                 </div>
 
