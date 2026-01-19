@@ -198,7 +198,7 @@ export default function GraphView() {
             ctx.fillStyle = '#f5f5f5';
             ctx.font = `${13 / scale}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.fillText(node.title.slice(0, 14), node.x, node.y + NODE_RADIUS + (10 / scale));
+            ctx.fillText(node.title.slice(0, 14), node.x, node.y + NODE_RADIUS + (16 / scale));
         });
     }, [nodes, edges, scale, pan, connectingNodeId, mousePos]);
 

@@ -79,13 +79,48 @@ function DocEditor({ doc }: DocEditorProps) {
     const saveTimeoutRef = useRef<number | null>(null);
     const [linkDialogOpen, setLinkDialogOpen] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
+    const [formatState, setFormatState] = useState({
+        bold: false,
+        italic: false,
+        underline: false,
+        strikeThrough: false,
+        justifyLeft: false,
+        justifyCenter: false,
+        justifyRight: false,
+        unorderedList: false,
+    });
+
+    const updateFormatState = useCallback(() => {
+        try {
+            const bold = document.queryCommandState("bold");
+            const italic = document.queryCommandState("italic");
+            const underline = document.queryCommandState("underline");
+            const strikeThrough = document.queryCommandState("strikeThrough");
+            const justifyLeft = document.queryCommandState("justifyLeft");
+            const justifyCenter = document.queryCommandState("justifyCenter");
+            const justifyRight = document.queryCommandState("justifyRight");
+            const unorderedList = document.queryCommandState("insertUnorderedList");
+            setFormatState({
+                bold: !!bold,
+                italic: !!italic,
+                underline: !!underline,
+                strikeThrough: !!strikeThrough,
+                justifyLeft: !!justifyLeft,
+                justifyCenter: !!justifyCenter,
+                justifyRight: !!justifyRight,
+                unorderedList: !!unorderedList,
+            });
+        } catch {
+        }
+    }, []);
 
     useEffect(() => {
         if (editorRef.current) {
             editorRef.current.innerHTML = doc.content;
         }
         setDocName(doc.name);
-    }, [doc.id]); // Reset on doc change
+        updateFormatState();
+    }, [doc.id, updateFormatState]);
 
     const saveContent = useCallback(() => {
         if (editorRef.current) {
@@ -123,9 +158,27 @@ function DocEditor({ doc }: DocEditorProps) {
         }
     }, [docName, doc.id, doc.name]);
 
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            if (!editorRef.current) return;
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+            const anchorNode = selection.anchorNode;
+            if (!anchorNode) return;
+            if (editorRef.current.contains(anchorNode)) {
+                updateFormatState();
+            }
+        };
+        document.addEventListener("selectionchange", handleSelectionChange);
+        return () => {
+            document.removeEventListener("selectionchange", handleSelectionChange);
+        };
+    }, [updateFormatState]);
+
     const execCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
         editorRef.current?.focus();
+        updateFormatState();
     };
 
     const handleInsertLink = () => {
@@ -174,16 +227,52 @@ function DocEditor({ doc }: DocEditorProps) {
                 <div className="w-px h-6 bg-border mx-1" />
 
                 <div className="flex items-center gap-0.5">
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('bold')} className="size-8" title="Bold">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('bold')}
+                        className={cn(
+                            "size-8",
+                            formatState.bold && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Bold"
+                    >
                         <TextB weight="bold" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('italic')} className="size-8" title="Italic">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('italic')}
+                        className={cn(
+                            "size-8",
+                            formatState.italic && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Italic"
+                    >
                         <TextItalic />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('underline')} className="size-8" title="Underline">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('underline')}
+                        className={cn(
+                            "size-8",
+                            formatState.underline && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Underline"
+                    >
                         <TextUnderline />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('strikeThrough')} className="size-8" title="Strikethrough">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('strikeThrough')}
+                        className={cn(
+                            "size-8",
+                            formatState.strikeThrough && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Strikethrough"
+                    >
                         <TextStrikethrough />
                     </Button>
                 </div>
@@ -191,13 +280,40 @@ function DocEditor({ doc }: DocEditorProps) {
                 <div className="w-px h-6 bg-border mx-1" />
 
                 <div className="flex items-center gap-0.5">
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('justifyLeft')} className="size-8" title="Align Left">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('justifyLeft')}
+                        className={cn(
+                            "size-8",
+                            formatState.justifyLeft && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Align Left"
+                    >
                         <TextAlignLeft />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('justifyCenter')} className="size-8" title="Align Center">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('justifyCenter')}
+                        className={cn(
+                            "size-8",
+                            formatState.justifyCenter && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Align Center"
+                    >
                         <TextAlignCenter />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('justifyRight')} className="size-8" title="Align Right">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('justifyRight')}
+                        className={cn(
+                            "size-8",
+                            formatState.justifyRight && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Align Right"
+                    >
                         <TextAlignRight />
                     </Button>
                 </div>
@@ -205,7 +321,16 @@ function DocEditor({ doc }: DocEditorProps) {
                 <div className="w-px h-6 bg-border mx-1" />
 
                 <div className="flex items-center gap-0.5">
-                    <Button variant="ghost" size="icon" onClick={() => execCommand('insertUnorderedList')} className="size-8" title="Bullet List">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => execCommand('insertUnorderedList')}
+                        className={cn(
+                            "size-8",
+                            formatState.unorderedList && "bg-primary/10 text-primary border border-primary/40"
+                        )}
+                        title="Bullet List"
+                    >
                         <ListBullets />
                     </Button>
                     <Button
