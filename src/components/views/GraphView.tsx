@@ -302,7 +302,13 @@ export default function GraphView() {
         const node = getNodeAt(worldX, worldY);
         if (!node) return;
 
-        handleNodeOpen(node);
+        // Open edit dialog instead of navigating
+        setNodeDialog({
+            open: true,
+            mode: 'edit',
+            type: node.type,
+            node
+        });
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
