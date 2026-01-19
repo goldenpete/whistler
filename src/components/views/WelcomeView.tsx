@@ -17,7 +17,7 @@ const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
 export function WelcomeView() {
-    const { addProject, setProjects, setFiles, setActiveProject, login, setLastSyncTime, setState } = useStore();
+    const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore();
 
     const [signInOpen, setSignInOpen] = useState(false);
     const [syncId, setSyncId] = useState("");

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createElement } from "react";
 import { useStore } from "@/store/useStore";
 import { Link } from "react-router-dom";
 import {
@@ -766,23 +766,26 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 }
 
 function FileThumbnail({ file, iconSize }: { file: File, iconSize: number }) {
-    let Icon = getFileIcon(file.type);
-    let color: string | undefined = undefined;
-
-    if (file.type === 'folder') {
-        if (file.icon) {
+    const Icon = (() => {
+        let icon = getFileIcon(file.type);
+        if (file.type === 'folder' && file.icon) {
             const customIcon = ICONS.find(i => i.name === file.icon);
-            if (customIcon) Icon = customIcon.icon;
+            if (customIcon) icon = customIcon.icon;
         }
-        if (file.color) {
-            color = file.color;
-        }
-    }
+        return icon;
+    })();
+
+    const color = file.type === 'folder' && file.color ? file.color : undefined;
 
     const [error, setError] = useState(false);
 
     if (error || !file.url) {
-        return <Icon size={iconSize} weight="regular" className="text-muted-foreground group-hover:text-primary transition-colors" style={color ? { color } : undefined} />;
+        return createElement(Icon, {
+            size: iconSize,
+            weight: "regular",
+            className: "text-muted-foreground group-hover:text-primary transition-colors",
+            style: color ? { color } : undefined
+        });
     }
 
     if (file.type === 'image') {
@@ -813,7 +816,11 @@ function FileThumbnail({ file, iconSize }: { file: File, iconSize: number }) {
         );
     }
 
-    return <Icon size={iconSize} weight="regular" className="text-muted-foreground group-hover:text-primary transition-colors" />;
+    return createElement(Icon, {
+        size: iconSize,
+        weight: "regular",
+        className: "text-muted-foreground group-hover:text-primary transition-colors"
+    });
 }
 
 function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {

@@ -65,7 +65,17 @@ import { SidebarSync } from "@/components/layout/SidebarSync";
 import { PiPPlayer } from "@/components/player/PiPPlayer";
 import { exportProject, importProject, type ProjectExportData } from "@/utils/projectData";
 import { UploadSimple, DownloadSimple, ClockCounterClockwise } from "@phosphor-icons/react";
-import whistlerLogo from "../../../whistlerlogo.png";
+import whistlerLogoOrange from "../../../whistlerlogo.png";
+import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
+import whistlerLogoSky from "../../../whistlerlogo-sky.png";
+import whistlerLogoViolet from "../../../whistlerlogo-violet.png";
+
+const LOGO_MAP: Record<AccentTheme, string> = {
+    orange: whistlerLogoOrange,
+    emerald: whistlerLogoEmerald,
+    sky: whistlerLogoSky,
+    violet: whistlerLogoViolet,
+};
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
     { id: "orange", label: "Orange", previewClass: "bg-orange-500" },
@@ -512,17 +522,17 @@ export default function Sidebar() {
                 )}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-3 h-12 border-b border-border/40 shrink-0">
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={toggleSidebarCollapse}
-                            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                            title="Collapse sidebar"
-                        >
-                            <SidebarSimple weight="bold" size={18} />
-                        </button>
+                <div className="flex items-center justify-between p-3 h-12 border-b border-border/40 shrink-0 relative">
+                    <button
+                        onClick={toggleSidebarCollapse}
+                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors z-10"
+                        title="Collapse sidebar"
+                    >
+                        <SidebarSimple weight="bold" size={18} />
+                    </button>
 
-                        {!isSidebarCollapsed && (
+                    {!isSidebarCollapsed && (
+                        <>
                             <motion.button
                                 onClick={() => {
                                     navigate('/');
@@ -530,10 +540,10 @@ export default function Sidebar() {
                                 }}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
+                                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
                             >
                                 <img
-                                    src={whistlerLogo}
+                                    src={LOGO_MAP[accentTheme as AccentTheme] || whistlerLogoOrange}
                                     alt="Whistlerbox"
                                     className="w-6 h-6 rounded-md"
                                 />
@@ -541,19 +551,17 @@ export default function Sidebar() {
                                     Whistlerbox
                                 </span>
                             </motion.button>
-                        )}
-                    </div>
 
-                    {!isSidebarCollapsed && (
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => useStore.getState().setSpotlightOpen(true)}
-                                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                title="Search"
-                            >
-                                <MagnifyingGlass weight="bold" size={18} />
-                            </button>
-                        </div>
+                            <div className="flex items-center gap-2 z-10">
+                                <button
+                                    onClick={() => useStore.getState().setSpotlightOpen(true)}
+                                    className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    title="Search"
+                                >
+                                    <MagnifyingGlass weight="bold" size={18} />
+                                </button>
+                            </div>
+                        </>
                     )}
                 </div>
 

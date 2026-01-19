@@ -84,10 +84,9 @@ export default function TrashView() {
         }
     };
 
-    const [now, setNow] = useState(Date.now());
+    const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
-        setNow(Date.now());
         const interval = setInterval(() => setNow(Date.now()), 60000);
         return () => clearInterval(interval);
     }, []);
