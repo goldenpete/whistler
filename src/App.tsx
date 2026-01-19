@@ -30,7 +30,7 @@ export default function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (baseTheme && baseTheme !== "zinc") {
+    if (baseTheme) {
       root.setAttribute("data-base", baseTheme);
     } else {
       root.removeAttribute("data-base");

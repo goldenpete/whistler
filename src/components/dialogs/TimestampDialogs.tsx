@@ -205,7 +205,10 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className={`${isMaximized ? '!w-screen !h-screen !max-w-none !border-none !rounded-none !top-0 !left-0 !translate-x-0 !translate-y-0 !overflow-y-auto' : 'sm:max-w-[800px] border-zinc-800'} bg-black p-0 text-white gap-0 flex flex-col`}>
+            <DialogContent
+                showCloseButton={false}
+                className={`${isMaximized ? '!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !top-0 !left-0 !translate-x-0 !translate-y-0 !overflow-hidden' : 'sm:max-w-[800px] border-zinc-800'} bg-black p-0 text-white gap-0 flex flex-col`}
+            >
                 <div className={`relative bg-black ${isMaximized ? 'flex-1' : 'aspect-video'} w-full flex items-center justify-center`}>
                     <video
                         ref={setVideoElement}

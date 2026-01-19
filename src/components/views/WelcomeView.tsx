@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { useStore } from "@/store/useStore";
 import type { Project, File } from "@/types";
-import { Plus, DownloadSimple, Lightning } from "@phosphor-icons/react";
+import { Plus, DownloadSimple, Lightning, Shuffle } from "@phosphor-icons/react";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
 
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
@@ -69,6 +69,17 @@ export function WelcomeView() {
     };
 
     const getCleanAccountId = (value: string) => value.replace(/\D/g, "").slice(0, 16);
+
+    const handleGenerateId = () => {
+        const array = new Uint8Array(8);
+        crypto.getRandomValues(array);
+        let id = "";
+        for (let i = 0; i < array.length; i++) {
+            const digits = (array[i] % 100).toString().padStart(2, "0");
+            id += digits;
+        }
+        setSyncId(formatAccountId(id));
+    };
 
     const handleWelcomeSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -319,6 +330,16 @@ export function WelcomeView() {
                                 minLength={16}
                                 required
                             />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full h-9 mt-1 text-xs gap-2 border-zinc-700"
+                                onClick={handleGenerateId}
+                                title="Generate New Account ID"
+                            >
+                                <Shuffle weight="bold" className="size-4" />
+                                <span>Generate New Account ID</span>
+                            </Button>
                         </div>
                         <div className="flex justify-center">
                             <div

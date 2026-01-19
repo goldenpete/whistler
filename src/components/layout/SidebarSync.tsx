@@ -12,7 +12,8 @@ import {
     SignIn,
     SignOut,
     User,
-    CheckCircle
+    CheckCircle,
+    Shuffle
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 
@@ -414,21 +415,26 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     <form onSubmit={handleLogin} className="w-full space-y-3">
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Sync ID</label>
-                            <div className="flex gap-2">
-                                <Input 
-                                    type="text" 
-                                    placeholder="16-digit ID" 
-                                    value={syncId}
-                                    onChange={(e) => setSyncId(formatAccountId(e.target.value))}
-                                    className="h-8 text-sm font-mono"
-                                    maxLength={19}
-                                    minLength={16}
-                                    required
-                                />
-                                <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={handleGenerateId} title="Generate New ID">
-                                    <Gear weight="bold" className="size-4" />
-                                </Button>
-                            </div>
+                            <Input 
+                                type="text" 
+                                placeholder="16-digit ID" 
+                                value={syncId}
+                                onChange={(e) => setSyncId(formatAccountId(e.target.value))}
+                                className="h-8 text-sm font-mono"
+                                maxLength={19}
+                                minLength={16}
+                                required
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full h-8 mt-1 text-xs gap-2"
+                                onClick={handleGenerateId}
+                                title="Generate New Account ID"
+                            >
+                                <Shuffle weight="bold" className="size-4" />
+                                <span>Generate New Account ID</span>
+                            </Button>
                         </div>
                         <div className="flex justify-center">
                             <div
