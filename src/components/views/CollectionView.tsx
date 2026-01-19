@@ -45,23 +45,6 @@ import {
 import type { Highlight } from "@/types";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 
-const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
-const FileIconByType = ({ type, size }: { type: string, size: number }) => {
-    // This is a placeholder as the original component wasn't shown in the snippet
-    // Assuming it's defined elsewhere or inline.
-    // Actually, looking at the code, it uses FileIconByType which seems to be missing from imports or defined in the file but I missed it?
-    // The previous Read showed it used <FileIconByType ... /> but I didn't see the definition in the first 20KB.
-    // It's likely defined below the imports.
-    // Wait, I am replacing the imports. I should keep the imports I don't change.
-    // I will only replace the specific import lines.
-    return null; 
-};
-
 const getIcon = (name?: string) => {
     switch (name) {
         case "FolderPlus": return Folder;
@@ -168,7 +151,7 @@ export default function CollectionView() {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold leading-none">{activeCollection?.name || "Collection"}</h1>
-                        <p className="text-xs text-muted-foreground mt-1">{collectionHighlights.length} clips</p>
+                        <p className="text-xs text-muted-foreground mt-1">{collectionHighlights.length} highlights</p>
                     </div>
                 </div>
 
@@ -176,7 +159,7 @@ export default function CollectionView() {
                     <div className="relative w-64 mr-2">
                         <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
                         <Input
-                            placeholder="Search clips..."
+                            placeholder="Search highlights..."
                             className="pl-9 h-9"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -234,7 +217,7 @@ export default function CollectionView() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete selected clips?</AlertDialogTitle>
+                                        <AlertDialogTitle>Delete selected highlights?</AlertDialogTitle>
                                         <AlertDialogDescription>
                                             This will permanently delete {selectedItems.size} selected item{selectedItems.size === 1 ? "" : "s"} from this collection.
                                         </AlertDialogDescription>
@@ -301,7 +284,7 @@ export default function CollectionView() {
                                                     ? (h.end && h.end !== h.start
                                                         ? `Page ${h.start}-${h.end}`
                                                         : `Page ${h.start}`)
-                                                    : `${localFormatTime(h.start)} - ${localFormatTime(h.end || h.start)}`
+                                                    : `${formatTime(h.start)} - ${formatTime(h.end || h.start)}`
                                                 }
                                             </div>
 
@@ -325,7 +308,7 @@ export default function CollectionView() {
                                         {/* Content */}
                                         <div className="p-3">
                                             <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">
-                                                {h.note || "Untitled Clip"}
+                                                {h.note || "Untitled Highlight"}
                                             </h3>
                                             <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
                                                 <FilmStrip size={12} />
@@ -353,7 +336,7 @@ export default function CollectionView() {
                                         }}
                                         className="gap-2"
                                     >
-                                        <FilmStrip size={16} /> Play Clip
+                                        <FilmStrip size={16} /> Play Highlight
                                     </ContextMenuItem>
                                     <ContextMenuItem
                                         onClick={() => {
@@ -383,8 +366,8 @@ export default function CollectionView() {
                     {collectionHighlights.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground opacity-50">
                             <CollectionIcon size={64} weight="thin" />
-                            <p className="mt-4 text-sm font-medium">No clips in this collection</p>
-                            <p className="text-xs">Add clips from the video player</p>
+                            <p className="mt-4 text-sm font-medium">No highlights in this collection</p>
+                            <p className="text-xs">Add highlights from the video player</p>
                         </div>
                     )}
                 </div>
