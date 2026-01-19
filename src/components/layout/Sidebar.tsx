@@ -96,6 +96,8 @@ export default function Sidebar() {
         isSidebarCollapsed,
         toggleSidebarCollapse,
         syncStatus,
+        sidebarView,
+        setSidebarView,
     } = useStore();
 
     const activeCollection = collections.find(c => c.id === activeCollectionId);
@@ -105,22 +107,6 @@ export default function Sidebar() {
     const [collectionsOpen, setCollectionsOpen] = useState(true);
     const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
     const [createStorageOpen, setCreateStorageOpen] = useState(false);
-    const [sidebarView, setSidebarView] = useState<'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync'>('main');
-    
-    // Sync view with location (only on mount to respect user navigation preference)
-    useEffect(() => {
-        if (location.pathname === '/storage') {
-            setSidebarView('storage');
-        } else if (location.pathname.startsWith('/docs')) {
-            setSidebarView('docs');
-        } else if (location.pathname.startsWith('/graphs')) {
-            setSidebarView('graphs');
-        } else {
-             setSidebarView('main');
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     // Edit State
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
     const [collectionToEdit, setCollectionToEdit] = useState<Collection | null>(null);
@@ -939,7 +925,10 @@ export default function Sidebar() {
                                     >
                                         <CaretLeft className="text-muted-foreground" />
                                     </Button>
-                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Graphs</span>
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                        <Graph weight="bold" />
+                                        Graphs
+                                    </div>
                                     <div className="flex-1" />
                                     <Button variant="ghost" size="icon" onClick={handleCreateGraph} className="size-6">
                                         <Plus weight="bold" className="size-3.5" />

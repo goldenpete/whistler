@@ -8,6 +8,7 @@ interface User {
 }
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
+type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync';
 
 interface AppStore extends AppState {
     activeFileId: string | null;
@@ -63,6 +64,8 @@ interface AppStore extends AppState {
     toggleSidebar: (isOpen: boolean) => void;
     isSidebarCollapsed: boolean;
     toggleSidebarCollapse: () => void;
+    sidebarView: SidebarView;
+    setSidebarView: (view: SidebarView) => void;
 
     // Doc Actions
     setDocViewMode: (mode: 'page' | 'pageless' | 'pageless-wide') => void;
@@ -133,6 +136,7 @@ export const useStore = create<AppStore>()(
             // Sidebar State
             isSidebarOpen: true,
             isSidebarCollapsed: false,
+            sidebarView: 'main',
             
             // Spotlight State
             isSpotlightOpen: false,
@@ -157,6 +161,7 @@ export const useStore = create<AppStore>()(
             setSpotlightOpen: (open) => set({ isSpotlightOpen: open }),
             toggleSidebar: (isOpen) => set({ isSidebarOpen: isOpen }),
             toggleSidebarCollapse: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+            setSidebarView: (view) => set({ sidebarView: view }),
 
             setDocViewMode: (mode) => set({ docViewMode: mode }),
 
