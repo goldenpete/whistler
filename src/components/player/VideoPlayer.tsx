@@ -627,7 +627,15 @@ export default function VideoPlayer() {
 
                                 <div className="w-px h-5 bg-white/20 mx-1" />
 
-                                <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className={cn("text-zinc-400 hover:text-white", sidebarOpen && "text-amber-500 hover:text-amber-400")}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                                    className={cn(
+                                        "text-zinc-400 hover:text-white",
+                                        sidebarOpen && "text-primary hover:text-primary"
+                                    )}
+                                >
                                     <SidebarSimple weight="bold" size={20} />
                                 </Button>
                                 <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-zinc-400 hover:text-white">
