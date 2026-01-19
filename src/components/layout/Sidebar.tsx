@@ -136,6 +136,7 @@ export default function Sidebar() {
     const [newProjectOpen, setNewProjectOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const [accentDialogOpen, setAccentDialogOpen] = useState(false);
 
     const handleEditGraph = (e: React.MouseEvent, graph: any) => {
         e.stopPropagation();
@@ -517,45 +518,18 @@ export default function Sidebar() {
 
                     {!isSidebarCollapsed && (
                         <>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button
-                                        className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-10"
-                                        title="Change accent theme"
-                                    >
-                                        <span className="flex items-center justify-center">
-                                            <span
-                                                className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-                                                style={{ backgroundColor: "var(--primary)" }}
-                                            />
-                                        </span>
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
-                                    {ACCENT_OPTIONS.map((option) => (
-                                        <DropdownMenuItem
-                                            key={option.id}
-                                            onClick={() => setAccentTheme(option.id)}
-                                            className="flex items-center gap-2"
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "h-3.5 w-3.5 rounded-full border border-border/60",
-                                                    option.previewClass
-                                                )}
-                                            />
-                                            <span className="flex-1 text-xs">{option.label}</span>
-                                            {accentTheme === option.id && (
-                                                <CheckCircle
-                                                    weight="bold"
-                                                    className="text-primary"
-                                                    size={14}
-                                                />
-                                            )}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <button
+                                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors absolute right-10"
+                                title="Change accent theme"
+                                onClick={() => setAccentDialogOpen(true)}
+                            >
+                                <span className="flex items-center justify-center">
+                                    <span
+                                        className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+                                        style={{ backgroundColor: "var(--primary)" }}
+                                    />
+                                </span>
+                            </button>
 
                             <button
                                 onClick={() => useStore.getState().setSpotlightOpen(true)}
@@ -1268,6 +1242,50 @@ export default function Sidebar() {
                     }
                 }}
             />
+
+            <Dialog open={accentDialogOpen} onOpenChange={setAccentDialogOpen}>
+                <DialogContent className="sm:max-w-xs bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Accent Color</DialogTitle>
+                        <DialogDescription className="text-zinc-400 text-xs">
+                            Choose the highlight color used across the app.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2 space-y-1">
+                        {ACCENT_OPTIONS.map((option) => (
+                            <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => {
+                                    setAccentTheme(option.id);
+                                    setAccentDialogOpen(false);
+                                }}
+                                className={cn(
+                                    "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
+                                    accentTheme === option.id
+                                        ? "bg-primary/10 text-primary"
+                                        : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                                )}
+                            >
+                                <span
+                                    className={cn(
+                                        "h-3.5 w-3.5 rounded-full border border-border/60",
+                                        option.previewClass
+                                    )}
+                                />
+                                <span className="flex-1">{option.label}</span>
+                                {accentTheme === option.id && (
+                                    <CheckCircle
+                                        weight="bold"
+                                        className="text-primary"
+                                        size={14}
+                                    />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={newDocOpen} onOpenChange={setNewDocOpen}>
                 <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">

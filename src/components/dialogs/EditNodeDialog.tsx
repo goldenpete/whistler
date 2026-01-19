@@ -17,7 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
+import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import { useStore } from "@/store/useStore";
 import type { GraphNode } from "@/types";
 import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon } from "@phosphor-icons/react";
@@ -42,7 +42,7 @@ export function NodeDialog({
     node,
     onSave
 }: NodeDialogProps) {
-    const { files, collections, timestamps, docs, activeProjectId } = useStore();
+    const { files, collections, timestamps, docs, activeProjectId, accentTheme } = useStore();
     const navigate = useNavigate();
     
     // Form State
@@ -93,9 +93,9 @@ export function NodeDialog({
                     setLinkUrl("");
                 }
             } else {
-                // Create Mode Defaults
                 setTitle("");
-                setColor(PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)]);
+                const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+                setColor(accentColor);
                 setSelectedFileId("");
                 setSelectedCollectionId("");
                 setSelectedTimestampId("");
@@ -251,7 +251,7 @@ export function NodeDialog({
                     {selectedTimestamp && selectedTimestampFile ? (
                         <>
                             <div className="flex flex-col items-center justify-center gap-1">
-                                <Clock className="text-amber-400" size={16} />
+                                <Clock className="text-primary" size={16} />
                                 <span className="font-mono text-[10px] text-muted-foreground">
                                     {(() => {
                                         const mins = Math.floor(selectedTimestamp.start / 60);
@@ -399,7 +399,7 @@ export function NodeDialog({
                             )}
                             {type === 'timestamp' && selectedTimestamp && selectedTimestampFile && (
                                 <div className="flex items-center gap-3">
-                                    <Clock className="text-amber-400" />
+                                    <Clock className="text-primary" />
                                     <div className="min-w-0">
                                         <div className="text-sm font-medium truncate text-foreground">
                                             {selectedTimestamp.note || selectedTimestampFile.name}

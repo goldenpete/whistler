@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
+import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import {
     Dialog,
     DialogContent,
@@ -35,6 +35,7 @@ import {
     Book
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/store/useStore";
 
 // Predefined Icons
 export const ICONS = [
@@ -354,6 +355,9 @@ interface CreateStorageDialogProps {
 }
 
 export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStorageDialogProps) {
+    const { accentTheme } = useStore();
+    const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
@@ -367,6 +371,7 @@ export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStor
                     label="Storage Name"
                     placeholder="My Storage"
                     submitLabel="Create"
+                    defaultColor={accentColor}
                     onSubmit={(name, color, icon) => {
                         onSubmit(name, color, icon);
                         onOpenChange(false);

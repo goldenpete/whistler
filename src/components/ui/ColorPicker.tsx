@@ -5,22 +5,29 @@ import { cn } from "@/lib/utils";
 import { Palette, Check } from "@phosphor-icons/react";
 
 export const PRESET_COLORS = [
-    "#f59e0b", // Amber
-    "#ef4444", // Red
-    "#f97316", // Orange
-    "#84cc16", // Lime
-    "#10b981", // Emerald
-    "#06b6d4", // Cyan
-    "#3b82f6", // Blue
-    "#6366f1", // Indigo
-    "#8b5cf6", // Violet
-    "#d946ef", // Fuchsia
-    "#ec4899", // Pink
-    "#f43f5e", // Rose
-    "#71717a", // Zinc
-    "#000000", // Black
-    "#ffffff", // White
+    "#f59e0b",
+    "#ef4444",
+    "#f97316",
+    "#84cc16",
+    "#10b981",
+    "#06b6d4",
+    "#3b82f6",
+    "#6366f1",
+    "#8b5cf6",
+    "#d946ef",
+    "#ec4899",
+    "#f43f5e",
+    "#71717a",
+    "#000000",
+    "#ffffff",
 ];
+
+export const ACCENT_COLOR_MAP = {
+    orange: "#f59e0b",
+    emerald: "#10b981",
+    violet: "#8b5cf6",
+    sky: "#06b6d4",
+} as const;
 
 interface ColorPickerProps {
     color: string;

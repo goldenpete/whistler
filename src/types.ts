@@ -142,4 +142,11 @@ export interface AppState {
     // UI Preferences
     docViewMode?: 'page' | 'pageless' | 'pageless-wide';
     accentTheme?: AccentTheme;
+    defaultColors?: {
+        file?: string;
+        collection?: string;
+        storage?: string;
+        graph?: string;
+        node?: string;
+    };
 }

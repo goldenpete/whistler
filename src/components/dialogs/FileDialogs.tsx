@@ -42,7 +42,7 @@ export function EditFileDialog({ open, onOpenChange, file, onSave }: EditFileDia
                             id="name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="bg-zinc-900 border-zinc-800 focus:border-amber-500/50"
+                            className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
                         />
                     </div>
                     <div className="grid gap-2">
@@ -51,16 +51,23 @@ export function EditFileDialog({ open, onOpenChange, file, onSave }: EditFileDia
                             id="description"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="bg-zinc-900 border-zinc-800 min-h-[150px] focus:border-amber-500/50 resize-y"
+                            className="bg-zinc-900 border-zinc-800 min-h-[150px] focus:border-primary/50 resize-y"
                             placeholder="Add a description..."
                         />
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+                    <Button
+                        variant="ghost"
+                        onClick={() => onOpenChange(false)}
+                        className="hover:bg-white/10 text-zinc-400 hover:text-white"
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} className="bg-amber-600 hover:bg-amber-700 text-white">
+                    <Button
+                        onClick={handleSubmit}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
                         Save Changes
                     </Button>
                 </DialogFooter>

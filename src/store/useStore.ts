@@ -72,6 +72,7 @@ interface AppStore extends AppState {
 
     // Theme Actions
     setAccentTheme: (theme: AccentTheme) => void;
+    setDefaultColor: (entity: 'file' | 'collection' | 'storage' | 'graph' | 'node', color: string) => void;
 
     // Trash Actions
     trashFile: (id: string) => void;
@@ -147,6 +148,13 @@ export const useStore = create<AppStore>()(
             // Doc State
             docViewMode: 'page',
             accentTheme: 'orange',
+            defaultColors: {
+                file: '#f59e0b',
+                collection: '#f59e0b',
+                storage: '#f59e0b',
+                graph: '#f59e0b',
+                node: '#f59e0b',
+            },
 
             setProjects: (projects: Project[]) => set({ projects }),
             setFiles: (files: File[]) => set({ files }),
@@ -169,6 +177,13 @@ export const useStore = create<AppStore>()(
 
             setDocViewMode: (mode) => set({ docViewMode: mode }),
             setAccentTheme: (theme) => set({ accentTheme: theme }),
+            setDefaultColor: (entity, color) =>
+                set((state) => ({
+                    defaultColors: {
+                        ...(state.defaultColors || {}),
+                        [entity]: color,
+                    },
+                })),
 
             login: (user) => set({ user }),
             logout: () => set({ user: null }),

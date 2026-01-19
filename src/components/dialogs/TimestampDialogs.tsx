@@ -256,7 +256,9 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                             <Button
                                 size="icon"
                                 variant="ghost"
-                                className={`h-8 w-8 hover:bg-white/20 ${isLooping ? 'text-amber-500' : 'text-white/50'}`}
+                                className={`h-8 w-8 hover:bg-white/20 ${
+                                    isLooping ? 'text-primary hover:text-primary/80' : 'text-white/50'
+                                }`}
                                 onClick={toggleLoop}
                                 title={isLooping ? "Loop On" : "Loop Off"}
                             >
@@ -301,7 +303,10 @@ export function ClipPlayerDialog({ open, onOpenChange, timestamp, file, collecti
                             </button>
 
                             {/* Collection Display (Static) */}
-                            <div className="font-bold text-sm tracking-wide uppercase transition-colors" style={{ color: collection?.color || "#f59e0b" }}>
+                            <div
+                                className="font-bold text-sm tracking-wide uppercase transition-colors"
+                                style={{ color: collection?.color || 'hsl(var(--primary))' }}
+                            >
                                 {collection?.name || "Uncategorized"}
                             </div>
                         </div>
@@ -428,11 +433,11 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                         <Label>Note</Label>
-                        <Input
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            className="bg-zinc-900 border-zinc-800 focus:border-amber-500/50"
-                        />
+                                <Input
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
+                                />
                     </div>
                     {file?.type === 'pdf' ? (
                         <div className="grid gap-2">
@@ -489,10 +494,17 @@ export function EditTimestampDialog({ open, onOpenChange, timestamp, collections
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+                    <Button
+                        variant="ghost"
+                        onClick={() => onOpenChange(false)}
+                        className="hover:bg-white/10 text-zinc-400 hover:text-white"
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={handleSave} className="bg-amber-600 hover:bg-amber-700 text-white">
+                    <Button
+                        onClick={handleSave}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
                         Save
                     </Button>
                 </DialogFooter>
