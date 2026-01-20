@@ -113,11 +113,15 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         const startSecs = parseTime(editStart);
         const endSecs = parseTime(editEnd);
         
+        const isValidTime = startSecs !== null && endSecs !== null && startSecs >= 0 && endSecs > startSecs;
+
         const isChanged = 
-            editNote !== (highlight.note || "") ||
-            editCollectionId !== (highlight.collectionId || "") ||
-            (startSecs !== null && startSecs !== highlight.start) ||
-            (endSecs !== null && endSecs !== (highlight.end || highlight.start));
+            isValidTime && (
+                editNote !== (highlight.note || "") ||
+                editCollectionId !== (highlight.collectionId || "") ||
+                (startSecs !== highlight.start) ||
+                (endSecs !== (highlight.end || highlight.start))
+            );
             
         setHasChanges(isChanged);
     }, [editNote, editCollectionId, editStart, editEnd, highlight]);
@@ -131,9 +135,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         if (editCollectionId !== highlight.collectionId) updates.collectionId = editCollectionId;
         
         const startSecs = parseTime(editStart);
-        if (startSecs !== null && startSecs !== highlight.start) updates.start = startSecs;
-        
         const endSecs = parseTime(editEnd);
+        
+        if (startSecs !== null && startSecs !== highlight.start) updates.start = startSecs;
         if (endSecs !== null && endSecs !== highlight.end) updates.end = endSecs;
         
         onUpdate(updates);
@@ -262,7 +266,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent 
-                className="!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !p-0 overflow-hidden bg-black text-white outline-none"
+                className="!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !p-0 overflow-hidden bg-black text-white outline-none !duration-500 data-[state=open]:!slide-in-from-bottom-10 data-[state=closed]:!slide-out-to-bottom-10"
                 showCloseButton={false}
             >
                 <div ref={containerRef} className="flex h-full w-full bg-black overflow-hidden relative group/container">
@@ -574,16 +578,19 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, collections
     }, [open, highlight]);
 
     const handleSave = () => {
+        const startSecs = parseTime(startTime);
+        const endSecs = parseTime(endTime);
+
+        if (startSecs === null || endSecs === null || startSecs < 0 || endSecs <= startSecs) {
+            return;
+        }
+
         const updates: Partial<Highlight> = {
             note,
-            collectionId
+            collectionId,
+            start: startSecs,
+            end: endSecs
         };
-        
-        const startSecs = parseTime(startTime);
-        if (startSecs !== null) updates.start = startSecs;
-        
-        const endSecs = parseTime(endTime);
-        if (endSecs !== null) updates.end = endSecs;
 
         onSave(updates);
         onOpenChange(false);

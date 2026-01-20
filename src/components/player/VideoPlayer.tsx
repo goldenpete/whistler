@@ -360,7 +360,8 @@ export default function VideoPlayer() {
                 key={fileId}
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="flex-1 flex flex-col relative min-w-0 group"
             >
 
