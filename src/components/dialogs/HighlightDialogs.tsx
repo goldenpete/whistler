@@ -67,7 +67,7 @@ interface HighlightPlayerDialogProps {
     onEditHighlight?: () => void;
 }
 
-export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, onEditHighlight }: HighlightPlayerDialogProps) {
+export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -84,9 +84,61 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    // Edit State
+    const [editNote, setEditNote] = useState("");
+    const [editCollectionId, setEditCollectionId] = useState("");
+    const [editStart, setEditStart] = useState("");
+    const [editEnd, setEditEnd] = useState("");
+    const [hasChanges, setHasChanges] = useState(false);
+
     const start = highlight?.start || 0;
     const end = highlight?.end || 0;
     const segmentDuration = end - start;
+
+    // Sync Edit State
+    useEffect(() => {
+        if (highlight) {
+            setEditNote(highlight.note || "");
+            setEditCollectionId(highlight.collectionId || "");
+            setEditStart(formatTime(highlight.start));
+            setEditEnd(formatTime(highlight.end || highlight.start));
+            setHasChanges(false);
+        }
+    }, [highlight]);
+
+    // Detect Changes
+    useEffect(() => {
+        if (!highlight) return;
+        
+        const startSecs = parseTime(editStart);
+        const endSecs = parseTime(editEnd);
+        
+        const isChanged = 
+            editNote !== (highlight.note || "") ||
+            editCollectionId !== (highlight.collectionId || "") ||
+            (startSecs !== null && startSecs !== highlight.start) ||
+            (endSecs !== null && endSecs !== (highlight.end || highlight.start));
+            
+        setHasChanges(isChanged);
+    }, [editNote, editCollectionId, editStart, editEnd, highlight]);
+
+    const handleSave = () => {
+        if (!onUpdate || !highlight) return;
+        
+        const updates: Partial<Highlight> = {};
+        
+        if (editNote !== highlight.note) updates.note = editNote;
+        if (editCollectionId !== highlight.collectionId) updates.collectionId = editCollectionId;
+        
+        const startSecs = parseTime(editStart);
+        if (startSecs !== null && startSecs !== highlight.start) updates.start = startSecs;
+        
+        const endSecs = parseTime(editEnd);
+        if (endSecs !== null && endSecs !== highlight.end) updates.end = endSecs;
+        
+        onUpdate(updates);
+        setHasChanges(false);
+    };
 
     // Initialization Effect
     useEffect(() => {
@@ -509,16 +561,31 @@ interface EditHighlightDialogProps {
 export function EditHighlightDialog({ open, onOpenChange, highlight, collections, onSave }: EditHighlightDialogProps) {
     const [note, setNote] = useState("");
     const [collectionId, setCollectionId] = useState("");
+    const [startTime, setStartTime] = useState("");
+    const [endTime, setEndTime] = useState("");
     
     useEffect(() => {
         if (open && highlight) {
             setNote(highlight.note || "");
             setCollectionId(highlight.collectionId || "");
+            setStartTime(formatTime(highlight.start));
+            setEndTime(formatTime(highlight.end || highlight.start));
         }
     }, [open, highlight]);
 
     const handleSave = () => {
-        onSave({ note, collectionId });
+        const updates: Partial<Highlight> = {
+            note,
+            collectionId
+        };
+        
+        const startSecs = parseTime(startTime);
+        if (startSecs !== null) updates.start = startSecs;
+        
+        const endSecs = parseTime(endTime);
+        if (endSecs !== null) updates.end = endSecs;
+
+        onSave(updates);
         onOpenChange(false);
     };
 
@@ -546,6 +613,24 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, collections
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label>Start Time</Label>
+                            <Input 
+                                value={startTime} 
+                                onChange={(e) => setStartTime(e.target.value)}
+                                placeholder="MM:SS"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>End Time</Label>
+                            <Input 
+                                value={endTime} 
+                                onChange={(e) => setEndTime(e.target.value)}
+                                placeholder="MM:SS"
+                            />
+                        </div>
                     </div>
                     <div className="grid gap-2">
                         <Label>Note</Label>
