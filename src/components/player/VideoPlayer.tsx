@@ -58,6 +58,29 @@ import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { type Highlight } from "@/types";
 
+const ExpandableNote = ({ text }: { text: string }) => {
+    const [expanded, setExpanded] = useState(false);
+    const limit = 150;
+
+    if (!text) return <span className="text-muted-foreground/50 italic text-xs">No note</span>;
+    if (text.length <= limit) return <>{text}</>;
+
+    return (
+        <span>
+            {expanded ? text : `${text.slice(0, limit)}...`}
+            <button 
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setExpanded(!expanded); 
+                }} 
+                className="text-primary text-xs ml-1 hover:underline font-medium"
+            >
+                {expanded ? "Show less" : "Show more"}
+            </button>
+        </span>
+    );
+};
+
 export default function VideoPlayer() {
     const { fileId } = useParams<{ fileId: string }>();
     const navigate = useNavigate();
@@ -746,7 +769,7 @@ export default function VideoPlayer() {
                                             </div>
                                         )}
                                         <div className="text-muted-foreground text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
-                                            {h.note || <span className="text-muted-foreground/50 italic text-xs">No note</span>}
+                                            <ExpandableNote text={h.note} />
                                         </div>
                                     </div>
                                 );

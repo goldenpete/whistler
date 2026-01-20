@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import React, { useEffect, useState } from "react";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, ArrowsOut, ArrowsIn, CornersOut, Minus, Plus } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, ArrowsOut, ArrowsIn, CornersOut, Minus, Plus, SidebarSimple, CornersIn } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 // --- Time Formatting Helper ---
@@ -55,6 +55,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
     // Feature State
     const [isMaximized, setIsMaximized] = useState(false);
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
     const start = highlight?.start || 0;
@@ -68,27 +69,43 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         }
     }, [open, highlight]);
 
+    // Initialization Effect
     useEffect(() => {
         if (open && file && highlight && videoElement) {
             // eslint-disable-next-line react-hooks/immutability
             videoElement.currentTime = start;
-            videoElement.volume = isMuted ? 0 : volume; // Apply volume
-            videoElement.playbackRate = playbackSpeed; // Apply speed
             videoElement.play().catch(e => console.error("Auto-play failed:", e));
             setIsPlaying(true);
         } else {
             setIsPlaying(false);
         }
-    }, [open, file, highlight, start, videoElement, isMuted, volume, playbackSpeed]);
+    }, [open, file, highlight, start, videoElement]);
+
+    // Volume Sync Effect
+    useEffect(() => {
+        if (videoElement) {
+            // eslint-disable-next-line react-hooks/immutability
+            videoElement.volume = isMuted ? 0 : volume;
+        }
+    }, [videoElement, volume, isMuted]);
+
+    // Speed Sync Effect
+    useEffect(() => {
+        if (videoElement) {
+            // eslint-disable-next-line react-hooks/immutability
+            videoElement.playbackRate = playbackSpeed;
+        }
+    }, [videoElement, playbackSpeed]);
 
     useEffect(() => {
         if (!videoElement) return;
 
         const video = videoElement;
 
-        // Sync volume/mute/speed state whenever it changes
+        // Apply current state on mount/change
         // eslint-disable-next-line react-hooks/immutability
         video.volume = isMuted ? 0 : volume;
+        // eslint-disable-next-line react-hooks/immutability
         video.playbackRate = playbackSpeed;
 
         const handleLoadedMetadata = () => {
@@ -233,7 +250,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     >
                         {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
                     </Button>
-                    <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200">
+                    <div className="w-0 overflow-hidden opacity-0 group-hover/vol:w-24 group-hover/vol:opacity-100 transition-all duration-300 ease-in-out">
                         <Slider
                             value={[isMuted ? 0 : volume]}
                             max={1}
@@ -321,6 +338,29 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         <CornersOut weight="bold" />
                     </Button>
                 )}
+
+                {isSidebar && isMaximized && (
+                    <>
+                        <Button
+                             variant="ghost"
+                             size="icon"
+                             onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+                             className="h-8 w-8 text-white hover:bg-white/20"
+                             title={isSidebarVisible ? "Hide Sidebar" : "Show Sidebar"}
+                        >
+                             {isSidebarVisible ? <SidebarSimple weight="bold" size={20} /> : <SidebarSimple weight="bold" size={20} className="opacity-50" />}
+                        </Button>
+                        <Button
+                             variant="ghost"
+                             size="icon"
+                             onClick={() => setIsMaximized(false)}
+                             className="h-8 w-8 text-white hover:bg-white/20"
+                             title="Minimize"
+                        >
+                             <CornersIn weight="bold" size={20} />
+                        </Button>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -362,82 +402,93 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                 </div>
                 
                 <div className={cn(
-                    "bg-zinc-900 flex flex-col gap-2 shrink-0 transition-all", 
+                    "bg-zinc-900 flex flex-col shrink-0 transition-all duration-300 ease-in-out", 
                     isMaximized 
-                        ? "w-80 h-full border-l border-zinc-800" 
+                        ? (isSidebarVisible ? "w-80 h-full border-l border-zinc-800 opacity-100" : "w-0 border-none opacity-0 overflow-hidden")
                         : "w-full border-t border-white/10 p-4"
                 )}>
-                    {isMaximized && renderPlayerControls(true)}
+                    <div className={cn("flex flex-col h-full min-w-[20rem]", isMaximized && "p-4")}>
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="flex-1 min-w-0">
+                                <h2 className="text-lg font-semibold text-white leading-tight truncate" title={file.name}>
+                                    {file.name}
+                                </h2>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <button
+                                        className="text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
+                                        onClick={() => {
+                                            if (videoElement) {
+                                                // eslint-disable-next-line react-hooks/immutability
+                                                videoElement.currentTime = start;
+                                                videoElement.play();
+                                            }
+                                        }}
+                                    >
+                                        {formatTime(start)} - {formatTime(end)}
+                                    </button>
 
-                    <div className={cn("flex items-center justify-between", isMaximized && "px-4 pt-2")}>
-                        <div className="flex items-center gap-3">
-                            <button
-                                className="text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
-                                onClick={() => {
-                                    if (videoElement) {
-                                        // eslint-disable-next-line react-hooks/immutability
-                                        videoElement.currentTime = start;
-                                        videoElement.play();
-                                    }
-                                }}
-                            >
-                                {formatTime(start)} - {formatTime(end)}
-                            </button>
+                                    {/* Collection Display (Static) */}
+                                    <div
+                                        className="font-bold text-sm tracking-wide uppercase transition-colors"
+                                        style={{ 
+                                            color: collection?.color 
+                                                ? (['#facc15', '#fde047', '#bef264', '#86efac'].includes(collection.color) 
+                                                    ? 'hsl(var(--primary))' // Fallback for very bright colors if needed, or maybe just let it be? 
+                                                    // The user said "overly bright highlight colors". 
+                                                    // Let's use a filter to dim it if we can, or just opacity.
+                                                    : collection.color) 
+                                                : 'hsl(var(--primary))',
+                                            filter: 'brightness(0.9)' // Slightly dim
+                                        }}
+                                    >
+                                        {collection?.name || "Uncategorized"}
+                                    </div>
+                                </div>
+                            </div>
 
-                            {/* Collection Display (Static) */}
-                            <div
-                                className="font-bold text-sm tracking-wide uppercase transition-colors"
-                                style={{ 
-                                    color: collection?.color 
-                                        ? (['#facc15', '#fde047', '#bef264', '#86efac'].includes(collection.color) 
-                                            ? 'hsl(var(--primary))' // Fallback for very bright colors if needed, or maybe just let it be? 
-                                            // The user said "overly bright highlight colors". 
-                                            // Let's use a filter to dim it if we can, or just opacity.
-                                            : collection.color) 
-                                        : 'hsl(var(--primary))',
-                                    filter: 'brightness(0.9)' // Slightly dim
-                                }}
-                            >
-                                {collection?.name || "Uncategorized"}
+                            {/* Edit & Maximize Triggers (Far Right) */}
+                            <div className="flex items-center gap-2">
+                                {/* Maximize Toggle */}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-zinc-400 hover:text-white"
+                                    onClick={() => setIsMaximized(!isMaximized)}
+                                    title={isMaximized ? "Restore" : "Maximize"}
+                                >
+                                    {isMaximized ? <ArrowsIn weight="bold" size={14} /> : <ArrowsOut weight="bold" size={14} />}
+                                </Button>
+
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-zinc-400 hover:text-white"
+                                    onClick={() => {
+                                        if (onEditHighlight) onEditHighlight();
+                                    }}
+                                    title="Edit Highlight"
+                                >
+                                    <PencilSimple weight="bold" size={14} />
+                                </Button>
                             </div>
                         </div>
 
-                        {/* Edit & Maximize Triggers (Far Right) */}
-                        <div className="flex items-center gap-2">
-                            {/* Maximize Toggle */}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-zinc-400 hover:text-white"
-                                onClick={() => setIsMaximized(!isMaximized)}
-                                title={isMaximized ? "Restore" : "Maximize"}
-                            >
-                                {isMaximized ? <ArrowsIn weight="bold" size={14} /> : <ArrowsOut weight="bold" size={14} />}
-                            </Button>
-
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-zinc-400 hover:text-white"
-                                onClick={() => {
-                                    if (onEditHighlight) onEditHighlight();
-                                }}
-                                title="Edit Highlight"
-                            >
-                                <PencilSimple weight="bold" size={14} />
-                            </Button>
+                        <div className="flex-1 flex flex-col min-h-0">
+                             <textarea
+                                value={note}
+                                onChange={handleNoteChange}
+                                onBlur={handleNoteBlur}
+                                placeholder="Add a note..."
+                                className="w-full h-full bg-transparent border-none text-zinc-200 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-white/20 rounded p-1 -ml-1 placeholder:text-zinc-600"
+                                rows={isMaximized ? undefined : 3}
+                            />
                         </div>
-                    </div>
 
-                    <div className={cn("flex-1", isMaximized && "px-4 pb-4")}>
-                         <textarea
-                            value={note}
-                            onChange={handleNoteChange}
-                            onBlur={handleNoteBlur}
-                            placeholder="Add a note..."
-                            className="w-full h-full bg-transparent border-none text-zinc-200 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-white/20 rounded p-1 -ml-1 placeholder:text-zinc-600"
-                            rows={isMaximized ? undefined : 3}
-                        />
+                        {isMaximized && (
+                            <div className="mt-4 pt-4 border-t border-white/10">
+                                {renderPlayerControls(true)}
+                            </div>
+                        )}
                     </div>
                 </div>
             </DialogContent>
