@@ -268,7 +268,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent 
-                className="!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !p-0 overflow-hidden bg-black text-white outline-none !duration-500 data-[state=open]:!slide-in-from-bottom-10 data-[state=closed]:!slide-out-to-bottom-10"
+                className="!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !p-0 overflow-hidden bg-black text-white outline-none !duration-300 data-[state=open]:!slide-in-from-bottom-10 data-[state=closed]:!slide-out-to-bottom-10"
                 showCloseButton={false}
             >
                 <div ref={containerRef} className="flex h-full w-full bg-black overflow-hidden relative group/container">
