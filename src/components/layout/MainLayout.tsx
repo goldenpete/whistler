@@ -23,13 +23,13 @@ export function MainLayout() {
                             width: "auto", 
                             opacity: 1,
                             transition: { 
-                                duration: 0.2, 
-                                ease: "easeInOut",
-                                delay: shouldDelaySidebar ? 0.3 : 0 
+                                duration: 0.15, 
+                                ease: "easeOut",
+                                delay: shouldDelaySidebar ? 0.2 : 0 
                             }
                         }}
                         exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        transition={{ duration: 0.15, ease: "easeIn" }}
                         className="h-full flex-shrink-0"
                     >
                         <Sidebar />
@@ -43,7 +43,7 @@ export function MainLayout() {
                         initial={{ opacity: 0, scale: isPlayer ? 0.95 : 1 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: isPlayer ? 0.95 : 1 }}
-                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        transition={{ duration: 0.15, ease: "easeInOut" }}
                         className="h-full w-full"
                     >
                         {currentOutlet}

@@ -361,7 +361,7 @@ export default function VideoPlayer() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
+                transition={{ duration: 0.15, ease: "easeInOut" }}
                 className="flex-1 flex flex-col relative min-w-0 group"
             >
 
