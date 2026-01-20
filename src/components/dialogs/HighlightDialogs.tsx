@@ -278,8 +278,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         
                         {/* Top Bar (Title + Close) */}
                         <div className={cn(
-                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-opacity duration-300",
-                            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-all duration-150 ease-out",
+                            showControls ? "opacity-100" : "opacity-0 pointer-events-none",
+                            isSidebarOpen ? "pr-80" : "pr-0"
                         )}>
                             <h2 className="text-white font-medium text-base truncate px-2">{file.name}</h2>
                             <Button 
@@ -311,8 +312,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
                         {/* Bottom Bar (Controls) */}
                         <div className={cn(
-                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-50 pb-4 pt-8 px-4",
-                            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-150 ease-out z-50 pb-4 pt-8 px-4",
+                            showControls ? "opacity-100" : "opacity-0 pointer-events-none",
+                            isSidebarOpen ? "pr-80" : "pr-0"
                         )}>
                             {/* Seekbar */}
                             <div className="mb-4 px-2 group/seek relative">
@@ -362,7 +364,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 </div>
 
                                 {/* Center: Time Display */}
-                                <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none">
+                                <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none transition-all duration-150 ease-out" style={{ left: isSidebarOpen ? 'calc(50% - 10rem)' : '50%' }}>
                                     {formatTime(currentTime - start)} <span className="text-white/40 mx-2">/</span> {formatTime(segmentDuration)}
                                 </div>
 
@@ -468,7 +470,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 initial={{ x: "100%" }}
                                 animate={{ x: 0 }}
                                 exit={{ x: "100%" }}
-                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
                                 className="absolute right-0 top-0 bottom-0 z-40 bg-background border-l border-border flex flex-col shrink-0 overflow-hidden w-80 shadow-2xl text-foreground"
                             >
                                 <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
