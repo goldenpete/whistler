@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -68,6 +69,7 @@ interface HighlightPlayerDialogProps {
 }
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
+    const navigate = useNavigate();
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -309,7 +311,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
                         {/* Bottom Bar (Controls) */}
                         <div className={cn(
-                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-30 pb-4 pt-8 px-4",
+                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-50 pb-4 pt-8 px-4",
                             showControls ? "opacity-100" : "opacity-0 pointer-events-none"
                         )}>
                             {/* Seekbar */}
@@ -463,24 +465,38 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     <AnimatePresence>
                         {isSidebarOpen && (
                             <motion.div
-                                initial={{ width: 0, opacity: 0 }}
-                                animate={{ width: 320, opacity: 1 }}
-                                exit={{ width: 0, opacity: 0 }}
+                                initial={{ x: "100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "100%" }}
                                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="bg-background border-l border-border flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full text-foreground"
+                                className="absolute right-0 top-0 bottom-0 z-40 bg-background border-l border-border flex flex-col shrink-0 overflow-hidden w-80 shadow-2xl text-foreground"
                             >
                                 <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
                                     <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlight Details</h3>
-                                    {hasChanges && (
-                                        <Button 
-                                            size="sm" 
-                                            onClick={handleSave}
-                                            className="h-7 px-3 text-xs gap-1.5"
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                                onOpenChange(false);
+                                                navigate(`/file/${file.id}`);
+                                            }}
+                                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                            title="View Original File"
                                         >
-                                            <FloppyDisk weight="bold" />
-                                            Save
+                                            <ArrowSquareOut weight="bold" size={18} />
                                         </Button>
-                                    )}
+                                        {hasChanges && (
+                                            <Button 
+                                                size="sm" 
+                                                onClick={handleSave}
+                                                className="h-7 px-3 text-xs gap-1.5"
+                                            >
+                                                <FloppyDisk weight="bold" />
+                                                Save
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                                 
                                 <div className="flex-1 p-4 overflow-y-auto">
