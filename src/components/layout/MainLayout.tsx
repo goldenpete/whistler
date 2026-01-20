@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { usePrevious } from "usehooks-ts";
+import { usePrevious } from "@/hooks/usePrevious";
 import Sidebar from "./Sidebar";
 
 export function MainLayout() {
