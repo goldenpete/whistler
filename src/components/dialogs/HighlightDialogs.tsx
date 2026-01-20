@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect, useRef, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import React, { useEffect, useState } from "react";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, CaretDown, PencilSimple, SpeakerHigh, SpeakerSlash, Repeat, ArrowsOut, ArrowsIn, CornersOut, Gauge } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, ArrowsOut, ArrowsIn, CornersOut, Minus, Plus } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 // --- Time Formatting Helper ---
@@ -39,7 +40,7 @@ interface HighlightPlayerDialogProps {
     onEditHighlight?: () => void; // Added
 }
 
-export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
+export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
     // Use a callback ref to handle the video element's lifecycle within the Dialog Portal
     const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -49,7 +50,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
     // New State
     const [isLooping, setIsLooping] = useState(true);
-    const [volume] = useState(1);
+    const [volume, setVolume] = useState(1);
     const [isMuted, setIsMuted] = useState(false);
 
     // Feature State
@@ -63,11 +64,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     useEffect(() => {
         if (open && highlight) {
             setNote(highlight.note || "");
+            // setCollectionId(highlight.collectionId || "null");
         }
     }, [open, highlight]);
 
     useEffect(() => {
         if (open && file && highlight && videoElement) {
+            // eslint-disable-next-line react-hooks/immutability
             videoElement.currentTime = start;
             videoElement.volume = isMuted ? 0 : volume; // Apply volume
             videoElement.playbackRate = playbackSpeed; // Apply speed
@@ -76,7 +79,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         } else {
             setIsPlaying(false);
         }
-    }, [open, file, highlight, start, videoElement]);
+    }, [open, file, highlight, start, videoElement, isMuted, volume, playbackSpeed]);
 
     useEffect(() => {
         if (!videoElement) return;
@@ -84,6 +87,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         const video = videoElement;
 
         // Sync volume/mute/speed state whenever it changes
+        // eslint-disable-next-line react-hooks/immutability
         video.volume = isMuted ? 0 : volume;
         video.playbackRate = playbackSpeed;
 
@@ -160,17 +164,6 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         setIsLooping(!isLooping);
     };
 
-    // Cycle speeds: 1 -> 1.5 -> 2 -> 0.5 -> 1
-    const toggleSpeed = () => {
-        let newSpeed = 1;
-        if (playbackSpeed === 1) newSpeed = 1.5;
-        else if (playbackSpeed === 1.5) newSpeed = 2;
-        else if (playbackSpeed === 2) newSpeed = 0.5;
-        else newSpeed = 1;
-
-        setPlaybackSpeed(newSpeed);
-    };
-
     const toggleFullscreen = () => {
         if (videoElement) {
             if (document.fullscreenElement) {
@@ -185,6 +178,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         const pct = vals[0];
         const newTime = start + ((pct / 100) * duration);
         if (videoElement) {
+            // eslint-disable-next-line react-hooks/immutability
             videoElement.currentTime = newTime;
             setCurrentTime(newTime);
             setProgress(pct);
@@ -229,10 +223,26 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     {isPlaying ? <Pause weight="fill" /> : <Play weight="fill" />}
                 </Button>
 
-                {/* Volume Toggle */}
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20" onClick={toggleMute}>
-                    {isMuted ? <SpeakerSlash weight="fill" /> : <SpeakerHigh weight="fill" />}
-                </Button>
+                {/* Volume Control */}
+                <div className="flex items-center gap-2 group/vol">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleMute}
+                        className="h-8 w-8 text-white hover:bg-white/20"
+                    >
+                        {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
+                    </Button>
+                    <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200">
+                        <Slider
+                            value={[isMuted ? 0 : volume]}
+                            max={1}
+                            step={0.05}
+                            onValueChange={(val) => setVolume(val[0])}
+                            fillColor="white"
+                        />
+                    </div>
+                </div>
 
                 {!isSidebar && (
                     <>
@@ -251,16 +261,42 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     </>
                 )}
 
-                {/* Speed Toggle */}
-                <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-auto px-2 text-white/70 hover:text-white hover:bg-white/20 font-mono text-xs"
-                    onClick={toggleSpeed}
-                    title="Playback Speed"
-                >
-                    {playbackSpeed}x
-                </Button>
+                {/* Playback Speed Popover */}
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white/70 hover:text-white hover:bg-white/20 font-mono text-xs w-16"
+                        >
+                            {playbackSpeed}x
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 bg-zinc-900 border-zinc-800 p-4" side="top">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center justify-between text-white font-mono text-xl font-medium border-b border-white/10 pb-2">
+                                <span>{playbackSpeed.toFixed(2)}x</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white" onClick={() => setPlaybackSpeed(Math.max(0.25, playbackSpeed - 0.05))}>
+                                    <Minus weight="bold" />
+                                </Button>
+                                <Slider
+                                    value={[playbackSpeed]}
+                                    min={0.25}
+                                    max={8}
+                                    step={0.05}
+                                    onValueChange={(val) => setPlaybackSpeed(val[0])}
+                                    className="flex-1"
+                                    fillColor="white"
+                                />
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white" onClick={() => setPlaybackSpeed(Math.min(8, playbackSpeed + 0.05))}>
+                                    <Plus weight="bold" />
+                                </Button>
+                            </div>
+                        </div>
+                    </PopoverContent>
+                </Popover>
 
                 {/* Loop Toggle */}
                 <Button
@@ -339,6 +375,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 className="text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors"
                                 onClick={() => {
                                     if (videoElement) {
+                                        // eslint-disable-next-line react-hooks/immutability
                                         videoElement.currentTime = start;
                                         videoElement.play();
                                     }
@@ -429,6 +466,7 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, collections
 
     useEffect(() => {
         if (open && highlight) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setNote(highlight.note || "");
             setCollectionId(highlight.collectionId || "null");
 
