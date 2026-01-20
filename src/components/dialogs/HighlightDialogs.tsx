@@ -6,16 +6,29 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import React, { useEffect, useState, useRef } from "react";
+import { Input } from "@/components/ui/input";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- Time Formatting Helper ---
+// --- Time Helper ---
 const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const parseTime = (timeStr: string) => {
+    const parts = timeStr.split(':');
+    if (parts.length === 2) {
+        const mins = parseInt(parts[0], 10);
+        const secs = parseInt(parts[1], 10);
+        if (!isNaN(mins) && !isNaN(secs)) {
+            return mins * 60 + secs;
+        }
+    }
+    return null;
 };
 
 const ExpandableNote = ({ text }: { text: string }) => {
@@ -400,17 +413,16 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 transition={{ duration: 0.3, ease: "easeInOut" }}
                                 className="bg-background border-l border-border flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full text-foreground"
                             >
-                                <div className="p-4 border-b border-border flex items-center justify-between">
+                                <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
                                     <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlight Details</h3>
-                                    {onEditHighlight && (
+                                    {hasChanges && (
                                         <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                                            onClick={onEditHighlight}
-                                            title="Edit Highlight"
+                                            size="sm" 
+                                            onClick={handleSave}
+                                            className="h-7 px-3 text-xs gap-1.5"
                                         >
-                                            <PencilSimple weight="bold" size={14} />
+                                            <FloppyDisk weight="bold" />
+                                            Save
                                         </Button>
                                     )}
                                 </div>
@@ -419,38 +431,57 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     <div className="flex flex-col gap-6">
                                         {/* Collection */}
                                         <div className="flex flex-col gap-2">
-                                            <span className="text-xs font-mono text-muted-foreground uppercase">Collection</span>
-                                            <div className="flex items-center gap-2">
-                                                <div 
-                                                    className="w-3 h-3 rounded-full shadow-sm"
-                                                    style={{ backgroundColor: collection?.color || 'var(--primary)' }}
-                                                />
-                                                <span className="text-sm font-medium">
-                                                    {collection?.name || "Uncategorized"}
-                                                </span>
-                                            </div>
+                                            <Label className="text-xs font-mono text-muted-foreground uppercase">Collection</Label>
+                                            <Select value={editCollectionId} onValueChange={setEditCollectionId}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select collection" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {collections?.map(c => (
+                                                        <SelectItem key={c.id} value={c.id}>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
+                                                                {c.name}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
 
                                         {/* Time Range */}
                                         <div className="flex flex-col gap-2">
-                                            <span className="text-xs font-mono text-muted-foreground uppercase">Time Range</span>
+                                            <Label className="text-xs font-mono text-muted-foreground uppercase">Time Range</Label>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-mono bg-secondary/50 px-2 py-1 rounded">
-                                                    {formatTime(start)}
-                                                </span>
+                                                <div className="flex-1">
+                                                    <Input 
+                                                        value={editStart} 
+                                                        onChange={(e) => setEditStart(e.target.value)}
+                                                        className="font-mono text-center"
+                                                        placeholder="MM:SS"
+                                                    />
+                                                </div>
                                                 <span className="text-muted-foreground">-</span>
-                                                <span className="text-sm font-mono bg-secondary/50 px-2 py-1 rounded">
-                                                    {formatTime(end)}
-                                                </span>
+                                                <div className="flex-1">
+                                                    <Input 
+                                                        value={editEnd} 
+                                                        onChange={(e) => setEditEnd(e.target.value)}
+                                                        className="font-mono text-center"
+                                                        placeholder="MM:SS"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Note */}
-                                        <div className="flex flex-col gap-2">
-                                            <span className="text-xs font-mono text-muted-foreground uppercase">Note</span>
-                                            <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                                                <ExpandableNote text={highlight.note} />
-                                            </div>
+                                        <div className="flex flex-col gap-2 flex-1">
+                                            <Label className="text-xs font-mono text-muted-foreground uppercase">Note</Label>
+                                            <Textarea 
+                                                value={editNote} 
+                                                onChange={(e) => setEditNote(e.target.value)} 
+                                                placeholder="Add a note..."
+                                                className="min-h-[200px] resize-none flex-1 font-normal leading-relaxed"
+                                            />
                                         </div>
                                     </div>
                                 </div>
