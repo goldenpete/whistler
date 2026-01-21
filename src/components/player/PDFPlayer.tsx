@@ -52,14 +52,23 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
 
     useEffect(() => {
         if (!containerRef.current) return;
+        let timeoutId: ReturnType<typeof setTimeout>;
+        
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 const width = entry.contentRect.width;
-                setContainerWidth(prev => Math.abs(prev - width) > 1 ? width : prev);
+                // Debounce the resize to prevent flickering
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    setContainerWidth(prev => Math.abs(prev - width) > 10 ? width : prev);
+                }, 100);
             }
         });
         observer.observe(containerRef.current);
-        return () => observer.disconnect();
+        return () => {
+            observer.disconnect();
+            clearTimeout(timeoutId);
+        };
     }, []);
 
     useEffect(() => {

@@ -548,29 +548,38 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             </Select>
                                         </div>
 
-                                        {/* Time Range */}
-                                        <div className="flex flex-col gap-2">
-                                            <Label className="text-xs font-mono text-muted-foreground uppercase">Time Range</Label>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1">
-                                                    <Input 
-                                                        value={editStart} 
-                                                        onChange={(e) => setEditStart(e.target.value)}
-                                                        className="font-mono text-center"
-                                                        placeholder="MM:SS"
-                                                    />
-                                                </div>
-                                                <span className="text-muted-foreground">-</span>
-                                                <div className="flex-1">
-                                                    <Input 
-                                                        value={editEnd} 
-                                                        onChange={(e) => setEditEnd(e.target.value)}
-                                                        className="font-mono text-center"
-                                                        placeholder="MM:SS"
-                                                    />
+                                        {/* Time Range or Highlighted Text */}
+                                        {file.name.toLowerCase().endsWith('.pdf') ? (
+                                            <div className="flex flex-col gap-2">
+                                                <Label className="text-xs font-mono text-muted-foreground uppercase">Highlighted Text</Label>
+                                                <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground italic border border-border/50 max-h-[150px] overflow-y-auto">
+                                                    "{highlight.text || 'No text selected'}"
                                                 </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                <Label className="text-xs font-mono text-muted-foreground uppercase">Time Range</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1">
+                                                        <Input 
+                                                            value={editStart} 
+                                                            onChange={(e) => setEditStart(e.target.value)}
+                                                            className="font-mono text-center"
+                                                            placeholder="MM:SS"
+                                                        />
+                                                    </div>
+                                                    <span className="text-muted-foreground">-</span>
+                                                    <div className="flex-1">
+                                                        <Input 
+                                                            value={editEnd} 
+                                                            onChange={(e) => setEditEnd(e.target.value)}
+                                                            className="font-mono text-center"
+                                                            placeholder="MM:SS"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Note */}
                                         <div className="flex flex-col gap-2 flex-1">
