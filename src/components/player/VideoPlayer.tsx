@@ -469,6 +469,8 @@ export default function VideoPlayer() {
                                 fileId={file.id}
                                 onPageChange={() => { }}
                                 onSelectionChange={setHasPdfSelection}
+                                onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                                isSidebarOpen={sidebarOpen}
                             />
                         </div>
                     ) : (
@@ -728,19 +730,17 @@ export default function VideoPlayer() {
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {file.type !== 'pdf' && (
-                                                    <button
-                                                        className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedHighlightId(h.id);
-                                                            setHighlightPlayerOpen(true);
-                                                        }}
-                                                        title="Open Highlight"
-                                                    >
-                                                        <Play weight="fill" size={10} />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedHighlightId(h.id);
+                                                        setHighlightPlayerOpen(true);
+                                                    }}
+                                                    title="Open Highlight"
+                                                >
+                                                    <Play weight="fill" size={10} />
+                                                </button>
                                                 <button
                                                     className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded"
                                                     onClick={(e) => {

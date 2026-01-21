@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo, useImperativeHandle } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
-import { CaretLeft, CaretRight, MagnifyingGlassPlus, MagnifyingGlassMinus } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, MagnifyingGlassPlus, MagnifyingGlassMinus, SidebarSimple } from '@phosphor-icons/react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useStore } from '@/store/useStore';
+import { cn } from '@/lib/utils';
 
 // Configure worker locally
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -18,6 +19,8 @@ interface PDFPlayerProps {
     initialPage?: number;
     onPageChange?: (page: number) => void;
     onSelectionChange?: (hasSelection: boolean) => void;
+    onToggleSidebar?: () => void;
+    isSidebarOpen?: boolean;
 }
 
 export interface PDFPlayerHandle {
@@ -25,7 +28,7 @@ export interface PDFPlayerHandle {
     addHighlightFromSelection: () => void;
 }
 
-export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ url, fileId, initialPage = 1, onPageChange, onSelectionChange }, ref) => {
+export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ url, fileId, initialPage = 1, onPageChange, onSelectionChange, onToggleSidebar, isSidebarOpen }, ref) => {
     const [numPages, setNumPages] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<number>(initialPage);
     const [scale, setScale] = useState<number>(1.0);
@@ -360,6 +363,24 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
                 >
                     Add Highlight
                 </Button>
+
+                {onToggleSidebar && (
+                    <>
+                        <div className="w-px h-4 bg-white/20 mx-2" />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                                "h-8 w-8 hover:bg-white/20 rounded-full transition-colors",
+                                isSidebarOpen ? "text-primary bg-white/10" : "text-white"
+                            )}
+                            onClick={onToggleSidebar}
+                            title="Toggle Sidebar"
+                        >
+                            <SidebarSimple size={18} weight="bold" />
+                        </Button>
+                    </>
+                )}
             </div>
         </div>
     );

@@ -327,130 +327,139 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         <div className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-200 ease-out z-50 pb-4 pt-8 px-4",
                             showControls ? "opacity-100" : "opacity-0 pointer-events-none",
-                            isSidebarOpen ? "pr-80" : "pr-0",
-                            file.name.toLowerCase().endsWith('.pdf') && "hidden"
+                            isSidebarOpen ? "pr-80" : "pr-0"
                         )}>
-                            {/* Seekbar */}
-                            <div className="mb-4 px-2 group/seek relative">
-                                <Slider
-                                    value={[progress]}
-                                    min={0}
-                                    max={100}
-                                    step={0.1}
-                                    onValueChange={handleSeek}
-                                    className="cursor-pointer"
-                                    fillColor={collection?.color}
-                                />
-                            </div>
+                            {/* Seekbar - Video Only */}
+                            {!file.name.toLowerCase().endsWith('.pdf') && (
+                                <div className="mb-4 px-2 group/seek relative">
+                                    <Slider
+                                        value={[progress]}
+                                        min={0}
+                                        max={100}
+                                        step={0.1}
+                                        onValueChange={handleSeek}
+                                        className="cursor-pointer"
+                                        fillColor={collection?.color}
+                                    />
+                                </div>
+                            )}
 
                             {/* Controls Row */}
                             <div className="flex items-center justify-between px-2">
-                                {/* Left: Play/Pause, Volume */}
-                                <div className="flex items-center gap-4">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                                        className="h-8 w-8 rounded-md bg-white/10 hover:bg-white/20 text-white"
-                                    >
-                                        {isPlaying ? <Pause weight="fill" size={18} /> : <Play weight="fill" size={18} />}
-                                    </Button>
-
-                                    <div className="flex items-center gap-2 group/vol">
+                                {/* Left: Play/Pause, Volume - Video Only */}
+                                {file.name.toLowerCase().endsWith('.pdf') ? <div /> : (
+                                    <div className="flex items-center gap-4">
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                            className="text-zinc-400 hover:text-white"
+                                            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                                            className="h-8 w-8 rounded-md bg-white/10 hover:bg-white/20 text-white"
                                         >
-                                            {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
+                                            {isPlaying ? <Pause weight="fill" size={18} /> : <Play weight="fill" size={18} />}
                                         </Button>
-                                        <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200">
-                                            <Slider
-                                                value={[isMuted ? 0 : volume]}
-                                                max={1}
-                                                step={0.05}
-                                                onValueChange={(val) => setVolume(val[0])}
-                                                fillColor="white"
-                                            />
+
+                                        <div className="flex items-center gap-2 group/vol">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                                className="text-zinc-400 hover:text-white"
+                                            >
+                                                {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
+                                            </Button>
+                                            <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200">
+                                                <Slider
+                                                    value={[isMuted ? 0 : volume]}
+                                                    max={1}
+                                                    step={0.05}
+                                                    onValueChange={(val) => setVolume(val[0])}
+                                                    fillColor="white"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
-                                {/* Center: Time Display */}
-                                <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none transition-all duration-150 ease-out" style={{ left: isSidebarOpen ? 'calc(50% - 10rem)' : '50%' }}>
-                                    {formatTime(currentTime - start)} <span className="text-white/40 mx-2">/</span> {formatTime(segmentDuration)}
-                                </div>
+                                {/* Center: Time Display - Video Only */}
+                                {!file.name.toLowerCase().endsWith('.pdf') && (
+                                    <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none transition-all duration-150 ease-out" style={{ left: isSidebarOpen ? 'calc(50% - 10rem)' : '50%' }}>
+                                        {formatTime(currentTime - start)} <span className="text-white/40 mx-2">/</span> {formatTime(segmentDuration)}
+                                    </div>
+                                )}
 
                                 {/* Right: Speed, Loop, Sidebar Toggle, Fullscreen */}
                                 <div className="flex items-center gap-3">
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        onClick={(e) => { e.stopPropagation(); setIsLooping(!isLooping); }}
-                                        className={cn("text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
-                                        title={isLooping ? "Loop On" : "Loop Off"}
-                                    >
-                                        <Repeat weight="bold" size={20} />
-                                    </Button>
-
-                                    <Popover>
-                                        <PopoverTrigger asChild>
+                                    {!file.name.toLowerCase().endsWith('.pdf') && (
+                                        <>
                                             <Button
+                                                size="icon"
                                                 variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="text-muted-foreground hover:text-foreground font-mono text-xs w-16"
+                                                onClick={(e) => { e.stopPropagation(); setIsLooping(!isLooping); }}
+                                                className={cn("text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
+                                                title={isLooping ? "Loop On" : "Loop Off"}
                                             >
-                                                {playbackSpeed}x
+                                                <Repeat weight="bold" size={20} />
                                             </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-64 bg-popover border-border p-4" side="top">
-                                            <div className="flex flex-col gap-4">
-                                                <div className="flex items-center justify-between text-foreground font-mono text-xl font-medium border-b border-border pb-2">
-                                                    <span>{playbackSpeed.toFixed(2)}x</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackSpeed(Math.max(0.25, playbackSpeed - 0.05))}>
-                                                        <Minus weight="bold" />
-                                                    </Button>
-                                                    <Slider
-                                                        value={[playbackSpeed]}
-                                                        min={0.25}
-                                                        max={8}
-                                                        step={0.05}
-                                                        onValueChange={(val) => setPlaybackSpeed(val[0])}
-                                                        className="flex-1"
-                                                    />
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackSpeed(Math.min(8, playbackSpeed + 0.05))}>
-                                                        <Plus weight="bold" />
-                                                    </Button>
-                                                </div>
-                                                <div className="grid grid-cols-4 gap-2">
-                                                    {[0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 8.0].map((rate) => (
-                                                        <button
-                                                            key={rate}
-                                                            onClick={() => setPlaybackSpeed(rate)}
-                                                            className={cn(
-                                                                "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
-                                                                playbackSpeed === rate
-                                                                    ? "bg-primary/10 text-primary border-primary/50"
-                                                                    : "bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground"
-                                                            )}
-                                                        >
-                                                            {rate}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
 
-                                    <Button variant="ghost" size="icon" onClick={togglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
-                                        <GridFour weight="bold" size={20} />
-                                    </Button>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="text-muted-foreground hover:text-foreground font-mono text-xs w-16"
+                                                    >
+                                                        {playbackSpeed}x
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-64 bg-popover border-border p-4" side="top">
+                                                    <div className="flex flex-col gap-4">
+                                                        <div className="flex items-center justify-between text-foreground font-mono text-xl font-medium border-b border-border pb-2">
+                                                            <span>{playbackSpeed.toFixed(2)}x</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackSpeed(Math.max(0.25, playbackSpeed - 0.05))}>
+                                                                <Minus weight="bold" />
+                                                            </Button>
+                                                            <Slider
+                                                                value={[playbackSpeed]}
+                                                                min={0.25}
+                                                                max={8}
+                                                                step={0.05}
+                                                                onValueChange={(val) => setPlaybackSpeed(val[0])}
+                                                                className="flex-1"
+                                                            />
+                                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackSpeed(Math.min(8, playbackSpeed + 0.05))}>
+                                                                <Plus weight="bold" />
+                                                            </Button>
+                                                        </div>
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            {[0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 8.0].map((rate) => (
+                                                                <button
+                                                                    key={rate}
+                                                                    onClick={() => setPlaybackSpeed(rate)}
+                                                                    className={cn(
+                                                                        "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
+                                                                        playbackSpeed === rate
+                                                                            ? "bg-primary/10 text-primary border-primary/50"
+                                                                            : "bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground"
+                                                                    )}
+                                                                >
+                                                                    {rate}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
 
-                                    <div className="w-px h-5 bg-white/20 mx-1" />
+                                            <Button variant="ghost" size="icon" onClick={togglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
+                                                <GridFour weight="bold" size={20} />
+                                            </Button>
+
+                                            <div className="w-px h-5 bg-white/20 mx-1" />
+                                        </>
+                                    )}
 
                                     <Button
                                         variant="ghost"
