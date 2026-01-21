@@ -9,9 +9,10 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut, FilePdf } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { PDFPlayer } from "@/components/player/PDFPlayer";
 
 // --- Time Helper ---
 const formatTime = (seconds: number) => {
@@ -278,7 +279,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         
                         {/* Top Bar (Title + Close) */}
                         <div className={cn(
-                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-all duration-150 ease-out",
+                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-all duration-200 ease-out",
                             showControls ? "opacity-100" : "opacity-0 pointer-events-none",
                             isSidebarOpen ? "pr-80" : "pr-0"
                         )}>
@@ -296,25 +297,38 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         {/* Video Stage */}
                         <div 
                             className="flex-1 flex items-center justify-center relative overflow-hidden cursor-pointer"
-                            onClick={togglePlay}
+                            onClick={file.name.toLowerCase().endsWith('.pdf') ? undefined : togglePlay}
                         >
-                            <video
-                                ref={videoRef}
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                src={(file as any).webkitRelativePath || (file as any).url || ""}
-                                className="max-w-full max-h-full object-contain focus:outline-none"
-                                onPlay={() => setIsPlaying(true)}
-                                onPause={() => setIsPlaying(false)}
-                                onTimeUpdate={handleTimeUpdate}
-                                autoPlay
-                            />
+                            {file.name.toLowerCase().endsWith('.pdf') ? (
+                                <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+                                    <PDFPlayer
+                                        url={(file as any).url || ""}
+                                        fileId={file.id}
+                                        initialPage={highlight.start}
+                                        onPageChange={() => {}} // Read-only view for highlight
+                                        onSelectionChange={() => {}}
+                                    />
+                                </div>
+                            ) : (
+                                <video
+                                    ref={videoRef}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    src={(file as any).webkitRelativePath || (file as any).url || ""}
+                                    className="max-w-full max-h-full object-contain focus:outline-none"
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                    onTimeUpdate={handleTimeUpdate}
+                                    autoPlay
+                                />
+                            )}
                         </div>
 
                         {/* Bottom Bar (Controls) */}
                         <div className={cn(
-                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-150 ease-out z-50 pb-4 pt-8 px-4",
+                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-200 ease-out z-50 pb-4 pt-8 px-4",
                             showControls ? "opacity-100" : "opacity-0 pointer-events-none",
-                            isSidebarOpen ? "pr-80" : "pr-0"
+                            isSidebarOpen ? "pr-80" : "pr-0",
+                            file.name.toLowerCase().endsWith('.pdf') && "hidden"
                         )}>
                             {/* Seekbar */}
                             <div className="mb-4 px-2 group/seek relative">
@@ -477,17 +491,18 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlight Details</h3>
                                     <div className="flex items-center gap-2">
                                         <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => {
-                                                onOpenChange(false);
-                                                navigate(`/file/${file.id}`);
-                                            }}
-                                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                            title="View Original File"
-                                        >
-                                            <ArrowSquareOut weight="bold" size={18} />
-                                        </Button>
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            onOpenChange(false);
+                                            navigate(`/file/${file.id}`);
+                                        }}
+                                        className="h-7 gap-2 text-muted-foreground hover:text-foreground px-2"
+                                        title="View Original File"
+                                    >
+                                        <ArrowSquareOut weight="bold" size={16} />
+                                        <span className="text-xs font-medium">View Original</span>
+                                    </Button>
                                         {hasChanges && (
                                             <Button 
                                                 size="sm" 
