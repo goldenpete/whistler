@@ -305,6 +305,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         url={(file as any).url || ""}
                                         fileId={file.id}
                                         initialPage={highlight.start}
+                                        lockedPage={highlight.start}
                                         onPageChange={() => {}} // Read-only view for highlight
                                         onSelectionChange={() => {}}
                                     />

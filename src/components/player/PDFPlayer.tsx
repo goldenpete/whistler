@@ -17,6 +17,7 @@ interface PDFPlayerProps {
     url: string;
     fileId: string;
     initialPage?: number;
+    lockedPage?: number;
     onPageChange?: (page: number) => void;
     onSelectionChange?: (hasSelection: boolean) => void;
     onToggleSidebar?: () => void;
@@ -28,7 +29,7 @@ export interface PDFPlayerHandle {
     addHighlightFromSelection: () => void;
 }
 
-export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ url, fileId, initialPage = 1, onPageChange, onSelectionChange, onToggleSidebar, isSidebarOpen }, ref) => {
+export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ url, fileId, initialPage = 1, lockedPage, onPageChange, onSelectionChange, onToggleSidebar, isSidebarOpen }, ref) => {
     const [numPages, setNumPages] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<number>(initialPage);
     const [scale, setScale] = useState<number>(1.0);
@@ -54,7 +55,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 const width = entry.contentRect.width;
-                setContainerWidth(width);
+                setContainerWidth(prev => Math.abs(prev - width) > 1 ? width : prev);
             }
         });
         observer.observe(containerRef.current);
@@ -62,8 +63,12 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
     }, []);
 
     useEffect(() => {
-        if (initialPage) setPageNumber(initialPage);
-    }, [initialPage]);
+        if (lockedPage) {
+            setPageNumber(lockedPage);
+        } else if (initialPage) {
+            setPageNumber(initialPage);
+        }
+    }, [initialPage, lockedPage]);
 
     useEffect(() => {
         const handleSelectionChange = () => {
@@ -321,31 +326,35 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
             </div>
 
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-2xl transition-opacity opacity-0 group-hover:opacity-100 z-50">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
-                    onClick={() => changePage(-1)}
-                    disabled={pageNumber <= 1}
-                >
-                    <CaretLeft size={18} />
-                </Button>
+                {!lockedPage && (
+                    <>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
+                            onClick={() => changePage(-1)}
+                            disabled={pageNumber <= 1}
+                        >
+                            <CaretLeft size={18} />
+                        </Button>
 
-                <span className="text-white text-sm font-medium min-w-[60px] text-center font-mono">
-                    {pageNumber} / {numPages || '--'}
-                </span>
+                        <span className="text-white text-sm font-medium min-w-[60px] text-center font-mono">
+                            {pageNumber} / {numPages || '--'}
+                        </span>
 
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
-                    onClick={() => changePage(1)}
-                    disabled={pageNumber >= numPages}
-                >
-                    <CaretRight size={18} />
-                </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
+                            onClick={() => changePage(1)}
+                            disabled={pageNumber >= numPages}
+                        >
+                            <CaretRight size={18} />
+                        </Button>
 
-                <div className="w-px h-4 bg-white/20 mx-2" />
+                        <div className="w-px h-4 bg-white/20 mx-2" />
+                    </>
+                )}
 
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 rounded-full" onClick={() => setScale(s => Math.max(0.5, s - 0.1))}>
                     <MagnifyingGlassMinus size={16} />
