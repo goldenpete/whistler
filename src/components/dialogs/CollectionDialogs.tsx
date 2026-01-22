@@ -201,6 +201,9 @@ export function EditCollectionDialog({ open, onOpenChange, collection, onSubmit 
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
                     <DialogTitle>Edit Collection</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Update your collection details.
+                    </DialogDescription>
                 </DialogHeader>
                 {/* Use key to force re-render when collection changes */}
                 <CollectionForm

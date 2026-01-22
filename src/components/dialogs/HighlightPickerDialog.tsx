@@ -4,6 +4,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -103,9 +104,12 @@ export function HighlightPickerDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg bg-zinc-950 border-zinc-800 text-white">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col p-0 gap-0 bg-zinc-900 border-zinc-800">
+                <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
                     <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Select a highlight from the list below.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex gap-4 py-2">

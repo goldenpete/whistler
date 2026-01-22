@@ -6,6 +6,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
@@ -60,6 +61,9 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
                         <ClockCounterClockwise weight="bold" />
                         History
                     </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        View your recent activity history.
+                    </DialogDescription>
                     {history.length > 0 && (
                         <button
                             onClick={clearHistory}

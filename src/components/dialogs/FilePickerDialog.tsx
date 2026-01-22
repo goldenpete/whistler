@@ -5,6 +5,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -114,9 +115,12 @@ export function FilePickerDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
+            <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col p-0 gap-0 bg-zinc-900 border-zinc-800">
+                <DialogHeader className="p-4 border-b border-white/10 flex flex-row items-center justify-between space-y-0">
+                    <DialogTitle className="text-lg font-medium">{title}</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Select a file from your storage.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-2 py-2">

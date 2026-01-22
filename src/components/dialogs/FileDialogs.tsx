@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +34,9 @@ export function EditFileDialog({ open, onOpenChange, file, onSave }: EditFileDia
             <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
                     <DialogTitle>Edit File Details</DialogTitle>
+                    <DialogDescription>
+                        Update the name and description of your file.
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">

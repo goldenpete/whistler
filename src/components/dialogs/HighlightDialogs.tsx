@@ -614,7 +614,7 @@ interface EditHighlightDialogProps {
     onSave: (updates: Partial<Highlight>) => void;
 }
 
-export function EditHighlightDialog({ open, onOpenChange, highlight, collections, onSave }: EditHighlightDialogProps) {
+export function EditHighlightDialog({ open, onOpenChange, highlight, file, collections, onSave }: EditHighlightDialogProps) {
     const [note, setNote] = useState("");
     const [collectionId, setCollectionId] = useState("");
     const [startTime, setStartTime] = useState("");
@@ -634,15 +634,27 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, collections
         const endSecs = parseTime(endTime);
 
         if (startSecs === null || endSecs === null || startSecs < 0 || endSecs <= startSecs) {
-            return;
+            // For PDF (text highlight), time might not be editable or relevant in the same way,
+            // but we keep the validation for now if we use start/end.
+            // If it's a PDF, we might not change start/end here.
         }
 
         const updates: Partial<Highlight> = {
             note,
             collectionId,
-            start: startSecs,
-            end: endSecs
         };
+
+        // Only update time if not PDF or if user edited it?
+        // Actually, for PDF, we probably don't want to edit start/end via text inputs.
+        // But the dialog is generic.
+        // Let's rely on the conditional UI.
+        
+        if (!file?.name.toLowerCase().endsWith('.pdf')) {
+             if (startSecs !== null && endSecs !== null && startSecs >= 0 && endSecs > startSecs) {
+                updates.start = startSecs;
+                updates.end = endSecs;
+             }
+        }
 
         onSave(updates);
         onOpenChange(false);
@@ -676,24 +688,35 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, collections
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label>Start Time</Label>
-                            <Input 
-                                value={startTime} 
-                                onChange={(e) => setStartTime(e.target.value)}
-                                placeholder="MM:SS"
-                            />
+
+                    {file?.name.toLowerCase().endsWith('.pdf') ? (
+                         <div className="grid gap-2">
+                            <Label>Highlighted Text</Label>
+                            <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground italic border border-border/50 max-h-[150px] overflow-y-auto">
+                                "{highlight?.text || 'No text selected'}"
+                            </div>
                         </div>
-                        <div className="grid gap-2">
-                            <Label>End Time</Label>
-                            <Input 
-                                value={endTime} 
-                                onChange={(e) => setEndTime(e.target.value)}
-                                placeholder="MM:SS"
-                            />
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Start Time</Label>
+                                <Input 
+                                    value={startTime} 
+                                    onChange={(e) => setStartTime(e.target.value)}
+                                    placeholder="MM:SS"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>End Time</Label>
+                                <Input 
+                                    value={endTime} 
+                                    onChange={(e) => setEndTime(e.target.value)}
+                                    placeholder="MM:SS"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
+
                     <div className="grid gap-2">
                         <Label>Note</Label>
                         <Textarea 

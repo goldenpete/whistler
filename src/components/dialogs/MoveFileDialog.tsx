@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
@@ -89,6 +89,9 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Move to...</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Select a destination folder for your selection.
+                    </DialogDescription>
                 </DialogHeader>
                 
                 {/* Storage Tabs */}

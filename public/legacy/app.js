@@ -733,6 +733,7 @@ function renderSidebarFiles() {
 
 function renderSidebarCollections() {
     // Re-fetch list to ensure freshness
+    /*
     const list = document.getElementById('collection-list');
     if (!list) {
         console.error("Collection list element not found");
@@ -756,6 +757,7 @@ function renderSidebarCollections() {
         };
         list.appendChild(li);
     });
+    */
 }
 // Side note: Need to ensure new Add Collection button logic is hooked up in init.
 

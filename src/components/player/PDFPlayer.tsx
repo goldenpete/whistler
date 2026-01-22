@@ -38,6 +38,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [selectedText, setSelectedText] = useState<string>("");
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+    const isFirstResize = useRef(true);
 
     const { addHighlight, activeCollectionId, highlights } = useStore();
 
@@ -57,11 +58,17 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 const width = entry.contentRect.width;
-                // Debounce the resize to prevent flickering
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => {
-                    setContainerWidth(prev => Math.abs(prev - width) > 10 ? width : prev);
-                }, 100);
+                
+                if (isFirstResize.current) {
+                    setContainerWidth(width);
+                    isFirstResize.current = false;
+                } else {
+                    // Debounce subsequent resizes to prevent flickering
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        setContainerWidth(prev => Math.abs(prev - width) > 10 ? width : prev);
+                    }, 100);
+                }
             }
         });
         observer.observe(containerRef.current);
@@ -280,7 +287,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
     const loadingHeight = aspectRatio ? effectiveWidth / aspectRatio : 800;
 
     return (
-        <div className="flex flex-col h-full bg-transparent relative group" ref={containerRef}>
+        <div className="flex flex-col h-full min-h-[400px] bg-transparent relative group" ref={containerRef}>
             <div className="flex-1 overflow-auto flex justify-center p-4">
                 {hasError ? (
                     <div className="flex items-center justify-center h-full text-red-200 text-sm">
@@ -292,11 +299,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
                         onLoadSuccess={onDocumentLoadSuccess}
                         onLoadError={() => setHasError(true)}
                         className="box-shadow-xl"
-                        loading={
-                            <div className="flex items-center justify-center h-full text-white">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                            </div>
-                        }
+                        loading={null}
                     >
                         <div className="relative" ref={pageWrapperRef}>
                             <Page
@@ -307,9 +310,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
                                 onLoadSuccess={onPageLoadSuccess}
                                 className="bg-transparent"
                                 loading={
-                                    <div className="flex items-center justify-center text-white/20" style={{ height: loadingHeight }}>
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/20"></div>
-                                    </div>
+                                    <div className="w-full" style={{ height: loadingHeight }} />
                                 }
                             />
                             {/* Overlay Highlight Layer */}
