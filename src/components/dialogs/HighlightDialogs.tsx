@@ -306,6 +306,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 <div className="w-full h-full flex items-center justify-center bg-zinc-950">
                                     {file.url ? (
                                         <PDFPlayer
+                                            key={file.id} // Force new instance for each file to prevent state carry-over
                                             url={file.url}
                                             fileId={file.id}
                                             highlightId={highlight.id}

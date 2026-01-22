@@ -57,6 +57,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const [pageNumber, setPageNumber] = useState<number>(initialPage);
     const [scale, setScale] = useState<number>(1.0);
     const [hasError, setHasError] = useState(false);
+    const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [selectedText, setSelectedText] = useState<string>("");
     
@@ -100,7 +101,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         return () => observer.disconnect();
     }, []);
 
-    // 2. Initial Page Sync
+    // 2. Initial Page Sync and URL change reset
     useEffect(() => {
         if (lockedPage) {
             setPageNumber(lockedPage);
@@ -108,6 +109,12 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             setPageNumber(initialPage);
         }
     }, [initialPage, lockedPage]);
+
+    useEffect(() => {
+        setLoadedUrl(null);
+        setNumPages(0);
+        setHasError(false);
+    }, [url]);
 
     // 3. Selection Listener (Only if not readonly)
     useEffect(() => {
@@ -296,7 +303,11 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                     <Document
                         key={url} // Force remount when URL changes
                         file={url}
-                        onLoadSuccess={({ numPages }) => { setNumPages(numPages); setHasError(false); }}
+                        onLoadSuccess={({ numPages }) => { 
+                            setNumPages(numPages); 
+                            setHasError(false); 
+                            setLoadedUrl(url);
+                        }}
                         onLoadError={(err) => {
                             console.error("PDF Load Error:", err);
                             setHasError(true);
@@ -314,43 +325,48 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         }
                         className="flex justify-center shadow-2xl"
                     >
-                        <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
-                            <Page
-                                pageNumber={pageNumber}
-                                width={effectiveWidth}
-                                renderTextLayer={true}
-                                renderAnnotationLayer={true}
-                                className="bg-white"
-                                onLoadSuccess={updateHighlights}
-                                loading={
-                                    <div 
-                                        style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
-                                        className="bg-white/10 animate-pulse" 
-                                    />
-                                }
-                                error={
-                                    <div className="flex items-center justify-center h-64 text-red-400">
-                                        Error rendering page {pageNumber}
-                                    </div>
-                                }
-                            />
-                            
-                            {/* Highlight Overlay Layer */}
-                            <div className="absolute inset-0 pointer-events-none z-10">
-                                {highlightRects.map((rect, i) => (
-                                    <div
-                                        key={i}
-                                        className="absolute bg-yellow-400/30 mix-blend-multiply border-b-2 border-yellow-500/50"
-                                        style={{
-                                            left: rect.x,
-                                            top: rect.y,
-                                            width: rect.width,
-                                            height: rect.height,
-                                        }}
-                                    />
-                                ))}
+                        {loadedUrl === url && (
+                            <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
+                                <Page
+                                    pageNumber={pageNumber}
+                                    width={effectiveWidth}
+                                    renderTextLayer={true}
+                                    renderAnnotationLayer={true}
+                                    className="bg-white"
+                                    onLoadSuccess={updateHighlights}
+                                    onRenderError={() => {}}
+                                    onGetTextError={() => {}}
+                                    onGetAnnotationsError={() => {}}
+                                    loading={
+                                        <div 
+                                            style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
+                                            className="bg-white/10 animate-pulse" 
+                                        />
+                                    }
+                                    error={
+                                        <div className="flex items-center justify-center h-64 text-red-400">
+                                            Error rendering page {pageNumber}
+                                        </div>
+                                    }
+                                />
+                                
+                                {/* Highlight Overlay Layer */}
+                                <div className="absolute inset-0 pointer-events-none z-10">
+                                    {highlightRects.map((rect, i) => (
+                                        <div
+                                            key={i}
+                                            className="absolute bg-yellow-400/30 mix-blend-multiply border-b-2 border-yellow-500/50"
+                                            style={{
+                                                left: rect.x,
+                                                top: rect.y,
+                                                width: rect.width,
+                                                height: rect.height,
+                                            }}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </Document>
                 )}
             </div>

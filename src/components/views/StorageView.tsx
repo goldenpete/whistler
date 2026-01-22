@@ -853,6 +853,12 @@ function FileThumbnail({ file, iconSize }: { file: File, iconSize: number }) {
 }
 
 function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
+    const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        setLoadedUrl(null);
+    }, [url]);
+
     return (
         <div className="w-full h-full flex items-center justify-center bg-muted overflow-hidden">
             <Document
@@ -862,6 +868,7 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
                         Loading PDF...
                     </div>
                 }
+                onLoadSuccess={() => setLoadedUrl(url)}
                 onLoadError={() => onError()}
                 options={{
                     cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
@@ -869,12 +876,17 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
                     verbosity: 0
                 }}
             >
-                <Page
-                    pageNumber={1}
-                    width={160}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                />
+                {loadedUrl === url && (
+                    <Page
+                        pageNumber={1}
+                        width={160}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                        onRenderError={() => {}}
+                        onGetTextError={() => {}}
+                        onGetAnnotationsError={() => {}}
+                    />
+                )}
             </Document>
         </div>
     );
