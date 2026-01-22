@@ -8,10 +8,9 @@ import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
 
 // Configure worker locally
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface PDFPlayerProps {
     url: string;
