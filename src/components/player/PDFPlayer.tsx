@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo, useImperativeHandle } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
+import { Document, Page } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { 
     CaretLeft, 
     CaretRight, 
     MagnifyingGlassPlus, 
     MagnifyingGlassMinus, 
-    ArrowsOutSimple, 
-    CornersIn,
     SidebarSimple
 } from '@phosphor-icons/react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -16,9 +14,7 @@ import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 
-// Configure worker locally with stable import
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+// Note: Worker is configured globally in src/pdf-worker.ts
 
 export interface PDFPlayerHandle {
     jumpToPage: (page: number) => void;
@@ -62,7 +58,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [selectedText, setSelectedText] = useState<string>("");
     
-    // Use debounce for resizing to prevent flickering
+    // Use debounce for resizing to prevent flickering and excessive re-renders
     const [debouncedWidth] = useDebounceValue(containerWidth, 100);
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -88,7 +84,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
-                setContainerWidth(entry.contentRect.width);
+                if (entry.contentRect.width > 0) {
+                    setContainerWidth(entry.contentRect.width);
+                }
             }
         });
         
@@ -280,18 +278,30 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             {/* Main Document Area */}
             <div className="flex-1 overflow-auto flex justify-center p-4 custom-scrollbar">
                 {hasError ? (
-                    <div className="flex flex-col items-center justify-center text-red-400 gap-2">
-                        <span>Failed to load PDF</span>
-                        <Button variant="outline" size="sm" onClick={() => setHasError(false)}>Retry</Button>
+                    <div className="flex flex-col items-center justify-center text-red-400 gap-2 h-full">
+                        <span className="text-lg font-medium">Unable to load PDF</span>
+                        <span className="text-sm text-white/50">The worker may have been terminated or the file is corrupted.</span>
+                        <Button variant="outline" size="sm" onClick={() => { setHasError(false); window.location.reload(); }}>
+                            Reload Application
+                        </Button>
                     </div>
                 ) : (
                     <Document
+                        key={url} // Force remount when URL changes
                         file={url}
                         onLoadSuccess={({ numPages }) => { setNumPages(numPages); setHasError(false); }}
-                        onLoadError={() => setHasError(true)}
-                        options={{ verbosity: 0 }}
+                        onLoadError={(err) => {
+                            console.error("PDF Load Error:", err);
+                            setHasError(true);
+                        }}
+                        options={{ 
+                            cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
+                            cMapPacked: true,
+                            verbosity: 0 
+                        }}
                         loading={
                             <div className="flex items-center justify-center h-64 text-muted-foreground">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-2"></div>
                                 Loading PDF...
                             </div>
                         }
@@ -310,6 +320,11 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                         style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
                                         className="bg-white/10 animate-pulse" 
                                     />
+                                }
+                                error={
+                                    <div className="flex items-center justify-center h-64 text-red-400">
+                                        Error rendering page {pageNumber}
+                                    </div>
                                 }
                             />
                             

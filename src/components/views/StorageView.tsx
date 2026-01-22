@@ -47,14 +47,11 @@ import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import type { File } from "@/types";
 import { Input } from "@/components/ui/input";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { Document, Page, pdfjs } from "react-pdf";
+import { Document, Page } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
-).toString();
+
 
 export default function StorageView() {
     const {
@@ -866,6 +863,11 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
                     </div>
                 }
                 onLoadError={() => onError()}
+                options={{
+                    cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
+                    cMapPacked: true,
+                    verbosity: 0
+                }}
             >
                 <Page
                     pageNumber={1}
