@@ -308,6 +308,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         <PDFPlayer
                                             url={file.url}
                                             fileId={file.id}
+                                            highlightId={highlight.id}
                                             initialPage={highlight.start}
                                             // We don't lock page so user can see context, but we start at highlight
                                             readonly={true} 

@@ -26,6 +26,7 @@ export interface PDFPlayerHandle {
 interface PDFPlayerProps {
     url: string;
     fileId: string;
+    highlightId?: string; // If provided, only this highlight will be shown
     initialPage?: number;
     lockedPage?: number; // If set, user cannot change page (for single-page view)
     readonly?: boolean; // If true, selection is disabled
@@ -40,8 +41,9 @@ interface PDFPlayerProps {
 export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ 
     url, 
     fileId, 
+    highlightId,
     initialPage = 1, 
-    lockedPage, 
+    lockedPage,  
     readonly = false,
     onPageChange, 
     onSelectionChange, 
@@ -70,8 +72,12 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     // --- Derived State ---
     // Filter highlights for the current page
     const pageHighlights = useMemo(() => 
-        highlights.filter(h => h.fileId === fileId && h.start === pageNumber),
-        [highlights, fileId, pageNumber]
+        highlights.filter(h => 
+            h.fileId === fileId && 
+            h.start === pageNumber &&
+            (!highlightId || h.id === highlightId)
+        ),
+        [highlights, fileId, pageNumber, highlightId]
     );
 
     const [highlightRects, setHighlightRects] = useState<{ x: number, y: number, width: number, height: number }[]>([]);
@@ -133,8 +139,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     }, [pageNumber, scale, pageHighlights, debouncedWidth]);
 
     // --- Logic ---
-
-    const updateHighlights = () => {
+    
+    // Wrap updateHighlights in useCallback to prevent re-creation on every render
+    const updateHighlights = React.useCallback(() => {
         if (!pageWrapperRef.current) return;
         const textLayer = pageWrapperRef.current.querySelector('.react-pdf__Page__textContent');
         if (!textLayer) return; // Not ready yet
@@ -202,7 +209,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         });
 
         setHighlightRects(newRects);
-    };
+    }, [pageHighlights]);
 
     const handleAddHighlight = () => {
         if (!selectedText || readonly) return;
