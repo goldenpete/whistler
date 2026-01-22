@@ -272,6 +272,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                 className="!w-screen !h-screen !max-w-none !max-h-screen !border-none !rounded-none !p-0 overflow-hidden bg-black text-white outline-none !duration-200 data-[state=open]:!slide-in-from-bottom-10 data-[state=closed]:!slide-out-to-bottom-10"
                 showCloseButton={false}
             >
+                <DialogDescription className="sr-only">
+                    Media player for {file.name}
+                </DialogDescription>
                 <div ref={containerRef} className="flex h-full w-full bg-black overflow-hidden relative group/container">
                     
                     {/* Player Area */}
@@ -283,7 +286,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             showControls ? "opacity-100" : "opacity-0 pointer-events-none",
                             isSidebarOpen ? "pr-80" : "pr-0"
                         )}>
-                            <h2 className="text-white font-medium text-base truncate px-2">{file.name}</h2>
+                            <DialogTitle className="text-white font-medium text-base truncate px-2">{file.name}</DialogTitle>
                             <Button 
                                 variant="ghost" 
                                 size="icon" 

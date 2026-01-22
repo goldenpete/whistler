@@ -294,11 +294,14 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
                         Failed to load PDF.
                     </div>
                 ) : (
-            <Document
+                    <Document
                         file={url}
                         onLoadSuccess={onDocumentLoadSuccess}
                         onLoadError={() => setHasError(true)}
-                        className="box-shadow-xl"
+                        options={{
+                            verbosity: 0,
+                        }}
+                        className="flex justify-center box-shadow-xl"
                         loading={null}
                     >
                         <div className="relative" ref={pageWrapperRef}>
