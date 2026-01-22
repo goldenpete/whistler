@@ -303,15 +303,18 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             onClick={file.name.toLowerCase().endsWith('.pdf') ? undefined : togglePlay}
                         >
                             {file.name.toLowerCase().endsWith('.pdf') ? (
-                                <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+                                <div className="w-full h-full flex items-center justify-center bg-zinc-950">
                                     {file.url ? (
                                         <PDFPlayer
                                             url={file.url}
                                             fileId={file.id}
                                             initialPage={highlight.start}
-                                            lockedPage={highlight.start}
-                                            onPageChange={() => {}} // Read-only view for highlight
+                                            // We don't lock page so user can see context, but we start at highlight
+                                            readonly={true} 
+                                            onPageChange={() => {}} 
                                             onSelectionChange={() => {}}
+                                            className="w-full h-full"
+                                            showSidebarToggle={false}
                                         />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
@@ -337,7 +340,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         {/* Bottom Bar (Controls) */}
                         <div className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-200 ease-out z-50 pb-4 pt-8 px-4",
-                            showControls ? "opacity-100" : "opacity-0 pointer-events-none",
+                            (showControls || file.name.toLowerCase().endsWith('.pdf')) ? "opacity-100" : "opacity-0 pointer-events-none",
                             isSidebarOpen ? "pr-80" : "pr-0"
                         )}>
                             {/* Seekbar - Video Only */}
@@ -358,7 +361,12 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             {/* Controls Row */}
                             <div className="flex items-center justify-between px-2">
                                 {/* Left: Play/Pause, Volume - Video Only */}
-                                {file.name.toLowerCase().endsWith('.pdf') ? <div /> : (
+                                {file.name.toLowerCase().endsWith('.pdf') ? (
+                                    <div className="flex items-center gap-2 text-sm text-white/70 font-medium max-w-[400px]">
+                                        <FilePdf size={18} weight="fill" className="text-red-400 shrink-0" />
+                                        <span className="truncate">"{highlight.text || 'PDF View'}"</span>
+                                    </div>
+                                ) : (
                                     <div className="flex items-center gap-4">
                                         <Button
                                             variant="ghost"

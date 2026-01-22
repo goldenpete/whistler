@@ -1,82 +1,102 @@
 import React, { useState, useRef, useEffect, useMemo, useImperativeHandle } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
-import { CaretLeft, CaretRight, MagnifyingGlassPlus, MagnifyingGlassMinus, SidebarSimple } from '@phosphor-icons/react';
+import { 
+    CaretLeft, 
+    CaretRight, 
+    MagnifyingGlassPlus, 
+    MagnifyingGlassMinus, 
+    ArrowsOutSimple, 
+    CornersIn,
+    SidebarSimple
+} from '@phosphor-icons/react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
+import { useDebounceValue } from 'usehooks-ts';
 
-// Configure worker locally
+// Configure worker locally with stable import
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+export interface PDFPlayerHandle {
+    jumpToPage: (page: number) => void;
+    addHighlightFromSelection: () => void;
+    zoomIn: () => void;
+    zoomOut: () => void;
+}
 
 interface PDFPlayerProps {
     url: string;
     fileId: string;
     initialPage?: number;
-    lockedPage?: number;
+    lockedPage?: number; // If set, user cannot change page (for single-page view)
+    readonly?: boolean; // If true, selection is disabled
     onPageChange?: (page: number) => void;
     onSelectionChange?: (hasSelection: boolean) => void;
     onToggleSidebar?: () => void;
     isSidebarOpen?: boolean;
+    showSidebarToggle?: boolean;
+    className?: string;
 }
 
-export interface PDFPlayerHandle {
-    jumpToPage: (page: number) => void;
-    addHighlightFromSelection: () => void;
-}
-
-export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ url, fileId, initialPage = 1, lockedPage, onPageChange, onSelectionChange, onToggleSidebar, isSidebarOpen }, ref) => {
+export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ 
+    url, 
+    fileId, 
+    initialPage = 1, 
+    lockedPage, 
+    readonly = false,
+    onPageChange, 
+    onSelectionChange, 
+    onToggleSidebar,
+    isSidebarOpen,
+    showSidebarToggle = true,
+    className 
+}, ref) => {
+    // --- State ---
     const [numPages, setNumPages] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<number>(initialPage);
     const [scale, setScale] = useState<number>(1.0);
     const [hasError, setHasError] = useState(false);
-    const containerRef = useRef<HTMLDivElement | null>(null);
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [selectedText, setSelectedText] = useState<string>("");
-    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
-    const isFirstResize = useRef(true);
+    
+    // Use debounce for resizing to prevent flickering
+    const [debouncedWidth] = useDebounceValue(containerWidth, 100);
 
+    const containerRef = useRef<HTMLDivElement>(null);
+    const pageWrapperRef = useRef<HTMLDivElement>(null);
+
+    // --- Store Access ---
     const { addHighlight, activeCollectionId, highlights } = useStore();
 
-    const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
-
-    const pageHighlights = useMemo(
-        () =>
-            highlights
-                .filter((t) => t.fileId === fileId && t.start === pageNumber && t.text),
+    // --- Derived State ---
+    // Filter highlights for the current page
+    const pageHighlights = useMemo(() => 
+        highlights.filter(h => h.fileId === fileId && h.start === pageNumber),
         [highlights, fileId, pageNumber]
     );
 
+    const [highlightRects, setHighlightRects] = useState<{ x: number, y: number, width: number, height: number }[]>([]);
+
+    // --- Effects ---
+
+    // 1. Resize Observer
     useEffect(() => {
         if (!containerRef.current) return;
-        let timeoutId: ReturnType<typeof setTimeout>;
         
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
-                const width = entry.contentRect.width;
-                
-                if (isFirstResize.current) {
-                    setContainerWidth(width);
-                    isFirstResize.current = false;
-                } else {
-                    // Debounce subsequent resizes to prevent flickering
-                    clearTimeout(timeoutId);
-                    timeoutId = setTimeout(() => {
-                        setContainerWidth(prev => Math.abs(prev - width) > 10 ? width : prev);
-                    }, 100);
-                }
+                setContainerWidth(entry.contentRect.width);
             }
         });
+        
         observer.observe(containerRef.current);
-        return () => {
-            observer.disconnect();
-            clearTimeout(timeoutId);
-        };
+        return () => observer.disconnect();
     }, []);
 
+    // 2. Initial Page Sync
     useEffect(() => {
         if (lockedPage) {
             setPageNumber(lockedPage);
@@ -85,24 +105,110 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
         }
     }, [initialPage, lockedPage]);
 
+    // 3. Selection Listener (Only if not readonly)
     useEffect(() => {
+        if (readonly) return;
+
         const handleSelectionChange = () => {
             const sel = window.getSelection();
             const text = sel ? sel.toString().trim() : "";
-            setSelectedText(text);
-            onSelectionChange?.(!!text);
+            
+            // Only update if selection is inside our container
+            if (sel && sel.rangeCount > 0 && containerRef.current?.contains(sel.anchorNode)) {
+                setSelectedText(text);
+                onSelectionChange?.(!!text);
+            } else {
+                setSelectedText("");
+                onSelectionChange?.(false);
+            }
         };
+        
         document.addEventListener("selectionchange", handleSelectionChange);
         return () => document.removeEventListener("selectionchange", handleSelectionChange);
-    }, [onSelectionChange]);
+    }, [onSelectionChange, readonly]);
 
-    const [highlightRects, setHighlightRects] = useState<{ x: number, y: number, width: number, height: number }[]>([]);
-    const pageWrapperRef = useRef<HTMLDivElement | null>(null);
+    // 4. Update Highlights Visuals
+    useEffect(() => {
+        // Wait for text layer to render
+        const timer = setTimeout(updateHighlights, 300); // Small delay to ensure DOM is ready
+        return () => clearTimeout(timer);
+    }, [pageNumber, scale, pageHighlights, debouncedWidth]);
+
+    // --- Logic ---
+
+    const updateHighlights = () => {
+        if (!pageWrapperRef.current) return;
+        const textLayer = pageWrapperRef.current.querySelector('.react-pdf__Page__textContent');
+        if (!textLayer) return; // Not ready yet
+
+        const newRects: { x: number, y: number, width: number, height: number }[] = [];
+        const wrapperRect = pageWrapperRef.current.getBoundingClientRect();
+
+        // Build text nodes map
+        const textNodes: { node: Node, start: number, end: number }[] = [];
+        let fullText = "";
+        const walker = document.createTreeWalker(textLayer, NodeFilter.SHOW_TEXT, null);
+        let currentNode: Node | null;
+        
+        while (currentNode = walker.nextNode()) {
+            const val = currentNode.textContent || "";
+            textNodes.push({
+                node: currentNode,
+                start: fullText.length,
+                end: fullText.length + val.length
+            });
+            fullText += val;
+        }
+
+        if (!fullText) return;
+
+        const addRectsForRange = (start: number, end: number) => {
+            try {
+                const range = document.createRange();
+                const startNodeInfo = textNodes.find(n => start >= n.start && start < n.end);
+                const endNodeInfo = textNodes.find(n => end > n.start && end <= n.end);
+                
+                if (startNodeInfo && endNodeInfo) {
+                    range.setStart(startNodeInfo.node, start - startNodeInfo.start);
+                    range.setEnd(endNodeInfo.node, end - endNodeInfo.start);
+                    
+                    const clientRects = range.getClientRects();
+                    for (const rect of clientRects) {
+                        newRects.push({
+                            x: rect.left - wrapperRect.left,
+                            y: rect.top - wrapperRect.top,
+                            width: rect.width,
+                            height: rect.height
+                        });
+                    }
+                }
+            } catch (e) {
+                // Ignore range errors
+            }
+        };
+
+        const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        pageHighlights.forEach(h => {
+            if (h.pdfRange) {
+                addRectsForRange(h.pdfRange.start, h.pdfRange.end);
+            } else if (h.text) {
+                // Fallback for legacy highlights without range
+                const pattern = escapeRegExp(h.text.trim()).replace(/\s+/g, '\\s+');
+                const regex = new RegExp(pattern, 'gi');
+                let match;
+                while ((match = regex.exec(fullText)) !== null) {
+                    addRectsForRange(match.index, match.index + match[0].length);
+                }
+            }
+        });
+
+        setHighlightRects(newRects);
+    };
 
     const handleAddHighlight = () => {
-        if (!selectedText) return;
+        if (!selectedText || readonly) return;
 
-        // Calculate range
         let pdfRange: { start: number, end: number } | null = null;
         const sel = window.getSelection();
         
@@ -111,6 +217,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
             const textLayer = pageWrapperRef.current.querySelector('.react-pdf__Page__textContent');
             
             if (textLayer && textLayer.contains(range.commonAncestorContainer)) {
+                // Calculate absolute offsets
                 const walker = document.createTreeWalker(textLayer, NodeFilter.SHOW_TEXT, null);
                 let currentIndex = 0;
                 let start = -1;
@@ -140,194 +247,83 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
         if (sel) sel.removeAllRanges();
     };
 
+    const changePage = (offset: number) => {
+        if (lockedPage) return;
+        setPageNumber(prev => {
+            const newPage = Math.min(Math.max(prev + offset, 1), numPages);
+            onPageChange?.(newPage);
+            return newPage;
+        });
+    };
+
+    // --- Exposed Methods ---
     useImperativeHandle(ref, () => ({
         jumpToPage: (page: number) => {
             if (page >= 1 && page <= (numPages || Infinity)) {
                 setPageNumber(page);
             }
         },
-        addHighlightFromSelection: handleAddHighlight
+        addHighlightFromSelection: handleAddHighlight,
+        zoomIn: () => setScale(s => Math.min(s + 0.2, 3.0)),
+        zoomOut: () => setScale(s => Math.max(s - 0.2, 0.5))
     }));
 
-    function onPageLoadSuccess(page: any) {
-        // We don't need textItems for the range-based approach, but keeping it might be useful if we switch back.
-        // For now, we'll rely on the DOM.
-        const width = page.originalWidth;
-        const height = page.originalHeight;
-        if (width && height) {
-            setAspectRatio(width / height);
-        }
-    }
-
-    // Update highlights when page/scale/highlights change.
-    useEffect(() => {
-        let attempts = 0;
-        const maxAttempts = 50; // 5 seconds
-        const interval = setInterval(() => {
-            if (!pageWrapperRef.current) return;
-            const textLayer = pageWrapperRef.current.querySelector('.react-pdf__Page__textContent');
-            
-            // If text layer exists and has children (content), try to highlight
-            if (textLayer && textLayer.children.length > 0) {
-                updateHighlights();
-                if (attempts > 10) clearInterval(interval);
-            }
-            
-            attempts++;
-            if (attempts >= maxAttempts) clearInterval(interval);
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [pageNumber, scale, pageHighlights, numPages]);
-
-    function updateHighlights() {
-        if (!pageWrapperRef.current) return;
-        
-        const textLayer = pageWrapperRef.current.querySelector('.react-pdf__Page__textContent');
-        if (!textLayer) return;
-
-        const newRects: { x: number, y: number, width: number, height: number }[] = [];
-        
-        // 1. Build a map of all text nodes and their global offsets
-        const textNodes: { node: Node, start: number, end: number }[] = [];
-        let fullText = "";
-        
-        // Use a TreeWalker or just iterate spans if we know the structure.
-        // React-pdf text layer usually is flat spans.
-        const walker = document.createTreeWalker(textLayer, NodeFilter.SHOW_TEXT, null);
-        let currentNode: Node | null;
-        while (currentNode = walker.nextNode()) {
-            const val = currentNode.textContent || "";
-            textNodes.push({
-                node: currentNode,
-                start: fullText.length,
-                end: fullText.length + val.length
-            });
-            fullText += val;
-        }
-
-        if (!fullText) return;
-
-        // Helper to add rects for a range
-        const addRectsForRange = (start: number, end: number) => {
-            try {
-                const range = document.createRange();
-                
-                const startNodeInfo = textNodes.find(n => start >= n.start && start < n.end);
-                const endNodeInfo = textNodes.find(n => end > n.start && end <= n.end);
-                
-                if (startNodeInfo && endNodeInfo) {
-                    range.setStart(startNodeInfo.node, start - startNodeInfo.start);
-                    range.setEnd(endNodeInfo.node, end - endNodeInfo.start);
-                    
-                    const clientRects = range.getClientRects();
-                    const wrapperRect = pageWrapperRef.current!.getBoundingClientRect();
-                    
-                    for (const rect of clientRects) {
-                        newRects.push({
-                            x: rect.left - wrapperRect.left,
-                            y: rect.top - wrapperRect.top,
-                            width: rect.width,
-                            height: rect.height
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error("Error creating range for highlight", e);
-            }
-        };
-
-        // 2. Search for highlights
-        const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-        pageHighlights.forEach(h => {
-            if (!h.text) return;
-            
-            if (h.pdfRange) {
-                addRectsForRange(h.pdfRange.start, h.pdfRange.end);
-            } else {
-                // Legacy: match all occurrences
-                const pattern = escapeRegExp(h.text.trim()).replace(/\s+/g, '\\s+');
-                const regex = new RegExp(pattern, 'gi');
-                
-                let match;
-                while ((match = regex.exec(fullText)) !== null) {
-                    addRectsForRange(match.index, match.index + match[0].length);
-                }
-            }
-        });
-
-        setHighlightRects(newRects);
-    }
+    // --- Render Helpers ---
+    const effectiveWidth = debouncedWidth ? Math.min(debouncedWidth - 48, 1000) * scale : 600;
 
     if (!url) {
-        return (
-            <div className="flex flex-col h-full bg-transparent items-center justify-center text-zinc-200 text-sm" ref={containerRef}>
-                No PDF URL is configured for this file.
-            </div>
-        );
+        return <div className="flex items-center justify-center h-full text-muted-foreground">No PDF URL</div>;
     }
-
-    function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-        setNumPages(numPages);
-        setHasError(false);
-    }
-
-    const changePage = (offset: number) => {
-        setPageNumber(prevPageNumber => {
-            const newPage = Math.min(Math.max(prevPageNumber + offset, 1), numPages);
-            onPageChange?.(newPage);
-            return newPage;
-        });
-    };
-
-    const baseWidth = containerWidth ? Math.min(containerWidth - 64, 1200) : 600;
-    const effectiveWidth = baseWidth * scale;
-    const loadingHeight = aspectRatio ? effectiveWidth / aspectRatio : 800;
 
     return (
-        <div className="flex flex-col h-full min-h-[400px] bg-transparent relative group" ref={containerRef}>
-            <div className="flex-1 overflow-auto flex justify-center p-4">
+        <div className={cn("flex flex-col h-full bg-zinc-950 relative", className)} ref={containerRef}>
+            {/* Main Document Area */}
+            <div className="flex-1 overflow-auto flex justify-center p-4 custom-scrollbar">
                 {hasError ? (
-                    <div className="flex items-center justify-center h-full text-red-200 text-sm">
-                        Failed to load PDF.
+                    <div className="flex flex-col items-center justify-center text-red-400 gap-2">
+                        <span>Failed to load PDF</span>
+                        <Button variant="outline" size="sm" onClick={() => setHasError(false)}>Retry</Button>
                     </div>
                 ) : (
                     <Document
                         file={url}
-                        onLoadSuccess={onDocumentLoadSuccess}
+                        onLoadSuccess={({ numPages }) => { setNumPages(numPages); setHasError(false); }}
                         onLoadError={() => setHasError(true)}
-                        options={{
-                            verbosity: 0,
-                        }}
-                        className="flex justify-center box-shadow-xl"
-                        loading={null}
+                        options={{ verbosity: 0 }}
+                        loading={
+                            <div className="flex items-center justify-center h-64 text-muted-foreground">
+                                Loading PDF...
+                            </div>
+                        }
+                        className="flex justify-center shadow-2xl"
                     >
-                        <div className="relative" ref={pageWrapperRef}>
+                        <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
                             <Page
                                 pageNumber={pageNumber}
                                 width={effectiveWidth}
                                 renderTextLayer={true}
                                 renderAnnotationLayer={true}
-                                onLoadSuccess={onPageLoadSuccess}
-                                className="bg-transparent"
+                                className="bg-white"
+                                onLoadSuccess={updateHighlights}
                                 loading={
-                                    <div className="w-full" style={{ height: loadingHeight }} />
+                                    <div 
+                                        style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
+                                        className="bg-white/10 animate-pulse" 
+                                    />
                                 }
                             />
-                            {/* Overlay Highlight Layer */}
-                            <div className="absolute inset-0 pointer-events-none">
+                            
+                            {/* Highlight Overlay Layer */}
+                            <div className="absolute inset-0 pointer-events-none z-10">
                                 {highlightRects.map((rect, i) => (
                                     <div
                                         key={i}
+                                        className="absolute bg-yellow-400/30 mix-blend-multiply border-b-2 border-yellow-500/50"
                                         style={{
-                                            position: 'absolute',
                                             left: rect.x,
                                             top: rect.y,
                                             width: rect.width,
                                             height: rect.height,
-                                            backgroundColor: 'hsl(var(--primary) / 0.4)',
-                                            borderRadius: '2px',
                                         }}
                                     />
                                 ))}
@@ -337,68 +333,75 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
                 )}
             </div>
 
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-2xl transition-opacity opacity-0 group-hover:opacity-100 z-50">
-                {!lockedPage && (
+            {/* Floating Controls (Bottom Center) */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/10 shadow-2xl z-50 transition-transform hover:scale-105">
+                {/* Page Navigation */}
+                <div className="flex items-center gap-1 mr-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                        onClick={() => changePage(-1)}
+                        disabled={pageNumber <= 1 || !!lockedPage}
+                    >
+                        <CaretLeft size={14} weight="bold" />
+                    </Button>
+                    
+                    <span className="text-zinc-200 text-xs font-mono min-w-[50px] text-center select-none">
+                        {pageNumber} <span className="text-zinc-500">/</span> {numPages || '-'}
+                    </span>
+
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                        onClick={() => changePage(1)}
+                        disabled={pageNumber >= numPages || !!lockedPage}
+                    >
+                        <CaretRight size={14} weight="bold" />
+                    </Button>
+                </div>
+
+                <div className="w-px h-4 bg-white/10 mx-1" />
+
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                        onClick={() => setScale(s => Math.max(s - 0.1, 0.5))}
+                    >
+                        <MagnifyingGlassMinus size={14} weight="bold" />
+                    </Button>
+                    
+                    <span className="text-zinc-400 text-[10px] w-8 text-center select-none">
+                        {Math.round(scale * 100)}%
+                    </span>
+
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                        onClick={() => setScale(s => Math.min(s + 0.1, 3.0))}
+                    >
+                        <MagnifyingGlassPlus size={14} weight="bold" />
+                    </Button>
+                </div>
+
+                {onToggleSidebar && showSidebarToggle && (
                     <>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
-                            onClick={() => changePage(-1)}
-                            disabled={pageNumber <= 1}
-                        >
-                            <CaretLeft size={18} />
-                        </Button>
-
-                        <span className="text-white text-sm font-medium min-w-[60px] text-center font-mono">
-                            {pageNumber} / {numPages || '--'}
-                        </span>
-
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
-                            onClick={() => changePage(1)}
-                            disabled={pageNumber >= numPages}
-                        >
-                            <CaretRight size={18} />
-                        </Button>
-
-                        <div className="w-px h-4 bg-white/20 mx-2" />
-                    </>
-                )}
-
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 rounded-full" onClick={() => setScale(s => Math.max(0.5, s - 0.1))}>
-                    <MagnifyingGlassMinus size={16} />
-                </Button>
-                <span className="text-white text-xs w-10 text-center">{Math.round(scale * 100)}%</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 rounded-full" onClick={() => setScale(s => Math.min(3, s + 0.1))}>
-                    <MagnifyingGlassPlus size={16} />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="ml-2 h-8 px-3 text-xs text-white hover:bg-white/20 rounded-full"
-                    disabled={!selectedText}
-                    onClick={handleAddHighlight}
-                >
-                    Add Highlight
-                </Button>
-
-                {onToggleSidebar && (
-                    <>
-                        <div className="w-px h-4 bg-white/20 mx-2" />
+                        <div className="w-px h-4 bg-white/10 mx-1" />
                         <Button
                             variant="ghost"
                             size="icon"
                             className={cn(
-                                "h-8 w-8 hover:bg-white/20 rounded-full transition-colors",
-                                isSidebarOpen ? "text-primary bg-white/10" : "text-white"
+                                "h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full",
+                                isSidebarOpen && "text-primary hover:text-primary"
                             )}
                             onClick={onToggleSidebar}
-                            title="Toggle Sidebar"
                         >
-                            <SidebarSimple size={18} weight="bold" />
+                            <SidebarSimple size={14} weight="bold" />
                         </Button>
                     </>
                 )}
@@ -406,3 +409,5 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ ur
         </div>
     );
 });
+
+PDFPlayer.displayName = 'PDFPlayer';
