@@ -304,14 +304,21 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         >
                             {file.name.toLowerCase().endsWith('.pdf') ? (
                                 <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
-                                    <PDFPlayer
-                                        url={(file as any).url || ""}
-                                        fileId={file.id}
-                                        initialPage={highlight.start}
-                                        lockedPage={highlight.start}
-                                        onPageChange={() => {}} // Read-only view for highlight
-                                        onSelectionChange={() => {}}
-                                    />
+                                    {file.url ? (
+                                        <PDFPlayer
+                                            url={file.url}
+                                            fileId={file.id}
+                                            initialPage={highlight.start}
+                                            lockedPage={highlight.start}
+                                            onPageChange={() => {}} // Read-only view for highlight
+                                            onSelectionChange={() => {}}
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
+                                            <FilePdf size={32} />
+                                            <span className="text-sm">PDF URL missing</span>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <video
