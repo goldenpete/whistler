@@ -367,8 +367,8 @@ export default function VideoPlayer() {
 
                 {/* Top Bar */}
                 <div className={cn(
-                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-opacity duration-300 pointer-events-none",
-                    showControls ? "opacity-100" : "opacity-0"
+                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-16 px-6 bg-zinc-950/90 border-b border-white/5 backdrop-blur-md transition-all duration-300 ease-out pointer-events-none",
+                    showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
                 )}>
                     {/* Left: Info */}
                     <div className="flex items-center gap-4 min-w-0 flex-1 mr-4 pointer-events-auto">
