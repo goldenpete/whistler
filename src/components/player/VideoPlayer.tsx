@@ -462,7 +462,7 @@ export default function VideoPlayer() {
                     )}
 
                     {file.type === 'pdf' ? (
-                        <div className="absolute inset-0 z-10 p-8">
+                        <div className="absolute inset-0 z-10">
                             <PDFPlayer
                                 ref={pdfRef}
                                 url={file.url || ""}
