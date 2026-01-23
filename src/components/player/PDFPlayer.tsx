@@ -111,10 +111,22 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         }
     }, [initialPage, lockedPage]);
 
+    // Robust URL handling to prevent worker race conditions
+    const [safeUrl, setSafeUrl] = useState<string | null>(null);
+
     useEffect(() => {
+        // Immediate cleanup
         setLoadedUrl(null);
         setNumPages(0);
         setHasError(false);
+        setSafeUrl(null);
+
+        // Small delay to ensure previous worker is cleaned up before starting new one
+        const timer = setTimeout(() => {
+            setSafeUrl(url);
+        }, 100);
+
+        return () => clearTimeout(timer);
     }, [url]);
 
     // 3. Selection Listener (Only if not readonly)
@@ -284,8 +296,11 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     // --- Render Helpers ---
     const effectiveWidth = debouncedWidth ? Math.min(debouncedWidth - 48, 1000) * scale : 600;
 
-    if (!url) {
-        return <div className="flex items-center justify-center h-full text-muted-foreground">No PDF URL</div>;
+    if (!safeUrl) {
+        return <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-2"></div>
+            Loading...
+        </div>;
     }
 
     return (
@@ -308,8 +323,8 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                     <div className="flex flex-col items-center justify-center text-red-400 gap-2 h-full">
                         <span className="text-lg font-medium">Unable to load PDF</span>
                         <span className="text-sm text-white/50">The worker may have been terminated or the file is corrupted.</span>
-                        <Button variant="outline" size="sm" onClick={() => { setHasError(false); window.location.reload(); }}>
-                            Reload Application
+                        <Button variant="outline" size="sm" onClick={() => { setHasError(false); setSafeUrl(null); setTimeout(() => setSafeUrl(url), 100); }}>
+                            Retry
                         </Button>
                     </div>
                 ) : (
@@ -323,21 +338,27 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         </div>
                     }>
                         <Document
-                            key={url} // Force remount when URL changes
-                            file={url}
+                            key={safeUrl} // Force remount when URL changes
+                            file={safeUrl}
                         onLoadSuccess={({ numPages }) => { 
                             setNumPages(numPages); 
                             setHasError(false); 
-                            setLoadedUrl(url);
+                            setLoadedUrl(safeUrl);
                         }}
                         onLoadError={(err) => {
+                            if (err.message.includes('Worker was terminated')) {
+                                // Ignore worker termination errors (race condition)
+                                return;
+                            }
                             console.error("PDF Load Error:", err);
                             setHasError(true);
                         }}
                         options={{ 
                             cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
                             cMapPacked: true,
-                            verbosity: 0 
+                            verbosity: 0,
+                            stopAtErrors: false,
+                            pdfBug: false,
                         }}
                         loading={
                             <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -347,7 +368,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         }
                         className="flex justify-center shadow-2xl"
                     >
-                        {loadedUrl === url && (
+                        {loadedUrl === safeUrl && containerWidth === debouncedWidth && (
                             <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
                                 <Page
                                     pageNumber={pageNumber}
@@ -357,8 +378,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                     className="bg-white"
                                     onLoadSuccess={updateHighlights}
                                     onRenderError={() => setHasError(true)}
-                                    onGetTextError={() => setHasError(true)}
-                                    onGetAnnotationsError={() => setHasError(true)}
+                                    onGetTextError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                    onGetAnnotationsError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                    onGetStructTreeError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
                                     loading={
                                         <div 
                                             style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
