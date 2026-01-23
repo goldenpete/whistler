@@ -111,23 +111,26 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
     // Detect Changes
     useEffect(() => {
-        if (!highlight) return;
+        if (!highlight || !file) return;
         
+        const isPdf = file.name.toLowerCase().endsWith('.pdf');
         const startSecs = parseTime(editStart);
         const endSecs = parseTime(editEnd);
         
-        const isValidTime = startSecs !== null && endSecs !== null && startSecs >= 0 && endSecs > startSecs;
+        const isValidTime = isPdf || (startSecs !== null && endSecs !== null && startSecs >= 0 && endSecs > startSecs);
 
         const isChanged = 
             isValidTime && (
                 editNote !== (highlight.note || "") ||
                 editCollectionId !== (highlight.collectionId || "") ||
-                (startSecs !== highlight.start) ||
-                (endSecs !== (highlight.end || highlight.start))
+                (!isPdf && (
+                    (startSecs !== highlight.start) ||
+                    (endSecs !== (highlight.end || highlight.start))
+                ))
             );
             
         setHasChanges(isChanged);
-    }, [editNote, editCollectionId, editStart, editEnd, highlight]);
+    }, [editNote, editCollectionId, editStart, editEnd, highlight, file]);
 
     const handleSave = () => {
         if (!onUpdate || !highlight) return;
@@ -137,11 +140,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         if (editNote !== highlight.note) updates.note = editNote;
         if (editCollectionId !== highlight.collectionId) updates.collectionId = editCollectionId;
         
-        const startSecs = parseTime(editStart);
-        const endSecs = parseTime(editEnd);
-        
-        if (startSecs !== null && startSecs !== highlight.start) updates.start = startSecs;
-        if (endSecs !== null && endSecs !== highlight.end) updates.end = endSecs;
+        if (!file?.name.toLowerCase().endsWith('.pdf')) {
+            const startSecs = parseTime(editStart);
+            const endSecs = parseTime(editEnd);
+            
+            if (startSecs !== null && startSecs !== highlight.start) updates.start = startSecs;
+            if (endSecs !== null && endSecs !== highlight.end) updates.end = endSecs;
+        }
         
         onUpdate(updates);
         setHasChanges(false);

@@ -669,6 +669,16 @@ export default function VideoPlayer() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
+                                    onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+                                    className="text-muted-foreground hover:text-foreground"
+                                    title={isHeaderVisible ? "Hide Top Bar" : "Show Top Bar"}
+                                >
+                                    {isHeaderVisible ? <EyeSlash weight="bold" size={20} /> : <Eye weight="bold" size={20} />}
+                                </Button>
+
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => setSidebarOpen(!sidebarOpen)}
                                     className={cn(
                                         "text-muted-foreground hover:text-foreground",
