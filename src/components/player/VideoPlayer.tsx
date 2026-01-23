@@ -669,11 +669,11 @@ export default function VideoPlayer() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+                                    onClick={() => setShowControls(false)}
                                     className="text-muted-foreground hover:text-foreground"
-                                    title={isHeaderVisible ? "Hide Top Bar" : "Show Top Bar"}
+                                    title="Hide Controls"
                                 >
-                                    {isHeaderVisible ? <EyeSlash weight="bold" size={20} /> : <Eye weight="bold" size={20} />}
+                                    <EyeSlash weight="bold" size={20} />
                                 </Button>
 
                                 <Button
