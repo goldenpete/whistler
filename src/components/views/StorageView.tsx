@@ -50,6 +50,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent,
 import { Document, Page } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 
 
@@ -861,33 +862,39 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
 
     return (
         <div className="w-full h-full flex items-center justify-center bg-muted overflow-hidden">
-            <Document
-                file={url}
-                loading={
-                    <div className="text-xs text-muted-foreground">
-                        Loading PDF...
-                    </div>
-                }
-                onLoadSuccess={() => setLoadedUrl(url)}
-                onLoadError={() => onError()}
-                options={{
-                    cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
-                    cMapPacked: true,
-                    verbosity: 0
-                }}
-            >
-                {loadedUrl === url && (
-                    <Page
-                        pageNumber={1}
-                        width={160}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                        onRenderError={() => onError()}
-                        onGetTextError={() => onError()}
-                        onGetAnnotationsError={() => onError()}
-                    />
-                )}
-            </Document>
+            <ErrorBoundary fallback={
+                <div className="flex flex-col items-center justify-center text-xs text-red-400 p-2 text-center">
+                    <span>Preview Error</span>
+                </div>
+            }>
+                <Document
+                    file={url}
+                    loading={
+                        <div className="text-xs text-muted-foreground">
+                            Loading PDF...
+                        </div>
+                    }
+                    onLoadSuccess={() => setLoadedUrl(url)}
+                    onLoadError={() => onError()}
+                    options={{
+                        cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
+                        cMapPacked: true,
+                        verbosity: 0
+                    }}
+                >
+                    {loadedUrl === url && (
+                        <Page
+                            pageNumber={1}
+                            width={160}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                            onRenderError={() => onError()}
+                            onGetTextError={() => onError()}
+                            onGetAnnotationsError={() => onError()}
+                        />
+                    )}
+                </Document>
+            </ErrorBoundary>
         </div>
     );
 }

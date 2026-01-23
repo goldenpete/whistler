@@ -13,6 +13,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 // Note: Worker is configured globally in src/pdf-worker.ts
 
@@ -62,7 +63,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const [selectedText, setSelectedText] = useState<string>("");
     
     // Use debounce for resizing to prevent flickering and excessive re-renders
-    const [debouncedWidth] = useDebounceValue(containerWidth, 50);
+    const [debouncedWidth] = useDebounceValue(containerWidth, 200);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pageWrapperRef = useRef<HTMLDivElement>(null);
@@ -312,9 +313,18 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         </Button>
                     </div>
                 ) : (
-                    <Document
-                        key={url} // Force remount when URL changes
-                        file={url}
+                    <ErrorBoundary fallback={
+                        <div className="flex flex-col items-center justify-center text-red-400 gap-2 h-full">
+                            <span className="text-lg font-medium">Render Error</span>
+                            <span className="text-sm text-white/50">The PDF viewer encountered an error.</span>
+                            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                                Reload
+                            </Button>
+                        </div>
+                    }>
+                        <Document
+                            key={url} // Force remount when URL changes
+                            file={url}
                         onLoadSuccess={({ numPages }) => { 
                             setNumPages(numPages); 
                             setHasError(false); 
@@ -380,6 +390,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             </div>
                         )}
                     </Document>
+                    </ErrorBoundary>
                 )}
             </div>
 
