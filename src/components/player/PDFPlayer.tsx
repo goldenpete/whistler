@@ -438,6 +438,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                     renderAnnotationLayer={true}
                                     className="bg-white"
                                     onLoadSuccess={updateHighlights}
+                                    onRenderTextLayerSuccess={updateHighlights}
                                     onRenderError={() => setHasError(true)}
                                     onGetTextError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
                                     onGetAnnotationsError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
@@ -478,7 +479,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             </div>
 
             {/* Floating Controls (Bottom Center) */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/10 shadow-2xl z-50 transition-transform hover:scale-105">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/10 shadow-2xl z-[60] transition-transform hover:scale-105">
                 {/* Page Navigation */}
                 <div className="flex items-center gap-1 mr-2">
                     <Button
