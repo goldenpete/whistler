@@ -349,7 +349,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     }));
 
     // --- Render Helpers ---
-    const baseWidth = debouncedWidth ? Math.min(debouncedWidth - 48, 1000) : 600;
+    const baseWidth = debouncedWidth ? debouncedWidth - 48 : 600;
     const effectiveWidth = baseWidth * scale;
 
     if (!safeUrl) {
@@ -433,10 +433,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         {loadedUrl === safeUrl && (
                             <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
                                 <Page
-                                    key={`${pageNumber}-${scale}-${baseWidth}`}
+                                    key={pageNumber}
                                     pageNumber={pageNumber}
-                                    width={baseWidth}
-                                    scale={scale}
+                                    width={effectiveWidth}
                                     renderTextLayer={true}
                                     renderAnnotationLayer={true}
                                     className="bg-white"
