@@ -283,8 +283,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         {/* Top Bar (Title + Close) */}
                         <div className={cn(
                             "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-all duration-200 ease-out",
-                            showControls ? "opacity-100" : "opacity-0 pointer-events-none",
-                            isSidebarOpen ? "pr-80" : "pr-0"
+                            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
                         )}>
                             <DialogTitle className="text-white font-medium text-base truncate px-2">{file.name}</DialogTitle>
                             <Button 
@@ -342,8 +341,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         {/* Bottom Bar (Controls) */}
                         <div className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-200 ease-out z-50 pb-4 pt-8 px-4",
-                            (showControls || file.name.toLowerCase().endsWith('.pdf')) ? "opacity-100" : "opacity-0 pointer-events-none",
-                            isSidebarOpen ? "pr-80" : "pr-0"
+                            (showControls || file.name.toLowerCase().endsWith('.pdf')) ? "opacity-100" : "opacity-0 pointer-events-none"
                         )}>
                             {/* Seekbar - Video Only */}
                             {!file.name.toLowerCase().endsWith('.pdf') && (
@@ -511,13 +509,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     <AnimatePresence>
                         {isSidebarOpen && (
                             <motion.div
-                                initial={{ x: "100%" }}
-                                animate={{ x: 0 }}
-                                exit={{ x: "100%" }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                                className="absolute right-0 top-0 bottom-0 z-40 bg-background border-l border-border flex flex-col shrink-0 overflow-hidden w-80 shadow-2xl text-foreground"
+                                initial={{ width: 0, opacity: 0 }}
+                                animate={{ width: 320, opacity: 1 }}
+                                exit={{ width: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                className="h-full bg-background border-l border-border flex flex-col shrink-0 overflow-hidden w-80 shadow-2xl text-foreground z-40"
                             >
-                                <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
+                                <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20 w-80">
                                     <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlight Details</h3>
                                     <div className="flex items-center gap-2">
                                         <Button
