@@ -146,31 +146,25 @@ export default function VideoPlayer() {
     // Controls visibility timer
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
+    const handleMouseMove = () => {
+        setShowControls(true);
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+        controlsTimeoutRef.current = setTimeout(() => {
+            if (isPlaying) setShowControls(false);
+        }, 3000);
+    };
+
     useEffect(() => {
-        const handleMouseMove = () => {
-            setShowControls(true);
-            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-            controlsTimeoutRef.current = setTimeout(() => {
-                if (isPlaying) setShowControls(false);
-            }, 3000);
-        };
-
-        const container = containerRef.current;
-        if (container) {
-            container.addEventListener('mousemove', handleMouseMove);
-        }
-
         const handleFullscreenChange = () => {
             setIsFullscreen(!!document.fullscreenElement);
         };
         document.addEventListener('fullscreenchange', handleFullscreenChange);
 
         return () => {
-            if (container) container.removeEventListener('mousemove', handleMouseMove);
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
         };
-    }, [isPlaying]);
+    }, []); // Removed isPlaying dependency as mousemove logic is moved to prop
 
     useEffect(() => {
         if (highlightPlayerOpen && videoRef.current) {
@@ -356,7 +350,12 @@ export default function VideoPlayer() {
     };
 
     return (
-        <div ref={containerRef} className="flex h-full w-full bg-black overflow-hidden relative">
+        <div 
+            ref={containerRef} 
+            className="flex h-full w-full bg-black overflow-hidden relative"
+            onMouseMove={handleMouseMove}
+            onClick={handleMouseMove} // Also show controls on click
+        >
 
             {/* Player Container (Top Bar + Stage + Bottom Bar) */}
             <motion.div

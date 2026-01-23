@@ -182,25 +182,19 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     }, [playbackSpeed]);
 
     // Controls Visibility
+    const handleMouseMove = () => {
+        setShowControls(true);
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+        controlsTimeoutRef.current = setTimeout(() => {
+            if (isPlaying) setShowControls(false);
+        }, 3000);
+    };
+
     useEffect(() => {
-        const handleMouseMove = () => {
-            setShowControls(true);
-            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-            controlsTimeoutRef.current = setTimeout(() => {
-                if (isPlaying) setShowControls(false);
-            }, 3000);
-        };
-
-        const container = containerRef.current;
-        if (container) {
-            container.addEventListener('mousemove', handleMouseMove);
-        }
-
         return () => {
-            if (container) container.removeEventListener('mousemove', handleMouseMove);
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
         };
-    }, [isPlaying]);
+    }, []);
 
     // Time Update & Loop Logic
     const handleTimeUpdate = () => {
@@ -280,7 +274,12 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                 <DialogDescription className="sr-only">
                     Media player for {file.name}
                 </DialogDescription>
-                <div ref={containerRef} className="flex h-full w-full bg-black overflow-hidden relative group/container">
+                <div 
+                    ref={containerRef} 
+                    className="flex h-full w-full bg-black overflow-hidden relative group/container"
+                    onMouseMove={handleMouseMove}
+                    onClick={handleMouseMove} // Also show controls on click
+                >
                     
                     {/* Player Area */}
                     <div className="flex-1 flex flex-col relative min-w-0 bg-black">
