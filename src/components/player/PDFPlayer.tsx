@@ -144,7 +144,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         
         observer.observe(containerRef.current);
         return () => observer.disconnect();
-    }, []);
+    }, [safeUrl]);
 
     // 2. Initial Page Sync and URL change reset
     useEffect(() => {
