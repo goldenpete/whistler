@@ -367,11 +367,11 @@ export default function VideoPlayer() {
 
                 {/* Top Bar */}
                 <div className={cn(
-                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-opacity duration-300",
-                    showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-opacity duration-300 pointer-events-none",
+                    showControls ? "opacity-100" : "opacity-0"
                 )}>
                     {/* Left: Info */}
-                    <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
+                    <div className="flex items-center gap-4 min-w-0 flex-1 mr-4 pointer-events-auto">
                         {file.type === 'pdf' ? (
                             <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
                         ) : (
@@ -390,7 +390,7 @@ export default function VideoPlayer() {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0 pointer-events-auto">
                         <div className="flex items-center gap-1">
                             <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Open Link" onClick={handleOpenLink}>
                                 <ArrowSquareOut size={20} weight="bold" />
@@ -497,13 +497,13 @@ export default function VideoPlayer() {
                 {isMediaFile && (
                     <div
                         className={cn(
-                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-30 pb-4 pt-8 px-4",
-                            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                            "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-30 pb-4 pt-8 px-4 pointer-events-none",
+                            showControls ? "opacity-100" : "opacity-0"
                         )}
                     >
                         {/* Seekbar Row */}
                         <div
-                            className="mb-4 px-2 group/seek relative"
+                            className="mb-4 px-2 group/seek relative pointer-events-auto"
                             ref={progressRef}
                             onMouseMove={handleSeekHover}
                             onMouseLeave={() => setHoverTime(null)}
@@ -543,7 +543,7 @@ export default function VideoPlayer() {
                         </div>
 
                         {/* Controls Row */}
-                        <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center justify-between px-2 pointer-events-auto">
                             {/* Left: Play/Pause, Volume */}
                             <div className="flex items-center gap-4">
                                 <Button

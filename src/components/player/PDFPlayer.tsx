@@ -62,7 +62,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const [selectedText, setSelectedText] = useState<string>("");
     
     // Use debounce for resizing to prevent flickering and excessive re-renders
-    const [debouncedWidth] = useDebounceValue(containerWidth, 100);
+    const [debouncedWidth] = useDebounceValue(containerWidth, 50);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pageWrapperRef = useRef<HTMLDivElement>(null);
@@ -288,7 +288,19 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     }
 
     return (
-        <div className={cn("flex flex-col h-full bg-zinc-950 relative", className)} ref={containerRef}>
+        <div className={cn("flex flex-col h-full bg-zinc-950 relative selection:bg-primary/30", className)} ref={containerRef}>
+            <style>{`
+                .react-pdf__Page__textContent {
+                    user-select: text !important;
+                    cursor: text !important;
+                }
+                .react-pdf__Page__annotations {
+                    pointer-events: none;
+                }
+                .annotationLayer .linkAnnotation > a {
+                    pointer-events: auto;
+                }
+            `}</style>
             {/* Main Document Area */}
             <div className="flex-1 overflow-auto flex justify-center p-4 custom-scrollbar">
                 {hasError ? (
