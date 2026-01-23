@@ -349,7 +349,8 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     }));
 
     // --- Render Helpers ---
-    const effectiveWidth = debouncedWidth ? Math.min(debouncedWidth - 48, 1000) * scale : 600;
+    const baseWidth = debouncedWidth ? Math.min(debouncedWidth - 48, 1000) : 600;
+    const effectiveWidth = baseWidth * scale;
 
     if (!safeUrl) {
         return <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -416,7 +417,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         </div>
                     }>
                         <Document
-                            key={safeUrl} // Force remount when URL changes
+                            key={safeUrl}
                             file={safeUrl}
                             onLoadSuccess={handleLoadSuccess}
                             onLoadError={handleLoadError}
@@ -432,8 +433,10 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         {loadedUrl === safeUrl && (
                             <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
                                 <Page
+                                    key={`${pageNumber}-${scale}-${baseWidth}`}
                                     pageNumber={pageNumber}
-                                    width={effectiveWidth}
+                                    width={baseWidth}
+                                    scale={scale}
                                     renderTextLayer={true}
                                     renderAnnotationLayer={true}
                                     className="bg-white"
