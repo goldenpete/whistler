@@ -487,6 +487,8 @@ export default function VideoPlayer() {
                                 onSelectionChange={setHasPdfSelection}
                                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                                 isSidebarOpen={sidebarOpen}
+                                showControls={showControls}
+                                onHideControls={() => setShowControls(false)}
                             />
                         </div>
                     ) : (

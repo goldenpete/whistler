@@ -9,7 +9,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut, FilePdf } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut, FilePdf, EyeSlash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
@@ -321,6 +321,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             onSelectionChange={() => {}}
                                             className="w-full h-full"
                                             showSidebarToggle={false}
+                                            showControls={showControls}
+                                            onHideControls={() => setShowControls(false)}
                                         />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
@@ -346,7 +348,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         {/* Bottom Bar (Controls) */}
                         <div className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-200 ease-out z-50 pb-4 pt-8 px-4",
-                            (showControls || file.name.toLowerCase().endsWith('.pdf')) ? "opacity-100" : "opacity-0 pointer-events-none"
+                            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
                         )}>
                             {/* Seekbar - Video Only */}
                             {!file.name.toLowerCase().endsWith('.pdf') && (
@@ -484,6 +486,16 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <div className="w-px h-5 bg-white/20 mx-1" />
                                         </>
                                     )}
+
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={(e) => { e.stopPropagation(); setShowControls(false); }}
+                                        className="text-muted-foreground hover:text-foreground"
+                                        title="Hide Controls"
+                                    >
+                                        <EyeSlash weight="bold" size={20} />
+                                    </Button>
 
                                     <Button
                                         variant="ghost"

@@ -6,7 +6,8 @@ import {
     CaretRight, 
     MagnifyingGlassPlus, 
     MagnifyingGlassMinus, 
-    SidebarSimple
+    SidebarSimple,
+    EyeSlash
 } from '@phosphor-icons/react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -37,6 +38,8 @@ interface PDFPlayerProps {
     onToggleSidebar?: () => void;
     isSidebarOpen?: boolean;
     showSidebarToggle?: boolean;
+    showControls?: boolean;
+    onHideControls?: () => void;
     className?: string;
 }
 
@@ -52,6 +55,8 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     onToggleSidebar,
     isSidebarOpen,
     showSidebarToggle = true,
+    showControls = true,
+    onHideControls,
     className 
 }, ref) => {
     // --- State ---
@@ -481,7 +486,10 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             </div>
 
             {/* Floating Controls (Bottom Center) */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/10 shadow-2xl z-[60] transition-transform hover:scale-105">
+            <div className={cn(
+                "absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/10 shadow-2xl z-[60] transition-all duration-300",
+                showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+            )}>
                 {/* Page Navigation */}
                 <div className="flex items-center gap-1 mr-2">
                     <Button
@@ -557,6 +565,21 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             onClick={onToggleSidebar}
                         >
                             <SidebarSimple size={14} weight="bold" />
+                        </Button>
+                    </>
+                )}
+
+                {onHideControls && (
+                    <>
+                        <div className="w-px h-4 bg-white/10 mx-1" />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                            onClick={onHideControls}
+                            title="Hide Controls"
+                        >
+                            <EyeSlash size={14} weight="bold" />
                         </Button>
                     </>
                 )}
