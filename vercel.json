@@ -4,5 +4,16 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "browsing-topics=(), run-ad-auction=(), join-ad-interest-group=(), interest-cohort=()"
+        }
+      ]
+    }
   ]
 }

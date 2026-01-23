@@ -882,9 +882,9 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
                         width={160}
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
-                        onRenderError={() => {}}
-                        onGetTextError={() => {}}
-                        onGetAnnotationsError={() => {}}
+                        onRenderError={() => onError()}
+                        onGetTextError={() => onError()}
+                        onGetAnnotationsError={() => onError()}
                     />
                 )}
             </Document>

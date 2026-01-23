@@ -346,9 +346,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                     renderAnnotationLayer={true}
                                     className="bg-white"
                                     onLoadSuccess={updateHighlights}
-                                    onRenderError={() => {}}
-                                    onGetTextError={() => {}}
-                                    onGetAnnotationsError={() => {}}
+                                    onRenderError={() => setHasError(true)}
+                                    onGetTextError={() => setHasError(true)}
+                                    onGetAnnotationsError={() => setHasError(true)}
                                     loading={
                                         <div 
                                             style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
