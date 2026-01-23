@@ -74,6 +74,15 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const { addHighlight, activeCollectionId, highlights } = useStore();
 
     // --- Derived State ---
+    const options = useMemo(() => ({
+        cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+        cMapPacked: true,
+        verbosity: 0,
+        stopAtErrors: false,
+        pdfBug: false,
+        worker: globalWorker,
+    }), []);
+
     // Filter highlights for the current page
     const pageHighlights = useMemo(() => 
         highlights.filter(h => 
@@ -85,6 +94,39 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     );
 
     const [highlightRects, setHighlightRects] = useState<{ x: number, y: number, width: number, height: number }[]>([]);
+
+    // Robust URL handling to prevent worker race conditions
+    const [safeUrl, setSafeUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Immediate cleanup
+        setLoadedUrl(null);
+        setNumPages(0);
+        setHasError(false);
+        setSafeUrl(null);
+
+        // Small delay to ensure previous worker is cleaned up before starting new one
+        const timer = setTimeout(() => {
+            setSafeUrl(url);
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [url]);
+
+    const handleLoadSuccess = React.useCallback(({ numPages }: { numPages: number }) => { 
+        setNumPages(numPages); 
+        setHasError(false); 
+        setLoadedUrl(safeUrl);
+    }, [safeUrl]);
+
+    const handleLoadError = React.useCallback((err: Error) => {
+        if (err.message.includes('Worker was terminated')) {
+            // Ignore worker termination errors (race condition)
+            return;
+        }
+        console.error("PDF Load Error:", err);
+        setHasError(true);
+    }, []);
 
     // --- Effects ---
 
@@ -112,24 +154,6 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             setPageNumber(initialPage);
         }
     }, [initialPage, lockedPage]);
-
-    // Robust URL handling to prevent worker race conditions
-    const [safeUrl, setSafeUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        // Immediate cleanup
-        setLoadedUrl(null);
-        setNumPages(0);
-        setHasError(false);
-        setSafeUrl(null);
-
-        // Small delay to ensure previous worker is cleaned up before starting new one
-        const timer = setTimeout(() => {
-            setSafeUrl(url);
-        }, 100);
-
-        return () => clearTimeout(timer);
-    }, [url]);
 
     // 3. Selection Listener (Only if not readonly)
     const [selectionRect, setSelectionRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
@@ -394,27 +418,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         <Document
                             key={safeUrl} // Force remount when URL changes
                             file={safeUrl}
-                        onLoadSuccess={({ numPages }) => { 
-                            setNumPages(numPages); 
-                            setHasError(false); 
-                            setLoadedUrl(safeUrl);
-                        }}
-                        onLoadError={(err) => {
-                            if (err.message.includes('Worker was terminated')) {
-                                // Ignore worker termination errors (race condition)
-                                return;
-                            }
-                            console.error("PDF Load Error:", err);
-                            setHasError(true);
-                        }}
-                        options={{ 
-                            cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
-                            cMapPacked: true,
-                            verbosity: 0,
-                            stopAtErrors: false,
-                            pdfBug: false,
-                            worker: globalWorker,
-                        }}
+                            onLoadSuccess={handleLoadSuccess}
+                            onLoadError={handleLoadError}
+                            options={options}
                         loading={
                             <div className="flex items-center justify-center h-64 text-muted-foreground">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-2"></div>
@@ -423,7 +429,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         }
                         className="flex justify-center shadow-2xl"
                     >
-                        {loadedUrl === safeUrl && containerWidth === debouncedWidth && (
+                        {loadedUrl === safeUrl && (
                             <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
                                 <Page
                                     pageNumber={pageNumber}
