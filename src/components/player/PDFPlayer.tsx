@@ -517,12 +517,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={(e) => { 
                             e.stopPropagation(); 
-                            console.log('[PDFPlayer] Zoom Out clicked. Current scale:', scale);
-                            setScale(s => {
-                                const newScale = Math.max(s - 0.1, 0.5);
-                                console.log('[PDFPlayer] New scale (out):', newScale);
-                                return newScale;
-                            }); 
+                            setScale(s => Math.max(s - 0.1, 0.5)); 
                         }}
                         disabled={!loadedUrl}
                     >
@@ -539,12 +534,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={(e) => { 
                             e.stopPropagation(); 
-                            console.log('[PDFPlayer] Zoom In clicked. Current scale:', scale);
-                            setScale(s => {
-                                const newScale = Math.min(s + 0.1, 3.0);
-                                console.log('[PDFPlayer] New scale (in):', newScale);
-                                return newScale;
-                            }); 
+                            setScale(s => Math.min(s + 0.1, 3.0)); 
                         }}
                         disabled={!loadedUrl}
                     >
