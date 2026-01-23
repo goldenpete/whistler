@@ -367,7 +367,7 @@ export default function VideoPlayer() {
 
                 {/* Top Bar */}
                 <div className={cn(
-                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-16 px-6 bg-zinc-950/90 border-b border-white/5 backdrop-blur-md transition-all duration-300 ease-out pointer-events-none",
+                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-12 px-4 bg-zinc-950/90 border-b border-white/5 backdrop-blur-md transition-all duration-300 ease-out pointer-events-none",
                     showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
                 )}>
                     {/* Left: Info */}
