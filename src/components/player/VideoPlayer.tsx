@@ -45,7 +45,9 @@ import {
     Gauge,
     ArrowsOutSimple,
     GridFour,
-    CircleNotch
+    CircleNotch,
+    Eye,
+    EyeSlash
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
@@ -96,6 +98,7 @@ export default function VideoPlayer() {
     const [volume, setVolume] = useState(1);
     const [isMuted, setIsMuted] = useState(false);
     const [showControls, setShowControls] = useState(true);
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [editOpen, setEditOpen] = useState(false);
@@ -367,11 +370,15 @@ export default function VideoPlayer() {
 
                 {/* Top Bar */}
                 <div className={cn(
-                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-12 px-4 bg-zinc-950/90 border-b border-white/5 backdrop-blur-md transition-all duration-300 ease-out pointer-events-none",
+                    "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-12 px-4 transition-all duration-300 ease-out pointer-events-none",
+                    isHeaderVisible && "bg-zinc-950/90 border-b border-white/5 backdrop-blur-md",
                     showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
                 )}>
                     {/* Left: Info */}
-                    <div className="flex items-center gap-4 min-w-0 flex-1 mr-4 pointer-events-auto">
+                    <div className={cn(
+                        "flex items-center gap-4 min-w-0 flex-1 mr-4 pointer-events-auto transition-opacity duration-300",
+                        !isHeaderVisible && "opacity-0 pointer-events-none"
+                    )}>
                         {file.type === 'pdf' ? (
                             <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
                         ) : (
@@ -391,57 +398,66 @@ export default function VideoPlayer() {
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-3 shrink-0 pointer-events-auto">
-                        <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Open Link" onClick={handleOpenLink}>
-                                <ArrowSquareOut size={20} weight="bold" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Copy URL" onClick={handleCopyUrl}>
-                                <Copy size={20} weight="bold" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Share" onClick={handleShare}>
-                                <ShareNetwork size={20} weight="bold" />
-                            </Button>
+                        <div className={cn(
+                            "flex items-center gap-3 transition-all duration-300 ease-in-out",
+                            !isHeaderVisible && "w-0 opacity-0 overflow-hidden"
+                        )}>
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Open Link" onClick={handleOpenLink}>
+                                    <ArrowSquareOut size={20} weight="bold" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Copy URL" onClick={handleCopyUrl}>
+                                    <Copy size={20} weight="bold" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Share" onClick={handleShare}>
+                                    <ShareNetwork size={20} weight="bold" />
+                                </Button>
+                            </div>
+
+                            <div className="w-px h-6 bg-white/20 mx-1" /> {/* Divider */}
+
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => setMoveDialogOpen(true)}>
+                                    <FolderPlus size={20} weight="bold" />
+                                </Button>
+                                
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="text-zinc-400 hover:text-white hover:bg-white/10" 
+                                    title="Change Color"
+                                    onClick={() => setColorPickerOpen(true)}
+                                    style={{ color: file.color || undefined }}
+                                >
+                                    <Palette size={20} weight={file.color ? "fill" : "bold"} />
+                                </Button>
+
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" title="Delete">
+                                            <Trash size={20} weight="bold" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete feature coming soon</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Deleting files from this view is not available yet. This feature is coming soon.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Close</AlertDialogCancel>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+
+                            <div className="w-px h-6 bg-border mx-1" /> {/* Divider */}
                         </div>
 
-                        <div className="w-px h-6 bg-white/20 mx-1" /> {/* Divider */}
-
-                        <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => setMoveDialogOpen(true)}>
-                                <FolderPlus size={20} weight="bold" />
-                            </Button>
-                            
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="text-zinc-400 hover:text-white hover:bg-white/10" 
-                                title="Change Color"
-                                onClick={() => setColorPickerOpen(true)}
-                                style={{ color: file.color || undefined }}
-                            >
-                                <Palette size={20} weight={file.color ? "fill" : "bold"} />
-                            </Button>
-
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" title="Delete">
-                                        <Trash size={20} weight="bold" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete feature coming soon</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Deleting files from this view is not available yet. This feature is coming soon.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Close</AlertDialogCancel>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-
-                        <div className="w-px h-6 bg-border mx-1" /> {/* Divider */}
+                        <Button variant="ghost" size="icon" onClick={() => setIsHeaderVisible(!isHeaderVisible)} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title={isHeaderVisible ? "Hide Top Bar" : "Show Top Bar"}>
+                            {isHeaderVisible ? <EyeSlash weight="bold" size={24} /> : <Eye weight="bold" size={24} />}
+                        </Button>
 
                         <Button variant="ghost" size="icon" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close">
                             <X weight="bold" size={24} />
