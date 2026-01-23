@@ -1,5 +1,5 @@
 import { pdfjs } from 'react-pdf';
 
-// Use the public worker file to avoid bundling issues and worker termination errors
-// This file is copied from node_modules/pdfjs-dist/build/pdf.worker.min.mjs to public/
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Use the CDN worker to ensure the file is always available and matches the pdfjs-dist version
+// This prevents 404 errors and worker termination issues caused by local file resolution failures
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;

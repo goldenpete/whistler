@@ -47,7 +47,7 @@ import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import type { File } from "@/types";
 import { Input } from "@/components/ui/input";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { Document, Page } from "react-pdf";
+import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -902,7 +902,7 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
                         onError();
                     }}
                     options={{
-                        cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
+                        cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
                         cMapPacked: true,
                         verbosity: 0,
                         stopAtErrors: false,

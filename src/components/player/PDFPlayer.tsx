@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useImperativeHandle } from 'react';
-import { Document, Page } from 'react-pdf';
+import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { 
     CaretLeft, 
@@ -354,7 +354,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             setHasError(true);
                         }}
                         options={{ 
-                            cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
+                            cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
                             cMapPacked: true,
                             verbosity: 0,
                             stopAtErrors: false,
