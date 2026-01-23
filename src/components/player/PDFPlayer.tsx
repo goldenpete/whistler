@@ -64,7 +64,8 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const [selectedText, setSelectedText] = useState<string>("");
     
     // Use debounce for resizing to prevent flickering and excessive re-renders
-    const [debouncedWidth] = useDebounceValue(containerWidth, 200);
+    // Reduced to 50ms to ensure responsive layout when sidebar toggles
+    const [debouncedWidth] = useDebounceValue(containerWidth, 50);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pageWrapperRef = useRef<HTMLDivElement>(null);
@@ -131,6 +132,8 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     }, [url]);
 
     // 3. Selection Listener (Only if not readonly)
+    const [selectionRect, setSelectionRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
     useEffect(() => {
         if (readonly) return;
 
@@ -142,15 +145,42 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             if (sel && sel.rangeCount > 0 && containerRef.current?.contains(sel.anchorNode)) {
                 setSelectedText(text);
                 onSelectionChange?.(!!text);
+
+                if (text) {
+                    const range = sel.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    const containerRect = containerRef.current?.getBoundingClientRect();
+                    
+                    if (containerRect) {
+                        setSelectionRect({
+                            top: rect.top - containerRect.top,
+                            left: rect.left - containerRect.left,
+                            width: rect.width,
+                            height: rect.height
+                        });
+                    }
+                } else {
+                    setSelectionRect(null);
+                }
             } else {
                 setSelectedText("");
                 onSelectionChange?.(false);
+                setSelectionRect(null);
             }
         };
         
         document.addEventListener("selectionchange", handleSelectionChange);
-        return () => document.removeEventListener("selectionchange", handleSelectionChange);
-    }, [onSelectionChange, readonly]);
+        // Handle scroll to update position
+        const handleScroll = () => {
+            if (selectedText) handleSelectionChange();
+        };
+        window.addEventListener("scroll", handleScroll, true);
+
+        return () => {
+            document.removeEventListener("selectionchange", handleSelectionChange);
+            window.removeEventListener("scroll", handleScroll, true);
+        };
+    }, [onSelectionChange, readonly, selectedText]);
 
     // 4. Update Highlights Visuals
     useEffect(() => {
@@ -318,6 +348,29 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                     pointer-events: auto;
                 }
             `}</style>
+            {/* Floating Highlight Button */}
+            {selectionRect && !readonly && selectedText && (
+                <div 
+                    className="absolute z-50 animate-in fade-in zoom-in duration-200"
+                    style={{
+                        top: selectionRect.top - 40,
+                        left: selectionRect.left + (selectionRect.width / 2) - 50,
+                    }}
+                >
+                    <Button
+                        size="sm"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddHighlight();
+                            setSelectionRect(null);
+                        }}
+                        className="shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 rounded-full flex items-center gap-2"
+                    >
+                        <span className="text-xs font-semibold">Highlight</span>
+                    </Button>
+                </div>
+            )}
+
             {/* Main Document Area */}
             <div className="flex-1 overflow-auto flex justify-center p-4 custom-scrollbar">
                 {hasError ? (
