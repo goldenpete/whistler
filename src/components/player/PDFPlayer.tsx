@@ -14,6 +14,7 @@ import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { globalWorker } from '@/pdf-worker';
 
 // Note: Worker is configured globally in src/pdf-worker.ts
 
@@ -359,6 +360,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             verbosity: 0,
                             stopAtErrors: false,
                             pdfBug: false,
+                            worker: globalWorker,
                         }}
                         loading={
                             <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -425,7 +427,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={() => changePage(-1)}
-                        disabled={pageNumber <= 1 || !!lockedPage}
+                        disabled={pageNumber <= 1 || !!lockedPage || !loadedUrl}
                     >
                         <CaretLeft size={14} weight="bold" />
                     </Button>
@@ -439,7 +441,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={() => changePage(1)}
-                        disabled={pageNumber >= numPages || !!lockedPage}
+                        disabled={pageNumber >= numPages || !!lockedPage || !loadedUrl}
                     >
                         <CaretRight size={14} weight="bold" />
                     </Button>
@@ -454,6 +456,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={() => setScale(s => Math.max(s - 0.1, 0.5))}
+                        disabled={!loadedUrl}
                     >
                         <MagnifyingGlassMinus size={14} weight="bold" />
                     </Button>
@@ -467,6 +470,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={() => setScale(s => Math.min(s + 0.1, 3.0))}
+                        disabled={!loadedUrl}
                     >
                         <MagnifyingGlassPlus size={14} weight="bold" />
                     </Button>

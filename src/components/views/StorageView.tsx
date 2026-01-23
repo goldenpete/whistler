@@ -50,6 +50,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent,
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { globalWorker } from "@/pdf-worker";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 
@@ -907,6 +908,7 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
                         verbosity: 0,
                         stopAtErrors: false,
                         pdfBug: false,
+                        worker: globalWorker,
                     }}
                 >
                     {loadedUrl === safeUrl && (
