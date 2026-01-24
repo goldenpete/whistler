@@ -757,17 +757,17 @@ function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileCont
     };
 
     const handleCopyLink = () => {
-        const url = `${window.location.origin}/file/${file.id}`;
+        const url = file.url || `${window.location.origin}/file/${file.id}`;
         navigator.clipboard.writeText(url);
     };
 
     const handleOpenLink = () => {
-        const url = `${window.location.origin}/file/${file.id}`;
+        const url = file.url || `${window.location.origin}/file/${file.id}`;
         window.open(url, '_blank');
     };
 
     const handleShare = () => {
-        const url = `${window.location.origin}/file/${file.id}`;
+        const url = file.url || `${window.location.origin}/file/${file.id}`;
         if (navigator.share) {
             navigator.share({
                 title: file.name,
