@@ -409,7 +409,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                         max={1}
                                                         step={0.05}
                                                         onValueChange={(val) => setVolume(val[0])}
-                                                        fillColor="white"
+                                                        thumbClassName="bg-white border-white shadow-sm"
                                                     />
                                                 </div>
                                             </div>

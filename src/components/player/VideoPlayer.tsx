@@ -590,6 +590,7 @@ export default function VideoPlayer() {
                                                 max={1}
                                                 step={0.05}
                                                 onValueChange={(val) => setVolume(val[0])}
+                                                thumbClassName="bg-white border-white shadow-sm"
                                             />
                                         </div>
                                     </div>
