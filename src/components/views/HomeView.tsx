@@ -328,6 +328,104 @@ export default function HomeView() {
         }
     };
 
+    const CardPreview = ({ item }: { item: typeof allItems[0] }) => {
+        // Image File
+        if (item.type === 'file' && item.subType === 'image' && item.data.url) {
+            return (
+                <div className="absolute inset-0 bg-black/20">
+                    <img 
+                        src={item.data.url} 
+                        alt="" 
+                        className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
+                    />
+                </div>
+            );
+        }
+        
+        // Video File
+        if (item.type === 'file' && item.subType === 'video' && item.data.url) {
+            return (
+                <div className="absolute inset-0 bg-black/20">
+                    <video
+                        src={item.data.url + "#t=0.1"}
+                        className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                        muted
+                        loop
+                        playsInline
+                        onMouseOver={e => e.currentTarget.play()}
+                        onMouseOut={e => e.currentTarget.pause()}
+                    />
+                </div>
+            );
+        }
+
+        // PDF File
+        if (item.type === 'file' && item.subType === 'pdf') {
+            return (
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] rotate-12 scale-150 pointer-events-none">
+                    <FilePdf size={200} weight="fill" />
+                </div>
+            );
+        }
+
+        // Audio File
+        if (item.type === 'file' && item.subType === 'audio') {
+            return (
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none">
+                    <MusicNote size={200} weight="fill" />
+                </div>
+            );
+        }
+
+        // Doc
+        if (item.type === 'doc') {
+            const text = item.data.content?.replace(/<[^>]*>/g, '') || '';
+            return (
+                <div 
+                    className="absolute inset-0 p-6 text-[10px] text-foreground/20 font-mono break-words leading-relaxed overflow-hidden select-none pointer-events-none"
+                    style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent)' }}
+                >
+                    {text.slice(0, 1000)}
+                </div>
+            );
+        }
+
+        // Collection
+        if (item.type === 'collection') {
+            return (
+                <>
+                    <div 
+                        className="absolute inset-0 opacity-[0.08]"
+                        style={{ backgroundColor: item.data.color }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] -rotate-12 scale-150 pointer-events-none" style={{ color: item.data.color }}>
+                        <Folder size={200} weight="fill" />
+                    </div>
+                </>
+            );
+        }
+
+        // Graph
+        if (item.type === 'graph') {
+            return (
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none">
+                    <Graph size={200} weight="fill" />
+                </div>
+            );
+        }
+
+        // Highlight
+        if (item.type === 'highlight') {
+            return (
+                <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none">
+                    “
+                </div>
+            );
+        }
+
+        return null;
+    };
+
     return (
         <div className="flex flex-col h-full bg-background overflow-hidden">
             {/* Top Bar */}
@@ -390,30 +488,37 @@ export default function HomeView() {
                                     <button
                                         key={`${item.type}-${item.id}`}
                                         onClick={() => handleItemClick(item)}
-                                        className="group flex flex-col items-start gap-3 p-4 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left overflow-hidden h-full"
+                                        className="group relative flex flex-col items-start justify-end gap-3 p-4 rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-all text-left overflow-hidden h-48 shadow-sm"
                                     >
-                                        <div className="flex items-center justify-between w-full gap-2">
-                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
-                                                <Icon weight="duotone" className="w-5 h-5" style={item.type === 'collection' ? { color: item.data.color } : undefined} />
-                                            </div>
-                                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-background/50 text-muted-foreground">
-                                                {label}
-                                            </span>
-                                        </div>
+                                        {/* Background Preview */}
+                                        <CardPreview item={item} />
                                         
-                                        <div className="w-full min-w-0 flex-1 flex flex-col justify-between gap-2">
-                                            <div>
-                                                <div className="font-medium text-sm truncate group-hover:text-foreground transition-colors" title={item.name}>
+                                        {/* Gradient Overlay for Text Readability */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/60 to-transparent z-10" />
+
+                                        {/* Content Layer */}
+                                        <div className="relative z-20 w-full flex flex-col h-full">
+                                            <div className="flex items-center justify-between w-full gap-2 mb-auto">
+                                                <div className="p-2 shrink-0 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
+                                                    <Icon weight="duotone" className="w-5 h-5" style={item.type === 'collection' ? { color: item.data.color } : undefined} />
+                                                </div>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
+                                                    {label}
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="w-full min-w-0 flex flex-col gap-1 mt-4">
+                                                <div className="font-semibold text-sm truncate leading-tight group-hover:text-primary transition-colors" title={item.name}>
                                                     {item.name}
                                                 </div>
                                                 {item.type === 'highlight' && item.data.file && (
-                                                    <div className="text-xs text-muted-foreground/70 truncate mt-0.5">
+                                                    <div className="text-xs text-muted-foreground/80 truncate">
                                                         in {item.data.file.name}
                                                     </div>
                                                 )}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground/70 truncate pt-2 border-t border-border/20 w-full">
-                                                {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                                                <div className="text-[11px] text-muted-foreground/60 truncate pt-2 mt-1 border-t border-border/10 w-full font-medium">
+                                                    {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                                                </div>
                                             </div>
                                         </div>
                                     </button>
