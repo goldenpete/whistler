@@ -319,8 +319,15 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     lastModified: Date.now(),
                 };
                 
+                const payload = JSON.stringify({
+                    key: "whistler_data",
+                    value: data,
+                });
+                
                 // Log debug info (safely)
                 console.log(`Syncing (Push) for account ${currentAccountId} with token ending in ...${currentToken.slice(-6)}`);
+                console.log(`Payload size: approx ${Math.round(payload.length / 1024)} KB`);
+                console.log(`Payload keys: Projects: ${data.projects.length}, Files: ${data.files.length}, Collections: ${data.collections.length}`);
 
                 const response = await fetch(`${SYNC_API_URL}/data`, {
                     method: "PUT",
@@ -328,11 +335,11 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${currentToken}`,
                     },
-                    body: JSON.stringify({
-                        key: "whistler_data",
-                        value: data,
-                    }),
+                    body: payload,
                 });
+                
+                console.log(`Push Response Status: ${response.status} ${response.statusText}`);
+
                 if (response.status === 401) {
                     console.error("Sync Push 401 Unauthorized");
                     handleLogout();
@@ -342,10 +349,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                 }
                 if (!response.ok) {
                     const body = await response.json().catch(() => null);
+                    console.error("Push Error Body:", body);
                     setError(body?.error || "Push failed");
                     setSyncStatus("error");
                     return;
                 }
+                console.log("Push Successful");
             } else {
                 console.log(`Syncing (Pull) for account ${currentAccountId}`);
                 
@@ -355,6 +364,9 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         Authorization: `Bearer ${currentToken}`,
                     },
                 });
+
+                console.log(`Pull Response Status: ${response.status} ${response.statusText}`);
+
                 if (response.status === 401) {
                     console.error("Sync Pull 401 Unauthorized");
                     handleLogout();
@@ -364,16 +376,20 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                 }
                 if (!response.ok) {
                     const body = await response.json().catch(() => null);
+                    console.error("Pull Error Body:", body);
                     setError(body?.error || "Pull failed");
                     setSyncStatus("error");
                     return;
                 }
                 const result = await response.json();
+                console.log("Pull Result:", result ? "Data received" : "No data");
+                
                 const dataRow = Array.isArray(result.data)
                     ? result.data.find((d: any) => d.key === "whistler_data")
                     : null;
                 if (dataRow && dataRow.value) {
                     const cloudData = typeof dataRow.value === "string" ? JSON.parse(dataRow.value) : dataRow.value;
+                    console.log(`Restoring Cloud Data: Projects: ${cloudData.projects?.length}, Files: ${cloudData.files?.length}`);
                     setState({
                         projects: cloudData.projects || [],
                         files: cloudData.files || [],
@@ -397,6 +413,8 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             node: '#f59e0b',
                         },
                     });
+                } else {
+                    console.log("No matching data row found in pull result.");
                 }
             }
             const now = Date.now();

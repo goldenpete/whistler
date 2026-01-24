@@ -92,7 +92,6 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         verbosity: 0,
         stopAtErrors: false,
         pdfBug: false,
-        worker: globalWorker,
     }), []);
 
     // Filter highlights for the current page

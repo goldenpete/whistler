@@ -953,7 +953,6 @@ function PdfThumbnail({ url, onError }: { url: string; onError: () => void }) {
                         verbosity: 0,
                         stopAtErrors: false,
                         pdfBug: false,
-                        worker: globalWorker,
                     }}
                 >
                     {loadedUrl === safeUrl && (

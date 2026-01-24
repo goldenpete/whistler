@@ -95,23 +95,32 @@ export function WelcomeView() {
             }
             login({ id: cleanId, email: displayName || cleanId });
 
+            console.log(`Initial Sync (Pull) for account ${cleanId} with token ending in ...${token.slice(-6)}`);
+
             const pullResponse = await fetch(`${SYNC_API_URL}/data`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
+            
+            console.log(`Initial Pull Response Status: ${pullResponse.status} ${pullResponse.statusText}`);
+
             if (!pullResponse.ok) {
                 const body = await pullResponse.json().catch(() => null);
+                console.error("Initial Pull Error Body:", body);
                 setError(body?.error || "Failed to load data");
                 return;
             }
             const result = await pullResponse.json();
+            console.log("Initial Pull Result:", result ? "Data received" : "No data");
+
             const dataRow = Array.isArray(result.data)
                 ? result.data.find((d: any) => d.key === "whistler_data")
                 : null;
             if (dataRow && dataRow.value) {
                 const cloudData = typeof dataRow.value === "string" ? JSON.parse(dataRow.value) : dataRow.value;
+                console.log(`Restoring Initial Cloud Data: Projects: ${cloudData.projects?.length}, Files: ${cloudData.files?.length}`);
                 setState({
                     projects: cloudData.projects || [],
                     files: cloudData.files || [],
