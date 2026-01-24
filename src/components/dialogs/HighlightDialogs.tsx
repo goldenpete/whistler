@@ -423,17 +423,17 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 )}
 
                                 {/* Right: Speed, Loop, Sidebar Toggle, Fullscreen */}
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1">
                                     {!file.name.toLowerCase().endsWith('.pdf') && (
                                         <>
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
                                                 onClick={(e) => { e.stopPropagation(); setIsLooping(!isLooping); }}
-                                                className={cn("text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
+                                                className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
                                                 title={isLooping ? "Loop On" : "Loop Off"}
                                             >
-                                                <Repeat weight="bold" size={20} />
+                                                <Repeat weight="bold" size={18} />
                                             </Button>
 
                                             <Popover>
@@ -442,7 +442,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="text-muted-foreground hover:text-foreground font-mono text-xs w-16"
+                                                        className="h-8 text-muted-foreground hover:text-foreground font-mono text-xs w-14 px-0"
                                                     >
                                                         {playbackSpeed}x
                                                     </Button>

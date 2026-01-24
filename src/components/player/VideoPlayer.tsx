@@ -600,16 +600,16 @@ export default function VideoPlayer() {
                             </div>
 
                             {/* Right: Speed, PiP, Sidebar Toggle, Fullscreen */}
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
                                 {/* Loop Toggle */}
                                 <Button
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => setIsLooping(!isLooping)}
-                                    className={cn("text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
+                                    className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
                                     title={isLooping ? "Loop On" : "Loop Off"}
                                 >
-                                    <Repeat weight="bold" size={20} />
+                                    <Repeat weight="bold" size={18} />
                                 </Button>
 
                                 <Popover>
@@ -617,7 +617,7 @@ export default function VideoPlayer() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-muted-foreground hover:text-foreground font-mono text-xs w-16"
+                                            className="h-8 text-muted-foreground hover:text-foreground font-mono text-xs w-14 px-0"
                                         >
                                             {playbackRate}x
                                         </Button>
