@@ -805,16 +805,18 @@ function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileCont
             <ContextMenuSeparator />
             <ContextMenuLabel>Share</ContextMenuLabel>
 
-            <ContextMenuItem onClick={handleOpenLink} className="gap-2">
-                <LinkSimple size={16} /> Open Link
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handleCopyLink} className="gap-2">
-                <Copy size={16} /> Copy Link
-            </ContextMenuItem>
             {file.type !== 'folder' && (
-                <ContextMenuItem onClick={handleShare} className="gap-2">
-                    <ShareNetwork size={16} /> Share
-                </ContextMenuItem>
+                <>
+                    <ContextMenuItem onClick={handleOpenLink} className="gap-2">
+                        <LinkSimple size={16} /> Open Link
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={handleCopyLink} className="gap-2">
+                        <Copy size={16} /> Copy Link
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={handleShare} className="gap-2">
+                        <ShareNetwork size={16} /> Share
+                    </ContextMenuItem>
+                </>
             )}
         </ContextMenuContent>
     );

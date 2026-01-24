@@ -423,6 +423,7 @@ export default function HomeView() {
                         src={item.data.url} 
                         alt="" 
                         className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
+                        onContextMenu={(e) => e.preventDefault()}
                     />
                 </div>
             );
@@ -440,6 +441,7 @@ export default function HomeView() {
                         playsInline
                         onMouseOver={e => e.currentTarget.play()}
                         onMouseOut={e => e.currentTarget.pause()}
+                        onContextMenu={(e) => e.preventDefault()}
                     />
                 </div>
             );
