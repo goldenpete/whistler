@@ -544,31 +544,6 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             >
                                 <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20 w-80">
                                     <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlight Details</h3>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            onOpenChange(false);
-                                            navigate(`/file/${file.id}`);
-                                        }}
-                                        className="h-7 gap-2 text-muted-foreground hover:text-foreground px-2"
-                                        title="View Original File"
-                                    >
-                                        <ArrowSquareOut weight="bold" size={16} />
-                                        <span className="text-xs font-medium">View Original</span>
-                                    </Button>
-                                        {hasChanges && (
-                                            <Button 
-                                                size="sm" 
-                                                onClick={handleSave}
-                                                className="h-7 px-3 text-xs gap-1.5"
-                                            >
-                                                <FloppyDisk weight="bold" />
-                                                Save
-                                            </Button>
-                                        )}
-                                    </div>
                                 </div>
                                 
                                 <div className="flex-1 p-4 overflow-y-auto">
@@ -576,21 +551,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         {/* Collection */}
                                         <div className="flex flex-col gap-2">
                                             <Label className="text-xs font-mono text-muted-foreground uppercase">Collection</Label>
-                                            <Select value={editCollectionId} onValueChange={setEditCollectionId}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select collection" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {collections?.map(c => (
-                                                        <SelectItem key={c.id} value={c.id}>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                                                                {c.name}
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md border border-border/50">
+                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: collection?.color || 'transparent' }} />
+                                                <span className="text-sm font-medium">{collection?.name || 'No Collection'}</span>
+                                            </div>
                                         </div>
 
                                         {/* Time Range or Highlighted Text */}
@@ -604,24 +568,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         ) : (
                                             <div className="flex flex-col gap-2">
                                                 <Label className="text-xs font-mono text-muted-foreground uppercase">Time Range</Label>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1">
-                                                        <Input 
-                                                            value={editStart} 
-                                                            onChange={(e) => setEditStart(e.target.value)}
-                                                            className="font-mono text-center"
-                                                            placeholder="MM:SS"
-                                                        />
-                                                    </div>
-                                                    <span className="text-muted-foreground">-</span>
-                                                    <div className="flex-1">
-                                                        <Input 
-                                                            value={editEnd} 
-                                                            onChange={(e) => setEditEnd(e.target.value)}
-                                                            className="font-mono text-center"
-                                                            placeholder="MM:SS"
-                                                        />
-                                                    </div>
+                                                <div className="flex items-center justify-center p-2 bg-muted/30 rounded-md border border-border/50 font-mono text-sm">
+                                                     {formatTime(highlight.start)} - {formatTime(highlight.end || highlight.start)}
                                                 </div>
                                             </div>
                                         )}
@@ -629,12 +577,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         {/* Note */}
                                         <div className="flex flex-col gap-2 flex-1">
                                             <Label className="text-xs font-mono text-muted-foreground uppercase">Note</Label>
-                                            <Textarea 
-                                                value={editNote} 
-                                                onChange={(e) => setEditNote(e.target.value)} 
-                                                placeholder="Add a note..."
-                                                className="min-h-[200px] resize-none flex-1 font-normal leading-relaxed"
-                                            />
+                                            <div className="p-2 bg-muted/30 rounded-md border border-border/50 min-h-[100px] text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                                 <ExpandableNote text={highlight.note} />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

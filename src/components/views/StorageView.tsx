@@ -752,23 +752,63 @@ function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileCont
         }));
     };
 
+    const handleCopyLink = () => {
+        const url = `${window.location.origin}/file/${file.id}`;
+        navigator.clipboard.writeText(url);
+    };
+
+    const handleOpenLink = () => {
+        const url = `${window.location.origin}/file/${file.id}`;
+        window.open(url, '_blank');
+    };
+
+    const handleShare = () => {
+        const url = `${window.location.origin}/file/${file.id}`;
+        if (navigator.share) {
+            navigator.share({
+                title: file.name,
+                url: url
+            }).catch(() => {
+                navigator.clipboard.writeText(url);
+            });
+        } else {
+            navigator.clipboard.writeText(url);
+        }
+    };
+
     return (
         <ContextMenuContent className="w-56">
             <ContextMenuItem onClick={onSelect} className="gap-2">
                 <CheckSquare size={16} /> Select
             </ContextMenuItem>
+            
+            <ContextMenuSeparator />
+            <ContextMenuLabel>Edit</ContextMenuLabel>
+            
+            <ContextMenuItem onClick={onRename} className="gap-2">
+                <PencilSimple size={16} /> Edit Title/Desc
+            </ContextMenuItem>
+            <ContextMenuItem onClick={onMove} className="gap-2">
+                <ArrowSquareOut size={16} /> Move to Folder
+            </ContextMenuItem>
             <ContextMenuItem onClick={onColor} className="gap-2">
                 <Palette size={16} /> Change Color
             </ContextMenuItem>
-            <ContextMenuItem onClick={onRename} className="gap-2">
-                <PencilSimple size={16} /> Rename
-            </ContextMenuItem>
-            <ContextMenuItem onClick={onMove} className="gap-2">
-                <ArrowSquareOut size={16} /> Move to...
-            </ContextMenuItem>
-            <ContextMenuSeparator />
             <ContextMenuItem onClick={handleDelete} className="gap-2 text-destructive focus:text-destructive">
-                <Trash size={16} /> Delete
+                <Trash size={16} /> Trash
+            </ContextMenuItem>
+
+            <ContextMenuSeparator />
+            <ContextMenuLabel>Share</ContextMenuLabel>
+
+            <ContextMenuItem onClick={handleOpenLink} className="gap-2">
+                <LinkSimple size={16} /> Open Link
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleCopyLink} className="gap-2">
+                <Copy size={16} /> Copy Link
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleShare} className="gap-2">
+                <ShareNetwork size={16} /> Share
             </ContextMenuItem>
         </ContextMenuContent>
     );
