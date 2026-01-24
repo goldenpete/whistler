@@ -347,6 +347,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         </div>
 
                         {/* Bottom Bar (Controls) */}
+                        {!file.name.toLowerCase().endsWith('.pdf') && (
                         <div className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-200 ease-out z-50 pb-4 pt-8 px-4",
                             showControls ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -521,6 +522,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 </div>
                             </div>
                         </div>
+                        )}
                     </div>
 
                     {/* Sidebar */}

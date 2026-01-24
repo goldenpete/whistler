@@ -7,7 +7,9 @@ import {
     MagnifyingGlassPlus, 
     MagnifyingGlassMinus, 
     SidebarSimple,
-    EyeSlash
+    EyeSlash,
+    CornersIn,
+    CornersOut
 } from '@phosphor-icons/react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -569,6 +571,24 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             onClick={onToggleSidebar}
                         >
                             <SidebarSimple size={14} weight="bold" />
+                        </Button>
+                    </>
+                )}
+
+                {onToggleFullscreen && (
+                    <>
+                        <div className="w-px h-4 bg-white/10 mx-1" />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFullscreen();
+                            }}
+                            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                        >
+                            {isFullscreen ? <CornersIn size={14} weight="bold" /> : <CornersOut size={14} weight="bold" />}
                         </Button>
                     </>
                 )}
