@@ -9,7 +9,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut, FilePdf, EyeSlash } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
@@ -286,15 +286,22 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         
                         {/* Top Bar (Title + Close) */}
                         <div className={cn(
-                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 via-black/40 to-transparent transition-all duration-200 ease-out",
-                            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-12 px-4 bg-zinc-950/90 border-b border-white/5 backdrop-blur-md transition-all duration-200 ease-out",
+                            showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
                         )}>
-                            <DialogTitle className="text-white font-medium text-base truncate px-2">{file.name}</DialogTitle>
-                            <Button 
+                            <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
+                                {file.name.toLowerCase().endsWith('.pdf') ? (
+                                    <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                                ) : (
+                                    <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                                )}
+                                <DialogTitle className="text-white font-medium text-base truncate">{file.name}</DialogTitle>
+                            </div>
+                            <Button  
                                 variant="ghost" 
                                 size="icon" 
                                 onClick={() => onOpenChange(false)} 
-                                className="text-white/70 hover:text-white hover:bg-white/10"
+                                className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground"
                             >
                                 <X weight="bold" size={24} />
                             </Button>
