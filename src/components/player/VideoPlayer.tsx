@@ -563,8 +563,8 @@ export default function VideoPlayer() {
 
                         {/* Controls Row */}
                         <div className="flex items-center justify-between px-2 pointer-events-auto">
-                            {/* Left: Play/Pause, Volume */}
-                            <div className="flex items-center gap-4">
+                            {/* Left: Play/Pause, Volume, Time */}
+                            <div className="flex items-center gap-2">
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -592,11 +592,11 @@ export default function VideoPlayer() {
                                         />
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Center: Time Display */}
-                            <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none">
-                                {formatTime(currentTime)} <span className="text-white/40 mx-2">/</span> {formatTime(duration)}
+                                {/* Time Display */}
+                                <div className="font-mono text-sm font-medium text-white/90 tracking-wide ml-2">
+                                    {formatTime(currentTime)} <span className="text-white/40 mx-2">/</span> {formatTime(duration)}
+                                </div>
                             </div>
 
                             {/* Right: Speed, PiP, Sidebar Toggle, Fullscreen */}

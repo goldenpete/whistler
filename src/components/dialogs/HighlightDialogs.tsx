@@ -383,7 +383,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         <span className="truncate">"{highlight.text || 'PDF View'}"</span>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -412,13 +412,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                 />
                                             </div>
                                         </div>
-                                    </div>
-                                )}
 
-                                {/* Center: Time Display - Video Only */}
-                                {!file.name.toLowerCase().endsWith('.pdf') && (
-                                    <div className="absolute left-1/2 -translate-x-1/2 font-mono text-sm font-medium text-white/90 tracking-wide pointer-events-none transition-all duration-150 ease-out" style={{ left: isSidebarOpen ? 'calc(50% - 10rem)' : '50%' }}>
-                                        {formatTime(currentTime - start)} <span className="text-white/40 mx-2">/</span> {formatTime(segmentDuration)}
+                                        {/* Time Display - Video Only */}
+                                        <div className="font-mono text-sm font-medium text-white/90 tracking-wide ml-2">
+                                            {formatTime(currentTime - start)} <span className="text-white/40 mx-2">/</span> {formatTime(segmentDuration)}
+                                        </div>
                                     </div>
                                 )}
 
