@@ -362,6 +362,7 @@ export const useStore = create<AppStore>()(
                         action: 'delete',
                         entityType: 'collection',
                         entityId: id,
+                        entityName: state.storages.find(s => s.id === id)?.name,
                         details: 'Permanently Deleted',
                         timestamp: Date.now()
                     }, ...state.history]
@@ -427,6 +428,7 @@ export const useStore = create<AppStore>()(
                     action: 'delete',
                     entityType: 'highlight',
                     entityId: id,
+                    entityName: state.highlights.find(t => t.id === id)?.text || "Highlight",
                     timestamp: Date.now()
                 }, ...state.history]
             })),
@@ -438,6 +440,7 @@ export const useStore = create<AppStore>()(
                     action: 'update',
                     entityType: 'highlight',
                     entityId: id,
+                    entityName: state.highlights.find(t => t.id === id)?.text || "Highlight",
                     timestamp: Date.now()
                 }, ...state.history]
             })),
@@ -690,6 +693,7 @@ export const useStore = create<AppStore>()(
                     action: 'delete',
                     entityType: 'collection',
                     entityId: id,
+                    entityName: state.collections.find(c => c.id === id)?.name,
                     details: "Permanent Delete",
                     timestamp: Date.now()
                 }, ...state.history]
@@ -809,6 +813,7 @@ export const useStore = create<AppStore>()(
                         entityType: 'file',
                         details: 'Empty Trash',
                         entityId: 'trash',
+                        entityName: 'Trash',
                         timestamp: Date.now()
                     }, ...state.history]
                 };

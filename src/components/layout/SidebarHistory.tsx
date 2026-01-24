@@ -1,7 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
 import { format } from "date-fns";
-import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase } from "@phosphor-icons/react";
+import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase, ShareNetwork, Circle, LineSegment, Article } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 import { CaretLeft } from "@phosphor-icons/react";
@@ -28,9 +28,14 @@ export function SidebarHistory({ onBack }: SidebarHistoryProps) {
         switch (type) {
             case 'file': return File;
             case 'collection': return Folder;
-            case 'timestamp': return FilmStrip; // Or Tag
+            case 'timestamp': return FilmStrip; // Legacy support
+            case 'highlight': return NotePencil;
             case 'project': return Briefcase;
             case 'note': return NotePencil;
+            case 'graph': return ShareNetwork;
+            case 'node': return Circle;
+            case 'edge': return LineSegment;
+            case 'doc': return Article;
             default: return File;
         }
     };
@@ -96,7 +101,7 @@ export function SidebarHistory({ onBack }: SidebarHistoryProps) {
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-sidebar-foreground truncate font-medium">
-                                                    {entry.entityName || "Unknown Entity"}
+                                                    {entry.entityName || (entry.entityType ? entry.entityType.charAt(0).toUpperCase() + entry.entityType.slice(1) : "Unknown Entity")}
                                                 </p>
                                                 {entry.details && (
                                                     <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{entry.details}</p>

@@ -445,9 +445,10 @@ interface RenameFileDialogProps {
     onSubmit: (name: string, description: string) => void;
     initialName: string;
     initialDescription?: string;
+    showDescription?: boolean;
 }
 
-export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "" }: RenameFileDialogProps) {
+export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "", showDescription = true }: RenameFileDialogProps) {
     const [name, setName] = useState(initialName);
     const [description, setDescription] = useState(initialDescription);
 
@@ -473,14 +474,14 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                    <DialogTitle>Edit File Details</DialogTitle>
+                    <DialogTitle>{showDescription ? "Edit File Details" : "Rename"}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="rename-file-name">Name</Label>
                         <Input
                             id="rename-file-name"
-                            placeholder="File Name"
+                            placeholder="Name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
@@ -488,16 +489,18 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                             className="bg-zinc-900 border-zinc-800"
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="rename-file-description">Description</Label>
-                        <Textarea
-                            id="rename-file-description"
-                            placeholder="Add a description..."
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="bg-zinc-900 border-zinc-800 resize-none h-32"
-                        />
-                    </div>
+                    {showDescription && (
+                        <div className="space-y-2">
+                            <Label htmlFor="rename-file-description">Description</Label>
+                            <Textarea
+                                id="rename-file-description"
+                                placeholder="Add a description..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="bg-zinc-900 border-zinc-800 resize-none h-32"
+                            />
+                        </div>
+                    )}
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
