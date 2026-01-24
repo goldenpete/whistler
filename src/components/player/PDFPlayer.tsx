@@ -576,7 +576,10 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={onHideControls}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onHideControls();
+                            }}
                             title="Hide Controls"
                         >
                             <EyeSlash size={14} weight="bold" />

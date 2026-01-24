@@ -670,7 +670,10 @@ export default function VideoPlayer() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => setShowControls(false)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowControls(false);
+                                    }}
                                     className="text-muted-foreground hover:text-foreground"
                                     title="Hide Controls"
                                 >
