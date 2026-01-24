@@ -551,10 +551,27 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         {/* Collection */}
                                         <div className="flex flex-col gap-2">
                                             <Label className="text-xs font-mono text-muted-foreground uppercase">Collection</Label>
-                                            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md border border-border/50">
-                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: collection?.color || 'transparent' }} />
-                                                <span className="text-sm font-medium">{collection?.name || 'No Collection'}</span>
-                                            </div>
+                                            <Select 
+                                                value={editCollectionId} 
+                                                onValueChange={(value) => {
+                                                    setEditCollectionId(value);
+                                                    handleSave({ collectionId: value });
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-full bg-muted/30 border-border/50 h-9">
+                                                    <SelectValue placeholder="Select collection" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {collections?.map(c => (
+                                                        <SelectItem key={c.id} value={c.id}>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
+                                                                {c.name}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
 
                                         {/* Time Range or Highlighted Text */}
@@ -568,8 +585,36 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         ) : (
                                             <div className="flex flex-col gap-2">
                                                 <Label className="text-xs font-mono text-muted-foreground uppercase">Time Range</Label>
-                                                <div className="flex items-center justify-center p-2 bg-muted/30 rounded-md border border-border/50 font-mono text-sm">
-                                                     {formatTime(highlight.start)} - {formatTime(highlight.end || highlight.start)}
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        value={editStart}
+                                                        onChange={(e) => setEditStart(e.target.value)}
+                                                        onBlur={() => {
+                                                            const seconds = parseTime(editStart);
+                                                            if (seconds !== null) {
+                                                                handleSave({ start: seconds });
+                                                            } else {
+                                                                setEditStart(formatTime(highlight.start));
+                                                            }
+                                                        }}
+                                                        className="bg-muted/30 border-border/50 h-9 font-mono text-center"
+                                                        placeholder="0:00"
+                                                    />
+                                                    <span className="text-muted-foreground">-</span>
+                                                    <Input
+                                                        value={editEnd}
+                                                        onChange={(e) => setEditEnd(e.target.value)}
+                                                        onBlur={() => {
+                                                            const seconds = parseTime(editEnd);
+                                                            if (seconds !== null) {
+                                                                handleSave({ end: seconds });
+                                                            } else {
+                                                                setEditEnd(formatTime(highlight.end));
+                                                            }
+                                                        }}
+                                                        className="bg-muted/30 border-border/50 h-9 font-mono text-center"
+                                                        placeholder="0:00"
+                                                    />
                                                 </div>
                                             </div>
                                         )}
@@ -577,9 +622,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         {/* Note */}
                                         <div className="flex flex-col gap-2 flex-1">
                                             <Label className="text-xs font-mono text-muted-foreground uppercase">Note</Label>
-                                            <div className="p-2 bg-muted/30 rounded-md border border-border/50 min-h-[100px] text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                                                 <ExpandableNote text={highlight.note} />
-                                            </div>
+                                            <Textarea 
+                                                value={editNote}
+                                                onChange={(e) => setEditNote(e.target.value)}
+                                                onBlur={() => handleSave({ note: editNote })}
+                                                className="flex-1 bg-muted/30 border-border/50 resize-none min-h-[200px] leading-relaxed p-3 focus-visible:ring-1"
+                                                placeholder="Add a note..."
+                                            />
                                         </div>
                                     </div>
                                 </div>
