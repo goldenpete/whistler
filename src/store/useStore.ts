@@ -105,6 +105,7 @@ interface AppStore extends AppState {
     // Auth Actions
     login: (user: User) => void;
     logout: () => void;
+    updateUser: (updates: Partial<User>) => void;
     setLastSyncTime: (time: number) => void;
     setAutoSyncEnabled: (enabled: boolean) => void;
     setSyncStatus: (status: SyncStatus) => void;
@@ -213,6 +214,7 @@ export const useStore = create<AppStore>()(
 
             login: (user) => set({ user }),
             logout: () => set({ user: null }),
+            updateUser: (updates) => set((state) => ({ user: state.user ? { ...state.user, ...updates } : null })),
             setLastSyncTime: (time) => set({ lastSyncTime: time }),
             setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
             setSyncStatus: (status) => set({ syncStatus: status }),

@@ -18,7 +18,10 @@ import {
     ShieldCheck,
     Copy,
     Warning,
-    QrCode
+    QrCode,
+    PencilSimple,
+    Check,
+    X
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 
@@ -45,6 +48,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         user, 
         login, 
         logout, 
+        updateUser,
         lastSyncTime, 
         setLastSyncTime, 
         setState,
@@ -70,6 +74,9 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
     const [setupMode, setSetupMode] = useState<'enable' | 'disable'>('enable');
     const [setupSecret, setSetupSecret] = useState<string | null>(null);
     const [setupStep, setSetupStep] = useState<'intro' | 'scan' | 'verify'>('intro');
+
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editName, setEditName] = useState("");
 
     useEffect(() => {
         window.onTurnstileSuccess = (token: string) => {
@@ -366,6 +373,26 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         localStorage.removeItem("whistler_display_name");
         localStorage.removeItem("whistler_totp_enabled");
         logout();
+    };
+
+    const handleStartEditName = () => {
+        setEditName(user?.email && user.email !== accountId ? user.email : "");
+        setIsEditingName(true);
+    };
+
+    const handleSaveName = () => {
+        if (!user) return;
+        const newName = editName.trim();
+        // If empty, revert to ID (effectively) by storing empty string, 
+        // but let's keep it clean.
+        updateUser({ email: newName || user.id });
+        
+        if (newName) {
+            localStorage.setItem("whistler_display_name", newName);
+        } else {
+            localStorage.removeItem("whistler_display_name");
+        }
+        setIsEditingName(false);
     };
 
     const handleStart2FASetup = async () => {
@@ -802,21 +829,54 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     {/* Account Info */}
                     <div>
                         <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Account</div>
-                        <div className="flex items-center gap-3 p-2 rounded-md hover:bg-sidebar-accent transition-colors">
+                        <div className="flex items-center gap-3 p-2 rounded-md hover:bg-sidebar-accent transition-colors group">
                             <div className="size-8 rounded-full bg-secondary flex items-center justify-center">
                                 <User weight="bold" className="text-muted-foreground" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium truncate">
-                                    {user.email && user.email !== accountId ? user.email : "Anonymous"}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                    {accountId ? formatAccountId(accountId) : formatAccountId(user.id)}
-                                </div>
+                                {isEditingName ? (
+                                    <div className="flex items-center gap-1">
+                                        <Input
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            className="h-6 text-sm px-1 py-0"
+                                            autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleSaveName();
+                                                if (e.key === 'Escape') setIsEditingName(false);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={(e) => { e.stopPropagation(); handleSaveName(); }}>
+                                            <Check size={14} />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-red-400 hover:text-red-500 hover:bg-red-500/10" onClick={(e) => { e.stopPropagation(); setIsEditingName(false); }}>
+                                            <X size={14} />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="text-sm font-medium truncate flex items-center gap-2">
+                                            {user.email && user.email !== accountId ? user.email : "Anonymous"}
+                                            <button 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                                onClick={(e) => { e.stopPropagation(); handleStartEditName(); }}
+                                                title="Edit display name"
+                                            >
+                                                <PencilSimple size={12} />
+                                            </button>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {accountId ? formatAccountId(accountId) : formatAccountId(user.id)}
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleLogout} title="Sign Out">
-                                <SignOut className="text-muted-foreground" />
-                            </Button>
+                            {!isEditingName && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleLogout} title="Sign Out">
+                                    <SignOut className="text-muted-foreground" />
+                                </Button>
+                            )}
                         </div>
                     </div>
 
