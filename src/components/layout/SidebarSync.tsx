@@ -288,7 +288,11 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
     };
 
     const handleSync = async (type: 'push' | 'pull') => {
-        if (!accountId || !sessionToken) {
+        // Fallback to localStorage if state is missing (e.g. after refresh)
+        const currentToken = sessionToken || localStorage.getItem("whistler_session_token");
+        const currentAccountId = accountId || localStorage.getItem("whistler_account_id");
+
+        if (!currentAccountId || !currentToken) {
             setError("Connect with your Sync ID first");
             return;
         }
@@ -314,11 +318,15 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     defaultColors: state.defaultColors,
                     lastModified: Date.now(),
                 };
+                
+                // Log debug info (safely)
+                console.log(`Syncing (Push) for account ${currentAccountId} with token ending in ...${currentToken.slice(-6)}`);
+
                 const response = await fetch(`${SYNC_API_URL}/data`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${sessionToken}`,
+                        Authorization: `Bearer ${currentToken}`,
                     },
                     body: JSON.stringify({
                         key: "whistler_data",
@@ -326,6 +334,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     }),
                 });
                 if (response.status === 401) {
+                    console.error("Sync Push 401 Unauthorized");
                     handleLogout();
                     setError("Session expired. Please sign in again.");
                     setSyncStatus("error");
@@ -338,13 +347,16 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     return;
                 }
             } else {
+                console.log(`Syncing (Pull) for account ${currentAccountId}`);
+                
                 const response = await fetch(`${SYNC_API_URL}/data`, {
                     method: "GET",
                     headers: {
-                        Authorization: `Bearer ${sessionToken}`,
+                        Authorization: `Bearer ${currentToken}`,
                     },
                 });
                 if (response.status === 401) {
+                    console.error("Sync Pull 401 Unauthorized");
                     handleLogout();
                     setError("Session expired. Please sign in again.");
                     setSyncStatus("error");
@@ -393,6 +405,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             setSyncStatus("success");
             setTimeout(() => setSyncStatus("idle"), 2000);
         } catch (err) {
+            console.error("Sync error:", err);
             setError(err instanceof Error ? err.message : "Sync error");
             setSyncStatus("error");
         }
