@@ -616,8 +616,8 @@ export default function VideoPlayer() {
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="ghost"
-                                            size="sm"
-                                            className="h-8 text-muted-foreground hover:text-foreground font-mono text-xs w-14 px-0"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground text-xs"
                                         >
                                             {playbackRate}x
                                         </Button>

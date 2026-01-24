@@ -440,9 +440,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                 <PopoverTrigger asChild>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
+                                                        size="icon"
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="h-8 text-muted-foreground hover:text-foreground font-mono text-xs w-14 px-0"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground text-xs"
                                                     >
                                                         {playbackSpeed}x
                                                     </Button>
