@@ -1,3 +1,4 @@
+import { useState } from "react"; // Ensure useState is imported
 import { useStore } from "@/store/useStore";
 import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
@@ -13,9 +14,24 @@ import {
     Image as ImageIcon,
     MusicNote,
     FilePdf,
-    Clock
+    Clock,
+    Plus,
+    Graph,
+    HardDrives,
+    Tag,
+    NotePencil,
+    ProjectorScreenChart
 } from "@phosphor-icons/react";
 import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { AddFileDialog, CreateStorageDialog } from "@/components/dialogs/StorageDialogs";
+import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
+import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dialogs/CreationDialogs";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
     orange: whistlerLogoOrange,
@@ -35,6 +51,17 @@ function getGreeting(username: string) {
     return `${greeting}, ${username}`;
 }
 
+function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image' {
+    const lower = url.toLowerCase();
+    if (/\.(mp4|webm|mov|avi|mkv|m4v)(\?|$)/.test(lower)) return 'video';
+    if (/\.(mp3|wav|ogg|flac|m4a)(\?|$)/.test(lower)) return 'audio';
+    if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/.test(lower)) return 'image';
+    if (/\.pdf(\?|$)/.test(lower)) return 'pdf';
+    // Default to video for streaming URLs (catbox, etc)
+    if (lower.includes('catbox') || lower.includes('files.')) return 'video';
+    return 'file';
+}
+
 export default function HomeView() {
     const { 
         accentTheme, 
@@ -43,11 +70,116 @@ export default function HomeView() {
         docs, 
         collections, 
         highlights,
+        storages,
         activeProjectId,
+        activeStorageId,
         setState 
     } = useStore();
     
     const navigate = useNavigate();
+
+    const [addFileOpen, setAddFileOpen] = useState(false);
+    const [addCollectionOpen, setAddCollectionOpen] = useState(false);
+    const [addDocOpen, setAddDocOpen] = useState(false);
+    const [addGraphOpen, setAddGraphOpen] = useState(false);
+    const [addStorageOpen, setAddStorageOpen] = useState(false);
+    const [addProjectOpen, setAddProjectOpen] = useState(false);
+    const [popoverOpen, setPopoverOpen] = useState(false);
+
+    const handleAddFile = (url: string, name: string) => {
+        if (!activeProjectId) return;
+
+        let targetStorageId = activeStorageId;
+        if (!targetStorageId) {
+            const projectStorages = storages.filter(s => s.projectId === activeProjectId);
+            if (projectStorages.length > 0) {
+                targetStorageId = projectStorages[0].id;
+            } else {
+                const newStorage = {
+                    id: crypto.randomUUID(),
+                    projectId: activeProjectId,
+                    name: "Main Storage",
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                useStore.setState(state => ({ 
+                    storages: [...state.storages, newStorage],
+                    activeStorageId: newStorage.id 
+                }));
+                targetStorageId = newStorage.id;
+            }
+        }
+
+        const type = getFileTypeFromUrl(url);
+        const newFile: File = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            storageId: targetStorageId,
+            parentId: null,
+            name,
+            url,
+            type,
+            order: files.filter(f => f.projectId === activeProjectId && !f.parentId).length,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+        useStore.setState(state => ({ files: [...state.files, newFile] }));
+        setPopoverOpen(false);
+    };
+
+    const handleCreateCollection = (name: string, color: string, icon: string) => {
+        if (!activeProjectId) return;
+        const newCollection: Collection = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            parentId: null,
+            name,
+            color,
+            icon,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+        useStore.setState(state => ({ collections: [...state.collections, newCollection] }));
+        setPopoverOpen(false);
+    };
+
+    const handleCreateDoc = (name: string) => {
+        if (!activeProjectId) return;
+        const newDoc: Doc = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            name,
+            content: "",
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+        useStore.setState(state => ({ docs: [...state.docs, newDoc] }));
+        setPopoverOpen(false);
+    };
+
+    const handleCreateGraph = (name: string) => {
+        if (!activeProjectId) return;
+        const newGraph = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            name,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+        useStore.setState(state => ({ graphs: [...state.graphs, newGraph] }));
+        setPopoverOpen(false);
+    };
+
+    const handleCreateStorage = (name: string, color: string, icon: string) => {
+        if (!activeProjectId) return;
+        useStore.getState().addStorage(name, activeProjectId, color, icon);
+        setPopoverOpen(false);
+    };
+
+    const handleCreateProject = (name: string) => {
+        useStore.getState().addProject(name);
+        setPopoverOpen(false);
+    };
 
     const username = user?.email?.split('@')[0] || "User";
 
@@ -108,9 +240,39 @@ export default function HomeView() {
                     alt="Whistlerbox Logo" 
                     className="w-12 h-12 rounded-xl pointer-events-none select-none shadow-sm"
                 />
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground flex-1">
                     {getGreeting(username)}
                 </h1>
+                
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button className="gap-2">
+                            <Plus weight="bold" />
+                            Add
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-1" align="end">
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddFileOpen(true); setPopoverOpen(false); }}>
+                            <FileIcon className="text-muted-foreground" size={16} /> Add File
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddCollectionOpen(true); setPopoverOpen(false); }}>
+                            <Tag className="text-muted-foreground" size={16} /> Add Collection
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddDocOpen(true); setPopoverOpen(false); }}>
+                            <NotePencil className="text-muted-foreground" size={16} /> Add Doc
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddGraphOpen(true); setPopoverOpen(false); }}>
+                            <Graph className="text-muted-foreground" size={16} /> Add Graph
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddStorageOpen(true); setPopoverOpen(false); }}>
+                            <HardDrives className="text-muted-foreground" size={16} /> Add Storage
+                        </Button>
+                        <div className="h-px bg-border my-1" />
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddProjectOpen(true); setPopoverOpen(false); }}>
+                            <ProjectorScreenChart className="text-muted-foreground" size={16} /> Add Project
+                        </Button>
+                    </PopoverContent>
+                </Popover>
             </div>
 
             {/* Content Grid */}
@@ -133,7 +295,7 @@ export default function HomeView() {
                                             to={`/file/${file.id}`}
                                             className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all"
                                         >
-                                            <div className="p-2 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
+                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <Icon weight="duotone" className="w-5 h-5" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -171,7 +333,7 @@ export default function HomeView() {
                                             to={`/file/${file.id}`}
                                             className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all"
                                         >
-                                            <div className="p-2 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
+                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <Clock weight="duotone" className="w-5 h-5" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -212,7 +374,7 @@ export default function HomeView() {
                                             }}
                                             className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left"
                                         >
-                                            <div className="p-2 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
+                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <FileText weight="duotone" className="w-5 h-5" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -239,7 +401,7 @@ export default function HomeView() {
                                             }}
                                             className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left"
                                         >
-                                            <div className="p-2 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
+                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <Folder weight="duotone" className="w-5 h-5" style={{ color: collection.color }} />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -262,6 +424,36 @@ export default function HomeView() {
                     
                 </div>
             </div>
+            <AddFileDialog
+                open={addFileOpen}
+                onOpenChange={setAddFileOpen}
+                onSubmit={handleAddFile}
+            />
+            <CreateCollectionDialog
+                open={addCollectionOpen}
+                onOpenChange={setAddCollectionOpen}
+                onSubmit={handleCreateCollection}
+            />
+            <NewDocDialog
+                open={addDocOpen}
+                onOpenChange={setAddDocOpen}
+                onSubmit={handleCreateDoc}
+            />
+            <NewGraphDialog
+                open={addGraphOpen}
+                onOpenChange={setAddGraphOpen}
+                onSubmit={handleCreateGraph}
+            />
+            <CreateStorageDialog
+                open={addStorageOpen}
+                onOpenChange={setAddStorageOpen}
+                onSubmit={handleCreateStorage}
+            />
+            <NewProjectDialog
+                open={addProjectOpen}
+                onOpenChange={setAddProjectOpen}
+                onSubmit={handleCreateProject}
+            />
         </div>
     );
 }

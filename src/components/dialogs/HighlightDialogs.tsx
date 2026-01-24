@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import { useStore } from "@/store/useStore";
 import { type Highlight, type File, type Collection } from "@/types";
 import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,7 @@ interface HighlightPlayerDialogProps {
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
+    const { setPipFile, setFileProgress } = useStore();
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -225,16 +227,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         }
     };
 
-    const togglePip = async () => {
-        if (!videoRef.current) return;
-        try {
-            if (document.pictureInPictureElement) {
-                await document.exitPictureInPicture();
-            } else {
-                await videoRef.current.requestPictureInPicture();
-            }
-        } catch (e) {
-            console.error("PiP failed:", e);
+    const togglePip = () => {
+        if (file && videoRef.current) {
+            setFileProgress(file.id, videoRef.current.currentTime);
+            setPipFile(file.id);
+            onOpenChange(false);
         }
     };
 
