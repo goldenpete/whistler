@@ -856,25 +856,25 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="text-sm font-medium truncate flex items-center gap-2">
+                                        <div className="text-sm font-medium truncate flex items-center gap-2 group-hover:text-foreground">
                                             {user.email && user.email !== accountId ? user.email : "Anonymous"}
                                             <button 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-foreground/70 hover:text-foreground"
                                                 onClick={(e) => { e.stopPropagation(); handleStartEditName(); }}
                                                 title="Edit display name"
                                             >
                                                 <PencilSimple size={12} />
                                             </button>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
+                                        <div className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors">
                                             {accountId ? formatAccountId(accountId) : formatAccountId(user.id)}
                                         </div>
                                     </>
                                 )}
                             </div>
                             {!isEditingName && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleLogout} title="Sign Out">
-                                    <SignOut className="text-muted-foreground" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground group-hover:text-foreground transition-colors" onClick={handleLogout} title="Sign Out">
+                                    <SignOut />
                                 </Button>
                             )}
                         </div>
@@ -886,16 +886,16 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     <div>
                         <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Security</div>
                         <div className="space-y-2">
-                            <div className="flex w-full items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors">
+                            <div className="flex w-full items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors group">
                                 <div className="flex items-center gap-2">
-                                    <ShieldCheck weight={totpEnabled ? "fill" : "regular"} className={totpEnabled ? "text-green-500" : "text-muted-foreground"} size={18} />
-                                    <span className="text-sm">Two-Factor Auth</span>
+                                    <ShieldCheck weight={totpEnabled ? "fill" : "regular"} className={totpEnabled ? "text-green-500 group-hover:text-green-400" : "text-muted-foreground group-hover:text-foreground"} size={18} />
+                                    <span className="text-sm group-hover:text-foreground transition-colors">Two-Factor Auth</span>
                                 </div>
                                 {totpEnabled ? (
                                     <Button 
                                         variant="ghost" 
                                         size="sm" 
-                                        className="h-6 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                        className="h-6 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10 group-hover:text-red-200"
                                         onClick={() => {
                                             setSetupMode('disable');
                                             setShowTwoFactorSetup(true);
@@ -909,7 +909,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     <Button 
                                         variant="ghost" 
                                         size="sm" 
-                                        className="h-6 text-[10px] text-primary hover:text-primary hover:bg-primary/10"
+                                        className="h-6 text-[10px] text-primary hover:text-primary hover:bg-primary/10 group-hover:text-foreground"
                                         onClick={() => {
                                             setSetupMode('enable');
                                             setSetupStep('intro');
@@ -933,13 +933,13 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         <div className="space-y-2">
                             <button
                                 type="button"
-                                className="flex w-full items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer"
+                                className="flex w-full items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer group"
                                 onClick={() => setAutoSyncEnabled(!autoSyncEnabled)}
                             >
-                                <span className="text-sm text-muted-foreground">Auto-sync</span>
+                                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Auto-sync</span>
                                 <span
                                     className={`w-8 h-4 rounded-full relative transition-colors ${
-                                        autoSyncEnabled ? "bg-primary" : "bg-zinc-700"
+                                        autoSyncEnabled ? "bg-primary group-hover:bg-primary/90" : "bg-zinc-700 group-hover:bg-zinc-600"
                                     }`}
                                 >
                                     <span

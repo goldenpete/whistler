@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { useStore } from "@/store/useStore";
 import type { Project, File } from "@/types";
-import { Plus, DownloadSimple, Lightning, Shuffle } from "@phosphor-icons/react";
+import { Plus, DownloadSimple, Lightning, Shuffle, CaretLeft } from "@phosphor-icons/react";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
 
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
@@ -20,6 +20,10 @@ export function WelcomeView() {
     const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore();
 
     const [signInOpen, setSignInOpen] = useState(false);
+    const [phase, setPhase] = useState<'login' | 'totp'>('login');
+    const [pendingToken, setPendingToken] = useState<string | null>(null);
+    const [totpCode, setTotpCode] = useState("");
+    
     const [syncId, setSyncId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -81,42 +85,9 @@ export function WelcomeView() {
         setSyncId(formatAccountId(id));
     };
 
-    const handleWelcomeSignIn = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const cleanId = getCleanAccountId(syncId);
-        if (cleanId.length !== 16) {
-            setError("Sync ID must be 16 digits");
-            return;
-        }
-        if (!captchaToken) {
-            setError("Complete the captcha to continue");
-            return;
-        }
-        setIsLoading(true);
-        setError(null);
+    const handleLoginSuccess = async (token: string, displayName?: string) => {
         try {
-            const response = await fetch(`${SYNC_API_URL}/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    account_id: cleanId,
-                    captcha_token: captchaToken,
-                }),
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                setError(data.error || "Login failed");
-                if (window.turnstile) {
-                    window.turnstile.reset();
-                }
-                return;
-            }
-            if (data.requires_totp) {
-                setError("This account requires 2FA. Use Sync Access inside the app.");
-                return;
-            }
-            const token: string = data.token;
-            const displayName: string | undefined = data.display_name;
+            const cleanId = getCleanAccountId(syncId);
             localStorage.setItem("whistler_account_id", cleanId);
             localStorage.setItem("whistler_session_token", token);
             if (displayName) {
@@ -169,6 +140,82 @@ export function WelcomeView() {
             setLastSyncTime(now);
             localStorage.setItem("whistler_last_sync", String(now));
             setSignInOpen(false);
+            setPhase('login');
+            setPendingToken(null);
+            setTotpCode("");
+            setSyncId("");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to load data");
+        }
+    };
+
+    const handleTotpVerify = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (totpCode.length !== 6) {
+            setError("Enter a 6-digit code");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${SYNC_API_URL}/login/totp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    pending_token: pendingToken,
+                    totp_code: totpCode,
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || "Verification failed");
+                return;
+            }
+            await handleLoginSuccess(data.token, data.display_name);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Verification error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleWelcomeSignIn = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const cleanId = getCleanAccountId(syncId);
+        if (cleanId.length !== 16) {
+            setError("Sync ID must be 16 digits");
+            return;
+        }
+        if (!captchaToken) {
+            setError("Complete the captcha to continue");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${SYNC_API_URL}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    account_id: cleanId,
+                    captcha_token: captchaToken,
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || "Login failed");
+                if (window.turnstile) {
+                    window.turnstile.reset();
+                }
+                return;
+            }
+            if (data.requires_totp) {
+                setPendingToken(data.pending_token);
+                setPhase('totp');
+                setError(null);
+                return;
+            }
+            await handleLoginSuccess(data.token, data.display_name);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Login error");
         } finally {
@@ -318,63 +365,119 @@ export function WelcomeView() {
                 </div>
             </div>
 
-            <Dialog open={signInOpen} onOpenChange={setSignInOpen}>
+            <Dialog open={signInOpen} onOpenChange={(open) => {
+                setSignInOpen(open);
+                if (!open) {
+                    setPhase('login');
+                    setPendingToken(null);
+                    setTotpCode("");
+                }
+            }}>
                 <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800">
                     <DialogHeader>
-                        <DialogTitle>Sync Access</DialogTitle>
+                        <DialogTitle>{phase === 'totp' ? 'Two-Factor Authentication' : 'Sync Access'}</DialogTitle>
                         <DialogDescription>
-                            Sign in with your 16-digit Sync ID to load existing Whistlerbox data.
+                            {phase === 'totp' 
+                                ? 'Enter the code from your authenticator app.' 
+                                : 'Sign in with your 16-digit Sync ID to load existing Whistlerbox data.'}
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleWelcomeSignIn} className="space-y-4">
-                        <div className="space-y-1">
-                            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                Sync ID
+                    {phase === 'login' ? (
+                        <form onSubmit={handleWelcomeSignIn} className="space-y-4">
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                    Sync ID
+                                </div>
+                                <Input
+                                    type="text"
+                                    placeholder="16-digit ID"
+                                    value={syncId}
+                                    onChange={(e) => setSyncId(formatAccountId(e.target.value))}
+                                    className="h-9 font-mono text-sm bg-zinc-900 border-zinc-700"
+                                    maxLength={19}
+                                    minLength={16}
+                                    required
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full h-9 mt-1 text-xs gap-2 border-zinc-700"
+                                    onClick={handleGenerateId}
+                                    title="Generate New Account ID"
+                                >
+                                    <Shuffle weight="bold" className="size-4" />
+                                    <span>Generate New Account ID</span>
+                                </Button>
                             </div>
-                            <Input
-                                type="text"
-                                placeholder="16-digit ID"
-                                value={syncId}
-                                onChange={(e) => setSyncId(formatAccountId(e.target.value))}
-                                className="h-9 font-mono text-sm bg-zinc-900 border-zinc-700"
-                                maxLength={19}
-                                minLength={16}
-                                required
-                            />
+                            <div className="flex justify-center">
+                                <div
+                                    id="welcome-turnstile-container"
+                                    className="cf-turnstile min-h-[65px]"
+                                    data-sitekey={TURNSTILE_SITE_KEY}
+                                    data-theme="dark"
+                                    data-callback="onTurnstileSuccess"
+                                    data-expired-callback="onTurnstileExpired"
+                                />
+                            </div>
+                            {error && (
+                                <div className="text-xs text-red-400 text-center px-2">
+                                    {error}
+                                </div>
+                            )}
                             <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full h-9 mt-1 text-xs gap-2 border-zinc-700"
-                                onClick={handleGenerateId}
-                                title="Generate New Account ID"
+                                type="submit"
+                                className="w-full h-9"
+                                disabled={isLoading || getCleanAccountId(syncId).length < 16}
                             >
-                                <Shuffle weight="bold" className="size-4" />
-                                <span>Generate New Account ID</span>
+                                {isLoading ? "Connecting..." : "Connect & Load"}
                             </Button>
-                        </div>
-                        <div className="flex justify-center">
-                            <div
-                                id="welcome-turnstile-container"
-                                className="cf-turnstile min-h-[65px]"
-                                data-sitekey={TURNSTILE_SITE_KEY}
-                                data-theme="dark"
-                                data-callback="onTurnstileSuccess"
-                                data-expired-callback="onTurnstileExpired"
-                            />
-                        </div>
-                        {error && (
-                            <div className="text-xs text-red-400 text-center px-2">
-                                {error}
+                        </form>
+                    ) : (
+                        <form onSubmit={handleTotpVerify} className="space-y-4">
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                    Authenticator Code
+                                </div>
+                                <Input
+                                    type="text"
+                                    placeholder="000000"
+                                    value={totpCode}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                        setTotpCode(val);
+                                    }}
+                                    className="h-9 font-mono text-sm bg-zinc-900 border-zinc-700 text-center tracking-widest"
+                                    maxLength={6}
+                                    minLength={6}
+                                    autoFocus
+                                    required
+                                />
                             </div>
-                        )}
-                        <Button
-                            type="submit"
-                            className="w-full h-9"
-                            disabled={isLoading || getCleanAccountId(syncId).length < 16}
-                        >
-                            {isLoading ? "Connecting..." : "Connect & Load"}
-                        </Button>
-                    </form>
+                            {error && (
+                                <div className="text-xs text-red-400 text-center px-2">
+                                    {error}
+                                </div>
+                            )}
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-9 w-9 p-0 border-zinc-700"
+                                    onClick={() => setPhase('login')}
+                                    disabled={isLoading}
+                                >
+                                    <CaretLeft size={16} />
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className="flex-1 h-9"
+                                    disabled={isLoading || totpCode.length !== 6}
+                                >
+                                    {isLoading ? "Verifying..." : "Verify & Load"}
+                                </Button>
+                            </div>
+                        </form>
+                    )}
                 </DialogContent>
             </Dialog>
 
