@@ -29,9 +29,17 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { AddFileDialog, CreateStorageDialog } from "@/components/dialogs/StorageDialogs";
+import { AddFileDialog, CreateStorageDialog, RenameFileDialog, RenameDocDialog, EditFolderDialog, RenameGraphDialog } from "@/components/dialogs/StorageDialogs";
 import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dialogs/CreationDialogs";
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { Copy, Trash, ArrowSquareOut, PencilSimple } from "@phosphor-icons/react";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
     orange: whistlerLogoOrange,
@@ -84,6 +92,14 @@ export default function HomeView() {
     const [addGraphOpen, setAddGraphOpen] = useState(false);
     const [addStorageOpen, setAddStorageOpen] = useState(false);
     const [addProjectOpen, setAddProjectOpen] = useState(false);
+    
+    // Rename/Edit Dialog States
+    const [renameItem, setRenameItem] = useState<{id: string, type: string, name: string, data?: any} | null>(null);
+    const [renameFileOpen, setRenameFileOpen] = useState(false);
+    const [renameDocOpen, setRenameDocOpen] = useState(false);
+    const [editCollectionOpen, setEditCollectionOpen] = useState(false);
+    const [renameGraphOpen, setRenameGraphOpen] = useState(false);
+
     const [popoverOpen, setPopoverOpen] = useState(false);
 
     const handleAddFile = (url: string, name: string) => {
@@ -330,6 +346,74 @@ export default function HomeView() {
         }
     };
 
+    const handleRename = (name: string, description?: string, color?: string, icon?: string) => {
+        if (!renameItem) return;
+
+        const { id, type } = renameItem;
+        
+        switch (type) {
+            case 'file':
+                useStore.getState().updateFile(id, { name, description });
+                break;
+            case 'doc':
+                useStore.getState().updateDoc(id, { name });
+                break;
+            case 'collection':
+                if (color && icon) {
+                    useStore.getState().updateCollection(id, { name, color, icon });
+                }
+                break;
+            case 'graph':
+                useStore.getState().updateGraph(id, { name });
+                break;
+        }
+        
+        setRenameItem(null);
+    };
+
+    const handleDelete = (item: typeof allItems[0]) => {
+        switch (item.type) {
+            case 'file':
+                useStore.getState().trashFile(item.id);
+                break;
+            case 'doc':
+                useStore.getState().trashDoc(item.id);
+                break;
+            case 'collection':
+                useStore.getState().trashCollection(item.id);
+                break;
+            case 'graph':
+                useStore.getState().trashGraph(item.id);
+                break;
+            case 'highlight':
+                useStore.getState().removeHighlight(item.id);
+                break;
+        }
+    };
+
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        // Toast logic here if we had toast
+    };
+
+    const openRenameDialog = (item: typeof allItems[0]) => {
+        setRenameItem(item);
+        switch (item.type) {
+            case 'file':
+                setRenameFileOpen(true);
+                break;
+            case 'doc':
+                setRenameDocOpen(true);
+                break;
+            case 'collection':
+                setEditCollectionOpen(true);
+                break;
+            case 'graph':
+                setRenameGraphOpen(true);
+                break;
+        }
+    };
+
     const CardPreview = ({ item }: { item: typeof allItems[0] }) => {
         // Image File
         if (item.type === 'file' && item.subType === 'image' && item.data.url) {
@@ -487,43 +571,76 @@ export default function HomeView() {
                                 const label = getItemLabel(item.type);
                                 
                                 return (
-                                    <button
-                                        key={`${item.type}-${item.id}`}
-                                        onClick={() => handleItemClick(item)}
-                                        className="group relative flex flex-col items-start justify-end gap-3 p-4 rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-all text-left overflow-hidden h-48 shadow-sm"
-                                    >
-                                        {/* Background Preview */}
-                                        <CardPreview item={item} />
-                                        
-                                        {/* Gradient Overlay for Text Readability */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/60 to-transparent z-10" />
+                                    <ContextMenu key={`${item.type}-${item.id}`}>
+                                        <ContextMenuTrigger asChild>
+                                            <button
+                                                onClick={() => handleItemClick(item)}
+                                                className="group relative flex flex-col items-start justify-end gap-3 p-4 rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-all text-left overflow-hidden h-48 shadow-sm"
+                                            >
+                                                {/* Background Preview */}
+                                                <CardPreview item={item} />
+                                                
+                                                {/* Gradient Overlay for Text Readability */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/60 to-transparent z-10" />
 
-                                        {/* Content Layer */}
-                                        <div className="relative z-20 w-full flex flex-col h-full">
-                                            <div className="flex items-center justify-between w-full gap-2 mb-auto">
-                                                <div className="p-2 shrink-0 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
-                                                    <Icon weight="duotone" className="w-5 h-5" style={item.type === 'collection' ? { color: item.data.color } : undefined} />
-                                                </div>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
-                                                    {label}
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="w-full min-w-0 flex flex-col gap-1 mt-4">
-                                                <div className="font-semibold text-sm truncate leading-tight group-hover:text-primary transition-colors" title={item.name}>
-                                                    {item.name}
-                                                </div>
-                                                {item.type === 'highlight' && item.data.file && (
-                                                    <div className="text-xs text-muted-foreground/80 truncate">
-                                                        in {item.data.file.name}
+                                                {/* Content Layer */}
+                                                <div className="relative z-20 w-full flex flex-col h-full">
+                                                    <div className="flex items-center justify-between w-full gap-2 mb-auto">
+                                                        <div className="p-2 shrink-0 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
+                                                            <Icon weight="duotone" className="w-5 h-5" style={item.type === 'collection' ? { color: item.data.color } : undefined} />
+                                                        </div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
+                                                            {label}
+                                                        </span>
                                                     </div>
-                                                )}
-                                                <div className="text-[11px] text-muted-foreground/60 truncate pt-2 mt-1 border-t border-border/10 w-full font-medium">
-                                                    {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                                                    
+                                                    <div className="w-full min-w-0 flex flex-col gap-1 mt-4">
+                                                        <div className="font-semibold text-sm truncate leading-tight group-hover:text-primary transition-colors" title={item.name}>
+                                                            {item.name}
+                                                        </div>
+                                                        {item.type === 'highlight' && item.data.file && (
+                                                            <div className="text-xs text-muted-foreground/80 truncate">
+                                                                in {item.data.file.name}
+                                                            </div>
+                                                        )}
+                                                        <div className="text-[11px] text-muted-foreground/60 truncate pt-2 mt-1 border-t border-border/10 w-full font-medium">
+                                                            {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </button>
+                                            </button>
+                                        </ContextMenuTrigger>
+                                        <ContextMenuContent>
+                                            <ContextMenuItem onClick={() => handleItemClick(item)}>
+                                                <ArrowSquareOut className="mr-2 h-4 w-4" />
+                                                Open
+                                            </ContextMenuItem>
+                                            
+                                            {item.type === 'highlight' ? (
+                                                <>
+                                                    <ContextMenuItem onClick={() => handleCopy(item.data.text || item.data.note)}>
+                                                        <Copy className="mr-2 h-4 w-4" />
+                                                        Copy Text
+                                                    </ContextMenuItem>
+                                                </>
+                                            ) : (
+                                                <ContextMenuItem onClick={() => openRenameDialog(item)}>
+                                                    <PencilSimple className="mr-2 h-4 w-4" />
+                                                    Rename
+                                                </ContextMenuItem>
+                                            )}
+                                            
+                                            <ContextMenuSeparator />
+                                            
+                                            <ContextMenuItem 
+                                                className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                                                onClick={() => handleDelete(item)}
+                                            >
+                                                <Trash className="mr-2 h-4 w-4" />
+                                                Move to Trash
+                                            </ContextMenuItem>
+                                        </ContextMenuContent>
+                                    </ContextMenu>
                                 );
                             })}
                         </div>
@@ -565,6 +682,39 @@ export default function HomeView() {
                 onOpenChange={setAddProjectOpen}
                 onSubmit={handleCreateProject}
             />
+
+            {/* Rename/Edit Dialogs */}
+            {renameItem && (
+                <>
+                    <RenameFileDialog
+                        open={renameFileOpen}
+                        onOpenChange={setRenameFileOpen}
+                        onSubmit={(name, description) => handleRename(name, description)}
+                        initialName={renameItem.name}
+                        initialDescription={renameItem.data.description}
+                    />
+                    <RenameDocDialog
+                        open={renameDocOpen}
+                        onOpenChange={setRenameDocOpen}
+                        onSubmit={(name) => handleRename(name)}
+                        initialName={renameItem.name}
+                    />
+                    <EditFolderDialog
+                        open={editCollectionOpen}
+                        onOpenChange={setEditCollectionOpen}
+                        onSubmit={(name, color, icon) => handleRename(name, undefined, color, icon)}
+                        initialName={renameItem.name}
+                        initialColor={renameItem.data.color}
+                        initialIcon={renameItem.data.icon}
+                    />
+                    <RenameGraphDialog
+                        open={renameGraphOpen}
+                        onOpenChange={setRenameGraphOpen}
+                        onSubmit={(name) => handleRename(name)}
+                        initialName={renameItem.name}
+                    />
+                </>
+            )}
         </div>
     );
 }

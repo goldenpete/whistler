@@ -614,6 +614,68 @@ export function RenameDocDialog({ open, onOpenChange, onSubmit, initialName }: R
     );
 }
 
+interface RenameGraphDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (name: string) => void;
+    initialName: string;
+}
+
+export function RenameGraphDialog({ open, onOpenChange, onSubmit, initialName }: RenameGraphDialogProps) {
+    const [name, setName] = useState(initialName);
+
+    useEffect(() => {
+        setName(initialName);
+    }, [initialName, open]);
+
+    const handleSubmit = () => {
+        if (!name.trim()) return;
+        onSubmit(name.trim());
+        onOpenChange(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleSubmit();
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Rename Graph</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Enter a new name for the graph.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="rename-graph-name">Graph Name</Label>
+                        <Input
+                            id="rename-graph-name"
+                            placeholder="Graph Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            autoFocus
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={!name.trim()}>
+                        Rename
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 interface EditFolderDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
