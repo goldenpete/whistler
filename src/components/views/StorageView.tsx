@@ -21,6 +21,9 @@ import {
     MagnifyingGlass,
     HardDrives,
     Palette,
+    LinkSimple,
+    Copy,
+    ShareNetwork,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -40,6 +43,7 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger,
+    ContextMenuLabel,
 } from "@/components/ui/context-menu";
 import { AddFileDialog, NewFolderDialog, RenameFileDialog, EditFolderDialog, ICONS } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
