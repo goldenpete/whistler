@@ -118,10 +118,14 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         if (storedAccount && storedToken) {
             setAccountId(storedAccount);
             setSessionToken(storedToken);
-            login({ id: storedAccount, email: storedDisplayName || storedAccount });
             
             if (storedTotpEnabled === "true") {
                 setTotpEnabled(true);
+            }
+            
+            // Only update store if not already logged in or ID mismatch
+            if (!user || user.id !== storedAccount) {
+                login({ id: storedAccount, email: storedDisplayName || storedAccount });
             }
             
             if (storedLastSync) {
@@ -130,8 +134,13 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     setLastSyncTime(asNumber);
                 }
             }
+        } else {
+            // Clear local state if storage is empty
+            setAccountId(null);
+            setSessionToken(null);
+            setTotpEnabled(false);
         }
-    }, [login, setLastSyncTime]);
+    }, [login, setLastSyncTime, user?.id]);
 
     const formatAccountId = (id: string) => {
         const clean = id.replace(/\D/g, "").slice(0, 16);
@@ -263,6 +272,21 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         }
     };
 
+
+
+    const handleLogout = () => {
+        setAccountId(null);
+        setSessionToken(null);
+        setCaptchaToken(null);
+        setPendingToken(null);
+        setTotpCode("");
+        localStorage.removeItem("whistler_account_id");
+        localStorage.removeItem("whistler_session_token");
+        localStorage.removeItem("whistler_display_name");
+        localStorage.removeItem("whistler_totp_enabled");
+        logout();
+    };
+
     const handleSync = async (type: 'push' | 'pull') => {
         if (!accountId || !sessionToken) {
             setError("Connect with your Sync ID first");
@@ -301,6 +325,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         value: data,
                     }),
                 });
+                if (response.status === 401) {
+                    handleLogout();
+                    setError("Session expired. Please sign in again.");
+                    setSyncStatus("error");
+                    return;
+                }
                 if (!response.ok) {
                     const body = await response.json().catch(() => null);
                     setError(body?.error || "Push failed");
@@ -314,6 +344,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         Authorization: `Bearer ${sessionToken}`,
                     },
                 });
+                if (response.status === 401) {
+                    handleLogout();
+                    setError("Session expired. Please sign in again.");
+                    setSyncStatus("error");
+                    return;
+                }
                 if (!response.ok) {
                     const body = await response.json().catch(() => null);
                     setError(body?.error || "Pull failed");
@@ -362,18 +398,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         }
     };
 
-    const handleLogout = () => {
-        setAccountId(null);
-        setSessionToken(null);
-        setCaptchaToken(null);
-        setPendingToken(null);
-        setTotpCode("");
-        localStorage.removeItem("whistler_account_id");
-        localStorage.removeItem("whistler_session_token");
-        localStorage.removeItem("whistler_display_name");
-        localStorage.removeItem("whistler_totp_enabled");
-        logout();
-    };
+
 
     const handleStartEditName = () => {
         setEditName(user?.email && user.email !== accountId ? user.email : "");
@@ -406,6 +431,11 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     Authorization: `Bearer ${sessionToken}`,
                 },
             });
+            if (response.status === 401) {
+                handleLogout();
+                setError("Session expired. Please sign in again.");
+                return;
+            }
             const data = await response.json();
             if (!response.ok) {
                 if (data.error === "2FA is already enabled") {
@@ -440,6 +470,11 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                 },
                 body: JSON.stringify({ totp_code: totpCode }),
             });
+            if (response.status === 401) {
+                handleLogout();
+                setError("Session expired. Please sign in again.");
+                return;
+            }
             const data = await response.json();
             if (!response.ok) {
                 setError(data.error || "Failed to enable 2FA");
@@ -473,6 +508,11 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                 },
                 body: JSON.stringify({ totp_code: totpCode }),
             });
+            if (response.status === 401) {
+                handleLogout();
+                setError("Session expired. Please sign in again.");
+                return;
+            }
             const data = await response.json();
             if (!response.ok) {
                 setError(data.error || "Failed to disable 2FA");
