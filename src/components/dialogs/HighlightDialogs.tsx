@@ -393,7 +393,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             {isPlaying ? <Pause weight="fill" size={18} /> : <Play weight="fill" size={18} />}
                                         </Button>
 
-                                        <div className="flex items-center gap-2 group/vol">
+                                        <div className="flex items-center group/vol">
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -402,14 +402,16 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             >
                                                 {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
                                             </Button>
-                                            <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200">
-                                                <Slider
-                                                    value={[isMuted ? 0 : volume]}
-                                                    max={1}
-                                                    step={0.05}
-                                                    onValueChange={(val) => setVolume(val[0])}
-                                                    fillColor="white"
-                                                />
+                                            <div className="w-0 opacity-0 group-hover/vol:w-24 group-hover/vol:opacity-100 transition-all duration-200 ease-out overflow-hidden">
+                                                <div className="w-24 pl-2">
+                                                    <Slider
+                                                        value={[isMuted ? 0 : volume]}
+                                                        max={1}
+                                                        step={0.05}
+                                                        onValueChange={(val) => setVolume(val[0])}
+                                                        fillColor="white"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
