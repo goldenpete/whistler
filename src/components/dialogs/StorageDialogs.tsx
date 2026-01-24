@@ -64,18 +64,21 @@ export const ICONS = [
 
 export interface EntityFormProps {
     defaultName?: string;
+    defaultDescription?: string;
     defaultColor?: string;
     defaultIcon?: string;
-    onSubmit: (name: string, color: string, icon: string) => void;
+    onSubmit: (name: string, description: string, color: string, icon: string) => void;
     onCancel: () => void;
     submitLabel: string;
     label: string;
     placeholder: string;
     allowNoIcon?: boolean;
+    showDescription?: boolean;
 }
 
 export function EntityForm({ 
     defaultName = "", 
+    defaultDescription = "",
     defaultColor = PRESET_COLORS[0], 
     defaultIcon = "Folder", 
     onSubmit, 
@@ -83,26 +86,29 @@ export function EntityForm({
     submitLabel,
     label,
     placeholder,
-    allowNoIcon = false
+    allowNoIcon = false,
+    showDescription = false
 }: EntityFormProps) {
     const [name, setName] = useState(defaultName);
+    const [description, setDescription] = useState(defaultDescription);
     const [color, setColor] = useState(defaultColor);
     const [iconName, setIconName] = useState(defaultIcon);
 
     // Reset state when defaults change (e.g. opening different item)
     useEffect(() => {
         setName(defaultName);
+        setDescription(defaultDescription);
         setColor(defaultColor);
         setIconName(defaultIcon);
-    }, [defaultName, defaultColor, defaultIcon]);
+    }, [defaultName, defaultDescription, defaultColor, defaultIcon]);
 
     const handleSubmit = () => {
         if (!name.trim()) return;
-        onSubmit(name.trim(), color, iconName);
+        onSubmit(name.trim(), description.trim(), color, iconName);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSubmit();
         }
@@ -122,6 +128,19 @@ export function EntityForm({
                     className="bg-zinc-900 border-zinc-800"
                 />
             </div>
+
+            {showDescription && (
+                <div className="space-y-2">
+                    <Label htmlFor="entity-description">Description</Label>
+                    <Textarea
+                        id="entity-description"
+                        placeholder="Add a description..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="bg-zinc-900 border-zinc-800 resize-none h-24"
+                    />
+                </div>
+            )}
 
             <ColorPicker
                 color={color}
@@ -320,7 +339,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
 interface NewFolderDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string, color: string, icon: string) => void;
+    onSubmit: (name: string, description: string, color: string, icon: string) => void;
 }
 
 export function NewFolderDialog({ open, onOpenChange, onSubmit }: NewFolderDialogProps) {
@@ -337,8 +356,9 @@ export function NewFolderDialog({ open, onOpenChange, onSubmit }: NewFolderDialo
                     label="Folder Name"
                     placeholder="My Folder"
                     submitLabel="Create"
-                    onSubmit={(name, color, icon) => {
-                        onSubmit(name, color, icon);
+                    showDescription={true}
+                    onSubmit={(name, description, color, icon) => {
+                        onSubmit(name, description, color, icon);
                         onOpenChange(false);
                     }}
                     onCancel={() => onOpenChange(false)}
@@ -375,7 +395,7 @@ export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStor
                     placeholder="My Storage"
                     submitLabel="Create"
                     defaultColor={storageColor}
-                    onSubmit={(name, color, icon) => {
+                    onSubmit={(name, description, color, icon) => {
                         onSubmit(name, color, icon);
                         onOpenChange(false);
                     }}
@@ -412,7 +432,7 @@ export function EditStorageDialog({ open, onOpenChange, onSubmit, initialName, i
                     defaultName={initialName}
                     defaultColor={initialColor}
                     defaultIcon={initialIcon}
-                    onSubmit={(name, color, icon) => {
+                    onSubmit={(name, description, color, icon) => {
                         onSubmit(name, color, icon);
                         onOpenChange(false);
                     }}
@@ -541,7 +561,7 @@ export function EditGraphDialog({ open, onOpenChange, onSubmit, initialName, ini
                     defaultName={initialName}
                     defaultColor={initialColor}
                     defaultIcon={initialIcon}
-                    onSubmit={(name, color, icon) => {
+                    onSubmit={(name, description, color, icon) => {
                         onSubmit(name, color, icon);
                         onOpenChange(false);
                     }}
@@ -679,13 +699,14 @@ export function RenameGraphDialog({ open, onOpenChange, onSubmit, initialName }:
 interface EditFolderDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string, color: string, icon: string) => void;
+    onSubmit: (name: string, description: string, color: string, icon: string) => void;
     initialName: string;
+    initialDescription?: string;
     initialColor?: string;
     initialIcon?: string;
 }
 
-export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, initialColor, initialIcon }: EditFolderDialogProps) {
+export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, initialDescription, initialColor, initialIcon }: EditFolderDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
@@ -700,10 +721,12 @@ export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, in
                     placeholder="My Folder"
                     submitLabel="Save"
                     defaultName={initialName}
+                    defaultDescription={initialDescription}
                     defaultColor={initialColor}
                     defaultIcon={initialIcon}
-                    onSubmit={(name, color, icon) => {
-                        onSubmit(name, color, icon);
+                    showDescription={true}
+                    onSubmit={(name, description, color, icon) => {
+                        onSubmit(name, description, color, icon);
                         onOpenChange(false);
                     }}
                     onCancel={() => onOpenChange(false)}

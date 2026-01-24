@@ -154,10 +154,10 @@ export default function StorageView() {
         }
     };
 
-    const handleEditFolderSubmit = (name: string, color: string, icon: string) => {
+    const handleEditFolderSubmit = (name: string, description: string, color: string, icon: string) => {
         if (folderToEdit) {
             useStore.setState(state => ({
-                files: state.files.map(f => f.id === folderToEdit.id ? { ...f, name, color, icon, lastModified: Date.now() } : f)
+                files: state.files.map(f => f.id === folderToEdit.id ? { ...f, name, description, color, icon, lastModified: Date.now() } : f)
             }));
         }
     };
@@ -174,7 +174,7 @@ export default function StorageView() {
         setColorPickerDialogOpen(true);
     };
 
-    const handleNewFolder = (name: string, color: string, icon: string) => {
+    const handleNewFolder = (name: string, description: string, color: string, icon: string) => {
         if (!activeProjectId) return;
 
         let targetStorageId = activeStorageId;
@@ -811,9 +811,11 @@ function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileCont
             <ContextMenuItem onClick={handleCopyLink} className="gap-2">
                 <Copy size={16} /> Copy Link
             </ContextMenuItem>
-            <ContextMenuItem onClick={handleShare} className="gap-2">
-                <ShareNetwork size={16} /> Share
-            </ContextMenuItem>
+            {file.type !== 'folder' && (
+                <ContextMenuItem onClick={handleShare} className="gap-2">
+                    <ShareNetwork size={16} /> Share
+                </ContextMenuItem>
+            )}
         </ContextMenuContent>
     );
 }

@@ -702,7 +702,7 @@ export default function HomeView() {
                     <EditFolderDialog
                         open={editCollectionOpen}
                         onOpenChange={setEditCollectionOpen}
-                        onSubmit={(name, color, icon) => handleRename(name, undefined, color, icon)}
+                        onSubmit={(name, description, color, icon) => handleRename(name, undefined, color, icon)}
                         initialName={renameItem.name}
                         initialColor={renameItem.data.color}
                         initialIcon={renameItem.data.icon}
