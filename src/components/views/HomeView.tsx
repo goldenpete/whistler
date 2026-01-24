@@ -210,29 +210,10 @@ export default function HomeView() {
     const projectCollections = collections.filter(c => c.projectId === activeProjectId && !c.deleted);
     const projectGraphs = (useStore.getState().graphs || []).filter(g => g.projectId === activeProjectId);
 
-    // Get recent items (top 5)
-    const recentFiles = [...projectFiles]
-        .sort((a, b) => b.lastModified - a.lastModified)
-        .slice(0, 5);
-        
-    const recentDocs = [...projectDocs]
-        .sort((a, b) => (b.lastModified || b.created) - (a.lastModified || a.created))
-        .slice(0, 5);
-        
-    const recentCollections = [...projectCollections]
-        .sort((a, b) => b.lastModified - a.lastModified)
-        .slice(0, 5);
-
-    const recentGraphs = [...projectGraphs]
-        .sort((a, b) => (b.lastModified || b.created) - (a.lastModified || a.created))
-        .slice(0, 5);
-
     // Recent Highlights logic
     const projectFileIds = new Set(projectFiles.map(f => f.id));
-    const recentHighlights = highlights
-        .filter(h => projectFileIds.has(h.fileId))
-        .sort((a, b) => (b.created || 0) - (a.created || 0))
-        .slice(0, 5);
+    const projectHighlights = highlights
+        .filter(h => projectFileIds.has(h.fileId));
 
     const formatHighlightLabel = (h: any, file?: any) => {
         if (file?.type === 'pdf') {
@@ -254,6 +235,96 @@ export default function HomeView() {
             case 'pdf': return FilePdf;
             case 'folder': return Folder;
             default: return FileIcon;
+        }
+    };
+
+    // Unify all items
+    const allItems = [
+        ...projectFiles.map(f => ({
+            id: f.id,
+            type: 'file' as const,
+            subType: f.type,
+            name: f.name,
+            timestamp: f.lastModified,
+            data: f
+        })),
+        ...projectDocs.map(d => ({
+            id: d.id,
+            type: 'doc' as const,
+            name: d.name,
+            timestamp: d.lastModified || d.created,
+            data: d
+        })),
+        ...projectCollections.map(c => ({
+            id: c.id,
+            type: 'collection' as const,
+            name: c.name,
+            timestamp: c.lastModified,
+            data: c
+        })),
+        ...projectGraphs.map(g => ({
+            id: g.id,
+            type: 'graph' as const,
+            name: g.name,
+            timestamp: g.lastModified || g.created,
+            data: g
+        })),
+        ...projectHighlights.map(h => {
+            const file = files.find(f => f.id === h.fileId);
+            const label = formatHighlightLabel(h, file);
+            return {
+                id: h.id,
+                type: 'highlight' as const,
+                name: h.note || label,
+                timestamp: h.created || 0,
+                data: { ...h, file }
+            };
+        })
+    ].sort((a, b) => b.timestamp - a.timestamp);
+
+    const getItemIcon = (item: typeof allItems[0]) => {
+        switch (item.type) {
+            case 'file': return getFileIcon(item.subType as any);
+            case 'doc': return FileText;
+            case 'collection': return Folder;
+            case 'graph': return Graph;
+            case 'highlight': return Clock;
+        }
+    };
+
+    const getItemLabel = (type: string) => {
+        switch (type) {
+            case 'file': return 'File';
+            case 'doc': return 'Doc';
+            case 'collection': return 'Collection';
+            case 'graph': return 'Graph';
+            case 'highlight': return 'Highlight';
+            default: return type;
+        }
+    };
+
+    const handleItemClick = (item: typeof allItems[0]) => {
+        switch (item.type) {
+            case 'file':
+                navigate(`/file/${item.id}`);
+                break;
+            case 'doc':
+                setState({ activeDocId: item.id });
+                navigate('/docs');
+                break;
+            case 'collection':
+                setState({ activeCollectionId: item.id });
+                navigate('/collections');
+                break;
+            case 'graph':
+                setState({ activeGraphId: item.id });
+                navigate('/graphs');
+                break;
+            case 'highlight':
+                if (item.data.file) {
+                    navigate(`/file/${item.data.file.id}`);
+                }
+                break;
         }
     };
 
@@ -303,183 +374,59 @@ export default function HomeView() {
 
             {/* Content Grid */}
             <div className="flex-1 overflow-auto p-8 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl">
-                    
-                    {/* Recent Files Column */}
-                    <div className="space-y-4 min-w-0">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                            <FileIcon className="w-4 h-4" />
-                            <h2 className="text-sm font-medium uppercase tracking-wider">Recent Files</h2>
-                        </div>
-                        {recentFiles.length > 0 ? (
-                            <div className="grid gap-2">
-                                {recentFiles.map(file => {
-                                    const Icon = getFileIcon(file.type);
-                                    return (
-                                        <Link 
-                                            key={file.id} 
-                                            to={`/file/${file.id}`}
-                                            className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all w-full overflow-hidden"
-                                        >
-                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
-                                                <Icon weight="duotone" className="w-5 h-5" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate group-hover:text-foreground transition-colors">
-                                                    {file.name}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground/70 truncate">
-                                                    {formatDistanceToNow(file.lastModified, { addSuffix: true })}
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="text-sm text-muted-foreground/50 italic px-2">No recent files</div>
-                        )}
-                    </div>
-
-                    {/* Recent Highlights/Collections Column */}
-                    <div className="space-y-4 min-w-0">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                            <Clock className="w-4 h-4" />
-                            <h2 className="text-sm font-medium uppercase tracking-wider">Recent Highlights/Collections</h2>
-                        </div>
-                        <div className="grid gap-2">
-                            {recentHighlights.length > 0 && (
-                                <>
-                                    <div className="text-xs font-medium text-muted-foreground/70 px-1 mt-2 mb-1">Highlights</div>
-                                    {recentHighlights.map(highlight => {
-                                        const file = files.find(f => f.id === highlight.fileId);
-                                        if (!file) return null;
-                                        const label = formatHighlightLabel(highlight, file);
-                                        return (
-                                            <Link 
-                                                key={highlight.id} 
-                                                to={`/file/${file.id}`}
-                                                className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all w-full overflow-hidden"
-                                            >
-                                                <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
-                                                    <Clock weight="duotone" className="w-5 h-5" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-sm truncate group-hover:text-foreground transition-colors">
-                                                        {highlight.note || label}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground/70 truncate flex items-center gap-1">
-                                                        <span>{file.name}</span>
-                                                        <span className="opacity-50">•</span>
-                                                        <span>{formatDistanceToNow(highlight.created || 0, { addSuffix: true })}</span>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        );
-                                    })}
-                                </>
-                            )}
-                            {recentCollections.length > 0 && (
-                                <>
-                                    <div className="text-xs font-medium text-muted-foreground/70 px-1 mt-2 mb-1">Collections</div>
-                                    {recentCollections.map(collection => (
-                                        <button
-                                            key={collection.id}
-                                            onClick={() => {
-                                                setState({ activeCollectionId: collection.id });
-                                                navigate('/collections');
-                                            }}
-                                            className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left overflow-hidden"
-                                        >
-                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
-                                                <Folder weight="duotone" className="w-5 h-5" style={{ color: collection.color }} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate group-hover:text-foreground transition-colors">
-                                                    {collection.name}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground/70 truncate">
-                                                    {formatDistanceToNow(collection.lastModified, { addSuffix: true })}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </>
-                            )}
-                            {recentHighlights.length === 0 && recentCollections.length === 0 && (
-                                <div className="text-sm text-muted-foreground/50 italic px-2">No recent highlights or collections</div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Recent Docs/Graphs Column */}
-                    <div className="space-y-4 min-w-0">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                            <Folder className="w-4 h-4" />
-                            <h2 className="text-sm font-medium uppercase tracking-wider">Recent Docs/Graphs</h2>
-                        </div>
-                        <div className="grid gap-2">
-                            {recentDocs.length > 0 && (
-                                <>
-                                    <div className="text-xs font-medium text-muted-foreground/70 px-1 mt-2 mb-1">Docs</div>
-                                    {recentDocs.map(doc => (
-                                        <button
-                                            key={doc.id}
-                                            onClick={() => {
-                                                setState({ activeDocId: doc.id });
-                                                navigate('/docs');
-                                            }}
-                                            className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left overflow-hidden"
-                                        >
-                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
-                                                <FileText weight="duotone" className="w-5 h-5" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate group-hover:text-foreground transition-colors">
-                                                    {doc.name}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground/70 truncate">
-                                                    {formatDistanceToNow(doc.lastModified || doc.created, { addSuffix: true })}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </>
-                            )}
-                            {recentGraphs.length > 0 && (
-                                <>
-                                    <div className="text-xs font-medium text-muted-foreground/70 px-1 mt-2 mb-1">Graphs</div>
-                                    {recentGraphs.map(graph => (
-                                        <button
-                                            key={graph.id}
-                                            onClick={() => {
-                                                setState({ activeGraphId: graph.id });
-                                                navigate('/graphs');
-                                            }}
-                                            className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left overflow-hidden"
-                                        >
-                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
-                                                <Graph weight="duotone" className="w-5 h-5" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate group-hover:text-foreground transition-colors">
-                                                    {graph.name}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground/70 truncate">
-                                                    {formatDistanceToNow(graph.lastModified || graph.created, { addSuffix: true })}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </>
-                            )}
-                            {recentDocs.length === 0 && recentGraphs.length === 0 && (
-                                <div className="text-sm text-muted-foreground/50 italic px-2">No recent docs or graphs</div>
-                            )}
-                        </div>
+                <div className="space-y-4 max-w-7xl mx-auto">
+                    <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                        <Clock className="w-4 h-4" />
+                        <h2 className="text-sm font-medium uppercase tracking-wider">Recent Activity</h2>
                     </div>
                     
+                    {allItems.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {allItems.slice(0, 50).map(item => {
+                                const Icon = getItemIcon(item);
+                                const label = getItemLabel(item.type);
+                                
+                                return (
+                                    <button
+                                        key={`${item.type}-${item.id}`}
+                                        onClick={() => handleItemClick(item)}
+                                        className="group flex flex-col items-start gap-3 p-4 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left overflow-hidden h-full"
+                                    >
+                                        <div className="flex items-center justify-between w-full gap-2">
+                                            <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
+                                                <Icon weight="duotone" className="w-5 h-5" style={item.type === 'collection' ? { color: item.data.color } : undefined} />
+                                            </div>
+                                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-background/50 text-muted-foreground">
+                                                {label}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="w-full min-w-0 flex-1 flex flex-col justify-between gap-2">
+                                            <div>
+                                                <div className="font-medium text-sm truncate group-hover:text-foreground transition-colors" title={item.name}>
+                                                    {item.name}
+                                                </div>
+                                                {item.type === 'highlight' && item.data.file && (
+                                                    <div className="text-xs text-muted-foreground/70 truncate mt-0.5">
+                                                        in {item.data.file.name}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground/70 truncate pt-2 border-t border-border/20 w-full">
+                                                {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 text-muted-foreground/50 italic">
+                            No recent activity found
+                        </div>
+                    )}
                 </div>
+
             </div>
             <AddFileDialog
                 open={addFileOpen}
