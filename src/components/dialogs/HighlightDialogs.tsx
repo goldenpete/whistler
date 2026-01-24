@@ -92,7 +92,6 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const [editCollectionId, setEditCollectionId] = useState("");
     const [editStart, setEditStart] = useState("");
     const [editEnd, setEditEnd] = useState("");
-    const [hasChanges, setHasChanges] = useState(false);
 
     const start = highlight?.start || 0;
     const end = highlight?.end || 0;
@@ -105,51 +104,31 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
             setEditCollectionId(highlight.collectionId || "");
             setEditStart(formatTime(highlight.start));
             setEditEnd(formatTime(highlight.end || highlight.start));
-            setHasChanges(false);
         }
     }, [highlight]);
 
-    // Detect Changes
-    useEffect(() => {
-        if (!highlight || !file) return;
-        
-        const isPdf = file.name.toLowerCase().endsWith('.pdf');
-        const startSecs = parseTime(editStart);
-        const endSecs = parseTime(editEnd);
-        
-        const isValidTime = isPdf || (startSecs !== null && endSecs !== null && startSecs >= 0 && endSecs > startSecs);
-
-        const isChanged = 
-            isValidTime && (
-                editNote !== (highlight.note || "") ||
-                editCollectionId !== (highlight.collectionId || "") ||
-                (!isPdf && (
-                    (startSecs !== highlight.start) ||
-                    (endSecs !== (highlight.end || highlight.start))
-                ))
-            );
-            
-        setHasChanges(isChanged);
-    }, [editNote, editCollectionId, editStart, editEnd, highlight, file]);
-
-    const handleSave = () => {
+    const handleSave = (updates?: Partial<Highlight>) => {
         if (!onUpdate || !highlight) return;
         
-        const updates: Partial<Highlight> = {};
+        if (updates) {
+            onUpdate(updates);
+            return;
+        }
+
+        const calculatedUpdates: Partial<Highlight> = {};
         
-        if (editNote !== highlight.note) updates.note = editNote;
-        if (editCollectionId !== highlight.collectionId) updates.collectionId = editCollectionId;
+        if (editNote !== highlight.note) calculatedUpdates.note = editNote;
+        if (editCollectionId !== highlight.collectionId) calculatedUpdates.collectionId = editCollectionId;
         
         if (!file?.name.toLowerCase().endsWith('.pdf')) {
             const startSecs = parseTime(editStart);
             const endSecs = parseTime(editEnd);
             
-            if (startSecs !== null && startSecs !== highlight.start) updates.start = startSecs;
-            if (endSecs !== null && endSecs !== highlight.end) updates.end = endSecs;
+            if (startSecs !== null && startSecs !== highlight.start) calculatedUpdates.start = startSecs;
+            if (endSecs !== null && endSecs !== highlight.end) calculatedUpdates.end = endSecs;
         }
         
-        onUpdate(updates);
-        setHasChanges(false);
+        onUpdate(calculatedUpdates);
     };
 
     // Initialization Effect
@@ -286,7 +265,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         
                         {/* Top Bar (Title + Close) */}
                         <div className={cn(
-                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-12 px-4 bg-zinc-950/90 border-b border-white/5 backdrop-blur-md transition-all duration-200 ease-out",
+                            "absolute top-0 left-0 right-0 z-30 flex items-center justify-between h-14 px-4 bg-zinc-950/90 border-b border-white/5 backdrop-blur-md transition-all duration-200 ease-out",
                             showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
                         )}>
                             <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
@@ -295,16 +274,46 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 ) : (
                                     <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
                                 )}
-                                <DialogTitle className="text-white font-medium text-base truncate">{file.name}</DialogTitle>
+                                <div className="flex flex-col min-w-0">
+                                    <DialogTitle className="text-white font-medium text-base truncate">{file.name}</DialogTitle>
+                                    {file.description && (
+                                        <div className="text-xs text-muted-foreground truncate max-w-[400px]">
+                                            {file.description}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <Button  
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => onOpenChange(false)} 
-                                className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground"
-                            >
-                                <X weight="bold" size={24} />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        onOpenChange(false);
+                                        navigate(`/file/${file.id}`);
+                                    }}
+                                    className="text-muted-foreground hover:text-foreground hover:bg-white/10"
+                                    title="View Original File"
+                                >
+                                    <ArrowSquareOut weight="bold" size={20} />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setShowControls(false)}
+                                    className="text-muted-foreground hover:text-foreground hover:bg-white/10"
+                                    title="Hide Top Bar"
+                                >
+                                    <EyeSlash weight="bold" size={20} />
+                                </Button>
+                                <Button  
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => onOpenChange(false)} 
+                                    className="text-muted-foreground hover:text-foreground hover:bg-red-500/10 hover:text-red-500"
+                                >
+                                    <X weight="bold" size={24} />
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Video Stage */}
