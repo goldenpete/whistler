@@ -25,6 +25,8 @@ interface AppStore extends AppState {
     setActiveProject: (id: string | null) => void;
     setActiveFile: (id: string | null) => void;
     setActiveCollection: (id: string | null) => void;
+    setActiveDoc: (id: string | null) => void;
+    setActiveGraph: (id: string | null) => void;
     addProject: (name: string) => Project;
     addStorage: (name: string, projectId: string, color?: string, icon?: string) => void;
     updateStorage: (id: string, updates: Partial<Storage>) => void;
@@ -168,8 +170,22 @@ export const useStore = create<AppStore>()(
             setCollections: (collections: Collection[]) => set({ collections }),
             setHighlights: (highlights: Highlight[]) => set({ highlights }),
             setActiveProject: (id: string | null) => set({ activeProjectId: id }),
-            setActiveFile: (id: string | null) => set({ activeFileId: id }),
-            setActiveCollection: (id: string | null) => set({ activeCollectionId: id }),
+            setActiveFile: (id: string | null) => set((state) => ({ 
+                activeFileId: id,
+                files: id ? state.files.map(f => f.id === id ? { ...f, lastViewed: Date.now() } : f) : state.files
+            })),
+            setActiveCollection: (id: string | null) => set((state) => ({ 
+                activeCollectionId: id,
+                collections: id ? state.collections.map(c => c.id === id ? { ...c, lastViewed: Date.now() } : c) : state.collections
+            })),
+            setActiveDoc: (id: string | null) => set((state) => ({ 
+                activeDocId: id,
+                docs: id ? state.docs.map(d => d.id === id ? { ...d, lastViewed: Date.now() } : d) : state.docs
+            })),
+            setActiveGraph: (id: string | null) => set((state) => ({ 
+                activeGraphId: id,
+                graphs: id ? state.graphs.map(g => g.id === id ? { ...g, lastViewed: Date.now() } : g) : state.graphs
+            })),
 
             setPipFile: (id) => set({ pipFileId: id, isPipOpen: !!id }),
             togglePip: (isOpen) => set({ isPipOpen: isOpen }),

@@ -245,28 +245,28 @@ export default function HomeView() {
             type: 'file' as const,
             subType: f.type,
             name: f.name,
-            timestamp: f.lastModified,
+            timestamp: Math.max(f.lastModified, f.lastViewed || 0),
             data: f
         })),
         ...projectDocs.map(d => ({
             id: d.id,
             type: 'doc' as const,
             name: d.name,
-            timestamp: d.lastModified || d.created,
+            timestamp: Math.max(d.lastModified || d.created, d.lastViewed || 0),
             data: d
         })),
         ...projectCollections.map(c => ({
             id: c.id,
             type: 'collection' as const,
             name: c.name,
-            timestamp: c.lastModified,
+            timestamp: Math.max(c.lastModified, c.lastViewed || 0),
             data: c
         })),
         ...projectGraphs.map(g => ({
             id: g.id,
             type: 'graph' as const,
             name: g.name,
-            timestamp: g.lastModified || g.created,
+            timestamp: Math.max(g.lastModified || g.created, g.lastViewed || 0),
             data: g
         })),
         ...projectHighlights.map(h => {
@@ -306,22 +306,24 @@ export default function HomeView() {
     const handleItemClick = (item: typeof allItems[0]) => {
         switch (item.type) {
             case 'file':
+                useStore.getState().setActiveFile(item.id);
                 navigate(`/file/${item.id}`);
                 break;
             case 'doc':
-                setState({ activeDocId: item.id });
+                useStore.getState().setActiveDoc(item.id);
                 navigate('/docs');
                 break;
             case 'collection':
-                setState({ activeCollectionId: item.id });
+                useStore.getState().setActiveCollection(item.id);
                 navigate('/collections');
                 break;
             case 'graph':
-                setState({ activeGraphId: item.id });
+                useStore.getState().setActiveGraph(item.id);
                 navigate('/graphs');
                 break;
             case 'highlight':
                 if (item.data.file) {
+                    useStore.getState().setActiveFile(item.data.file.id);
                     navigate(`/file/${item.data.file.id}`);
                 }
                 break;

@@ -20,6 +20,7 @@ export interface File {
     order: number;
     created: number;
     lastModified: number;
+    lastViewed?: number;
     deleted?: boolean;
 }
 
@@ -32,6 +33,7 @@ export interface Collection {
     icon?: string;
     created: number;
     lastModified: number;
+    lastViewed?: number;
     deleted?: boolean;
 }
 
@@ -55,6 +57,7 @@ export interface Graph {
     icon?: string;
     created: number;
     lastModified?: number;
+    lastViewed?: number;
     deleted?: boolean;
 }
 
@@ -87,6 +90,7 @@ export interface Doc {
     content: string; // HTML content or JSON
     created: number;
     lastModified?: number;
+    lastViewed?: number;
     deleted?: boolean;
 }
 
