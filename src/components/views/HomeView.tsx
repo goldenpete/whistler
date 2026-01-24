@@ -125,6 +125,7 @@ export default function HomeView() {
         };
         useStore.setState(state => ({ files: [...state.files, newFile] }));
         setPopoverOpen(false);
+        navigate(`/file/${newFile.id}`);
     };
 
     const handleCreateCollection = (name: string, color: string, icon: string) => {
@@ -139,8 +140,12 @@ export default function HomeView() {
             created: Date.now(),
             lastModified: Date.now()
         };
-        useStore.setState(state => ({ collections: [...state.collections, newCollection] }));
+        useStore.setState(state => ({ 
+            collections: [...state.collections, newCollection],
+            activeCollectionId: newCollection.id 
+        }));
         setPopoverOpen(false);
+        navigate('/collections');
     };
 
     const handleCreateDoc = (name: string) => {
@@ -153,8 +158,12 @@ export default function HomeView() {
             created: Date.now(),
             lastModified: Date.now()
         };
-        useStore.setState(state => ({ docs: [...state.docs, newDoc] }));
+        useStore.setState(state => ({ 
+            docs: [...state.docs, newDoc],
+            activeDocId: newDoc.id 
+        }));
         setPopoverOpen(false);
+        navigate('/docs');
     };
 
     const handleCreateGraph = (name: string) => {
@@ -166,18 +175,30 @@ export default function HomeView() {
             created: Date.now(),
             lastModified: Date.now()
         };
-        useStore.setState(state => ({ graphs: [...state.graphs, newGraph] }));
+        useStore.setState(state => ({ 
+            graphs: [...state.graphs, newGraph],
+            activeGraphId: newGraph.id 
+        }));
         setPopoverOpen(false);
+        navigate('/graphs');
     };
 
     const handleCreateStorage = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
         useStore.getState().addStorage(name, activeProjectId, color, icon);
         setPopoverOpen(false);
+        navigate('/storage');
     };
 
     const handleCreateProject = (name: string) => {
-        useStore.getState().addProject(name);
+        const newProject = useStore.getState().addProject(name);
+        const storages = useStore.getState().storages;
+        const projectStorage = storages.find(s => s.projectId === newProject.id);
+        
+        useStore.setState({ 
+            activeProjectId: newProject.id,
+            activeStorageId: projectStorage?.id || null 
+        });
         setPopoverOpen(false);
     };
 
@@ -280,7 +301,7 @@ export default function HomeView() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl">
                     
                     {/* Recent Files Column */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 min-w-0">
                         <div className="flex items-center gap-2 text-muted-foreground mb-2">
                             <FileIcon className="w-4 h-4" />
                             <h2 className="text-sm font-medium uppercase tracking-wider">Recent Files</h2>
@@ -293,7 +314,7 @@ export default function HomeView() {
                                         <Link 
                                             key={file.id} 
                                             to={`/file/${file.id}`}
-                                            className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all"
+                                            className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all w-full overflow-hidden"
                                         >
                                             <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <Icon weight="duotone" className="w-5 h-5" />
@@ -316,7 +337,7 @@ export default function HomeView() {
                     </div>
 
                     {/* Recent Highlights Column */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 min-w-0">
                         <div className="flex items-center gap-2 text-muted-foreground mb-2">
                             <Clock className="w-4 h-4" />
                             <h2 className="text-sm font-medium uppercase tracking-wider">Recent Highlights</h2>
@@ -331,7 +352,7 @@ export default function HomeView() {
                                         <Link 
                                             key={highlight.id} 
                                             to={`/file/${file.id}`}
-                                            className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all"
+                                            className="group flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all w-full overflow-hidden"
                                         >
                                             <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <Clock weight="duotone" className="w-5 h-5" />
@@ -356,7 +377,7 @@ export default function HomeView() {
                     </div>
 
                     {/* Recent Docs/Graphs Column */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 min-w-0">
                         <div className="flex items-center gap-2 text-muted-foreground mb-2">
                             <Folder className="w-4 h-4" />
                             <h2 className="text-sm font-medium uppercase tracking-wider">Recent Docs/Graphs</h2>
@@ -372,7 +393,7 @@ export default function HomeView() {
                                                 setState({ activeDocId: doc.id });
                                                 navigate('/docs');
                                             }}
-                                            className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left"
+                                            className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left overflow-hidden"
                                         >
                                             <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <FileText weight="duotone" className="w-5 h-5" />
@@ -399,7 +420,7 @@ export default function HomeView() {
                                                 setState({ activeCollectionId: collection.id });
                                                 navigate('/collections');
                                             }}
-                                            className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left"
+                                            className="group w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/50 hover:border-accent/50 transition-all text-left overflow-hidden"
                                         >
                                             <div className="p-2 shrink-0 rounded-md bg-background/50 text-muted-foreground group-hover:text-primary transition-colors">
                                                 <Folder weight="duotone" className="w-5 h-5" style={{ color: collection.color }} />
