@@ -40,6 +40,8 @@ interface PDFPlayerProps {
     showSidebarToggle?: boolean;
     showControls?: boolean;
     onHideControls?: () => void;
+    onToggleFullscreen?: () => void;
+    isFullscreen?: boolean;
     className?: string;
 }
 
@@ -57,6 +59,8 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     showSidebarToggle = true,
     showControls = true,
     onHideControls,
+    onToggleFullscreen,
+    isFullscreen = false,
     className 
 }, ref) => {
     // --- State ---

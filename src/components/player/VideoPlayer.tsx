@@ -488,6 +488,8 @@ export default function VideoPlayer() {
                                 isSidebarOpen={sidebarOpen}
                                 showControls={showControls}
                                 onHideControls={() => setShowControls(false)}
+                                onToggleFullscreen={toggleFullscreen}
+                                isFullscreen={isFullscreen}
                             />
                         </div>
                     ) : (

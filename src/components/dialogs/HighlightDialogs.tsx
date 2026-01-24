@@ -322,6 +322,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             showSidebarToggle={false}
                                             showControls={showControls}
                                             onHideControls={() => setShowControls(false)}
+                                            onToggleFullscreen={toggleFullscreen}
+                                            isFullscreen={isFullscreen}
                                         />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
