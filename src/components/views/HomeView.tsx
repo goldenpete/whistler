@@ -560,6 +560,26 @@ export default function HomeView() {
             );
         }
 
+        // Folder
+        if (item.type === 'file' && item.subType === 'folder') {
+            return (
+                <>
+                    {item.data.color && (
+                        <div 
+                            className="absolute inset-0 opacity-[0.08]"
+                            style={{ backgroundColor: item.data.color }}
+                        />
+                    )}
+                    <div 
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none"
+                        style={item.data.color ? { color: item.data.color } : undefined}
+                    >
+                        <Folder size={180} weight="fill" />
+                    </div>
+                </>
+            );
+        }
+
         return null;
     };
 
@@ -638,7 +658,7 @@ export default function HomeView() {
                                                 <div className="relative z-20 w-full flex flex-col h-full">
                                                     <div className="flex items-center justify-between w-full gap-2 mb-auto">
                                                         <div className="p-2 shrink-0 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
-                                                            <Icon weight="duotone" className="w-5 h-5" style={(item.type === 'collection' || item.type === 'doc' || item.type === 'graph') && item.data.color ? { color: item.data.color } : undefined} />
+                                                            <Icon weight="duotone" className="w-5 h-5" style={item.data.color ? { color: item.data.color } : undefined} />
                                                         </div>
                                                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
                                                             {label}
