@@ -15,7 +15,7 @@ interface NewDocDialogProps {
 
 export function NewDocDialog({ open, onOpenChange, onSubmit }: NewDocDialogProps) {
     const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
-    const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+    const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
     const docColor = enableDefaultColorControls && defaultColors?.file
         ? defaultColors.file
         : accentColor;

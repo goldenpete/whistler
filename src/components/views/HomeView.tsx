@@ -45,7 +45,9 @@ import {
     ContextMenuTrigger,
     ContextMenuLabel,
 } from "@/components/ui/context-menu";
-import { AddFileDialog, NewProjectDialog, CreateCollectionDialog, NewDocDialog, RenameFileDialog, EditDocDialog, EditFolderDialog, EditGraphDialog, NewGraphDialog, CreateStorageDialog, ICONS } from "@/components/dialogs/StorageDialogs";
+import { AddFileDialog, RenameFileDialog, EditDocDialog, EditFolderDialog, EditGraphDialog, CreateStorageDialog, ICONS } from "@/components/dialogs/StorageDialogs";
+import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
+import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dialogs/CreationDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { FileContextMenu } from "@/components/views/StorageView";

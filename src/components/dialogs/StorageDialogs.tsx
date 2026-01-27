@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { KeyboardEvent, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Folder,
     Star,
@@ -107,7 +109,7 @@ export function EntityForm({
         onSubmit(name.trim(), description.trim(), color, iconName);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSubmit();
@@ -122,7 +124,7 @@ export function EntityForm({
                     id="entity-name"
                     placeholder={placeholder}
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                     onKeyDown={handleKeyDown}
                     autoFocus
                     className="bg-zinc-900 border-zinc-800"
@@ -136,7 +138,7 @@ export function EntityForm({
                         id="entity-description"
                         placeholder="Add a description..."
                         value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                         className="bg-zinc-900 border-zinc-800 resize-none h-24"
                     />
                 </div>
@@ -228,7 +230,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
             e.preventDefault();
             handleSubmit();
@@ -251,7 +253,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                             id="url"
                             placeholder="https://example.com/video.mp4"
                             value={url}
-                            onChange={(e) => handleUrlChange(e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => handleUrlChange(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
                         />
@@ -262,7 +264,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                             id="name"
                             placeholder="My Video"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                         />
                     </div>
@@ -376,7 +378,7 @@ interface CreateStorageDialogProps {
 
 export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStorageDialogProps) {
     const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
-    const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+    const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
     const storageColor = enableDefaultColorControls && defaultColors?.storage
         ? defaultColors.storage
         : accentColor;
@@ -457,8 +459,6 @@ function extractFilename(url: string): string {
     }
 }
 
-import { Textarea } from "@/components/ui/textarea";
-
 interface RenameFileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -483,7 +483,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
         onOpenChange(false);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSubmit();
@@ -503,7 +503,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                             id="rename-file-name"
                             placeholder="Name"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
                             className="bg-zinc-900 border-zinc-800"
@@ -516,7 +516,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                                 id="rename-file-description"
                                 placeholder="Add a description..."
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                                 className="bg-zinc-900 border-zinc-800 resize-none h-32"
                             />
                         </div>
