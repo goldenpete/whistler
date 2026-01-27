@@ -47,7 +47,7 @@ declare module "react/jsx-runtime" {
 }
 
 declare module "@phosphor-icons/react" {
-  export type IconProps = { size?: number; weight?: string; className?: string };
+  export type IconProps = { size?: number; weight?: string; className?: string; style?: any };
   export const Folder: (props: IconProps) => any;
   export const Star: (props: IconProps) => any;
   export const Heart: (props: IconProps) => any;
@@ -71,6 +71,37 @@ declare module "@phosphor-icons/react" {
   export const Book: (props: IconProps) => any;
   export const Palette: (props: IconProps) => any;
   export const Check: (props: IconProps) => any;
+  
+  // Added icons
+  export const File: (props: IconProps) => any;
+  export const MusicNote: (props: IconProps) => any;
+  export const FilePdf: (props: IconProps) => any;
+  export const Clock: (props: IconProps) => any;
+  export const Plus: (props: IconProps) => any;
+  export const Graph: (props: IconProps) => any;
+  export const HardDrives: (props: IconProps) => any;
+  export const NotePencil: (props: IconProps) => any;
+  export const ProjectorScreenChart: (props: IconProps) => any;
+  export const Copy: (props: IconProps) => any;
+  export const Trash: (props: IconProps) => any;
+  export const ArrowSquareOut: (props: IconProps) => any;
+  export const PencilSimple: (props: IconProps) => any;
+}
+
+// Image imports
+declare module "*.png" {
+  const value: string;
+  export default value;
+}
+
+// External libs
+declare module "date-fns" {
+  export function formatDistanceToNow(date: number | Date, options?: any): string;
+}
+
+declare module "react-router-dom" {
+  export const Link: any;
+  export function useNavigate(): (path: string) => void;
 }
 
 // Global JSX namespace

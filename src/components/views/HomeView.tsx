@@ -136,7 +136,7 @@ export default function HomeView() {
 
         let targetStorageId = activeStorageId;
         if (!targetStorageId) {
-            const projectStorages = storages.filter(s => s.projectId === activeProjectId);
+            const projectStorages = storages.filter((s: any) => s.projectId === activeProjectId);
             if (projectStorages.length > 0) {
                 targetStorageId = projectStorages[0].id;
             } else {
@@ -147,7 +147,7 @@ export default function HomeView() {
                     created: Date.now(),
                     lastModified: Date.now()
                 };
-                useStore.setState(state => ({ 
+                useStore.setState((state: any) => ({ 
                     storages: [...state.storages, newStorage],
                     activeStorageId: newStorage.id 
                 }));
@@ -164,11 +164,11 @@ export default function HomeView() {
             name,
             url,
             type,
-            order: files.filter(f => f.projectId === activeProjectId && !f.parentId).length,
+            order: files.filter((f: File) => f.projectId === activeProjectId && !f.parentId).length,
             created: Date.now(),
             lastModified: Date.now()
         };
-        useStore.setState(state => ({ files: [...state.files, newFile] }));
+        useStore.setState((state: any) => ({ files: [...state.files, newFile] }));
         setPopoverOpen(false);
         navigate(`/file/${newFile.id}`);
     };
@@ -185,7 +185,7 @@ export default function HomeView() {
             created: Date.now(),
             lastModified: Date.now()
         };
-        useStore.setState(state => ({ 
+        useStore.setState((state: any) => ({ 
             collections: [...state.collections, newCollection],
             activeCollectionId: newCollection.id 
         }));
@@ -217,7 +217,7 @@ export default function HomeView() {
     const handleCreateProject = (name: string) => {
         const newProject = useStore.getState().addProject(name);
         const storages = useStore.getState().storages;
-        const projectStorage = storages.find(s => s.projectId === newProject.id);
+        const projectStorage = storages.find((s: any) => s.projectId === newProject.id);
         
         useStore.setState({ 
             activeProjectId: newProject.id,
@@ -229,15 +229,15 @@ export default function HomeView() {
     const username = user?.email?.split('@')[0] || "User";
 
     // Filter items for current project
-    const projectFiles = files.filter(f => f.projectId === activeProjectId && !f.deleted);
-    const projectDocs = docs.filter(d => d.projectId === activeProjectId && !d.deleted);
-    const projectCollections = collections.filter(c => c.projectId === activeProjectId && !c.deleted);
-    const projectGraphs = (useStore.getState().graphs || []).filter(g => g.projectId === activeProjectId);
+    const projectFiles = files.filter((f: File) => f.projectId === activeProjectId && !f.deleted);
+    const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
+    const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
+    const projectGraphs = (useStore.getState().graphs || []).filter((g: any) => g.projectId === activeProjectId);
 
     // Recent Highlights logic
-    const projectFileIds = new Set(projectFiles.map(f => f.id));
+    const projectFileIds = new Set(projectFiles.map((f: File) => f.id));
     const projectHighlights = highlights
-        .filter(h => projectFileIds.has(h.fileId));
+        .filter((h: any) => projectFileIds.has(h.fileId));
 
     const formatHighlightLabel = (h: any, file?: any) => {
         if (file?.type === 'pdf') {
@@ -264,7 +264,7 @@ export default function HomeView() {
 
     // Unify all items
     const allItems = [
-        ...projectFiles.map(f => ({
+        ...projectFiles.map((f: File) => ({
             id: f.id,
             type: 'file' as const,
             subType: f.type,
@@ -272,29 +272,29 @@ export default function HomeView() {
             timestamp: Math.max(f.lastModified, f.lastViewed || 0),
             data: f
         })),
-        ...projectDocs.map(d => ({
+        ...projectDocs.map((d: Doc) => ({
             id: d.id,
             type: 'doc' as const,
             name: d.name,
             timestamp: Math.max(d.lastModified || d.created, d.lastViewed || 0),
             data: d
         })),
-        ...projectCollections.map(c => ({
+        ...projectCollections.map((c: Collection) => ({
             id: c.id,
             type: 'collection' as const,
             name: c.name,
             timestamp: Math.max(c.lastModified, c.lastViewed || 0),
             data: c
         })),
-        ...projectGraphs.map(g => ({
+        ...projectGraphs.map((g: any) => ({
             id: g.id,
             type: 'graph' as const,
             name: g.name,
             timestamp: Math.max(g.lastModified || g.created, g.lastViewed || 0),
             data: g
         })),
-        ...projectHighlights.map(h => {
-            const file = files.find(f => f.id === h.fileId);
+        ...projectHighlights.map((h: any) => {
+            const file = files.find((f: File) => f.id === h.fileId);
             const label = formatHighlightLabel(h, file);
             return {
                 id: h.id,
@@ -308,27 +308,33 @@ export default function HomeView() {
 
     const getItemIcon = (item: typeof allItems[0]) => {
         if ((item.type === 'collection' || item.type === 'doc' || item.type === 'graph') && item.data.icon) {
-            const customIcon = ICONS.find(i => i.name === item.data.icon)?.component;
+            const customIcon = ICONS.find(i => i.name === item.data.icon)?.icon;
             if (customIcon) return customIcon;
         }
 
         switch (item.type) {
             case 'file': return getFileIcon(item.subType as any);
             case 'doc': return FileText;
-            case 'collection': return Folder;
+            case 'collection': return Tag;
             case 'graph': return Graph;
             case 'highlight': return Clock;
         }
     };
 
-    const getItemLabel = (type: string) => {
-        switch (type) {
-            case 'file': return 'File';
-            case 'doc': return 'Doc';
-            case 'collection': return 'Collection';
-            case 'graph': return 'Graph';
-            case 'highlight': return 'Highlight';
-            default: return type;
+    const getItemLabel = (item: typeof allItems[0]) => {
+        switch (item.type) {
+            case 'file':
+                return item.subType === 'folder' ? 'Folder' : 'File';
+            case 'doc':
+                return 'Doc';
+            case 'collection':
+                return 'Collection';
+            case 'graph':
+                return 'Graph';
+            case 'highlight':
+                return 'Highlight';
+            default:
+                return item.type;
         }
     };
 
@@ -444,7 +450,7 @@ export default function HomeView() {
                         src={item.data.url} 
                         alt="" 
                         className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
-                        onContextMenu={(e) => e.preventDefault()}
+                        onContextMenu={(e: any) => e.preventDefault()}
                     />
                 </div>
             );
@@ -460,9 +466,9 @@ export default function HomeView() {
                         muted
                         loop
                         playsInline
-                        onMouseOver={e => e.currentTarget.play()}
-                        onMouseOut={e => e.currentTarget.pause()}
-                        onContextMenu={(e) => e.preventDefault()}
+                        onMouseOver={(e: any) => e.currentTarget.play()}
+                        onMouseOut={(e: any) => e.currentTarget.pause()}
+                        onContextMenu={(e: any) => e.preventDefault()}
                     />
                 </div>
             );
@@ -515,8 +521,11 @@ export default function HomeView() {
                         className="absolute inset-0 opacity-[0.08]"
                         style={{ backgroundColor: item.data.color }}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] -rotate-12 scale-150 pointer-events-none" style={{ color: item.data.color }}>
-                        <Folder size={200} weight="fill" />
+                    <div 
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none"
+                        style={{ color: item.data.color }}
+                    >
+                        <Tag size={180} weight="fill" />
                     </div>
                 </>
             );
@@ -559,7 +568,7 @@ export default function HomeView() {
             {/* Top Bar */}
             <div className="flex items-center gap-4 p-8 pb-4 shrink-0">
                 <img 
-                    src={LOGO_MAP[accentTheme || 'orange']}
+                    src={LOGO_MAP[(accentTheme as AccentTheme) || 'orange']}
                     alt="Whistlerbox Logo" 
                     className="w-12 h-12 rounded-xl pointer-events-none select-none shadow-sm"
                 />
@@ -609,8 +618,8 @@ export default function HomeView() {
                     {allItems.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {allItems.slice(0, 50).map(item => {
-                                const Icon = getItemIcon(item);
-                                const label = getItemLabel(item.type);
+                                const Icon = getItemIcon(item) || FileIcon;
+                                const label = getItemLabel(item);
                                 
                                 return (
                                     <ContextMenu key={`${item.type}-${item.id}`}>
@@ -780,8 +789,8 @@ export default function HomeView() {
                         initialColor={fileToColor?.color || "#ffffff"}
                         onColorSelect={(color) => {
                             if (fileToColor) {
-                                useStore.setState(state => ({
-                                    files: state.files.map(f => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
+                                useStore.setState((state: any) => ({
+                                    files: state.files.map((f: File) => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
                                 }));
                             }
                         }}
