@@ -741,7 +741,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
     );
 }
 
-interface FileContextMenuProps {
+export interface FileContextMenuProps {
     file: File;
     onRename: () => void;
     onMove: () => void;
@@ -749,7 +749,7 @@ interface FileContextMenuProps {
     onColor: () => void;
 }
 
-function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileContextMenuProps) {
+export function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileContextMenuProps) {
     const handleDelete = () => {
         useStore.setState(state => ({
             files: state.files.map(f => f.id === file.id ? { ...f, deleted: true } : f)

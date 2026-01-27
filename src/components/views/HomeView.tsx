@@ -29,16 +29,27 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { AddFileDialog, CreateStorageDialog, RenameFileDialog, EditDocDialog, EditFolderDialog, EditGraphDialog, ICONS } from "@/components/dialogs/StorageDialogs";
-import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
-import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dialogs/CreationDialogs";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
     ContextMenu,
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger,
+    ContextMenuLabel,
 } from "@/components/ui/context-menu";
+import { AddFileDialog, NewProjectDialog, CreateCollectionDialog, NewDocDialog, RenameFileDialog, EditDocDialog, EditFolderDialog, EditGraphDialog, NewGraphDialog, CreateStorageDialog, ICONS } from "@/components/dialogs/StorageDialogs";
+import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
+import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
+import { FileContextMenu } from "@/components/views/StorageView";
+import { Input } from "@/components/ui/input";
 import { Copy, Trash, ArrowSquareOut, PencilSimple } from "@phosphor-icons/react";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
@@ -99,6 +110,22 @@ export default function HomeView() {
     const [renameDocOpen, setRenameDocOpen] = useState(false);
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
     const [renameGraphOpen, setRenameGraphOpen] = useState(false);
+
+    // Storage Dialog States
+    const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+    const [colorPickerDialogOpen, setColorPickerDialogOpen] = useState(false);
+    const [fileToMove, setFileToMove] = useState<File | null>(null);
+    const [fileToColor, setFileToColor] = useState<File | null>(null);
+
+    const handleMoveInit = (file: File) => {
+        setFileToMove(file);
+        setMoveDialogOpen(true);
+    };
+
+    const handleColorInit = (file: File) => {
+        setFileToColor(file);
+        setColorPickerDialogOpen(true);
+    };
 
     const [popoverOpen, setPopoverOpen] = useState(false);
 
@@ -623,36 +650,46 @@ export default function HomeView() {
                                                 </div>
                                             </button>
                                         </ContextMenuTrigger>
-                                        <ContextMenuContent>
-                                            <ContextMenuItem onClick={() => handleItemClick(item)}>
-                                                <ArrowSquareOut className="mr-2 h-4 w-4" />
-                                                Open
-                                            </ContextMenuItem>
-                                            
-                                            {item.type === 'highlight' ? (
-                                                <>
-                                                    <ContextMenuItem onClick={() => handleCopy(item.data.text || item.data.note)}>
-                                                        <Copy className="mr-2 h-4 w-4" />
-                                                        Copy Text
-                                                    </ContextMenuItem>
-                                                </>
-                                            ) : (
-                                                <ContextMenuItem onClick={() => openRenameDialog(item)}>
-                                                    <PencilSimple className="mr-2 h-4 w-4" />
-                                                    Rename
+                                        {item.type === 'file' ? (
+                                            <FileContextMenu 
+                                                file={item.data}
+                                                onRename={() => openRenameDialog(item)}
+                                                onMove={() => handleMoveInit(item.data)}
+                                                onSelect={() => {}} 
+                                                onColor={() => handleColorInit(item.data)}
+                                            />
+                                        ) : (
+                                            <ContextMenuContent>
+                                                <ContextMenuItem onClick={() => handleItemClick(item)}>
+                                                    <ArrowSquareOut className="mr-2 h-4 w-4" />
+                                                    Open
                                                 </ContextMenuItem>
-                                            )}
-                                            
-                                            <ContextMenuSeparator />
-                                            
-                                            <ContextMenuItem 
-                                                className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
-                                                onClick={() => handleDelete(item)}
-                                            >
-                                                <Trash className="mr-2 h-4 w-4" />
-                                                Move to Trash
-                                            </ContextMenuItem>
-                                        </ContextMenuContent>
+                                                
+                                                {item.type === 'highlight' ? (
+                                                    <>
+                                                        <ContextMenuItem onClick={() => handleCopy(item.data.text || item.data.note)}>
+                                                            <Copy className="mr-2 h-4 w-4" />
+                                                            Copy Text
+                                                        </ContextMenuItem>
+                                                    </>
+                                                ) : (
+                                                    <ContextMenuItem onClick={() => openRenameDialog(item)}>
+                                                        <PencilSimple className="mr-2 h-4 w-4" />
+                                                        Rename
+                                                    </ContextMenuItem>
+                                                )}
+                                                
+                                                <ContextMenuSeparator />
+                                                
+                                                <ContextMenuItem 
+                                                    className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                                                    onClick={() => handleDelete(item)}
+                                                >
+                                                    <Trash className="mr-2 h-4 w-4" />
+                                                    Move to Trash
+                                                </ContextMenuItem>
+                                            </ContextMenuContent>
+                                        )}
                                     </ContextMenu>
                                 );
                             })}
@@ -729,6 +766,23 @@ export default function HomeView() {
                         initialName={renameItem.name}
                         initialColor={renameItem.data.color}
                         initialIcon={renameItem.data.icon}
+                    />
+                    <MoveFileDialog
+                        open={moveDialogOpen}
+                        onOpenChange={setMoveDialogOpen}
+                        fileIds={fileToMove ? [fileToMove.id] : []}
+                    />
+                    <ColorPickerDialog
+                        open={colorPickerDialogOpen}
+                        onOpenChange={setColorPickerDialogOpen}
+                        initialColor={fileToColor?.color || "#ffffff"}
+                        onColorSelect={(color) => {
+                            if (fileToColor) {
+                                useStore.setState(state => ({
+                                    files: state.files.map(f => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
+                                }));
+                            }
+                        }}
                     />
                 </>
             )}
