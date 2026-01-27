@@ -495,6 +495,7 @@ export default function HomeView() {
         // Doc
         if (item.type === 'doc') {
             const text = item.data.content?.replace(/<[^>]*>/g, '') || '';
+            const BgIcon = (item.data.icon ? ICONS.find(i => i.name === item.data.icon)?.icon : FileText) || FileText;
             return (
                 <>
                     {item.data.color && (
@@ -503,6 +504,12 @@ export default function HomeView() {
                             style={{ backgroundColor: item.data.color }}
                         />
                     )}
+                    <div 
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none"
+                        style={item.data.color ? { color: item.data.color } : undefined}
+                    >
+                        <BgIcon size={180} weight="fill" />
+                    </div>
                     <div 
                         className="absolute inset-0 p-6 text-[10px] text-foreground/20 font-mono break-words leading-relaxed overflow-hidden select-none pointer-events-none"
                         style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent)' }}
