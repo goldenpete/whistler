@@ -1096,13 +1096,14 @@ export default function Sidebar() {
                                 <div className="space-y-1">
                                     {projectStorages.map(storage => {
                                         const Icon = storage.icon ? getIcon(storage.icon) : Folder;
+                                        const isActive = activeStorageId === storage.id;
                                         return (
                                             <button
                                                 key={storage.id}
                                                 onClick={() => handleSelectStorage(storage.id)}
                                                 className={cn(
-                                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group",
-                                                    activeStorageId === storage.id
+                                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
+                                                    isActive
                                                         ? "bg-primary/20 text-primary font-medium"
                                                         : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground",
                                                     isSlim && "justify-center px-0 py-3"
@@ -1110,9 +1111,9 @@ export default function Sidebar() {
                                                 title={isSlim ? storage.name : undefined}
                                             >
                                                 <Icon 
-                                                    weight="regular" 
+                                                    weight={isActive ? "fill" : "regular"} 
                                                     className={cn("text-lg shrink-0 transition-colors", !storage.color && "text-primary")}
-                                                    style={{ color: storage.color }}
+                                                    style={{ color: isActive ? undefined : storage.color }}
                                                 />
                                                 {!isSlim && <span className="truncate flex-1">{storage.name}</span>}
                                                 {!isSlim && (
