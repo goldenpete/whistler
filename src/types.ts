@@ -88,6 +88,8 @@ export interface Doc {
     projectId: string;
     name: string;
     content: string; // HTML content or JSON
+    color?: string;
+    icon?: string;
     created: number;
     lastModified?: number;
     lastViewed?: number;

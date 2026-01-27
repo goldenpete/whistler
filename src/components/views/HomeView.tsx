@@ -29,7 +29,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { AddFileDialog, CreateStorageDialog, RenameFileDialog, RenameDocDialog, EditFolderDialog, RenameGraphDialog } from "@/components/dialogs/StorageDialogs";
+import { AddFileDialog, CreateStorageDialog, RenameFileDialog, EditDocDialog, EditFolderDialog, EditGraphDialog, ICONS } from "@/components/dialogs/StorageDialogs";
 import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dialogs/CreationDialogs";
 import {
@@ -164,37 +164,16 @@ export default function HomeView() {
         navigate('/collections');
     };
 
-    const handleCreateDoc = (name: string) => {
+    const handleCreateDoc = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
-        const newDoc: Doc = {
-            id: crypto.randomUUID(),
-            projectId: activeProjectId,
-            name,
-            content: "",
-            created: Date.now(),
-            lastModified: Date.now()
-        };
-        useStore.setState(state => ({ 
-            docs: [...state.docs, newDoc],
-            activeDocId: newDoc.id 
-        }));
+        useStore.getState().addDoc(name, activeProjectId, color, icon);
         setPopoverOpen(false);
         navigate('/docs');
     };
 
-    const handleCreateGraph = (name: string) => {
+    const handleCreateGraph = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
-        const newGraph = {
-            id: crypto.randomUUID(),
-            projectId: activeProjectId,
-            name,
-            created: Date.now(),
-            lastModified: Date.now()
-        };
-        useStore.setState(state => ({ 
-            graphs: [...state.graphs, newGraph],
-            activeGraphId: newGraph.id 
-        }));
+        useStore.getState().addGraph(name, activeProjectId, color, icon);
         setPopoverOpen(false);
         navigate('/graphs');
     };
@@ -299,6 +278,11 @@ export default function HomeView() {
     ].sort((a, b) => b.timestamp - a.timestamp);
 
     const getItemIcon = (item: typeof allItems[0]) => {
+        if ((item.type === 'collection' || item.type === 'doc' || item.type === 'graph') && item.data.icon) {
+            const customIcon = ICONS.find(i => i.name === item.data.icon)?.component;
+            if (customIcon) return customIcon;
+        }
+
         switch (item.type) {
             case 'file': return getFileIcon(item.subType as any);
             case 'doc': return FileText;
@@ -356,7 +340,11 @@ export default function HomeView() {
                 useStore.getState().updateFile(id, { name, description });
                 break;
             case 'doc':
-                useStore.getState().updateDoc(id, { name });
+                if (color || icon) {
+                    useStore.getState().updateDoc(id, { name, color, icon });
+                } else {
+                    useStore.getState().updateDoc(id, { name });
+                }
                 break;
             case 'collection':
                 if (color && icon) {
@@ -364,7 +352,11 @@ export default function HomeView() {
                 }
                 break;
             case 'graph':
-                useStore.getState().updateGraph(id, { name });
+                if (color || icon) {
+                    useStore.getState().updateGraph(id, { name, color, icon });
+                } else {
+                    useStore.getState().updateGraph(id, { name });
+                }
                 break;
         }
         
@@ -469,12 +461,20 @@ export default function HomeView() {
         if (item.type === 'doc') {
             const text = item.data.content?.replace(/<[^>]*>/g, '') || '';
             return (
-                <div 
-                    className="absolute inset-0 p-6 text-[10px] text-foreground/20 font-mono break-words leading-relaxed overflow-hidden select-none pointer-events-none"
-                    style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent)' }}
-                >
-                    {text.slice(0, 1000)}
-                </div>
+                <>
+                    {item.data.color && (
+                        <div 
+                            className="absolute inset-0 opacity-[0.08]"
+                            style={{ backgroundColor: item.data.color }}
+                        />
+                    )}
+                    <div 
+                        className="absolute inset-0 p-6 text-[10px] text-foreground/20 font-mono break-words leading-relaxed overflow-hidden select-none pointer-events-none"
+                        style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent)' }}
+                    >
+                        {text.slice(0, 1000)}
+                    </div>
+                </>
             );
         }
 
@@ -496,9 +496,20 @@ export default function HomeView() {
         // Graph
         if (item.type === 'graph') {
             return (
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none">
-                    <Graph size={200} weight="fill" />
-                </div>
+                <>
+                    {item.data.color && (
+                        <div 
+                            className="absolute inset-0 opacity-[0.08]"
+                            style={{ backgroundColor: item.data.color }}
+                        />
+                    )}
+                    <div 
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none"
+                        style={item.data.color ? { color: item.data.color, opacity: 0.05 } : undefined}
+                    >
+                        <Graph size={200} weight="fill" />
+                    </div>
+                </>
             );
         }
 
@@ -589,7 +600,7 @@ export default function HomeView() {
                                                 <div className="relative z-20 w-full flex flex-col h-full">
                                                     <div className="flex items-center justify-between w-full gap-2 mb-auto">
                                                         <div className="p-2 shrink-0 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
-                                                            <Icon weight="duotone" className="w-5 h-5" style={item.type === 'collection' ? { color: item.data.color } : undefined} />
+                                                            <Icon weight="duotone" className="w-5 h-5" style={(item.type === 'collection' || item.type === 'doc' || item.type === 'graph') && item.data.color ? { color: item.data.color } : undefined} />
                                                         </div>
                                                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
                                                             {label}
@@ -695,11 +706,13 @@ export default function HomeView() {
                         initialName={renameItem.name}
                         initialDescription={renameItem.data.description}
                     />
-                    <RenameDocDialog
+                    <EditDocDialog
                         open={renameDocOpen}
                         onOpenChange={setRenameDocOpen}
-                        onSubmit={(name) => handleRename(name)}
+                        onSubmit={(name, color, icon) => handleRename(name, undefined, color, icon)}
                         initialName={renameItem.name}
+                        initialColor={renameItem.data.color}
+                        initialIcon={renameItem.data.icon}
                     />
                     <EditFolderDialog
                         open={editCollectionOpen}
@@ -709,11 +722,13 @@ export default function HomeView() {
                         initialColor={renameItem.data.color}
                         initialIcon={renameItem.data.icon}
                     />
-                    <RenameGraphDialog
+                    <EditGraphDialog
                         open={renameGraphOpen}
                         onOpenChange={setRenameGraphOpen}
-                        onSubmit={(name) => handleRename(name)}
+                        onSubmit={(name, color, icon) => handleRename(name, undefined, color, icon)}
                         initialName={renameItem.name}
+                        initialColor={renameItem.data.color}
+                        initialIcon={renameItem.data.icon}
                     />
                 </>
             )}

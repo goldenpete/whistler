@@ -572,125 +572,38 @@ export function EditGraphDialog({ open, onOpenChange, onSubmit, initialName, ini
     );
 }
 
-interface RenameDocDialogProps {
+interface EditDocDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string) => void;
+    onSubmit: (name: string, color: string, icon: string) => void;
     initialName: string;
+    initialColor?: string;
+    initialIcon?: string;
 }
 
-export function RenameDocDialog({ open, onOpenChange, onSubmit, initialName }: RenameDocDialogProps) {
-    const [name, setName] = useState(initialName);
-
-    useEffect(() => {
-        setName(initialName);
-    }, [initialName, open]);
-
-    const handleSubmit = () => {
-        if (!name.trim()) return;
-        onSubmit(name.trim());
-        onOpenChange(false);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            handleSubmit();
-        }
-    };
-
+export function EditDocDialog({ open, onOpenChange, onSubmit, initialName, initialColor, initialIcon }: EditDocDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                    <DialogTitle>Rename Document</DialogTitle>
+                    <DialogTitle>Edit Document</DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Enter a new name for the document.
+                        Update document details.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="rename-doc-name">Document Name</Label>
-                        <Input
-                            id="rename-doc-name"
-                            placeholder="Document Name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                        />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()}>
-                        Rename
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-interface RenameGraphDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string) => void;
-    initialName: string;
-}
-
-export function RenameGraphDialog({ open, onOpenChange, onSubmit, initialName }: RenameGraphDialogProps) {
-    const [name, setName] = useState(initialName);
-
-    useEffect(() => {
-        setName(initialName);
-    }, [initialName, open]);
-
-    const handleSubmit = () => {
-        if (!name.trim()) return;
-        onSubmit(name.trim());
-        onOpenChange(false);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            handleSubmit();
-        }
-    };
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                <DialogHeader>
-                    <DialogTitle>Rename Graph</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
-                        Enter a new name for the graph.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="rename-graph-name">Graph Name</Label>
-                        <Input
-                            id="rename-graph-name"
-                            placeholder="Graph Name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                        />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()}>
-                        Rename
-                    </Button>
-                </DialogFooter>
+                <EntityForm
+                    label="Document Name"
+                    placeholder="Document Name"
+                    submitLabel="Save"
+                    defaultName={initialName}
+                    defaultColor={initialColor}
+                    defaultIcon={initialIcon}
+                    onSubmit={(name, description, color, icon) => {
+                        onSubmit(name, color, icon);
+                        onOpenChange(false);
+                    }}
+                    onCancel={() => onOpenChange(false)}
+                />
             </DialogContent>
         </Dialog>
     );

@@ -27,7 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
-import type { Collection, Storage, AccentTheme, BaseTheme } from "@/types";
+import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType } from "@/types";
 import { getIcon } from "@/utils/iconMap";
 import {
     Select,
@@ -56,7 +56,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { CreateCollectionDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
-import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, RenameDocDialog } from "@/components/dialogs/StorageDialogs";
+import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, EditDocDialog, ICONS } from "@/components/dialogs/StorageDialogs";
+import { NewDocDialog, NewGraphDialog } from "@/components/dialogs/CreationDialogs";
 import { EditProjectDialog } from "@/components/dialogs/EditProjectDialog";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
@@ -167,9 +168,7 @@ export default function Sidebar() {
     const [docToRename, setDocToRename] = useState<any | null>(null);
     const [editProjectOpen, setEditProjectOpen] = useState(false);
     const [newDocOpen, setNewDocOpen] = useState(false);
-    const [newDocName, setNewDocName] = useState("");
     const [newGraphOpen, setNewGraphOpen] = useState(false);
-    const [newGraphName, setNewGraphName] = useState("");
     const [newProjectOpen, setNewProjectOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -239,9 +238,9 @@ export default function Sidebar() {
         }
     };
 
-    const handleUpdateDoc = (name: string) => {
+    const handleUpdateDoc = (name: string, color: string, icon: string) => {
         if (docToRename) {
-            updateDoc(docToRename.id, { name });
+            updateDoc(docToRename.id, { name, color, icon });
         }
     };
 
@@ -325,31 +324,13 @@ export default function Sidebar() {
 
     const handleCreateDoc = () => {
         if (!activeProjectId) return;
-        setNewDocName("");
         setNewDocOpen(true);
     };
 
-    const handleCreateDocSubmit = () => {
+    const handleCreateDocSubmit = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
-        const name = newDocName.trim();
-        if (!name) return;
-
-        const newDoc = {
-            id: crypto.randomUUID(),
-            projectId: activeProjectId,
-            name,
-            content: "<p>Start writing...</p>",
-            created: Date.now(),
-            lastModified: Date.now()
-        };
-
-        useStore.setState(state => ({
-            docs: [...state.docs, newDoc],
-            activeDocId: newDoc.id
-        }));
-
+        useStore.getState().addDoc(name, activeProjectId, color, icon);
         setNewDocOpen(false);
-        setNewDocName("");
         navigate("/docs");
     };
 
@@ -359,30 +340,13 @@ export default function Sidebar() {
 
     const handleCreateGraph = () => {
         if (!activeProjectId) return;
-        setNewGraphName("");
         setNewGraphOpen(true);
     };
 
-    const handleCreateGraphSubmit = () => {
+    const handleCreateGraphSubmit = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
-        const name = newGraphName.trim();
-        if (!name) return;
-
-        const newGraph = {
-            id: crypto.randomUUID(),
-            projectId: activeProjectId,
-            name,
-            created: Date.now(),
-            lastModified: Date.now()
-        };
-
-        useStore.setState(state => ({
-            graphs: [...state.graphs, newGraph],
-            activeGraphId: newGraph.id
-        }));
-
+        useStore.getState().addGraph(name, activeProjectId, color, icon);
         setNewGraphOpen(false);
-        setNewGraphName("");
         navigate("/graphs");
     };
 
@@ -925,7 +889,9 @@ export default function Sidebar() {
                             
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
-                                    {projectDocs.map(doc => (
+                                    {projectDocs.map(doc => {
+                                        const DocIcon = doc.icon ? ICONS.find(i => i.name === doc.icon)?.component || NotePencil : NotePencil;
+                                        return (
                                         <div
                                             key={doc.id}
                                             onClick={() => handleSelectDoc(doc.id)}
@@ -943,9 +909,10 @@ export default function Sidebar() {
                                                     : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
                                             )}
                                         >
-                                            <NotePencil 
+                                            <DocIcon 
                                                 weight={activeDocId === doc.id ? "fill" : "regular"} 
                                                 className="text-lg shrink-0 transition-colors"
+                                                style={{ color: activeDocId === doc.id ? undefined : doc.color }}
                                             />
                                             <span className="truncate flex-1">{doc.name}</span>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -963,7 +930,7 @@ export default function Sidebar() {
                                                 </button>
                                             </div>
                                         </div>
-                                    ))}
+                                    )})}
 
                                     {projectDocs.length === 0 && (
                                         <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">
@@ -1278,11 +1245,13 @@ export default function Sidebar() {
                 initialColor={graphToEdit?.color}
                 initialIcon={graphToEdit?.icon}
             />
-            <RenameDocDialog
+            <EditDocDialog
                 open={renameDocOpen}
                 onOpenChange={setRenameDocOpen}
                 onSubmit={handleUpdateDoc}
                 initialName={docToRename?.name || ""}
+                initialColor={docToRename?.color}
+                initialIcon={docToRename?.icon}
             />
             <EditProjectDialog
                 open={editProjectOpen}
@@ -1494,69 +1463,17 @@ export default function Sidebar() {
                 />
             )}
 
-            <Dialog open={newDocOpen} onOpenChange={setNewDocOpen}>
-                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                    <DialogHeader>
-                        <DialogTitle>New Document</DialogTitle>
-                        <DialogDescription className="text-zinc-400">
-                            Enter a name for your new document.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="new-doc-name">Document Name</Label>
-                            <Input
-                                id="new-doc-name"
-                                placeholder="My Document"
-                                value={newDocName}
-                                onChange={(e) => setNewDocName(e.target.value)}
-                                autoFocus
-                                className="bg-zinc-900 border-zinc-800"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewDocOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateDocSubmit} disabled={!newDocName.trim()}>
-                            Create
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <NewDocDialog
+                open={newDocOpen}
+                onOpenChange={setNewDocOpen}
+                onSubmit={handleCreateDocSubmit}
+            />
 
-            <Dialog open={newGraphOpen} onOpenChange={setNewGraphOpen}>
-                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                    <DialogHeader>
-                        <DialogTitle>New Graph</DialogTitle>
-                        <DialogDescription className="text-zinc-400">
-                            Enter a name for your new graph.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="new-graph-name">Graph Name</Label>
-                            <Input
-                                id="new-graph-name"
-                                placeholder="My Graph"
-                                value={newGraphName}
-                                onChange={(e) => setNewGraphName(e.target.value)}
-                                autoFocus
-                                className="bg-zinc-900 border-zinc-800"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewGraphOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateGraphSubmit} disabled={!newGraphName.trim()}>
-                            Create
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <NewGraphDialog
+                open={newGraphOpen}
+                onOpenChange={setNewGraphOpen}
+                onSubmit={handleCreateGraphSubmit}
+            />
 
             <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
                 <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">

@@ -29,6 +29,8 @@ interface AppStore extends AppState {
     setActiveGraph: (id: string | null) => void;
     addProject: (name: string) => Project;
     addStorage: (name: string, projectId: string, color?: string, icon?: string) => void;
+    addDoc: (name: string, projectId: string, color?: string, icon?: string) => void;
+    addGraph: (name: string, projectId: string, color?: string, icon?: string) => void;
     updateStorage: (id: string, updates: Partial<Storage>) => void;
     deleteStorage: (id: string) => void;
     updateGraph: (id: string, updates: Partial<Graph>) => void;
@@ -273,6 +275,57 @@ export const useStore = create<AppStore>()(
                         action: 'create',
                         entityType: 'collection', // Storage is kind of a collection/folder
                         entityId: newStorage.id,
+                        entityName: name,
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
+
+            addDoc: (name, projectId, color, icon) => set((state) => {
+                const newDoc: Doc = {
+                    id: crypto.randomUUID(),
+                    projectId,
+                    name,
+                    content: "<p>Start writing...</p>",
+                    color,
+                    icon,
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                return {
+                    docs: [...state.docs, newDoc],
+                    activeDocId: newDoc.id,
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: state.activeProjectId || 'global',
+                        action: 'create',
+                        entityType: 'doc',
+                        entityId: newDoc.id,
+                        entityName: name,
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
+
+            addGraph: (name, projectId, color, icon) => set((state) => {
+                const newGraph: Graph = {
+                    id: crypto.randomUUID(),
+                    projectId,
+                    name,
+                    color,
+                    icon,
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                return {
+                    graphs: [...state.graphs, newGraph],
+                    activeGraphId: newGraph.id,
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: state.activeProjectId || 'global',
+                        action: 'create',
+                        entityType: 'graph',
+                        entityId: newGraph.id,
                         entityName: name,
                         timestamp: Date.now()
                     }, ...state.history]
