@@ -56,7 +56,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { CreateCollectionDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
-import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, EditDocDialog, ICONS } from "@/components/dialogs/StorageDialogs";
+import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, EditDocDialog } from "@/components/dialogs/StorageDialogs";
 import { NewDocDialog, NewGraphDialog } from "@/components/dialogs/CreationDialogs";
 import { EditProjectDialog } from "@/components/dialogs/EditProjectDialog";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
@@ -890,7 +890,7 @@ export default function Sidebar() {
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
                                     {projectDocs.map(doc => {
-                                        const DocIcon = doc.icon ? ICONS.find(i => i.name === doc.icon)?.component || NotePencil : NotePencil;
+                                        const DocIcon = getIcon(doc.icon);
                                         return (
                                         <div
                                             key={doc.id}
@@ -972,7 +972,9 @@ export default function Sidebar() {
                             
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
-                                    {projectGraphs.map(graph => (
+                                    {projectGraphs.map(graph => {
+                                        const GraphIcon = getIcon(graph.icon);
+                                        return (
                                         <div
                                             key={graph.id}
                                             onClick={() => handleSelectGraph(graph.id)}
@@ -990,9 +992,10 @@ export default function Sidebar() {
                                                     : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
                                             )}
                                         >
-                                            <Graph 
+                                            <GraphIcon 
                                                 weight={activeGraphId === graph.id ? "fill" : "regular"} 
                                                 className="text-lg shrink-0 transition-colors"
+                                                style={{ color: activeGraphId === graph.id ? undefined : graph.color }}
                                             />
                                             <span className="truncate flex-1">{graph.name}</span>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1010,7 +1013,7 @@ export default function Sidebar() {
                                                 </button>
                                             </div>
                                         </div>
-                                    ))}
+                                    )})}
 
                                     {projectGraphs.length === 0 && (
                                         <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">

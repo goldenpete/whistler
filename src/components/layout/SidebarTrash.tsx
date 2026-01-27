@@ -13,6 +13,7 @@ import {
     CaretLeft,
     HardDrives,
 } from "@phosphor-icons/react";
+import { getIcon } from "@/utils/iconMap";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -278,9 +279,10 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                                     {trashedDocs.map(d => (
                                         <TrashItem
                                             key={d.id}
-                                            icon={NotePencil}
+                                            icon={getIcon(d.icon)}
                                             name={d.name}
                                             date={d.lastModified || d.created}
+                                            color={d.color}
                                             onRestore={() => restoreDoc(d.id)}
                                             onDelete={() => permanentDeleteDoc(d.id)}
                                         />
@@ -296,9 +298,10 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                                     {trashedGraphs.map(g => (
                                         <TrashItem
                                             key={g.id}
-                                            icon={Graph}
+                                            icon={getIcon(g.icon)}
                                             name={g.name}
                                             date={g.lastModified || g.created}
+                                            color={g.color}
                                             onRestore={() => restoreGraph(g.id)}
                                             onDelete={() => permanentDeleteGraph(g.id)}
                                         />
