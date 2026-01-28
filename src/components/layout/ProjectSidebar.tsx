@@ -652,26 +652,69 @@ export default function ProjectSidebar() {
                                 </TooltipTrigger>
                                 <TooltipContent side="right">Graphs</TooltipContent>
                             </Tooltip>
-                            
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => navigate('/collections')}
-                                        className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
-                                            location.pathname.startsWith('/collections')
-                                                ? "bg-primary/20 text-primary" 
-                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                        )}
-                                    >
-                                        <FolderOpen weight={location.pathname.startsWith('/collections') ? "fill" : "bold"} size={20} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Collections</TooltipContent>
-                            </Tooltip>
                         </div>
 
-                        <div className="flex-1" />
+                        <Separator className="w-8 bg-border/40 my-1" />
+
+                        <ScrollArea className="flex-1 w-full px-1">
+                            <div className="flex flex-col gap-2 w-full items-center pb-2">
+                                {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => {
+                                    const Icon = getIcon(collection.icon);
+                                    return (
+                                        <ContextMenu key={collection.id}>
+                                            <ContextMenuTrigger className="flex justify-center w-full">
+                                                <Link
+                                                    to={`/collection/${collection.id}`}
+                                                    onClick={() => handleSelectCollection(collection.id)}
+                                                    className={cn(
+                                                        "flex items-center justify-center w-9 h-9 rounded-md transition-colors relative",
+                                                        (location.pathname === `/collection/${collection.id}`)
+                                                            ? "bg-primary/20 text-primary"
+                                                            : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                                    )}
+                                                    title={collection.name}
+                                                >
+                                                    <Icon
+                                                        className="text-lg transition-colors"
+                                                        weight="fill"
+                                                        style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
+                                                    />
+                                                </Link>
+                                            </ContextMenuTrigger>
+                                            <ContextMenuContent className="w-48">
+                                                {createMenuContent}
+                                                <ContextMenuSeparator />
+                                                <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setCollectionToEdit(collection);
+                                                    setEditCollectionOpen(true);
+                                                }}>
+                                                    <PencilSimple className="mr-2 h-4 w-4" />
+                                                    Rename Collection
+                                                </ContextMenuItem>
+                                                <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    trashCollection(collection.id);
+                                                }} className="text-red-500 focus:text-red-500">
+                                                    <Trash className="mr-2 h-4 w-4" />
+                                                    Delete Collection
+                                                </ContextMenuItem>
+                                            </ContextMenuContent>
+                                        </ContextMenu>
+                                    );
+                                })}
+
+                                <button
+                                    onClick={handleAddCollection}
+                                    className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-primary transition-colors"
+                                    title="New Collection"
+                                >
+                                    <Plus weight="bold" className="size-4" />
+                                </button>
+                            </div>
+                        </ScrollArea>
 
                         <div className="flex flex-col gap-2 w-full items-center pb-2">
                              <Tooltip>
