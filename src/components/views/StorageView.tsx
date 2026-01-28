@@ -345,7 +345,7 @@ export default function StorageView() {
     return (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             {showEmptyState ? (
-                <div className="flex h-full bg-background overflow-hidden">
+                <div className="flex h-full bg-transparent overflow-hidden">
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
                             <HardDrives size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
@@ -359,7 +359,7 @@ export default function StorageView() {
                     </div>
                 </div>
             ) : (
-                <div className="flex h-full bg-background text-foreground relative">
+                <div className="flex h-full bg-transparent text-foreground relative">
                     <div className="flex-1 flex flex-col">
                         <div className="flex items-center gap-2 p-2 h-12 border-b border-border bg-card/30">
                             <Breadcrumb className="flex-1 pl-2">

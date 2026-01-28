@@ -658,8 +658,8 @@ export default function GraphView() {
     };
 
     return (
-        <div className="flex h-full bg-background overflow-hidden">
-            <div ref={containerRef} className="flex-1 relative bg-neutral-950 flex flex-col">
+        <div className="flex h-full bg-transparent overflow-hidden">
+            <div ref={containerRef} className="flex-1 relative bg-transparent flex flex-col">
                 {activeGraph ? (
                     <>
                         {/* Toolbar */}
