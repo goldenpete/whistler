@@ -2,14 +2,7 @@ import { useState, useEffect } from "react";
 import type { KeyboardEvent, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -377,7 +370,8 @@ interface CreateStorageDialogProps {
 }
 
 export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStorageDialogProps) {
-    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
+    const store = useStore.getState();
+    const { accentTheme, enableDefaultColorControls, defaultColors } = store;
     const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
     const storageColor = enableDefaultColorControls && defaultColors?.storage
         ? defaultColors.storage

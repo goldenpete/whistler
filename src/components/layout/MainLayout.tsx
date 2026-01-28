@@ -1,7 +1,7 @@
 import { Outlet, useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
-import Sidebar from "./Sidebar";
+import ProjectSidebar from "./ProjectSidebar";
 
 export function MainLayout() {
     const location = useLocation();
@@ -32,7 +32,7 @@ export function MainLayout() {
                         transition={{ duration: 0.15, ease: "easeIn" }}
                         className="h-full flex-shrink-0"
                     >
-                        <Sidebar />
+                        <ProjectSidebar />
                     </motion.div>
                 )}
             </AnimatePresence>

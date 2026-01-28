@@ -14,7 +14,13 @@ declare module "react" {
   export type ChangeEvent<T = any> = {
     target: { value?: string } & T;
   };
-  
+  export type MouseEvent<T = any> = {
+    preventDefault: () => void;
+    stopPropagation: () => void;
+    target: any;
+    currentTarget: any;
+  };
+
   export function useState<T>(initial: T | (() => T)): [T, (next: T) => void];
   export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
   export function createContext<T>(defaultValue: T): any;
@@ -27,6 +33,38 @@ declare module "react" {
           [elemName: string]: any;
       }
   }
+  
+  const React: any;
+  export default React;
+}
+
+declare module "zustand" {
+  export type StateCreator<T> = (
+    set: (partial: Partial<T> | ((state: T) => Partial<T>), replace?: boolean) => void,
+    get: () => T,
+    api: StoreApi<T>
+  ) => T;
+  export type StoreApi<T> = {
+    getState: () => T;
+    setState: (partial: Partial<T> | ((state: T) => Partial<T>), replace?: boolean) => void;
+    subscribe: (...args: any[]) => any;
+    destroy: () => void;
+  };
+  export type UseBoundStore<T> = {
+    (): T;
+    <U>(selector: (state: T) => U): U;
+  } & StoreApi<T>;
+  export function create<T>(): (initializer: StateCreator<T>) => UseBoundStore<T>;
+  export function create<T>(initializer: StateCreator<T>): UseBoundStore<T>;
+}
+
+declare module "zustand/middleware" {
+    import { StateCreator } from "zustand";
+    export const persist: <T>(
+        config: StateCreator<T>,
+        options: any
+    ) => StateCreator<T>;
+    export const createJSONStorage: any;
 }
 
 declare module "react-dom" {
@@ -86,6 +124,35 @@ declare module "@phosphor-icons/react" {
   export const Trash: (props: IconProps) => any;
   export const ArrowSquareOut: (props: IconProps) => any;
   export const PencilSimple: (props: IconProps) => any;
+
+  // More added icons
+  export const SidebarSimple: (props: IconProps) => any;
+  export const FolderOpen: (props: IconProps) => any;
+  export const FolderPlus: (props: IconProps) => any;
+  export const MagnifyingGlass: (props: IconProps) => any;
+  export const ArrowsClockwise: (props: IconProps) => any;
+  export const WaveSine: (props: IconProps) => any;
+  export const CaretDown: (props: IconProps) => any;
+  export const CaretLeft: (props: IconProps) => any;
+  export const CaretRight: (props: IconProps) => any;
+  export const Cloud: (props: IconProps) => any;
+  export const Gear: (props: IconProps) => any;
+  export const Share: (props: IconProps) => any;
+  export const CheckCircle: (props: IconProps) => any;
+  export const WarningCircle: (props: IconProps) => any;
+  export const CloudCheck: (props: IconProps) => any;
+  export const CloudWarning: (props: IconProps) => any;
+  export const UploadSimple: (props: IconProps) => any;
+  export const DownloadSimple: (props: IconProps) => any;
+  export const ClockCounterClockwise: (props: IconProps) => any;
+  export const CheckSquare: (props: IconProps) => any;
+  export const Square: (props: IconProps) => any;
+  export const X: (props: IconProps) => any;
+  export const Rows: (props: IconProps) => any;
+  export const GridFour: (props: IconProps) => any;
+  export const LinkSimple: (props: IconProps) => any;
+  export const ShareNetwork: (props: IconProps) => any;
+  export const FileVideo: (props: IconProps) => any;
 }
 
 // Image imports
@@ -102,6 +169,13 @@ declare module "date-fns" {
 declare module "react-router-dom" {
   export const Link: any;
   export function useNavigate(): (path: string) => void;
+  export function useLocation(): { pathname: string };
+  export function useSearchParams(): [URLSearchParams, (params: any) => void];
+}
+
+declare module "framer-motion" {
+    export const motion: any;
+    export const AnimatePresence: any;
 }
 
 // Global JSX namespace

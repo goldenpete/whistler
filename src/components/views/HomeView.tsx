@@ -1,4 +1,4 @@
-import { useState } from "react"; // Ensure useState is imported
+import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
@@ -22,7 +22,7 @@ import {
     NotePencil,
     ProjectorScreenChart
 } from "@phosphor-icons/react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
     Popover,
@@ -43,7 +43,6 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger,
-    ContextMenuLabel,
 } from "@/components/ui/context-menu";
 import { AddFileDialog, RenameFileDialog, EditDocDialog, EditFolderDialog, EditGraphDialog, CreateStorageDialog, ICONS } from "@/components/dialogs/StorageDialogs";
 import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
@@ -51,7 +50,6 @@ import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dia
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { FileContextMenu } from "@/components/views/StorageView";
-import { Input } from "@/components/ui/input";
 import { Copy, Trash, ArrowSquareOut, PencilSimple } from "@phosphor-icons/react";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
@@ -93,8 +91,7 @@ export default function HomeView() {
         highlights,
         storages,
         activeProjectId,
-        activeStorageId,
-        setState 
+        activeStorageId
     } = useStore();
     
     const navigate = useNavigate();
@@ -334,7 +331,7 @@ export default function HomeView() {
             case 'highlight':
                 return 'Highlight';
             default:
-                return item.type;
+                return 'Unknown';
         }
     };
 

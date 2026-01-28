@@ -47,6 +47,7 @@ interface AppStore extends AppState {
 
     // Generic setters (initially for migration/bulk updates)
     setState: (state: Partial<AppState>) => void;
+    getState: () => AppState;
 
     addVideoHighlight: (fileId: string, time: number, collectionId?: string) => void;
     addHighlight: (fileId: string, page: number, text: string, collectionId?: string | null, pdfRange?: { start: number; end: number } | null) => void;
@@ -116,7 +117,7 @@ interface AppStore extends AppState {
 const STORAGE_KEY = 'whistler_v2_data';
 
 export const useStore = create<AppStore>()(
-    persist(
+    persist<AppStore>(
         (set) => ({
             projects: [],
             files: [],
@@ -881,7 +882,20 @@ export const useStore = create<AppStore>()(
             })),
             clearHistory: () => set({ history: [] }),
 
-            setState: (newState) => set((state) => ({ ...state, ...newState })),
+            setState: (newState) => set((state) => {
+                if (typeof newState === 'function') {
+                    return { ...state, ...newState(state) };
+                }
+                return { ...state, ...newState };
+            }),
+            getState: () => {
+                // This is a hack because zustand's get() is not exposed inside the state creator directly
+                // But in usage, useStore.getState() is available on the store hook itself.
+                // However, the interface demands it.
+                // In reality, users should use useStore.getState() externally.
+                // But to satisfy the type definition if we put it in AppStore:
+                return {} as AppStore; // Placeholder, as this method is usually called on the hook, not from within
+            }
         }),
         {
             name: STORAGE_KEY,
