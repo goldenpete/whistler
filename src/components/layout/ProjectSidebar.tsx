@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import React, { useState, useEffect } from "react";
+import type { MouseEvent as ReactMouseEvent, ChangeEvent as ReactChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -54,6 +55,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { CreateCollectionDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
@@ -185,24 +192,24 @@ export default function ProjectSidebar() {
     const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
     const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
 
-    const handleEditGraph = (e: React.MouseEvent, graph: any) => {
+    const handleEditGraph = (e: ReactMouseEvent, graph: any) => {
         e.stopPropagation();
         setGraphToEdit(graph);
         setEditGraphOpen(true);
     };
 
-    const handleDeleteGraph = (e: React.MouseEvent, id: string) => {
+    const handleDeleteGraph = (e: ReactMouseEvent, id: string) => {
         e.stopPropagation();
         trashGraph(id);
     };
 
-    const handleRenameDoc = (e: React.MouseEvent, doc: any) => {
+    const handleRenameDoc = (e: ReactMouseEvent, doc: any) => {
         e.stopPropagation();
         setDocToRename(doc);
         setRenameDocOpen(true);
     };
 
-    const handleDeleteDoc = (e: React.MouseEvent, id: string) => {
+    const handleDeleteDoc = (e: ReactMouseEvent, id: string) => {
         e.stopPropagation();
         trashDoc(id);
     };
@@ -222,7 +229,7 @@ export default function ProjectSidebar() {
         }
     };
 
-    const handleEditStorageClick = (e: React.MouseEvent, storage: Storage) => {
+    const handleEditStorageClick = (e: ReactMouseEvent, storage: Storage) => {
         e.preventDefault();
         e.stopPropagation();
         setStorageToEdit(storage);
@@ -235,7 +242,7 @@ export default function ProjectSidebar() {
         }
     };
 
-    const handleDeleteStorage = (e: React.MouseEvent, id: string) => {
+    const handleDeleteStorage = (e: ReactMouseEvent, id: string) => {
         e.preventDefault();
         e.stopPropagation();
         deleteStorage(id);
@@ -291,7 +298,7 @@ export default function ProjectSidebar() {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "application/json";
-        input.onchange = async (e) => {
+        input.onchange = async (e: Event) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (!file) return;
 
@@ -376,7 +383,7 @@ export default function ProjectSidebar() {
         }
     }, [activeProjectId, activeStorageId, projectStorages]);
 
-    const handleAddCollection = (e: React.MouseEvent) => {
+    const handleAddCollection = (e: ReactMouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (!activeProjectId) return;
@@ -405,14 +412,14 @@ export default function ProjectSidebar() {
         }
     };
 
-    const handleEditCollectionClick = (e: React.MouseEvent, collection: Collection) => {
+    const handleEditCollectionClick = (e: ReactMouseEvent, collection: Collection) => {
         e.preventDefault();
         e.stopPropagation();
         setCollectionToEdit(collection);
         setEditCollectionOpen(true);
     };
 
-    const handleDeleteCollection = (e: React.MouseEvent, id: string) => {
+    const handleDeleteCollection = (e: ReactMouseEvent, id: string) => {
         e.preventDefault();
         e.stopPropagation();
         trashCollection(id);
@@ -448,7 +455,7 @@ export default function ProjectSidebar() {
             const input = document.createElement("input");
             input.type = "file";
             input.accept = "application/json";
-            input.onchange = async (e) => {
+            input.onchange = async (e: Event) => {
                 const file = (e.target as HTMLInputElement).files?.[0];
                 if (!file) return;
 
@@ -503,6 +510,182 @@ export default function ProjectSidebar() {
                     isSidebarCollapsed && sidebarMode !== 'slim' && "pointer-events-none"
                 )}
             >
+                {isSlim ? (
+                    <div className="flex flex-col h-full items-center py-3 gap-2 w-full">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={toggleSidebarCollapse}
+                                    className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                >
+                                    <SidebarSimple weight="bold" size={20} />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">Expand Sidebar</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={() => useStore.getState().setSpotlightOpen(true)}
+                                    className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                >
+                                    <MagnifyingGlass weight="bold" size={20} />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">Search</TooltipContent>
+                        </Tooltip>
+
+                        <Separator className="w-8 bg-border/40 my-1" />
+
+                        <div className="flex flex-col gap-2 w-full items-center">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => navigate('/')}
+                                        className={cn(
+                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            location.pathname === '/' 
+                                                ? "bg-primary/20 text-primary" 
+                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                        )}
+                                    >
+                                        <House weight={location.pathname === '/' ? "fill" : "bold"} size={20} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Home</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => navigate('/storage')}
+                                        className={cn(
+                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            location.pathname === '/storage' 
+                                                ? "bg-primary/20 text-primary" 
+                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                        )}
+                                    >
+                                        <HardDrives weight={location.pathname === '/storage' ? "fill" : "bold"} size={20} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Storage</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => navigate('/docs')}
+                                        className={cn(
+                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            location.pathname.startsWith('/docs')
+                                                ? "bg-primary/20 text-primary" 
+                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                        )}
+                                    >
+                                        <NotePencil weight={location.pathname.startsWith('/docs') ? "fill" : "bold"} size={20} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Docs</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => navigate('/graphs')}
+                                        className={cn(
+                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            location.pathname.startsWith('/graphs')
+                                                ? "bg-primary/20 text-primary" 
+                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                        )}
+                                    >
+                                        <Graph weight={location.pathname.startsWith('/graphs') ? "fill" : "bold"} size={20} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Graphs</TooltipContent>
+                            </Tooltip>
+                            
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => navigate('/collections')}
+                                        className={cn(
+                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            location.pathname.startsWith('/collections')
+                                                ? "bg-primary/20 text-primary" 
+                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                        )}
+                                    >
+                                        <FolderOpen weight={location.pathname.startsWith('/collections') ? "fill" : "bold"} size={20} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Collections</TooltipContent>
+                            </Tooltip>
+                        </div>
+
+                        <div className="flex-1" />
+
+                        <div className="flex flex-col gap-2 w-full items-center pb-2">
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => { setSidebarView('sync'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
+                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    >
+                                        <ArrowsClockwise 
+                                            weight="bold" 
+                                            size={20} 
+                                            className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} 
+                                        />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Sync Status</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => setAccentDialogOpen(true)}
+                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    >
+                                         <span
+                                            className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+                                            style={{ backgroundColor: "var(--primary)" }}
+                                        />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Appearance</TooltipContent>
+                            </Tooltip>
+
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => { setSidebarView('history'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
+                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    >
+                                        <ClockCounterClockwise weight="bold" size={20} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">History</TooltipContent>
+                            </Tooltip>
+
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => { setSidebarView('trash'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
+                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    >
+                                        <Trash weight="bold" size={20} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Trash</TooltipContent>
+                            </Tooltip>
+                        </div>
+                    </div>
+                ) : (
+                    <>
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 h-12 border-b border-border/40 shrink-0 relative">
                     <button
@@ -841,17 +1024,17 @@ export default function ProjectSidebar() {
                                                                 {!isSlim && (
                                                                     <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                                                                         <button
-                                                                            onClick={(e: React.MouseEvent) => handleEditCollectionClick(e, collection)}
-                                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                                        >
-                                                                            <PencilSimple weight="bold" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={(e: React.MouseEvent) => handleDeleteCollection(e, collection.id)}
-                                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
-                                                                        >
-                                                                            <Trash weight="bold" />
-                                                                        </button>
+                                                            onClick={(e: ReactMouseEvent) => handleEditCollectionClick(e, collection)}
+                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                        >
+                                                            <PencilSimple weight="bold" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e: ReactMouseEvent) => handleDeleteCollection(e, collection.id)}
+                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                                        >
+                                                            <Trash weight="bold" />
+                                                        </button>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -909,7 +1092,7 @@ export default function ProjectSidebar() {
                                             onClick={() => handleSelectDoc(doc.id)}
                                             role="button"
                                             tabIndex={0}
-                                            onKeyDown={(e: any) => {
+                                            onKeyDown={(e: ReactKeyboardEvent) => {
                                                 if (e.key === "Enter" || e.key === " ") {
                                                     handleSelectDoc(doc.id);
                                                 }
@@ -929,13 +1112,13 @@ export default function ProjectSidebar() {
                                             <span className="truncate flex-1">{doc.name}</span>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={(e: React.MouseEvent) => handleRenameDoc(e, doc)}
+                                                    onClick={(e: ReactMouseEvent) => handleRenameDoc(e, doc)}
                                                     className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                                                 >
                                                     <PencilSimple weight="bold" />
                                                 </button>
                                                 <button
-                                                    onClick={(e: React.MouseEvent) => handleDeleteDoc(e, doc.id)}
+                                                    onClick={(e: ReactMouseEvent) => handleDeleteDoc(e, doc.id)}
                                                     className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
                                                 >
                                                     <Trash weight="bold" />
@@ -992,7 +1175,7 @@ export default function ProjectSidebar() {
                                             onClick={() => handleSelectGraph(graph.id)}
                                             role="button"
                                             tabIndex={0}
-                                            onKeyDown={(e: any) => {
+                                            onKeyDown={(e: ReactKeyboardEvent) => {
                                                 if (e.key === "Enter" || e.key === " ") {
                                                     handleSelectGraph(graph.id);
                                                 }
@@ -1012,13 +1195,13 @@ export default function ProjectSidebar() {
                                             <span className="truncate flex-1">{graph.name}</span>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={(e: React.MouseEvent) => handleEditGraph(e, graph)}
+                                                    onClick={(e: ReactMouseEvent) => handleEditGraph(e, graph)}
                                                     className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-accent-foreground transition-colors"
                                                 >
                                                     <PencilSimple weight="bold" />
                                                 </button>
                                                 <button
-                                                    onClick={(e: React.MouseEvent) => handleDeleteGraph(e, graph.id)}
+                                                    onClick={(e: ReactMouseEvent) => handleDeleteGraph(e, graph.id)}
                                                     className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-destructive transition-colors"
                                                 >
                                                     <Trash weight="bold" />
@@ -1131,13 +1314,13 @@ export default function ProjectSidebar() {
                                                 {!isSlim && (
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
-                                                            onClick={(e: React.MouseEvent) => handleEditStorageClick(e, storage)}
+                                                            onClick={(e: ReactMouseEvent) => handleEditStorageClick(e, storage)}
                                                             className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                                                         >
                                                             <PencilSimple weight="bold" />
                                                         </button>
                                                         <button
-                                                            onClick={(e: React.MouseEvent) => handleDeleteStorage(e, storage.id)}
+                                                            onClick={(e: ReactMouseEvent) => handleDeleteStorage(e, storage.id)}
                                                             className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
                                                         >
                                                             <Trash weight="bold" />
@@ -1215,9 +1398,11 @@ export default function ProjectSidebar() {
                         </>
                     )}
                 </div>
+                </>
+            )}
             </motion.aside>
 
-            {isSidebarCollapsed && (
+            {isSidebarCollapsed && !isSlim && (
                 <button
                     onClick={toggleSidebarCollapse}
                     className="fixed top-1/2 -translate-y-1/2 left-4 z-30 h-10 w-8 rounded-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center justify-center"
@@ -1379,7 +1564,7 @@ export default function ProjectSidebar() {
                                                 <input 
                                                     type="color" 
                                                     value={backgroundColor || '#000000'}
-                                                    onChange={(e) => setBackgroundColor(e.target.value)}
+                                                    onChange={(e: ReactChangeEvent<HTMLInputElement>) => setBackgroundColor(e.target.value)}
                                                     className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 border-0 opacity-0 cursor-pointer"
                                                 />
                                                 <div 
@@ -1396,7 +1581,7 @@ export default function ProjectSidebar() {
                                         </div>
                                         <Slider
                                             value={[Math.round((backgroundOverlayOpacity ?? 0.5) * 100)]}
-                                            onValueChange={(vals) => setBackgroundOverlayOpacity((vals[0] ?? 50) / 100)}
+                                            onValueChange={(vals: number[]) => setBackgroundOverlayOpacity((vals[0] ?? 50) / 100)}
                                             max={100}
                                             step={1}
                                         />
@@ -1422,7 +1607,7 @@ export default function ProjectSidebar() {
                                                     const input = document.createElement('input');
                                                     input.type = 'file';
                                                     input.accept = 'image/*';
-                                                    input.onchange = async (e) => {
+                input.onchange = async (e: Event) => {
                                                         const file = (e.target as HTMLInputElement).files?.[0];
                                                         if (!file) return;
                                                         const reader = new FileReader();
@@ -1453,7 +1638,7 @@ export default function ProjectSidebar() {
                                             </div>
                                             <Slider
                                                 value={[Math.round((backgroundImageOpacity ?? 0.2) * 100)]}
-                                                onValueChange={(vals) => setBackgroundImageOpacity((vals[0] ?? 20) / 100)}
+                                                onValueChange={(vals: number[]) => setBackgroundImageOpacity((vals[0] ?? 20) / 100)}
                                             />
                                         </div>
                                     </div>
@@ -1560,7 +1745,7 @@ export default function ProjectSidebar() {
                                 id="new-project-name"
                                 placeholder="My Project"
                                 value={newProjectName}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
+                                onChange={(e: ReactChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
                                 autoFocus
                                 className="bg-zinc-900 border-zinc-800"
                             />
