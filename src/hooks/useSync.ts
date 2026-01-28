@@ -15,7 +15,7 @@ export function useSync() {
         autoSyncInterval
     } = useStore();
     const [error, setError] = useState<string | null>(null);
-    const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const syncIntervalRef = useRef<number | null>(null);
 
     const handleSync = useCallback(async (type: 'push' | 'pull', silent = false) => {
         const storedToken = localStorage.getItem("whistler_session_token");

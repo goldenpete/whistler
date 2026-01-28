@@ -969,7 +969,7 @@ export default function ProjectSidebar() {
 
                                 {/* Collections Section */}
                                 <div className="mb-6">
-                                    {!isSidebarCollapsed && (
+                                    {!isSidebarCollapsed && !isSlim && (
                                         <div className={cn("flex items-center justify-between mb-2 px-1 group", isSlim && "justify-center")}>
                                             <button
                                                 onClick={() => setCollectionsOpen(!collectionsOpen)}
