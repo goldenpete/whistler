@@ -899,7 +899,7 @@ export default function ProjectSidebar() {
                                                 className={cn("flex gap-1 overflow-hidden", (isSidebarCollapsed || isSlim) ? "flex-col space-y-2" : "flex-row")}
                                             >
                                                 <ContextMenu>
-                                                    <ContextMenuTrigger asChild>
+                                                    <ContextMenuTrigger className={cn("flex-1", (isSidebarCollapsed || isSlim) && "w-full flex justify-center")}>
                                                         <button
                                                             onClick={() => {
                                                                 if (isSidebarCollapsed) {
@@ -915,10 +915,10 @@ export default function ProjectSidebar() {
                                                             }}
                                                             title="Storage"
                                                             className={cn(
-                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
+                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full",
                                                                 (isSidebarCollapsed || isSlim)
                                                                     ? "w-10 h-10 mx-auto"
-                                                                    : "flex-1 h-9",
+                                                                    : "h-9",
                                                                 (location.pathname === "/storage")
                                                                     ? "bg-primary/20 text-primary shadow-sm"
                                                                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -942,7 +942,7 @@ export default function ProjectSidebar() {
                                                 </ContextMenu>
 
                                                 <ContextMenu>
-                                                    <ContextMenuTrigger asChild>
+                                                    <ContextMenuTrigger className={cn("flex-1", (isSidebarCollapsed || isSlim) && "w-full flex justify-center")}>
                                                         <button
                                                             onClick={() => {
                                                                 if (isSidebarCollapsed) {
@@ -958,10 +958,10 @@ export default function ProjectSidebar() {
                                                             }}
                                                             title="Docs"
                                                             className={cn(
-                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
+                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full",
                                                                 (isSidebarCollapsed || isSlim)
                                                                     ? "w-10 h-10 mx-auto"
-                                                                    : "flex-1 h-9",
+                                                                    : "h-9",
                                                                 location.pathname.startsWith("/docs")
                                                                     ? "bg-primary/20 text-primary shadow-sm"
                                                                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -985,7 +985,7 @@ export default function ProjectSidebar() {
                                                 </ContextMenu>
 
                                                 <ContextMenu>
-                                                    <ContextMenuTrigger asChild>
+                                                    <ContextMenuTrigger className={cn("flex-1", (isSidebarCollapsed || isSlim) && "w-full flex justify-center")}>
                                                         <button
                                                             onClick={() => {
                                                                 if (isSidebarCollapsed) {
@@ -1001,10 +1001,10 @@ export default function ProjectSidebar() {
                                                             }}
                                                             title="Graphs"
                                                             className={cn(
-                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
+                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full",
                                                                 (isSidebarCollapsed || isSlim)
                                                                     ? "w-10 h-10 mx-auto"
-                                                                    : "flex-1 h-9",
+                                                                    : "h-9",
                                                                 location.pathname.startsWith("/graphs")
                                                                     ? "bg-primary/20 text-primary shadow-sm"
                                                                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -1039,7 +1039,7 @@ export default function ProjectSidebar() {
                                     {(!isSidebarCollapsed && !isSlim) ? (
                                         <div className="flex items-center justify-between mb-2 px-1 group">
                                             <ContextMenu>
-                                                <ContextMenuTrigger asChild>
+                                                <ContextMenuTrigger className="w-full">
                                                     <button
                                                         onClick={() => navigate('/collections')}
                                                         className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
@@ -1055,7 +1055,7 @@ export default function ProjectSidebar() {
                                     ) : isSlim ? (
                                         <div className="flex justify-center mb-2">
                                             <ContextMenu>
-                                                <ContextMenuTrigger asChild>
+                                                <ContextMenuTrigger className="flex justify-center">
                                                     <button
                                                         onClick={() => navigate('/collections')}
                                                         className={cn(
@@ -1086,7 +1086,7 @@ export default function ProjectSidebar() {
                                                     const Icon = getIcon(collection.icon);
                                                     return (
                                                     <ContextMenu key={collection.id}>
-                                                        <ContextMenuTrigger asChild>
+                                                        <ContextMenuTrigger className="block w-full">
                                                             <Link
                                                                 to={`/collection/${collection.id}`}
                                                                 onClick={() => handleSelectCollection(collection.id)}
