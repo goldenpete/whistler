@@ -57,7 +57,7 @@ export default function CollectionView() {
         highlights,
         files,
         activeCollectionId,
-        setActiveCollectionId,
+        setActiveCollection,
         updateHighlight
     } = useStore();
     const navigate = useNavigate();
@@ -65,9 +65,9 @@ export default function CollectionView() {
 
     useEffect(() => {
         if (id && id !== activeCollectionId) {
-            setActiveCollectionId(id);
+            setActiveCollection(id);
         }
-    }, [id, activeCollectionId, setActiveCollectionId]);
+    }, [id, activeCollectionId, setActiveCollection]);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [selectionMode, setSelectionMode] = useState(false);

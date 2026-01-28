@@ -35,7 +35,7 @@ export default function CollectionsView() {
         activeProjectId, 
         deleteCollection,
         updateCollection,
-        setActiveCollectionId,
+        setActiveCollection,
         setSidebarView
     } = useStore();
     const navigate = useNavigate();
@@ -115,7 +115,7 @@ export default function CollectionsView() {
         if (selectionMode) {
             handleToggleSelect(id);
         } else {
-            setActiveCollectionId(id);
+            setActiveCollection(id);
             navigate(`/collection/${id}`);
             // navigate(`/collections`); // Old route
             // We are changing the route for single collection to /collection/:id (or similar)
