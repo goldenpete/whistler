@@ -588,24 +588,14 @@ export default function ProjectSidebar() {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
-                                        onClick={() => navigate('/')}
-                                        className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
-                                            location.pathname === '/' 
-                                                ? "bg-primary/20 text-primary" 
-                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                        )}
-                                    >
-                                        <House weight={location.pathname === '/' ? "fill" : "bold"} size={20} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Home</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => navigate('/storage')}
+                                        onClick={() => {
+                                            if (location.pathname === '/storage') {
+                                                toggleSidebarCollapse && toggleSidebarCollapse();
+                                                setSidebarView('storage');
+                                            } else {
+                                                navigate('/storage');
+                                            }
+                                        }}
                                         className={cn(
                                             "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
                                             location.pathname === '/storage' 
@@ -622,7 +612,14 @@ export default function ProjectSidebar() {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
-                                        onClick={() => navigate('/docs')}
+                                        onClick={() => {
+                                            if (location.pathname.startsWith('/docs')) {
+                                                toggleSidebarCollapse && toggleSidebarCollapse();
+                                                setSidebarView('docs');
+                                            } else {
+                                                navigate('/docs');
+                                            }
+                                        }}
                                         className={cn(
                                             "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
                                             location.pathname.startsWith('/docs')
@@ -639,7 +636,14 @@ export default function ProjectSidebar() {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
-                                        onClick={() => navigate('/graphs')}
+                                        onClick={() => {
+                                            if (location.pathname.startsWith('/graphs')) {
+                                                toggleSidebarCollapse && toggleSidebarCollapse();
+                                                setSidebarView('graphs');
+                                            } else {
+                                                navigate('/graphs');
+                                            }
+                                        }}
                                         className={cn(
                                             "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
                                             location.pathname.startsWith('/graphs')
@@ -658,6 +662,23 @@ export default function ProjectSidebar() {
 
                         <ScrollArea className="flex-1 w-full px-1">
                             <div className="flex flex-col gap-2 w-full items-center pb-2">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={() => navigate('/collections')}
+                                            className={cn(
+                                                "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                                location.pathname.startsWith('/collections')
+                                                    ? "bg-primary/20 text-primary" 
+                                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                            )}
+                                        >
+                                            <FolderOpen weight={location.pathname.startsWith('/collections') ? "fill" : "bold"} size={20} />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">Collections</TooltipContent>
+                                </Tooltip>
+
                                 {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => {
                                     const Icon = getIcon(collection.icon);
                                     return (
@@ -1085,9 +1106,21 @@ export default function ProjectSidebar() {
                                                 <ContextMenuTrigger className="w-full">
                                                     <button
                                                         onClick={() => navigate('/collections')}
-                                                        className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                                                        className={cn(
+                                                            "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full h-9",
+                                                            location.pathname.startsWith('/collections')
+                                                                ? "bg-primary/20 text-primary shadow-sm"
+                                                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                        )}
                                                     >
-                                                        Collections
+                                                        <FolderOpen
+                                                            weight={location.pathname.startsWith('/collections') ? "fill" : "regular"}
+                                                            size={18}
+                                                            className="transition-transform group-hover:scale-110"
+                                                        />
+                                                        <span className="ml-2 text-xs font-medium tracking-tight flex-1 text-left">
+                                                            Collections
+                                                        </span>
                                                     </button>
                                                 </ContextMenuTrigger>
                                                 <ContextMenuContent className="w-48">
