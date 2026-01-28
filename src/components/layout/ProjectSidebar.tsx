@@ -23,7 +23,7 @@ import {
     Cloud,
     Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Gear, Share,
+    FilmStrip, FileText, Book, Gear, Share, GridFour,
     CheckCircle, WarningCircle, CloudCheck, CloudWarning
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -998,12 +998,25 @@ export default function ProjectSidebar() {
                                                 {!isSlim && "Collections"}
                                             </button>
                                             {!isSlim && (
-                                                <button
-                                                    onClick={handleAddCollection}
-                                                    className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Plus weight="bold" className="size-3.5" />
-                                                </button>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => navigate('/collections')}
+                                                        className={cn(
+                                                            "text-muted-foreground hover:text-primary transition-colors",
+                                                            location.pathname === '/collections' && "text-primary"
+                                                        )}
+                                                        title="View All"
+                                                    >
+                                                        <GridFour weight="bold" className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={handleAddCollection}
+                                                        className="text-muted-foreground hover:text-primary transition-colors"
+                                                        title="New Collection"
+                                                    >
+                                                        <Plus weight="bold" className="size-3.5" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -1065,32 +1078,6 @@ export default function ProjectSidebar() {
                                                         {isSlim ? "No col." : "No collections"}
                                                     </div>
                                                 )}
-
-                                                <div className={cn("flex w-full items-center", isSlim ? "justify-center" : "gap-0")}>
-                                                    <button
-                                                        onClick={handleAddCollection}
-                                                        className={cn(
-                                                            "flex items-center gap-2 px-3 py-2 text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                                                            isSlim ? "w-full justify-center px-1 h-9 rounded-md" : "flex-1 rounded-l-md rounded-r-none"
-                                                        )}
-                                                        title="Create Collection"
-                                                    >
-                                                        <Plus weight="bold" className={cn("text-lg shrink-0", isSlim && "size-5")} />
-                                                        {!isSlim && <span className="truncate">New</span>}
-                                                    </button>
-                                                    {!isSlim && (
-                                                        <button
-                                                            onClick={() => navigate('/collections')}
-                                                            className={cn(
-                                                                "flex items-center justify-center px-3 py-2 text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-r-md rounded-l-none border-l border-border/40",
-                                                                location.pathname === '/collections' && "bg-secondary/50 text-foreground"
-                                                            )}
-                                                            title="View All Collections"
-                                                        >
-                                                            <span className="truncate whitespace-nowrap">View All</span>
-                                                        </button>
-                                                    )}
-                                                </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>

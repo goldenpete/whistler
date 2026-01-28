@@ -189,6 +189,7 @@ declare module "@phosphor-icons/react" {
   export const Gauge: (props: IconProps) => any;
   export const ArrowsOutSimple: (props: IconProps) => any;
   export const CircleNotch: (props: IconProps) => any;
+  export const SquaresFour: (props: IconProps) => any;
 }
 
 // Image imports

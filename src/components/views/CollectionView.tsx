@@ -46,6 +46,13 @@ import {
 import type { Highlight } from "@/types";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 
+const formatTime = (seconds: number) => {
+    if (!isFinite(seconds) || isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 const getIcon = (name?: string) => {
     switch (name) {
         case "FolderPlus": return Folder;
