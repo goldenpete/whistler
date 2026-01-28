@@ -142,7 +142,7 @@ export default function CollectionView() {
     const CollectionIcon = getIcon(activeCollection?.icon);
 
     return (
-        <div className="flex flex-col h-full bg-background text-foreground">
+        <div className="flex flex-col h-full bg-transparent text-foreground">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border bg-card/30">
                 <div className="flex items-center gap-4">

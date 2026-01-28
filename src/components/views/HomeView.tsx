@@ -632,7 +632,7 @@ export default function HomeView() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background overflow-hidden">
+        <div className="flex flex-col h-full bg-transparent overflow-hidden">
             {/* Top Bar */}
             <div className="flex items-center gap-4 p-8 pb-4 shrink-0">
                 <img 

@@ -56,7 +56,7 @@ export default function DocsView() {
     };
 
     return (
-        <div className="flex h-full bg-background overflow-hidden">
+        <div className="flex h-full bg-transparent overflow-hidden">
             {/* Main Editor Area */}
             <div className="flex-1 flex flex-col min-h-0">
                 {activeDoc ? (
