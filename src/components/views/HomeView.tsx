@@ -49,8 +49,10 @@ import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dialogs/CreationDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
+import { QuickAccessDialog } from "@/components/dialogs/QuickAccessDialog";
+import type { QuickAccessType } from "@/components/dialogs/QuickAccessDialog";
 import { FileContextMenu } from "@/components/views/StorageView";
-import { Copy, Trash, ArrowSquareOut, PencilSimple } from "@phosphor-icons/react";
+import { Copy, Trash, ArrowSquareOut, PencilSimple, Lightning } from "@phosphor-icons/react";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
     orange: whistlerLogoOrange,
@@ -102,6 +104,11 @@ export default function HomeView() {
     const [addGraphOpen, setAddGraphOpen] = useState(false);
     const [addStorageOpen, setAddStorageOpen] = useState(false);
     const [addProjectOpen, setAddProjectOpen] = useState(false);
+    
+    // Quick Access State
+    const [quickAccessOpen, setQuickAccessOpen] = useState(false);
+    const [quickAccessType, setQuickAccessType] = useState<QuickAccessType | null>(null);
+    const [quickAccessPopoverOpen, setQuickAccessPopoverOpen] = useState(false);
     
     // Rename/Edit Dialog States
     const [renameItem, setRenameItem] = useState<{id: string, type: string, name: string, data?: any} | null>(null);
@@ -769,6 +776,12 @@ export default function HomeView() {
                 open={addProjectOpen}
                 onOpenChange={setAddProjectOpen}
                 onSubmit={handleCreateProject}
+            />
+
+            <QuickAccessDialog
+                open={quickAccessOpen}
+                onOpenChange={setQuickAccessOpen}
+                type={quickAccessType}
             />
 
             {/* Rename/Edit Dialogs */}

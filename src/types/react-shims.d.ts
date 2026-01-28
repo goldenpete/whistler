@@ -153,6 +153,7 @@ declare module "@phosphor-icons/react" {
   export const LinkSimple: (props: IconProps) => any;
   export const ShareNetwork: (props: IconProps) => any;
   export const FileVideo: (props: IconProps) => any;
+  export const Lightning: (props: IconProps) => any;
 }
 
 // Image imports
