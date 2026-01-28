@@ -990,7 +990,7 @@ export default function ProjectSidebar() {
                                     )}
 
                                     <AnimatePresence initial={false}>
-                                        {collectionsOpen && !isSidebarCollapsed && (
+                                        {(collectionsOpen || isSlim) && !isSidebarCollapsed && (
                                             <motion.div
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: "auto", opacity: 1 }}
@@ -1046,6 +1046,18 @@ export default function ProjectSidebar() {
                                                         {isSlim ? "No col." : "No collections"}
                                                     </div>
                                                 )}
+
+                                                <button
+                                                    onClick={handleAddCollection}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                                                        isSlim && "justify-center px-1"
+                                                    )}
+                                                    title="Create Collection"
+                                                >
+                                                    <Plus weight="bold" className="text-lg shrink-0" />
+                                                    {!isSlim && <span className="truncate">New Collection</span>}
+                                                </button>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
