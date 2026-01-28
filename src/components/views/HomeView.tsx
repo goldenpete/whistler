@@ -512,7 +512,7 @@ export default function HomeView() {
                         />
                     )}
                     <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none"
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
                         style={item.data.color ? { color: item.data.color } : undefined}
                     >
                         <NotePencil size={180} weight="fill" />
@@ -536,7 +536,7 @@ export default function HomeView() {
                         style={{ backgroundColor: item.data.color }}
                     />
                     <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none"
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
                         style={{ color: item.data.color }}
                     >
                         <Tag size={180} weight="fill" />
@@ -556,7 +556,7 @@ export default function HomeView() {
                         />
                     )}
                     <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none"
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
                         style={item.data.color ? { color: item.data.color, opacity: 0.05 } : undefined}
                     >
                         <Graph size={200} weight="fill" />
@@ -602,7 +602,7 @@ export default function HomeView() {
             }
 
             return (
-                <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none">
+                <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none transition-transform duration-700 group-hover:-translate-y-1">
                     “
                 </div>
             );
@@ -619,7 +619,7 @@ export default function HomeView() {
                         />
                     )}
                     <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none"
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
                         style={item.data.color ? { color: item.data.color } : undefined}
                     >
                         <Folder size={180} weight="fill" />

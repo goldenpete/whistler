@@ -172,6 +172,8 @@ declare module "react-router-dom" {
   export function useNavigate(): (path: string) => void;
   export function useLocation(): { pathname: string };
   export function useSearchParams(): [URLSearchParams, (params: any) => void];
+  export const Outlet: any;
+  export function useOutlet(): any;
 }
 
 declare module "framer-motion" {

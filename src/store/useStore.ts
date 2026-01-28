@@ -16,6 +16,8 @@ interface AppStore extends AppState {
     lastSyncTime: number | null;
     autoSyncEnabled: boolean;
     syncStatus: SyncStatus;
+    backgroundImageUrl: string | null;
+    backgroundImageOpacity: number;
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -82,6 +84,8 @@ interface AppStore extends AppState {
     setBaseTheme: (theme: BaseTheme) => void;
     setEnableDefaultColorControls: (enabled: boolean) => void;
     setDefaultColor: (entity: 'file' | 'collection' | 'storage' | 'graph' | 'node', color: string) => void;
+    setBackgroundImageUrl: (url: string | null) => void;
+    setBackgroundImageOpacity: (opacity: number) => void;
 
     // Trash Actions
     trashFile: (id: string) => void;
@@ -140,6 +144,8 @@ export const useStore = create<AppStore>()(
             lastSyncTime: null,
             autoSyncEnabled: true,
             syncStatus: 'idle',
+            backgroundImageUrl: null,
+            backgroundImageOpacity: 0.2,
 
             // PiP State
             pipFileId: null,
@@ -214,6 +220,8 @@ export const useStore = create<AppStore>()(
                         [entity]: color,
                     },
                 })),
+            setBackgroundImageUrl: (url) => set({ backgroundImageUrl: url }),
+            setBackgroundImageOpacity: (opacity) => set({ backgroundImageOpacity: Math.max(0, Math.min(1, opacity)) }),
 
             login: (user) => set({ user }),
             logout: () => set({ user: null }),
