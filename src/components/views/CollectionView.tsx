@@ -290,8 +290,7 @@ export default function CollectionView() {
                                                 )
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                    {/* FileIconByType placeholder since I can't import it easily without breaking things or I should have checked if it was imported. It seems it was used in previous code but I don't see import. I'll assume it's available or I'll just use a generic icon */}
-                                                    <FilmStrip size={48} />
+                                                    <FileIconByType type={file.type} size={48} />
                                                 </div>
                                             )}
 
@@ -307,7 +306,7 @@ export default function CollectionView() {
 
                                             {/* Type Badge */}
                                             <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold uppercase flex items-center gap-1">
-                                                {/* <LocalFileIconByType type={file.type} size={10} /> */}
+                                                <FileIconByType type={file.type} size={10} />
                                                 {file.type}
                                             </div>
 
@@ -439,10 +438,4 @@ function FileIconByType({ type, size = 16 }: { type: string, size?: number }) {
         case 'image': return <ImageIcon size={size} />;
         default: return <Folder size={size} />;
     }
-}
-
-function formatTime(seconds: number) {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${sec.toString().padStart(2, '0')}`;
 }
