@@ -12,7 +12,8 @@ import {
     CheckSquare,
     MagnifyingGlass,
     FilePdf,
-    MusicNote
+    MusicNote,
+    PencilSimple
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -404,7 +405,7 @@ function FileIconByType({ type, size = 16 }: { type: string, size?: number }) {
         case 'pdf': return <FilePdf size={size} />;
         case 'audio': return <MusicNote size={size} />;
         case 'image': {
-            const ImageIcon = getIcon("Image");
+            const ImageIcon = getIcon("Image") || Folder;
             return <ImageIcon size={size} />;
         }
         default: return <Folder size={size} />;
