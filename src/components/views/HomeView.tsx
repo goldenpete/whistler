@@ -341,8 +341,12 @@ export default function HomeView() {
     const handleItemClick = (item: typeof allItems[0]) => {
         switch (item.type) {
             case 'file':
-                useStore.getState().setActiveFile(item.id);
-                navigate(`/file/${item.id}`);
+                if (item.subType === 'folder') {
+                    navigate(`/storage?folderId=${item.id}`);
+                } else {
+                    useStore.getState().setActiveFile(item.id);
+                    navigate(`/file/${item.id}`);
+                }
                 break;
             case 'doc':
                 useStore.getState().setActiveDoc(item.id);

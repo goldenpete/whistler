@@ -1,6 +1,6 @@
 import { useState, useEffect, createElement } from "react";
 import { useStore } from "@/store/useStore";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
     File as FileIcon,
     Folder,
@@ -80,7 +80,8 @@ export default function StorageView() {
     const [fileToColor, setFileToColor] = useState<File | null>(null);
     const [editFolderOpen, setEditFolderOpen] = useState(false);
     const [folderToEdit, setFolderToEdit] = useState<File | null>(null);
-    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentFolderId = searchParams.get('folderId');
 
     // Selection Mode
     const [selectionMode, setSelectionMode] = useState(false);
@@ -279,9 +280,22 @@ export default function StorageView() {
         }
     };
 
-    const handleNavigateFolder = (folderId: string) => {
-        setCurrentFolderId(folderId);
+    const handleNavigateFolder = (folderId: string | null) => {
+        if (folderId) {
+            setSearchParams({ folderId });
+        } else {
+            setSearchParams({});
+        }
     };
+
+    useEffect(() => {
+        if (currentFolderId && activeProjectId) {
+            const folder = files.find(f => f.id === currentFolderId);
+            if (folder && folder.storageId !== activeStorageId) {
+                useStore.setState({ activeStorageId: folder.storageId });
+            }
+        }
+    }, [currentFolderId, files, activeStorageId, activeProjectId]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -350,7 +364,7 @@ export default function StorageView() {
                         <div className="flex items-center gap-2 p-2 h-12 border-b border-border bg-card/30">
                             <Breadcrumb className="flex-1 pl-2">
                                 <BreadcrumbList>
-                                    <DroppableBreadcrumb id="root" name={activeStorage?.name || "All Files"} isCurrent={!currentFolderId} onClick={() => setCurrentFolderId(null)} />
+                                    <DroppableBreadcrumb id="root" name={activeStorage?.name || "All Files"} isCurrent={!currentFolderId} onClick={() => handleNavigateFolder(null)} />
 
                                     {breadcrumbs.map((folder, index) => (
                                         <div key={folder.id} className="flex items-center">
@@ -359,7 +373,7 @@ export default function StorageView() {
                                                 id={folder.id}
                                                 name={folder.name}
                                                 isCurrent={index === breadcrumbs.length - 1}
-                                                onClick={() => setCurrentFolderId(folder.id)}
+                                                onClick={() => handleNavigateFolder(folder.id)}
                                             />
                                         </div>
                                     ))}
