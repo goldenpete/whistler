@@ -543,9 +543,9 @@ export default function ProjectSidebar() {
                             <TooltipTrigger asChild>
                                 <button
                                     onClick={toggleSidebarCollapse}
-                                    className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
-                                    <SidebarSimple weight="bold" size={20} />
+                                    <SidebarSimple weight="bold" size={18} />
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent side="right">Expand Sidebar</TooltipContent>
@@ -558,12 +558,12 @@ export default function ProjectSidebar() {
                                         navigate('/');
                                         setSidebarView('main');
                                     }}
-                                    className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-accent hover:opacity-80 transition-colors"
+                                    className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent hover:opacity-80 transition-colors"
                                 >
                                     <img
                                         src={LOGO_MAP[accentTheme as AccentTheme] || whistlerLogoOrange}
                                         alt="Whistlerbox"
-                                        className="w-6 h-6 rounded-md"
+                                        className="w-5 h-5 rounded-md"
                                     />
                                 </button>
                             </TooltipTrigger>
@@ -574,9 +574,9 @@ export default function ProjectSidebar() {
                             <TooltipTrigger asChild>
                                 <button
                                     onClick={() => useStore.getState().setSpotlightOpen(true)}
-                                    className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
-                                    <MagnifyingGlass weight="bold" size={20} />
+                                    <MagnifyingGlass weight="bold" size={18} />
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent side="right">Search</TooltipContent>
@@ -742,11 +742,11 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => { setSidebarView('sync'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
                                         <ArrowsClockwise 
                                             weight="bold" 
-                                            size={20} 
+                                            size={18} 
                                             className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} 
                                         />
                                     </button>
@@ -758,10 +758,10 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => setAccentDialogOpen(true)}
-                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
                                          <span
-                                            className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+                                            className="h-2.5 w-2.5 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
                                             style={{ backgroundColor: "var(--primary)" }}
                                         />
                                     </button>
@@ -773,9 +773,9 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => { setSidebarView('history'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
-                                        <ClockCounterClockwise weight="bold" size={20} />
+                                        <ClockCounterClockwise weight="bold" size={18} />
                                     </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="right">History</TooltipContent>
@@ -785,9 +785,9 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => { setSidebarView('trash'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
-                                        <Trash weight="bold" size={20} />
+                                        <Trash weight="bold" size={18} />
                                     </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="right">Trash</TooltipContent>
