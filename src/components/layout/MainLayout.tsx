@@ -38,7 +38,7 @@ export function MainLayout() {
                     </motion.div>
                 )}
             </AnimatePresence>
-            <main className="flex-1 flex flex-col relative overflow-hidden bg-gradient-to-tr from-[#131318] to-background">
+            <main className="flex-1 flex flex-col relative overflow-hidden bg-black">
                 <div
                     className="absolute inset-0 z-0 pointer-events-none"
                     style={{
