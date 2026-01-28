@@ -538,7 +538,7 @@ export default function ProjectSidebar() {
                 )}
             >
                 {isSlim ? (
-                    <div className="flex flex-col h-full items-center py-3 gap-2 w-full">
+                    <div className="flex flex-col h-full min-h-0 items-center py-3 gap-2 w-full">
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
@@ -660,7 +660,7 @@ export default function ProjectSidebar() {
 
                         <Separator className="w-8 bg-border/40 my-1" />
 
-                        <ScrollArea className="flex-1 w-full px-1">
+                        <ScrollArea className="flex-1 min-h-0 w-full px-1">
                             <div className="flex flex-col gap-2 w-full items-center pb-2">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
