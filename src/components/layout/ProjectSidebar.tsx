@@ -23,7 +23,7 @@ import {
     Cloud,
     Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Gear, Share, SquaresFour,
+    FilmStrip, FileText, Book, Gear, Share,
     CheckCircle, WarningCircle, CloudCheck, CloudWarning
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,13 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+    ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -170,7 +177,6 @@ export default function ProjectSidebar() {
 
     const [projectsOpen, setProjectsOpen] = useState(true);
     const [assetsOpen, setAssetsOpen] = useState(true);
-    const [collectionsOpen, setCollectionsOpen] = useState(true);
     const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
     const [createStorageOpen, setCreateStorageOpen] = useState(false);
     // Edit State
@@ -496,6 +502,27 @@ export default function ProjectSidebar() {
             setActiveProject(value);
         }
     };
+
+    const createMenuContent = (
+        <>
+            <ContextMenuItem onClick={() => setCreateCollectionOpen(true)}>
+                <FolderPlus className="mr-2 h-4 w-4" />
+                New Collection
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleCreateDoc}>
+                <NotePencil className="mr-2 h-4 w-4" />
+                New Doc
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleCreateGraph}>
+                <Graph className="mr-2 h-4 w-4" />
+                New Graph
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleCreateStorage}>
+                <HardDrives className="mr-2 h-4 w-4" />
+                New Storage
+            </ContextMenuItem>
+        </>
+    );
 
 
     return (
@@ -871,113 +898,134 @@ export default function ProjectSidebar() {
                                                 exit={!isSidebarCollapsed ? { height: 0, opacity: 0 } : undefined}
                                                 className={cn("flex gap-1 overflow-hidden", (isSidebarCollapsed || isSlim) ? "flex-col space-y-2" : "flex-row")}
                                             >
-                                                <button
-                                                    onClick={() => {
-                                                        if (isSidebarCollapsed) {
-                                                            toggleSidebarCollapse && toggleSidebarCollapse();
-                                                            return;
-                                                        }
-                                                        if (location.pathname === '/storage') {
-                                                            setSidebarView('storage');
-                                                        } else {
-                                                            navigate('/storage');
-                                                            setSidebarView('main');
-                                                        }
-                                                    }}
-                                                    title="Storage"
-                                                className={cn(
-                                                    "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
-                                                        (isSidebarCollapsed || isSlim)
-                                                            ? "w-10 h-10 mx-auto"
-                                                            : "flex-1 h-9",
-                                                        (location.pathname === "/storage")
-                                                            ? "bg-primary/20 text-primary shadow-sm"
-                                                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                                    )}
-                                                >
-                                                    <HardDrives
-                                                        weight={(location.pathname === "/storage") ? "fill" : "regular"}
-                                                        size={18}
-                                                        className="transition-transform group-hover:scale-110"
-                                                    />
-                                                    {!isSidebarCollapsed && !isSlim && (
-                                                        <span className="ml-2 text-xs font-medium tracking-tight">
-                                                            Storage
-                                                        </span>
-                                                    )}
-                                                </button>
+                                                <ContextMenu>
+                                                    <ContextMenuTrigger asChild>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (isSidebarCollapsed) {
+                                                                    toggleSidebarCollapse && toggleSidebarCollapse();
+                                                                    return;
+                                                                }
+                                                                if (location.pathname === '/storage') {
+                                                                    setSidebarView('storage');
+                                                                } else {
+                                                                    navigate('/storage');
+                                                                    setSidebarView('main');
+                                                                }
+                                                            }}
+                                                            title="Storage"
+                                                            className={cn(
+                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
+                                                                (isSidebarCollapsed || isSlim)
+                                                                    ? "w-10 h-10 mx-auto"
+                                                                    : "flex-1 h-9",
+                                                                (location.pathname === "/storage")
+                                                                    ? "bg-primary/20 text-primary shadow-sm"
+                                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                            )}
+                                                        >
+                                                            <HardDrives
+                                                                weight={(location.pathname === "/storage") ? "fill" : "regular"}
+                                                                size={18}
+                                                                className="transition-transform group-hover:scale-110"
+                                                            />
+                                                            {!isSidebarCollapsed && !isSlim && (
+                                                                <span className="ml-2 text-xs font-medium tracking-tight">
+                                                                    Storage
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    </ContextMenuTrigger>
+                                                    <ContextMenuContent className="w-48">
+                                                        {createMenuContent}
+                                                    </ContextMenuContent>
+                                                </ContextMenu>
 
-                                                <button
-                                                    onClick={() => {
-                                                        if (isSidebarCollapsed) {
-                                                            toggleSidebarCollapse && toggleSidebarCollapse();
-                                                            return;
-                                                        }
-                                                        if (location.pathname.startsWith('/docs')) {
-                                                            setSidebarView('docs');
-                                                        } else {
-                                                            navigate('/docs');
-                                                            setSidebarView('main');
-                                                        }
-                                                    }}
-                                                    title="Docs"
-                                                    className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
-                                                        (isSidebarCollapsed || isSlim)
-                                                            ? "w-10 h-10 mx-auto"
-                                                            : "flex-1 h-9",
-                                                        location.pathname.startsWith("/docs")
-                                                            ? "bg-primary/20 text-primary shadow-sm"
-                                                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                                    )}
-                                                    >
-                                                        <NotePencil
-                                                            weight={location.pathname.startsWith("/docs") ? "fill" : "regular"}
-                                                            size={18}
-                                                            className="transition-transform group-hover:scale-110"
-                                                        />
-                                                        {!isSidebarCollapsed && !isSlim && (
-                                                            <span className="ml-2 text-xs font-medium tracking-tight">
-                                                                Docs
-                                                            </span>
-                                                        )}
-                                                </button>
+                                                <ContextMenu>
+                                                    <ContextMenuTrigger asChild>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (isSidebarCollapsed) {
+                                                                    toggleSidebarCollapse && toggleSidebarCollapse();
+                                                                    return;
+                                                                }
+                                                                if (location.pathname.startsWith('/docs')) {
+                                                                    setSidebarView('docs');
+                                                                } else {
+                                                                    navigate('/docs');
+                                                                    setSidebarView('main');
+                                                                }
+                                                            }}
+                                                            title="Docs"
+                                                            className={cn(
+                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
+                                                                (isSidebarCollapsed || isSlim)
+                                                                    ? "w-10 h-10 mx-auto"
+                                                                    : "flex-1 h-9",
+                                                                location.pathname.startsWith("/docs")
+                                                                    ? "bg-primary/20 text-primary shadow-sm"
+                                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                            )}
+                                                        >
+                                                            <NotePencil
+                                                                weight={location.pathname.startsWith("/docs") ? "fill" : "regular"}
+                                                                size={18}
+                                                                className="transition-transform group-hover:scale-110"
+                                                            />
+                                                            {!isSidebarCollapsed && !isSlim && (
+                                                                <span className="ml-2 text-xs font-medium tracking-tight">
+                                                                    Docs
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    </ContextMenuTrigger>
+                                                    <ContextMenuContent className="w-48">
+                                                        {createMenuContent}
+                                                    </ContextMenuContent>
+                                                </ContextMenu>
 
-                                                <button
-                                                    onClick={() => {
-                                                        if (isSidebarCollapsed) {
-                                                            toggleSidebarCollapse && toggleSidebarCollapse();
-                                                            return;
-                                                        }
-                                                        if (location.pathname.startsWith('/graphs')) {
-                                                            setSidebarView('graphs');
-                                                        } else {
-                                                            navigate('/graphs');
-                                                            setSidebarView('main');
-                                                        }
-                                                    }}
-                                                    title="Graphs"
-                                                    className={cn(
-                                                        "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
-                                                        (isSidebarCollapsed || isSlim)
-                                                            ? "w-10 h-10 mx-auto"
-                                                            : "flex-1 h-9",
-                                                        location.pathname.startsWith("/graphs")
-                                                            ? "bg-primary/20 text-primary shadow-sm"
-                                                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                                    )}
-                                                    >
-                                                        <Graph
-                                                            weight={location.pathname.startsWith("/graphs") ? "fill" : "regular"}
-                                                            size={18}
-                                                            className="transition-transform group-hover:scale-110"
-                                                        />
-                                                        {!isSidebarCollapsed && !isSlim && (
-                                                            <span className="ml-2 text-xs font-medium tracking-tight">
-                                                                Graphs
-                                                            </span>
-                                                        )}
-                                                </button>
+                                                <ContextMenu>
+                                                    <ContextMenuTrigger asChild>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (isSidebarCollapsed) {
+                                                                    toggleSidebarCollapse && toggleSidebarCollapse();
+                                                                    return;
+                                                                }
+                                                                if (location.pathname.startsWith('/graphs')) {
+                                                                    setSidebarView('graphs');
+                                                                } else {
+                                                                    navigate('/graphs');
+                                                                    setSidebarView('main');
+                                                                }
+                                                            }}
+                                                            title="Graphs"
+                                                            className={cn(
+                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2",
+                                                                (isSidebarCollapsed || isSlim)
+                                                                    ? "w-10 h-10 mx-auto"
+                                                                    : "flex-1 h-9",
+                                                                location.pathname.startsWith("/graphs")
+                                                                    ? "bg-primary/20 text-primary shadow-sm"
+                                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                            )}
+                                                        >
+                                                            <Graph
+                                                                weight={location.pathname.startsWith("/graphs") ? "fill" : "regular"}
+                                                                size={18}
+                                                                className="transition-transform group-hover:scale-110"
+                                                            />
+                                                            {!isSidebarCollapsed && !isSlim && (
+                                                                <span className="ml-2 text-xs font-medium tracking-tight">
+                                                                    Graphs
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    </ContextMenuTrigger>
+                                                    <ContextMenuContent className="w-48">
+                                                        {createMenuContent}
+                                                    </ContextMenuContent>
+                                                </ContextMenu>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
@@ -990,98 +1038,116 @@ export default function ProjectSidebar() {
                                 <div className="mb-6">
                                     {(!isSidebarCollapsed && !isSlim) ? (
                                         <div className="flex items-center justify-between mb-2 px-1 group">
-                                            <button
-                                                onClick={() => setCollectionsOpen(!collectionsOpen)}
-                                                className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-                                            >
-                                                <CaretDown weight="bold" className={cn("transition-transform text-xs", !collectionsOpen && "-rotate-90")} />
-                                                Collections
-                                            </button>
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => navigate('/collections')}
-                                                    className={cn(
-                                                        "text-muted-foreground hover:text-primary transition-colors",
-                                                        location.pathname === '/collections' && "text-primary"
-                                                    )}
-                                                    title="View All"
-                                                >
-                                                    <SquaresFour weight="bold" className="size-3.5" />
-                                                </button>
-                                                <button
-                                                    onClick={handleAddCollection}
-                                                    className="text-muted-foreground hover:text-primary transition-colors"
-                                                    title="New Collection"
-                                                >
-                                                    <Plus weight="bold" className="size-3.5" />
-                                                </button>
-                                            </div>
+                                            <ContextMenu>
+                                                <ContextMenuTrigger asChild>
+                                                    <button
+                                                        onClick={() => navigate('/collections')}
+                                                        className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                                                    >
+                                                        Collections
+                                                    </button>
+                                                </ContextMenuTrigger>
+                                                <ContextMenuContent className="w-48">
+                                                    {createMenuContent}
+                                                </ContextMenuContent>
+                                            </ContextMenu>
                                         </div>
                                     ) : isSlim ? (
                                         <div className="flex justify-center mb-2">
-                                            <button
-                                                onClick={() => navigate('/collections')}
-                                                className={cn(
-                                                    "text-muted-foreground hover:text-primary transition-colors",
-                                                    location.pathname === '/collections' && "text-primary"
-                                                )}
-                                                title="All Collections"
-                                            >
-                                                <Folder weight="bold" className="size-5" />
-                                            </button>
+                                            <ContextMenu>
+                                                <ContextMenuTrigger asChild>
+                                                    <button
+                                                        onClick={() => navigate('/collections')}
+                                                        className={cn(
+                                                            "text-muted-foreground hover:text-primary transition-colors",
+                                                            location.pathname === '/collections' && "text-primary"
+                                                        )}
+                                                        title="All Collections"
+                                                    >
+                                                        <Folder weight="bold" className="size-5" />
+                                                    </button>
+                                                </ContextMenuTrigger>
+                                                <ContextMenuContent className="w-48">
+                                                    {createMenuContent}
+                                                </ContextMenuContent>
+                                            </ContextMenu>
                                         </div>
                                     ) : null}
 
                                     <AnimatePresence initial={false}>
-                                        {((collectionsOpen && !isSidebarCollapsed) || isSlim) && (
+                                        {(!isSidebarCollapsed || isSlim) && (
                                             <motion.div
                                                 initial={isSlim ? false : { height: 0, opacity: 0 }}
-                                                animate={isSlim ? { height: "auto", opacity: 1 } : { height: "auto", opacity: 1 }}
+                                                animate={{ height: "auto", opacity: 1 }}
                                                 exit={isSlim ? undefined : { height: 0, opacity: 0 }}
                                                 className="space-y-1 overflow-visible"
                                             >
                                                 {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => {
                                                     const Icon = getIcon(collection.icon);
                                                     return (
-                                                        <Link
-                                                            key={collection.id}
-                                                            to={`/collection/${collection.id}`}
-                                                            onClick={() => handleSelectCollection(collection.id)}
-                                                            className="block w-full group/item"
-                                                            title={isSlim ? collection.name : undefined}
-                                                        >
-                                                            <div className={cn(
-                                                                "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors relative",
-                                                                (location.pathname === `/collection/${collection.id}`)
-                                                                    ? "bg-primary/20 text-primary font-medium"
-                                                                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
-                                                                isSlim && "justify-center px-1"
-                                                            )}>
-                                                                <Icon
-                                                                    className={cn("text-lg transition-colors")}
-                                                                    weight="fill"
-                                                                    style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
-                                                                />
-                                                                {!isSlim && <span className="truncate flex-1">{collection.name}</span>}
+                                                    <ContextMenu key={collection.id}>
+                                                        <ContextMenuTrigger asChild>
+                                                            <Link
+                                                                to={`/collection/${collection.id}`}
+                                                                onClick={() => handleSelectCollection(collection.id)}
+                                                                className="block w-full group/item"
+                                                                title={isSlim ? collection.name : undefined}
+                                                            >
+                                                                <div className={cn(
+                                                                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors relative",
+                                                                    (location.pathname === `/collection/${collection.id}`)
+                                                                        ? "bg-primary/20 text-primary font-medium"
+                                                                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                                                                    isSlim && "justify-center px-1"
+                                                                )}>
+                                                                    <Icon
+                                                                        className={cn("text-lg transition-colors")}
+                                                                        weight="fill"
+                                                                        style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
+                                                                    />
+                                                                    {!isSlim && <span className="truncate flex-1">{collection.name}</span>}
 
-                                                                {!isSlim && (
-                                                                    <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                                        <button
-                                                            onClick={(e: ReactMouseEvent) => handleEditCollectionClick(e, collection)}
-                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                        >
-                                                            <PencilSimple weight="bold" />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e: ReactMouseEvent) => handleDeleteCollection(e, collection.id)}
-                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
-                                                        >
-                                                            <Trash weight="bold" />
-                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </Link>
+                                                                    {!isSlim && (
+                                                                        <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                                            <button
+                                                                                onClick={(e: ReactMouseEvent) => handleEditCollectionClick(e, collection)}
+                                                                                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                                            >
+                                                                                <PencilSimple weight="bold" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e: ReactMouseEvent) => handleDeleteCollection(e, collection.id)}
+                                                                                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                                                            >
+                                                                                <Trash weight="bold" />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </Link>
+                                                        </ContextMenuTrigger>
+                                                        <ContextMenuContent className="w-48">
+                                                            {createMenuContent}
+                                                            <ContextMenuSeparator />
+                                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setCollectionToEdit(collection);
+                                                                setEditCollectionOpen(true);
+                                                            }}>
+                                                                <PencilSimple className="mr-2 h-4 w-4" />
+                                                                Rename Collection
+                                                            </ContextMenuItem>
+                                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                trashCollection(collection.id);
+                                                            }} className="text-red-500 focus:text-red-500">
+                                                                <Trash className="mr-2 h-4 w-4" />
+                                                                Delete Collection
+                                                            </ContextMenuItem>
+                                                        </ContextMenuContent>
+                                                    </ContextMenu>
                                                     )
                                                 })}
                                                 {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).length === 0 && (
@@ -1099,6 +1165,15 @@ export default function ProjectSidebar() {
                                                             <Plus weight="bold" className="size-4" />
                                                         </button>
                                                     </div>
+                                                )}
+                                                {!isSlim && (
+                                                    <button
+                                                        onClick={handleAddCollection}
+                                                        className="w-full flex items-center justify-center py-2 mt-1 text-muted-foreground hover:text-primary hover:bg-accent/50 rounded-md transition-colors"
+                                                        title="New Collection"
+                                                    >
+                                                        <Plus weight="bold" className="size-4" />
+                                                    </button>
                                                 )}
                                             </motion.div>
                                         )}
