@@ -18,6 +18,8 @@ interface AppStore extends AppState {
     syncStatus: SyncStatus;
     backgroundImageUrl: string | null;
     backgroundImageOpacity: number;
+    backgroundColor: string;
+    backgroundOverlayOpacity: number;
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -86,6 +88,8 @@ interface AppStore extends AppState {
     setDefaultColor: (entity: 'file' | 'collection' | 'storage' | 'graph' | 'node', color: string) => void;
     setBackgroundImageUrl: (url: string | null) => void;
     setBackgroundImageOpacity: (opacity: number) => void;
+    setBackgroundColor: (color: string) => void;
+    setBackgroundOverlayOpacity: (opacity: number) => void;
 
     // Trash Actions
     trashFile: (id: string) => void;
@@ -146,8 +150,10 @@ export const useStore = create<AppStore>()(
             syncStatus: 'idle',
             backgroundImageUrl: null,
             backgroundImageOpacity: 0.2,
+            backgroundColor: '#000000',
+            backgroundOverlayOpacity: 0.5,
 
-            // PiP State
+            // ActionsPiP State
             pipFileId: null,
             isPipOpen: false,
             fileProgress: {},
@@ -222,6 +228,8 @@ export const useStore = create<AppStore>()(
                 })),
             setBackgroundImageUrl: (url) => set({ backgroundImageUrl: url }),
             setBackgroundImageOpacity: (opacity) => set({ backgroundImageOpacity: Math.max(0, Math.min(1, opacity)) }),
+            setBackgroundColor: (color) => set({ backgroundColor: color }),
+            setBackgroundOverlayOpacity: (opacity) => set({ backgroundOverlayOpacity: opacity }),
 
             login: (user) => set({ user }),
             logout: () => set({ user: null }),

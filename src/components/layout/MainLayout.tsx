@@ -8,7 +8,7 @@ export function MainLayout() {
     const location = useLocation();
     const currentOutlet = useOutlet();
     const isPlayer = location.pathname.startsWith('/file/');
-    const { backgroundImageUrl, backgroundImageOpacity } = useStore();
+    const { backgroundImageUrl, backgroundImageOpacity, backgroundColor, backgroundOverlayOpacity } = useStore();
     
     // Track previous path to determine if we are navigating FROM a player
     const prevPath = usePrevious(location.pathname);
@@ -39,9 +39,16 @@ export function MainLayout() {
                 )}
             </AnimatePresence>
             <main className="flex-1 flex flex-col relative overflow-hidden bg-gradient-to-tr from-[#131318] to-background">
+                <div
+                    className="absolute inset-0 z-0 pointer-events-none"
+                    style={{
+                        backgroundColor: backgroundColor ?? '#000000',
+                        opacity: backgroundOverlayOpacity ?? 0.5,
+                    }}
+                />
                 {backgroundImageUrl && (
                     <div
-                        className="absolute inset-0 -z-10 pointer-events-none"
+                        className="absolute inset-0 z-0 pointer-events-none"
                         style={{
                             backgroundImage: `url(${backgroundImageUrl})`,
                             backgroundSize: 'cover',

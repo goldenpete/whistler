@@ -148,8 +148,12 @@ export default function ProjectSidebar() {
         setDefaultColor,
         backgroundImageUrl,
         backgroundImageOpacity,
+        backgroundColor,
+        backgroundOverlayOpacity,
         setBackgroundImageUrl,
         setBackgroundImageOpacity,
+        setBackgroundColor,
+        setBackgroundOverlayOpacity,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -1366,6 +1370,39 @@ export default function ProjectSidebar() {
                             </div>
                             <div className="space-y-3">
                                 <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Background</p>
+                                
+                                <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium">Color Overlay</span>
+                                        <div className="flex items-center gap-2">
+                                            <div className="relative w-6 h-6 rounded-full overflow-hidden border border-border/60 cursor-pointer shadow-sm">
+                                                <input 
+                                                    type="color" 
+                                                    value={backgroundColor || '#000000'}
+                                                    onChange={(e) => setBackgroundColor(e.target.value)}
+                                                    className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 border-0 opacity-0 cursor-pointer"
+                                                />
+                                                <div 
+                                                    className="w-full h-full"
+                                                    style={{ backgroundColor: backgroundColor || '#000000' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] text-muted-foreground">Opacity</span>
+                                            <span className="text-[11px]">{Math.round((backgroundOverlayOpacity ?? 0.5) * 100)}%</span>
+                                        </div>
+                                        <Slider
+                                            value={[Math.round((backgroundOverlayOpacity ?? 0.5) * 100)]}
+                                            onValueChange={(vals) => setBackgroundOverlayOpacity((vals[0] ?? 50) / 100)}
+                                            max={100}
+                                            step={1}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="rounded-lg border border-border bg-card overflow-hidden">
                                     <div className="aspect-video relative">
                                         {backgroundImageUrl ? (
@@ -1392,6 +1429,9 @@ export default function ProjectSidebar() {
                                                         reader.onload = () => {
                                                             const result = reader.result as string;
                                                             setBackgroundImageUrl(result);
+                                                        if ((backgroundImageOpacity ?? 0) === 0) {
+                                                            setBackgroundImageOpacity(0.2);
+                                                        }
                                                         };
                                                         reader.readAsDataURL(file);
                                                     };
