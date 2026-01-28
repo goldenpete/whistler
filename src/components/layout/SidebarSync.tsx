@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     CaretLeft,
@@ -54,9 +56,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         setState,
         autoSyncEnabled,
         setAutoSyncEnabled,
+        autoSyncInterval,
+        setAutoSyncInterval,
         syncStatus,
         setSyncStatus
     } = useStore();
+    const { handleSync, error: syncError } = useSync();
     const [syncId, setSyncId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -287,149 +292,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         logout();
     };
 
-    const handleSync = async (type: 'push' | 'pull') => {
-        // Fallback to localStorage if state is missing (e.g. after refresh)
-        const currentToken = sessionToken || localStorage.getItem("whistler_session_token");
-        const currentAccountId = accountId || localStorage.getItem("whistler_account_id");
-
-        if (!currentAccountId || !currentToken) {
-            setError("Connect with your Sync ID first");
-            return;
-        }
-        setSyncStatus("syncing");
-        setError(null);
-        try {
-            if (type === "push") {
-                const state = useStore.getState();
-                const data = {
-                    projects: state.projects,
-                    files: state.files,
-                    collections: state.collections,
-                    highlights: state.highlights,
-                    graphs: state.graphs,
-                    graphNodes: state.graphNodes,
-                    graphEdges: state.graphEdges,
-                    docs: state.docs,
-                    storages: state.storages,
-                    // Theme Settings
-                    accentTheme: state.accentTheme,
-                    baseTheme: state.baseTheme,
-                    enableDefaultColorControls: state.enableDefaultColorControls,
-                    defaultColors: state.defaultColors,
-                    lastModified: Date.now(),
-                };
-                
-                const payload = JSON.stringify({
-                    key: "whistler_data",
-                    value: data,
-                });
-                
-                // Log debug info (safely)
-                console.log(`Syncing (Push) for account ${currentAccountId} with token ending in ...${currentToken.slice(-6)}`);
-                console.log(`Payload size: approx ${Math.round(payload.length / 1024)} KB`);
-                console.log(`Payload keys: Projects: ${data.projects.length}, Files: ${data.files.length}, Collections: ${data.collections.length}`);
-
-                const response = await fetch(`${SYNC_API_URL}/data`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${currentToken}`,
-                    },
-                    body: payload,
-                });
-                
-                console.log(`Push Response Status: ${response.status} ${response.statusText}`);
-
-                if (response.status === 401) {
-                    console.error("Sync Push 401 Unauthorized");
-                    handleLogout();
-                    setError("Session expired. Please sign in again.");
-                    setSyncStatus("error");
-                    return;
-                }
-                if (!response.ok) {
-                    const body = await response.json().catch(() => null);
-                    console.error("Push Error Body:", body);
-                    setError(body?.error || "Push failed");
-                    setSyncStatus("error");
-                    return;
-                }
-                console.log("Push Successful");
-            } else {
-                console.log(`Syncing (Pull) for account ${currentAccountId}`);
-                
-                const response = await fetch(`${SYNC_API_URL}/data`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${currentToken}`,
-                    },
-                });
-
-                console.log(`Pull Response Status: ${response.status} ${response.statusText}`);
-
-                if (response.status === 401) {
-                    console.error("Sync Pull 401 Unauthorized");
-                    handleLogout();
-                    setError("Session expired. Please sign in again.");
-                    setSyncStatus("error");
-                    return;
-                }
-                if (!response.ok) {
-                    const body = await response.json().catch(() => null);
-                    console.error("Pull Error Body:", body);
-                    setError(body?.error || "Pull failed");
-                    setSyncStatus("error");
-                    return;
-                }
-                const result = await response.json();
-                console.log("Pull Result:", result ? "Data received" : "No data");
-                
-                const dataRow = Array.isArray(result.data)
-                    ? result.data.find((d: any) => d.key === "whistler_data")
-                    : null;
-                if (dataRow && dataRow.value) {
-                    const cloudData = typeof dataRow.value === "string" ? JSON.parse(dataRow.value) : dataRow.value;
-                    console.log(`Restoring Cloud Data: Projects: ${cloudData.projects?.length}, Files: ${cloudData.files?.length}`);
-                    setState({
-                        projects: cloudData.projects || [],
-                        files: cloudData.files || [],
-                        collections: cloudData.collections || [],
-                        highlights: cloudData.highlights || [],
-                        graphs: cloudData.graphs || [],
-                        graphNodes: cloudData.graphNodes || [],
-                        graphEdges: cloudData.graphEdges || [],
-                        docs: cloudData.docs || [],
-                        storages: cloudData.storages || [],
-                        history: cloudData.history || [],
-                        // Theme Settings
-                        accentTheme: cloudData.accentTheme || 'orange',
-                        baseTheme: cloudData.baseTheme || 'zinc',
-                        enableDefaultColorControls: cloudData.enableDefaultColorControls || false,
-                        defaultColors: cloudData.defaultColors || {
-                            file: '#f59e0b',
-                            collection: '#f59e0b',
-                            storage: '#f59e0b',
-                            graph: '#f59e0b',
-                            node: '#f59e0b',
-                        },
-                    });
-                } else {
-                    console.log("No matching data row found in pull result.");
-                }
-            }
-            const now = Date.now();
-            setLastSyncTime(now);
-            localStorage.setItem("whistler_last_sync", String(now));
-            setSyncStatus("success");
-            setTimeout(() => setSyncStatus("idle"), 2000);
-        } catch (err) {
-            console.error("Sync error:", err);
-            setError(err instanceof Error ? err.message : "Sync error");
-            setSyncStatus("error");
-        }
-    };
-
-
+    // handleSync is now provided by useSync hook
 
     const handleStartEditName = () => {
         setEditName(user?.email && user.email !== accountId ? user.email : "");
@@ -895,6 +758,13 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 Pull
                             </Button>
                         </div>
+                        
+                        {(error || syncError) && (
+                            <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400 flex items-center gap-2">
+                                <Warning weight="fill" />
+                                {error || syncError}
+                            </div>
+                        )}
                     </div>
 
                     {/* Account Info */}
@@ -1023,6 +893,22 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             <p className="text-[11px] text-muted-foreground px-2">
                                 Auto-sync is enabled by default and saves changes automatically. Turn this off to require manual Push and Pull.
                             </p>
+                            
+                            <div className={`pt-2 px-2 space-y-3 transition-opacity ${autoSyncEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Sync Interval</span>
+                                    <span>{Math.round(autoSyncInterval / 60000)} min</span>
+                                </div>
+                                <Slider
+                                    value={[autoSyncInterval / 60000]}
+                                    min={1}
+                                    max={60}
+                                    step={1}
+                                    onValueChange={(vals) => setAutoSyncInterval(vals[0] * 60000)}
+                                    disabled={!autoSyncEnabled}
+                                    className="py-1"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

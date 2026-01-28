@@ -23,6 +23,12 @@ declare module "react" {
 
   export function useState<T>(initial: T | (() => T)): [T, (next: T) => void];
   export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
+  export function useRef<T>(initialValue: T): { current: T };
+  export function useRef<T>(initialValue: T | null): { current: T | null };
+  export function useRef<T = undefined>(): { current: T | undefined };
+  export function useMemo<T>(factory: () => T, deps: unknown[] | undefined): T;
+  export function useCallback<T extends (...args: any[]) => any>(callback: T, deps: unknown[]): T;
+  export function useImperativeHandle<T, R extends T>(ref: any, init: () => R, deps?: unknown[]): void;
   export function createContext<T>(defaultValue: T): any;
   export function useContext<T>(context: any): T;
   export function forwardRef<T, P = {}>(render: (props: P, ref: any) => any): any;
@@ -34,7 +40,19 @@ declare module "react" {
       }
   }
   
-  const React: any;
+  const React: {
+      useState: typeof useState;
+      useEffect: typeof useEffect;
+      useRef: typeof useRef;
+      useMemo: typeof useMemo;
+      useCallback: typeof useCallback;
+      useImperativeHandle: typeof useImperativeHandle;
+      createContext: typeof createContext;
+      useContext: typeof useContext;
+      forwardRef: typeof forwardRef;
+      Fragment: any;
+      createElement: any;
+  };
   export default React;
 }
 
@@ -154,6 +172,23 @@ declare module "@phosphor-icons/react" {
   export const ShareNetwork: (props: IconProps) => any;
   export const FileVideo: (props: IconProps) => any;
   export const Lightning: (props: IconProps) => any;
+  
+  // Missing icons
+  export const MagnifyingGlassPlus: (props: IconProps) => any;
+  export const MagnifyingGlassMinus: (props: IconProps) => any;
+  export const EyeSlash: (props: IconProps) => any;
+  export const Eye: (props: IconProps) => any;
+  export const CornersIn: (props: IconProps) => any;
+  export const CornersOut: (props: IconProps) => any;
+  export const Play: (props: IconProps) => any;
+  export const Pause: (props: IconProps) => any;
+  export const SpeakerHigh: (props: IconProps) => any;
+  export const SpeakerX: (props: IconProps) => any;
+  export const Minus: (props: IconProps) => any;
+  export const Repeat: (props: IconProps) => any;
+  export const Gauge: (props: IconProps) => any;
+  export const ArrowsOutSimple: (props: IconProps) => any;
+  export const CircleNotch: (props: IconProps) => any;
 }
 
 // Image imports
@@ -169,11 +204,32 @@ declare module "date-fns" {
 
 declare module "react-router-dom" {
   export const Link: any;
-  export function useNavigate(): (path: string) => void;
+  export function useNavigate(): (path: string | number) => void;
   export function useLocation(): { pathname: string };
   export function useSearchParams(): [URLSearchParams, (params: any) => void];
   export const Outlet: any;
   export function useOutlet(): any;
+  export const Routes: any;
+  export const Route: any;
+  export const Navigate: any;
+  export function useParams<K extends string = string>(): Readonly<Record<K, string | undefined>>;
+}
+
+declare module "react-pdf" {
+    export const Document: any;
+    export const Page: any;
+    export const pdfjs: any;
+}
+
+declare module "react-pdf/dist/Page/AnnotationLayer.css" {}
+declare module "react-pdf/dist/Page/TextLayer.css" {}
+
+declare module "usehooks-ts" {
+    export function useDebounceValue<T>(value: T, delay: number): [T, (value: T) => void];
+}
+
+declare namespace NodeJS {
+    interface Timeout {}
 }
 
 declare module "framer-motion" {

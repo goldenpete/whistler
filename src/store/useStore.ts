@@ -15,6 +15,7 @@ interface AppStore extends AppState {
     user: User | null;
     lastSyncTime: number | null;
     autoSyncEnabled: boolean;
+    autoSyncInterval: number; // in milliseconds
     syncStatus: SyncStatus;
     backgroundImageUrl: string | null;
     backgroundImageOpacity: number;
@@ -91,6 +92,8 @@ interface AppStore extends AppState {
     setBackgroundColor: (color: string) => void;
     setBackgroundOverlayOpacity: (opacity: number) => void;
 
+    setAutoSyncInterval: (interval: number) => void;
+
     // Trash Actions
     trashFile: (id: string) => void;
     restoreFile: (id: string) => void;
@@ -147,6 +150,7 @@ export const useStore = create<AppStore>()(
             user: null,
             lastSyncTime: null,
             autoSyncEnabled: true,
+            autoSyncInterval: 60000, // 1 minute default
             syncStatus: 'idle',
             backgroundImageUrl: null,
             backgroundImageOpacity: 0.2,
@@ -230,6 +234,8 @@ export const useStore = create<AppStore>()(
             setBackgroundImageOpacity: (opacity) => set({ backgroundImageOpacity: Math.max(0, Math.min(1, opacity)) }),
             setBackgroundColor: (color) => set({ backgroundColor: color }),
             setBackgroundOverlayOpacity: (opacity) => set({ backgroundOverlayOpacity: opacity }),
+
+            setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 
             login: (user) => set({ user }),
             logout: () => set({ user: null }),

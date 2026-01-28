@@ -157,4 +157,8 @@ export interface AppState {
         graph?: string;
         node?: string;
     };
+    backgroundImageUrl?: string | null;
+    backgroundImageOpacity?: number;
+    backgroundColor?: string;
+    backgroundOverlayOpacity?: number;
 }

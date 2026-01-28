@@ -77,7 +77,7 @@ export function PiPPlayer({ isCollapsed }: PiPPlayerProps) {
         <div className="relative group">
             {/* Main Container */}
             <div className={cn(
-                "relative bg-black overflow-hidden flex items-center justify-center",
+                "relative bg-transparent overflow-hidden flex items-center justify-center",
                 isCollapsed ? "h-10 w-10 mx-auto rounded-md" : "h-[120px] w-full rounded-md" // Aspect ratio placeholder
             )}>
                 {/* Video */}

@@ -280,7 +280,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
 
         const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-        pageHighlights.forEach(h => {
+        pageHighlights.forEach((h: any) => {
             if (h.pdfRange) {
                 addRectsForRange(h.pdfRange.start, h.pdfRange.end);
             } else if (h.text) {
@@ -340,7 +340,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
 
     const changePage = (offset: number) => {
         if (lockedPage) return;
-        setPageNumber(prev => {
+        setPageNumber((prev: number) => {
             const newPage = Math.min(Math.max(prev + offset, 1), numPages);
             onPageChange?.(newPage);
             return newPage;
@@ -355,8 +355,8 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             }
         },
         addHighlightFromSelection: handleAddHighlight,
-        zoomIn: () => setScale(s => Math.min(s + 0.2, 3.0)),
-        zoomOut: () => setScale(s => Math.max(s - 0.2, 0.5))
+        zoomIn: () => setScale((s: number) => Math.min(s + 0.2, 3.0)),
+        zoomOut: () => setScale((s: number) => Math.max(s - 0.2, 0.5))
     }));
 
     // --- Render Helpers ---
@@ -371,7 +371,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     }
 
     return (
-        <div className={cn("flex flex-col h-full bg-zinc-950 relative selection:bg-primary/30", className)} ref={containerRef}>
+        <div className={cn("flex flex-col h-full bg-transparent relative selection:bg-primary/30", className)} ref={containerRef}>
             <style>{`
                 .react-pdf__Page__textContent {
                     user-select: text !important;
@@ -395,7 +395,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                 >
                     <Button
                         size="sm"
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             handleAddHighlight();
                             setSelectionRect(null);
@@ -516,7 +516,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                        onClick={(e) => { e.stopPropagation(); changePage(1); }}
+                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); changePage(1); }}
                         disabled={pageNumber >= numPages || !!lockedPage || !loadedUrl}
                     >
                         <CaretRight size={14} weight="bold" />
@@ -531,9 +531,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                        onClick={(e) => { 
+                        onClick={(e: React.MouseEvent) => { 
                             e.stopPropagation(); 
-                            setScale(s => Math.max(s - 0.1, 0.5)); 
+                            setScale((s: number) => Math.max(s - 0.1, 0.5)); 
                         }}
                         disabled={!loadedUrl}
                     >
@@ -548,9 +548,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                        onClick={(e) => { 
+                        onClick={(e: React.MouseEvent) => { 
                             e.stopPropagation(); 
-                            setScale(s => Math.min(s + 0.1, 3.0)); 
+                            setScale((s: number) => Math.min(s + 0.1, 3.0)); 
                         }}
                         disabled={!loadedUrl}
                     >
@@ -582,7 +582,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e) => {
+                            onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 onToggleFullscreen();
                             }}
@@ -600,7 +600,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e) => {
+                            onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 onHideControls();
                             }}

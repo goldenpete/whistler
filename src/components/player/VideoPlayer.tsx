@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@/store/useStore";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -71,7 +71,7 @@ const ExpandableNote = ({ text }: { text: string }) => {
         <span>
             {expanded ? text : `${text.slice(0, limit)}...`}
             <button 
-                onClick={(e) => { 
+                onClick={(e: React.MouseEvent) => { 
                     e.stopPropagation(); 
                     setExpanded(!expanded); 
                 }} 
@@ -466,7 +466,7 @@ export default function VideoPlayer() {
 
                 {/* Video/PDF Stage */}
                 <div
-                    className="flex-1 flex items-center justify-center bg-black relative overflow-hidden"
+                    className="flex-1 flex items-center justify-center bg-transparent relative overflow-hidden"
                     onClick={isMediaFile ? togglePlay : undefined}
                 >
                     {/* Loading Spinner (only for media files) */}
@@ -589,7 +589,7 @@ export default function VideoPlayer() {
                                                 value={[isMuted ? 0 : volume]}
                                                 max={1}
                                                 step={0.05}
-                                                onValueChange={(val) => setVolume(val[0])}
+                                                onValueChange={(val: number[]) => setVolume(val[0])}
                                                 thumbClassName="bg-white border-white shadow-sm"
                                             />
                                         </div>
@@ -639,7 +639,7 @@ export default function VideoPlayer() {
                                                     min={0.25}
                                                     max={8}
                                                     step={0.05}
-                                                    onValueChange={(val) => setPlaybackRate(val[0])}
+                                                    onValueChange={(val: number[]) => setPlaybackRate(val[0])}
                                                     className="flex-1"
                                                 />
                                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackRate(Math.min(8, playbackRate + 0.05))}>
@@ -675,7 +675,7 @@ export default function VideoPlayer() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={(e) => {
+                                    onClick={(e: React.MouseEvent) => {
                                         e.stopPropagation();
                                         setShowControls(false);
                                     }}
@@ -767,7 +767,7 @@ export default function VideoPlayer() {
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
-                                                    onClick={(e) => {
+                                                    onClick={(e: React.MouseEvent) => {
                                                         e.stopPropagation();
                                                         setSelectedHighlightId(h.id);
                                                         setHighlightPlayerOpen(true);
@@ -778,7 +778,7 @@ export default function VideoPlayer() {
                                                 </button>
                                                 <button
                                                     className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded"
-                                                    onClick={(e) => {
+                                                    onClick={(e: React.MouseEvent) => {
                                                         e.stopPropagation();
                                                         setSelectedHighlightId(h.id);
                                                         setEditHighlightOpen(true);
@@ -789,7 +789,7 @@ export default function VideoPlayer() {
                                                 </button>
                                                 <button
                                                     className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded"
-                                                    onClick={(e) => {
+                                                    onClick={(e: React.MouseEvent) => {
                                                         e.stopPropagation();
                                                         removeHighlight(h.id);
                                                     }}

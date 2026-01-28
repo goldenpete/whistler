@@ -9,6 +9,7 @@ import CollectionView from "@/components/views/CollectionView";
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
 import { useInitialData } from "@/hooks/useInitialData";
+import { useSync } from "@/hooks/useSync";
 
 import { useNavigate } from "react-router-dom"; // unused if we render conditional
 import { useStore } from "@/store/useStore";
@@ -19,6 +20,7 @@ import HomeView from "@/components/views/HomeView";
 
 export default function App() {
   const { projects, accentTheme, baseTheme } = useStore();
+  useSync();
 
   useEffect(() => {
     const root = document.documentElement;
