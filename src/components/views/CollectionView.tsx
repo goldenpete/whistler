@@ -10,15 +10,9 @@ import {
     Share,
     ArrowSquareOut,
     CheckSquare,
-    FolderPlus,
     MagnifyingGlass,
     FilePdf,
-    MusicNote,
-    Image as ImageIcon,
-    Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
-    Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FileText, Book,
-    PencilSimple
+    MusicNote
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -45,39 +39,13 @@ import {
 } from "@/components/ui/context-menu";
 import type { Highlight } from "@/types";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
+import { getIcon } from "@/utils/iconMap";
 
 const formatTime = (seconds: number) => {
     if (!isFinite(seconds) || isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
-const getIcon = (name?: string) => {
-    switch (name) {
-        case "FolderPlus": return Folder;
-        case "Star": return Star;
-        case "Heart": return Heart;
-        case "Flag": return Flag;
-        case "Tag": return Tag;
-        case "Bookmark": return Bookmark;
-        case "Briefcase": return Briefcase;
-        case "House": return House;
-        case "User": return User;
-        case "Users": return Users;
-        case "Planet": return Planet;
-        case "Rocket": return Rocket;
-        case "Code": return Code;
-        case "Cpu": return Cpu;
-        case "Database": return Database;
-        case "GameController": return GameController;
-        case "MusicNotes": return MusicNotes;
-        case "Image": return Image;
-        case "FilmStrip": return FilmStrip;
-        case "FileText": return FileText;
-        case "Book": return Book;
-        default: return Folder;
-    }
 };
 
 export default function CollectionView() {
@@ -435,7 +403,10 @@ function FileIconByType({ type, size = 16 }: { type: string, size?: number }) {
         case 'video': return <FilmStrip size={size} />;
         case 'pdf': return <FilePdf size={size} />;
         case 'audio': return <MusicNote size={size} />;
-        case 'image': return <ImageIcon size={size} />;
+        case 'image': {
+            const ImageIcon = getIcon("Image");
+            return <ImageIcon size={size} />;
+        }
         default: return <Folder size={size} />;
     }
 }
