@@ -1021,14 +1021,14 @@ export default function ProjectSidebar() {
                                                     return (
                                                         <Link
                                                             key={collection.id}
-                                                            to="/collections"
+                                                            to={`/collection/${collection.id}`}
                                                             onClick={() => handleSelectCollection(collection.id)}
                                                             className="block w-full group/item"
                                                             title={isSlim ? collection.name : undefined}
                                                         >
                                                             <div className={cn(
                                                                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors relative",
-                                                                (activeCollectionId === collection.id && location.pathname.startsWith("/collections"))
+                                                                (location.pathname === `/collection/${collection.id}`)
                                                                     ? "bg-primary/20 text-primary font-medium"
                                                                     : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                                                                 isSlim && "justify-center px-1"
@@ -1036,7 +1036,7 @@ export default function ProjectSidebar() {
                                                                 <Icon
                                                                     className={cn("text-lg transition-colors")}
                                                                     weight="fill"
-                                                                    style={{ color: (activeCollectionId === collection.id && location.pathname.startsWith("/collections")) ? undefined : collection.color }}
+                                                                    style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
                                                                 />
                                                                 {!isSlim && <span className="truncate flex-1">{collection.name}</span>}
 
@@ -1066,17 +1066,31 @@ export default function ProjectSidebar() {
                                                     </div>
                                                 )}
 
-                                                <button
-                                                    onClick={handleAddCollection}
-                                                    className={cn(
-                                                        "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                                                        isSlim && "justify-center px-1 h-9"
+                                                <div className={cn("flex w-full items-center", isSlim ? "justify-center" : "gap-0")}>
+                                                    <button
+                                                        onClick={handleAddCollection}
+                                                        className={cn(
+                                                            "flex items-center gap-2 px-3 py-2 text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                                                            isSlim ? "w-full justify-center px-1 h-9 rounded-md" : "flex-1 rounded-l-md rounded-r-none"
+                                                        )}
+                                                        title="Create Collection"
+                                                    >
+                                                        <Plus weight="bold" className={cn("text-lg shrink-0", isSlim && "size-5")} />
+                                                        {!isSlim && <span className="truncate">New</span>}
+                                                    </button>
+                                                    {!isSlim && (
+                                                        <button
+                                                            onClick={() => navigate('/collections')}
+                                                            className={cn(
+                                                                "flex items-center justify-center px-3 py-2 text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-r-md rounded-l-none border-l border-border/40",
+                                                                location.pathname === '/collections' && "bg-secondary/50 text-foreground"
+                                                            )}
+                                                            title="View All Collections"
+                                                        >
+                                                            <span className="truncate whitespace-nowrap">View All</span>
+                                                        </button>
                                                     )}
-                                                    title="Create Collection"
-                                                >
-                                                    <Plus weight="bold" className={cn("text-lg shrink-0", isSlim && "size-5")} />
-                                                    {!isSlim && <span className="truncate">New Collection</span>}
-                                                </button>
+                                                </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>

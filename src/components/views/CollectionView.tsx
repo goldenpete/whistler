@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
 import {
     Folder,
     FilmStrip,
@@ -80,9 +81,17 @@ export default function CollectionView() {
         highlights,
         files,
         activeCollectionId,
+        setActiveCollectionId,
         updateHighlight
     } = useStore();
     const navigate = useNavigate();
+    const { id } = useParams();
+
+    useEffect(() => {
+        if (id && id !== activeCollectionId) {
+            setActiveCollectionId(id);
+        }
+    }, [id, activeCollectionId, setActiveCollectionId]);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [selectionMode, setSelectionMode] = useState(false);
@@ -93,13 +102,14 @@ export default function CollectionView() {
     const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
-    const activeCollection = collections.find(c => c.id === activeCollectionId);
+    const collectionIdToUse = id || activeCollectionId;
+    const activeCollection = collections.find(c => c.id === collectionIdToUse);
     const selectedHighlight = highlights.find(h => h.id === selectedHighlightId) || null;
     const selectedFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) || null : null;
 
     // Filter highlights for this collection
     const collectionHighlights = highlights.filter(h =>
-        h.collectionId === activeCollectionId &&
+        h.collectionId === collectionIdToUse &&
         (h.note || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 

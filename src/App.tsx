@@ -6,6 +6,7 @@ import FileView from "@/components/views/FileView";
 import DocsView from "@/components/views/DocsView";
 import GraphView from "@/components/views/GraphView";
 import CollectionView from "@/components/views/CollectionView";
+import CollectionsView from "@/components/views/CollectionsView";
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
 import { useInitialData } from "@/hooks/useInitialData";
@@ -97,7 +98,8 @@ export default function App() {
           <Route path="/file/:fileId" element={<FileView />} />
           <Route path="/docs" element={<DocsView />} />
           <Route path="/graphs" element={<GraphView />} />
-          <Route path="/collections" element={<CollectionView />} />
+          <Route path="/collections" element={<CollectionsView />} />
+          <Route path="/collection/:id" element={<CollectionView />} />
         </Route>
       </Routes>
     </>
