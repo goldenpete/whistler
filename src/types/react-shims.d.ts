@@ -19,6 +19,8 @@ declare module "react" {
     stopPropagation: () => void;
     target: any;
     currentTarget: any;
+    clientX: number;
+    clientY: number;
   };
 
   export function useState<T>(initial: T | (() => T)): [T, (next: T) => void];

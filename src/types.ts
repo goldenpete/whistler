@@ -161,4 +161,7 @@ export interface AppState {
     backgroundImageOpacity?: number;
     backgroundColor?: string;
     backgroundOverlayOpacity?: number;
+    ambientMusicUrl?: string | null;
+    ambientMusicVolume?: number;
+    ambientMusicSuppressedBy?: string[];
 }

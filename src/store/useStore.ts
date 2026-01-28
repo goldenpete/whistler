@@ -21,6 +21,9 @@ interface AppStore extends AppState {
     backgroundImageOpacity: number;
     backgroundColor: string;
     backgroundOverlayOpacity: number;
+    ambientMusicUrl: string | null;
+    ambientMusicVolume: number;
+    ambientMusicSuppressedBy: string[];
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -91,6 +94,10 @@ interface AppStore extends AppState {
     setBackgroundImageOpacity: (opacity: number) => void;
     setBackgroundColor: (color: string) => void;
     setBackgroundOverlayOpacity: (opacity: number) => void;
+    setAmbientMusicUrl: (url: string | null) => void;
+    setAmbientMusicVolume: (volume: number) => void;
+    addAmbientMusicSuppression: (source: string) => void;
+    removeAmbientMusicSuppression: (source: string) => void;
 
     setAutoSyncInterval: (interval: number) => void;
 
@@ -156,6 +163,9 @@ export const useStore = create<AppStore>()(
             backgroundImageOpacity: 0.2,
             backgroundColor: '#000000',
             backgroundOverlayOpacity: 0.5,
+            ambientMusicUrl: null,
+            ambientMusicVolume: 0.4,
+            ambientMusicSuppressedBy: [],
 
             // ActionsPiP State
             pipFileId: null,
@@ -234,6 +244,18 @@ export const useStore = create<AppStore>()(
             setBackgroundImageOpacity: (opacity) => set({ backgroundImageOpacity: Math.max(0, Math.min(1, opacity)) }),
             setBackgroundColor: (color) => set({ backgroundColor: color }),
             setBackgroundOverlayOpacity: (opacity) => set({ backgroundOverlayOpacity: opacity }),
+            setAmbientMusicUrl: (url) => set({ ambientMusicUrl: url }),
+            setAmbientMusicVolume: (volume) => set({ ambientMusicVolume: Math.max(0, Math.min(1, volume)) }),
+            addAmbientMusicSuppression: (source) =>
+                set((state) => ({
+                    ambientMusicSuppressedBy: state.ambientMusicSuppressedBy.includes(source)
+                        ? state.ambientMusicSuppressedBy
+                        : [...state.ambientMusicSuppressedBy, source],
+                })),
+            removeAmbientMusicSuppression: (source) =>
+                set((state) => ({
+                    ambientMusicSuppressedBy: state.ambientMusicSuppressedBy.filter((entry) => entry !== source),
+                })),
 
             setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 

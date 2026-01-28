@@ -1,4 +1,5 @@
-import { Outlet, useLocation, useOutlet } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
 import ProjectSidebar from "./ProjectSidebar";
@@ -8,15 +9,47 @@ export function MainLayout() {
     const location = useLocation();
     const currentOutlet = useOutlet();
     const isPlayer = location.pathname.startsWith('/file/');
-    const { backgroundImageUrl, backgroundImageOpacity, backgroundColor, backgroundOverlayOpacity } = useStore();
+    const { backgroundImageUrl, backgroundImageOpacity, backgroundColor, backgroundOverlayOpacity, ambientMusicUrl, ambientMusicVolume, ambientMusicSuppressedBy } = useStore();
+    const audioRef = useRef<HTMLAudioElement>(null);
     
     // Track previous path to determine if we are navigating FROM a player
     const prevPath = usePrevious(location.pathname);
     const wasPlayer = prevPath?.startsWith('/file/');
     const shouldDelaySidebar = !isPlayer && wasPlayer;
+    const isAmbientSuppressed = (ambientMusicSuppressedBy || []).length > 0;
+
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.volume = ambientMusicVolume ?? 0.4;
+        }
+    }, [ambientMusicVolume]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        if (!ambientMusicUrl) {
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+            return;
+        }
+        if (audio.src !== ambientMusicUrl) {
+            audio.src = ambientMusicUrl;
+            audio.load();
+        }
+        if (isAmbientSuppressed) {
+            audio.pause();
+        } else {
+            const playPromise = audio.play();
+            if (playPromise) {
+                playPromise.catch(() => {});
+            }
+        }
+    }, [ambientMusicUrl, isAmbientSuppressed]);
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground animate-in fade-in duration-300">
+            <audio ref={audioRef} loop />
             <AnimatePresence mode="wait">
                 {!isPlayer && (
                     <motion.div

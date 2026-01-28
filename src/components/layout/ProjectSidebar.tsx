@@ -168,6 +168,10 @@ export default function ProjectSidebar() {
         setBackgroundImageOpacity,
         setBackgroundColor,
         setBackgroundOverlayOpacity,
+        ambientMusicUrl,
+        ambientMusicVolume,
+        setAmbientMusicUrl,
+        setAmbientMusicVolume,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -253,6 +257,23 @@ export default function ProjectSidebar() {
         e.preventDefault();
         e.stopPropagation();
         deleteStorage(id);
+    };
+
+    const handleAmbientMusicUpload = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'audio/*';
+        input.onchange = (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = reader.result as string;
+                setAmbientMusicUrl(result);
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
     };
 
     const handleUpdateGraph = (name: string, color: string, icon: string) => {
@@ -1919,8 +1940,38 @@ export default function ProjectSidebar() {
                             </div>
                         </div>
                     ) : (
-                        <div className="py-10 text-center text-sm text-muted-foreground">
-                            Music settings coming soon.
+                        <div className="py-2 space-y-6">
+                            <div className="space-y-3">
+                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Ambient Music</p>
+                                <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" onClick={handleAmbientMusicUpload}>
+                                            Upload Audio
+                                        </Button>
+                                        {ambientMusicUrl && (
+                                            <Button variant="ghost" onClick={() => setAmbientMusicUrl(null)}>
+                                                Remove
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                        <span>Status</span>
+                                        <span>{ambientMusicUrl ? "Loaded" : "None"}</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] text-muted-foreground">Volume</span>
+                                            <span className="text-[11px]">{Math.round((ambientMusicVolume ?? 0.4) * 100)}%</span>
+                                        </div>
+                                        <Slider
+                                            value={[Math.round((ambientMusicVolume ?? 0.4) * 100)]}
+                                            onValueChange={(vals: number[]) => setAmbientMusicVolume((vals[0] ?? 40) / 100)}
+                                            max={100}
+                                            step={1}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </DialogContent>

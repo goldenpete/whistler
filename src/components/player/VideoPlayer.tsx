@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -7,7 +7,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -42,8 +41,6 @@ import {
     Plus,
     Minus,
     Repeat,
-    Gauge,
-    ArrowsOutSimple,
     GridFour,
     CircleNotch,
     Eye,
@@ -58,7 +55,7 @@ import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
-import { type Highlight } from "@/types";
+import { type Highlight, type File as AppFile } from "@/types";
 
 const ExpandableNote = ({ text }: { text: string }) => {
     const [expanded, setExpanded] = useState(false);
@@ -71,7 +68,7 @@ const ExpandableNote = ({ text }: { text: string }) => {
         <span>
             {expanded ? text : `${text.slice(0, limit)}...`}
             <button 
-                onClick={(e: React.MouseEvent) => { 
+                onClick={(e: MouseEvent) => { 
                     e.stopPropagation(); 
                     setExpanded(!expanded); 
                 }} 
@@ -84,9 +81,9 @@ const ExpandableNote = ({ text }: { text: string }) => {
 };
 
 export default function VideoPlayer() {
-    const { fileId } = useParams<{ fileId: string }>();
+    const { fileId } = useParams() as { fileId: string };
     const navigate = useNavigate();
-    const { files, highlights, collections, addVideoHighlight, removeHighlight, updateHighlight, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen } = useStore();
+    const { files, highlights, collections, addVideoHighlight, removeHighlight, updateHighlight, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen, addAmbientMusicSuppression, removeAmbientMusicSuppression } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -128,9 +125,7 @@ export default function VideoPlayer() {
 
     const selectedHighlight = highlights.find(t => t.id === selectedHighlightId) || null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const file = files.find((f: any) => f.id === fileId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const file = files.find((f: AppFile) => f.id === fileId);
     const fileHighlights = highlights.filter((t: Highlight) => t.fileId === fileId);
 
     const handleCreateHighlight = (time: number) => {
@@ -167,6 +162,12 @@ export default function VideoPlayer() {
     }, []); // Removed isPlaying dependency as mousemove logic is moved to prop
 
     useEffect(() => {
+        return () => {
+            removeAmbientMusicSuppression('main-player');
+        };
+    }, [removeAmbientMusicSuppression]);
+
+    useEffect(() => {
         if (highlightPlayerOpen && videoRef.current) {
             videoRef.current.pause();
         }
@@ -191,6 +192,7 @@ export default function VideoPlayer() {
 
     const togglePlay = () => {
         if (!isMediaFile) return;
+
         if (videoRef.current) {
             if (videoRef.current.paused) {
                 videoRef.current.play();
@@ -242,10 +244,6 @@ export default function VideoPlayer() {
             }
         }
     };
-
-    // ... existing ...
-
-
 
     const handleLoadedMetadata = () => {
         if (videoRef.current) {
@@ -337,7 +335,7 @@ export default function VideoPlayer() {
         addVideoHighlight(fileId, currentTime, activeCollectionId || undefined);
     };
 
-    const handleSeekHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleSeekHover = (e: MouseEvent<HTMLDivElement>) => {
         if (!progressRef.current || !file || (file.type !== 'video' && file.type !== 'audio')) return;
 
         const rect = progressRef.current.getBoundingClientRect();
@@ -503,8 +501,12 @@ export default function VideoPlayer() {
                             onPlay={() => {
                                 setIsPlaying(true);
                                 setIsLoading(false);
+                                addAmbientMusicSuppression('main-player');
                             }}
-                            onPause={() => setIsPlaying(false)}
+                            onPause={() => {
+                                setIsPlaying(false);
+                                removeAmbientMusicSuppression('main-player');
+                            }}
                             onTimeUpdate={handleTimeUpdate}
                             onLoadedMetadata={handleLoadedMetadata}
                             loop={isLooping}
@@ -675,7 +677,7 @@ export default function VideoPlayer() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={(e: React.MouseEvent) => {
+                                    onClick={(e: MouseEvent) => {
                                         e.stopPropagation();
                                         setShowControls(false);
                                     }}
@@ -767,7 +769,7 @@ export default function VideoPlayer() {
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
-                                                    onClick={(e: React.MouseEvent) => {
+                                                    onClick={(e: MouseEvent) => {
                                                         e.stopPropagation();
                                                         setSelectedHighlightId(h.id);
                                                         setHighlightPlayerOpen(true);
@@ -778,7 +780,7 @@ export default function VideoPlayer() {
                                                 </button>
                                                 <button
                                                     className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded"
-                                                    onClick={(e: React.MouseEvent) => {
+                                                    onClick={(e: MouseEvent) => {
                                                         e.stopPropagation();
                                                         setSelectedHighlightId(h.id);
                                                         setEditHighlightOpen(true);
@@ -789,7 +791,7 @@ export default function VideoPlayer() {
                                                 </button>
                                                 <button
                                                     className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded"
-                                                    onClick={(e: React.MouseEvent) => {
+                                                    onClick={(e: MouseEvent) => {
                                                         e.stopPropagation();
                                                         removeHighlight(h.id);
                                                     }}
@@ -853,21 +855,19 @@ export default function VideoPlayer() {
                     }
                 }}
                 highlight={selectedHighlight}
-                collections={collections}
-                file={file || null}
-                onSave={(updates) => {
-                    if (selectedHighlight) {
-                        updateHighlight(selectedHighlight.id, updates);
-                    }
-                }}
+                file={file}
+                collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
+                onSave={(updates) => selectedHighlight && updateHighlight(selectedHighlight.id, updates)}
             />
 
             <ColorPickerDialog
                 open={colorPickerOpen}
                 onOpenChange={setColorPickerOpen}
-                initialColor={file.color || "#ffffff"}
+                title="File Color"
+                initialColor={file.color}
                 onColorSelect={(color) => {
                     updateFile(file.id, { color });
+                    setColorPickerOpen(false);
                 }}
             />
         </div>

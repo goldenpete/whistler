@@ -5,12 +5,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, type MouseEvent, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/useStore";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, FloppyDisk, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
+import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
@@ -45,7 +45,7 @@ const ExpandableNote = ({ text }: { text: string }) => {
         <span>
             {expanded ? text : `${text.slice(0, limit)}...`}
             <button 
-                onClick={(e) => { 
+                onClick={(e: MouseEvent) => { 
                     e.stopPropagation(); 
                     setExpanded(!expanded); 
                 }} 
@@ -72,7 +72,7 @@ interface HighlightPlayerDialogProps {
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
-    const { setPipFile, setFileProgress } = useStore();
+    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression } = useStore();
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +176,12 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
         };
     }, []);
+
+    useEffect(() => {
+        return () => {
+            removeAmbientMusicSuppression('highlight-player');
+        };
+    }, [removeAmbientMusicSuppression]);
 
     // Time Update & Loop Logic
     const handleTimeUpdate = () => {
@@ -351,8 +357,14 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     src={(file as any).webkitRelativePath || (file as any).url || ""}
                                     className="max-w-full max-h-full object-contain focus:outline-none"
-                                    onPlay={() => setIsPlaying(true)}
-                                    onPause={() => setIsPlaying(false)}
+                                    onPause={() => {
+                                        setIsPlaying(false);
+                                        removeAmbientMusicSuppression('highlight-player');
+                                    }}
+                                    onPlay={() => {
+                                        setIsPlaying(true);
+                                        addAmbientMusicSuppression('highlight-player');
+                                    }}
                                     onTimeUpdate={handleTimeUpdate}
                                     autoPlay
                                 />
@@ -393,7 +405,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                                            onClick={(e: MouseEvent) => { e.stopPropagation(); togglePlay(); }}
                                             className="h-8 w-8 rounded-md bg-white/10 hover:bg-white/20 text-white"
                                         >
                                             {isPlaying ? <Pause weight="fill" size={18} /> : <Play weight="fill" size={18} />}
@@ -403,7 +415,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); setIsMuted(!isMuted); }}
                                                 className="text-zinc-400 hover:text-white"
                                             >
                                                 {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
@@ -414,7 +426,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                         value={[isMuted ? 0 : volume]}
                                                         max={1}
                                                         step={0.05}
-                                                        onValueChange={(val) => setVolume(val[0])}
+                                                        onValueChange={(val: number[]) => setVolume(val[0])}
                                                         thumbClassName="bg-white border-white shadow-sm"
                                                     />
                                                 </div>
@@ -435,7 +447,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={(e) => { e.stopPropagation(); setIsLooping(!isLooping); }}
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); setIsLooping(!isLooping); }}
                                                 className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
                                                 title={isLooping ? "Loop On" : "Loop Off"}
                                             >
@@ -447,7 +459,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={(e) => e.stopPropagation()}
+                                                        onClick={(e: MouseEvent) => e.stopPropagation()}
                                                         className="h-8 w-8 text-muted-foreground hover:text-foreground text-xs"
                                                     >
                                                         {playbackSpeed}x
@@ -467,7 +479,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                                 min={0.25}
                                                                 max={8}
                                                                 step={0.05}
-                                                                onValueChange={(val) => setPlaybackSpeed(val[0])}
+                                                                onValueChange={(val: number[]) => setPlaybackSpeed(val[0])}
                                                                 className="flex-1"
                                                             />
                                                             <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackSpeed(Math.min(8, playbackSpeed + 0.05))}>
@@ -505,7 +517,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={(e) => { e.stopPropagation(); setShowControls(false); }}
+                                        onClick={(e: MouseEvent) => { e.stopPropagation(); setShowControls(false); }}
                                         className="text-muted-foreground hover:text-foreground"
                                         title="Hide Controls"
                                     >
@@ -515,7 +527,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(!isSidebarOpen); }}
+                                        onClick={(e: MouseEvent) => { e.stopPropagation(); setIsSidebarOpen(!isSidebarOpen); }}
                                         className={cn(
                                             "text-muted-foreground hover:text-foreground",
                                             isSidebarOpen && "text-primary hover:text-primary"
@@ -527,7 +539,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     <Button 
                                         variant="ghost" 
                                         size="icon" 
-                                        onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} 
+                                        onClick={(e: MouseEvent) => { e.stopPropagation(); toggleFullscreen(); }} 
                                         className="text-muted-foreground hover:text-foreground"
                                     >
                                         {isFullscreen ? <CornersIn weight="bold" size={20} /> : <CornersOut weight="bold" size={20} />}
@@ -559,7 +571,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Label className="text-xs font-mono text-muted-foreground uppercase">Collection</Label>
                                             <Select 
                                                 value={editCollectionId} 
-                                                onValueChange={(value) => {
+                                                onValueChange={(value: string) => {
                                                     setEditCollectionId(value);
                                                     handleSave({ collectionId: value });
                                                 }}
@@ -594,7 +606,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                 <div className="flex items-center gap-2">
                                                     <Input
                                                         value={editStart}
-                                                        onChange={(e) => setEditStart(e.target.value)}
+                                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStart(e.target.value)}
                                                         onBlur={() => {
                                                             const seconds = parseTime(editStart);
                                                             if (seconds !== null) {
@@ -609,7 +621,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                     <span className="text-muted-foreground">-</span>
                                                     <Input
                                                         value={editEnd}
-                                                        onChange={(e) => setEditEnd(e.target.value)}
+                                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setEditEnd(e.target.value)}
                                                         onBlur={() => {
                                                             const seconds = parseTime(editEnd);
                                                             if (seconds !== null) {
@@ -630,7 +642,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Label className="text-xs font-mono text-muted-foreground uppercase">Note</Label>
                                             <Textarea 
                                                 value={editNote}
-                                                onChange={(e) => setEditNote(e.target.value)}
+                                                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditNote(e.target.value)}
                                                 onBlur={() => handleSave({ note: editNote })}
                                                 className="flex-1 bg-muted/30 border-border/50 resize-none min-h-[200px] leading-relaxed p-3 focus-visible:ring-1"
                                                 placeholder="Add a note..."
@@ -747,7 +759,7 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, file, colle
                                 <Label>Start Time</Label>
                                 <Input 
                                     value={startTime} 
-                                    onChange={(e) => setStartTime(e.target.value)}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setStartTime(e.target.value)}
                                     placeholder="MM:SS"
                                 />
                             </div>
@@ -755,7 +767,7 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, file, colle
                                 <Label>End Time</Label>
                                 <Input 
                                     value={endTime} 
-                                    onChange={(e) => setEndTime(e.target.value)}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setEndTime(e.target.value)}
                                     placeholder="MM:SS"
                                 />
                             </div>
@@ -766,7 +778,7 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, file, colle
                         <Label>Note</Label>
                         <Textarea 
                             value={note} 
-                            onChange={(e) => setNote(e.target.value)} 
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNote(e.target.value)} 
                             placeholder="Add a note..."
                             className="h-32 resize-none"
                         />
