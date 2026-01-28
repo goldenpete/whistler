@@ -23,7 +23,7 @@ import {
     Cloud,
     Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Gear, Share, GridFour,
+    FilmStrip, FileText, Book, Gear, Share, SquaresFour,
     CheckCircle, WarningCircle, CloudCheck, CloudWarning
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -988,41 +988,52 @@ export default function ProjectSidebar() {
 
                                 {/* Collections Section */}
                                 <div className="mb-6">
-                                    {!isSidebarCollapsed && !isSlim && (
-                                        <div className={cn("flex items-center justify-between mb-2 px-1 group", isSlim && "justify-center")}>
+                                    {(!isSidebarCollapsed && !isSlim) ? (
+                                        <div className="flex items-center justify-between mb-2 px-1 group">
                                             <button
                                                 onClick={() => setCollectionsOpen(!collectionsOpen)}
-                                                className={cn("flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors", isSlim && "justify-center")}
+                                                className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
                                             >
                                                 <CaretDown weight="bold" className={cn("transition-transform text-xs", !collectionsOpen && "-rotate-90")} />
-                                                {!isSlim && "Collections"}
+                                                Collections
                                             </button>
-                                            {!isSlim && (
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => navigate('/collections')}
-                                                        className={cn(
-                                                            "text-muted-foreground hover:text-primary transition-colors",
-                                                            location.pathname === '/collections' && "text-primary"
-                                                        )}
-                                                        title="View All"
-                                                    >
-                                                        <GridFour weight="bold" className="size-3.5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={handleAddCollection}
-                                                        className="text-muted-foreground hover:text-primary transition-colors"
-                                                        title="New Collection"
-                                                    >
-                                                        <Plus weight="bold" className="size-3.5" />
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => navigate('/collections')}
+                                                    className={cn(
+                                                        "text-muted-foreground hover:text-primary transition-colors",
+                                                        location.pathname === '/collections' && "text-primary"
+                                                    )}
+                                                    title="View All"
+                                                >
+                                                    <SquaresFour weight="bold" className="size-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={handleAddCollection}
+                                                    className="text-muted-foreground hover:text-primary transition-colors"
+                                                    title="New Collection"
+                                                >
+                                                    <Plus weight="bold" className="size-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
-                                    )}
+                                    ) : isSlim ? (
+                                        <div className="flex justify-center mb-2">
+                                            <button
+                                                onClick={() => navigate('/collections')}
+                                                className={cn(
+                                                    "text-muted-foreground hover:text-primary transition-colors",
+                                                    location.pathname === '/collections' && "text-primary"
+                                                )}
+                                                title="All Collections"
+                                            >
+                                                <Folder weight="bold" className="size-5" />
+                                            </button>
+                                        </div>
+                                    ) : null}
 
                                     <AnimatePresence initial={false}>
-                                        {(collectionsOpen || isSlim) && !isSidebarCollapsed && (
+                                        {((collectionsOpen && !isSidebarCollapsed) || isSlim) && (
                                             <motion.div
                                                 initial={isSlim ? false : { height: 0, opacity: 0 }}
                                                 animate={isSlim ? { height: "auto", opacity: 1 } : { height: "auto", opacity: 1 }}
@@ -1076,6 +1087,17 @@ export default function ProjectSidebar() {
                                                 {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).length === 0 && (
                                                     <div className={cn("px-3 py-4 text-xs text-muted-foreground/60 italic text-center border-2 border-dashed border-border/30 rounded-md", isSlim && "px-1 text-[10px]")}>
                                                         {isSlim ? "No col." : "No collections"}
+                                                    </div>
+                                                )}
+                                                {isSlim && (
+                                                    <div className="flex justify-center mt-2 pb-2">
+                                                        <button
+                                                            onClick={handleAddCollection}
+                                                            className="text-muted-foreground hover:text-primary transition-colors p-1"
+                                                            title="New Collection"
+                                                        >
+                                                            <Plus weight="bold" className="size-4" />
+                                                        </button>
                                                     </div>
                                                 )}
                                             </motion.div>
