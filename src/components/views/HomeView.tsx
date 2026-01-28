@@ -567,6 +567,40 @@ export default function HomeView() {
 
         // Highlight
         if (item.type === 'highlight') {
+            const file = item.data.file;
+            
+            if (file?.url && (file.type === 'video' || file.type === 'image')) {
+                if (file.type === 'image') {
+                    return (
+                        <div className="absolute inset-0 bg-black/20">
+                            <img 
+                                src={file.url} 
+                                alt="" 
+                                className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
+                                onContextMenu={(e: any) => e.preventDefault()}
+                            />
+                        </div>
+                    );
+                }
+                
+                if (file.type === 'video') {
+                    return (
+                        <div className="absolute inset-0 bg-black/20">
+                            <video
+                                src={`${file.url}#t=${item.data.start || 0.1}`}
+                                className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                                muted
+                                loop
+                                playsInline
+                                onMouseOver={(e: any) => e.currentTarget.play()}
+                                onMouseOut={(e: any) => e.currentTarget.pause()}
+                                onContextMenu={(e: any) => e.preventDefault()}
+                            />
+                        </div>
+                    );
+                }
+            }
+
             return (
                 <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none">
                     “
@@ -609,6 +643,39 @@ export default function HomeView() {
                 <h1 className="text-2xl font-semibold tracking-tight text-foreground flex-1">
                     {getGreeting(username)}
                 </h1>
+                
+                <Popover open={quickAccessPopoverOpen} onOpenChange={setQuickAccessPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="gap-2">
+                            <Lightning weight="bold" />
+                            Quick Access
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-1" align="end">
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('file'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <FileIcon className="text-muted-foreground" size={16} /> Files
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('highlight'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <Clock className="text-muted-foreground" size={16} /> Highlights
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('collection'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <Tag className="text-muted-foreground" size={16} /> Collections
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('doc'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <NotePencil className="text-muted-foreground" size={16} /> Docs
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('graph'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <Graph className="text-muted-foreground" size={16} /> Graphs
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('storage'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <HardDrives className="text-muted-foreground" size={16} /> Storages
+                        </Button>
+                        <div className="h-px bg-border my-1" />
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('project'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <ProjectorScreenChart className="text-muted-foreground" size={16} /> Projects
+                        </Button>
+                    </PopoverContent>
+                </Popover>
                 
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                     <PopoverTrigger asChild>
