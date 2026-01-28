@@ -64,7 +64,7 @@ export function MainLayout() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: isPlayer ? 0.95 : 1 }}
                         transition={{ duration: 0.15, ease: "easeInOut" }}
-                        className="h-full w-full"
+                        className="h-full w-full relative z-10"
                     >
                         {currentOutlet}
                     </motion.div>
