@@ -3,20 +3,55 @@ import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
 import ProjectSidebar from "./ProjectSidebar";
-import { useStore } from "@/store/useStore";
+import { ambientMusicStorage, useStore } from "@/store/useStore";
 
 export function MainLayout() {
     const location = useLocation();
     const currentOutlet = useOutlet();
     const isPlayer = location.pathname.startsWith('/file/');
-    const { backgroundImageUrl, backgroundImageOpacity, backgroundColor, backgroundOverlayOpacity, ambientMusicUrl, ambientMusicVolume, ambientMusicSuppressedBy } = useStore();
+    const { backgroundImageUrl, backgroundImageOpacity, backgroundColor, backgroundOverlayOpacity, ambientMusicUrl, ambientMusicVolume, ambientMusicSuppressedBy, ambientMusicStorageKey, setAmbientMusicUrl, setAmbientMusicStorageKey } = useStore();
     const audioRef = useRef<HTMLAudioElement>(null);
+    const ambientUrlRef = useRef<string | null>(null);
     
     // Track previous path to determine if we are navigating FROM a player
     const prevPath = usePrevious(location.pathname);
     const wasPlayer = prevPath?.startsWith('/file/');
     const shouldDelaySidebar = !isPlayer && wasPlayer;
     const isAmbientSuppressed = (ambientMusicSuppressedBy || []).length > 0;
+
+    useEffect(() => {
+        let active = true;
+        if (ambientMusicUrl || !ambientMusicStorageKey) return;
+        ambientMusicStorage
+            .load()
+            .then((blob) => {
+                if (!active) return;
+                if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    setAmbientMusicUrl(url);
+                } else {
+                    setAmbientMusicStorageKey(null);
+                }
+            })
+            .catch(() => {});
+        return () => {
+            active = false;
+        };
+    }, [ambientMusicUrl, ambientMusicStorageKey, setAmbientMusicUrl, setAmbientMusicStorageKey]);
+
+    useEffect(() => {
+        const previousUrl = ambientUrlRef.current;
+        if (previousUrl && previousUrl !== ambientMusicUrl && previousUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previousUrl);
+        }
+        ambientUrlRef.current = ambientMusicUrl;
+        return () => {
+            const currentUrl = ambientUrlRef.current;
+            if (currentUrl && currentUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(currentUrl);
+            }
+        };
+    }, [ambientMusicUrl]);
 
     useEffect(() => {
         if (audioRef.current) {

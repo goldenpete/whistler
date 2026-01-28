@@ -24,6 +24,7 @@ interface AppStore extends AppState {
     ambientMusicUrl: string | null;
     ambientMusicVolume: number;
     ambientMusicSuppressedBy: string[];
+    ambientMusicStorageKey: string | null;
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -98,6 +99,7 @@ interface AppStore extends AppState {
     setAmbientMusicVolume: (volume: number) => void;
     addAmbientMusicSuppression: (source: string) => void;
     removeAmbientMusicSuppression: (source: string) => void;
+    setAmbientMusicStorageKey: (key: string | null) => void;
 
     setAutoSyncInterval: (interval: number) => void;
 
@@ -133,6 +135,59 @@ interface AppStore extends AppState {
 }
 
 const STORAGE_KEY = 'whistler_v2_data';
+const AMBIENT_MUSIC_DB = 'whistler_media';
+const AMBIENT_MUSIC_STORE = 'ambient_music';
+const AMBIENT_MUSIC_KEY = 'current';
+
+const openAmbientMusicDb = () =>
+    new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(AMBIENT_MUSIC_DB, 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(AMBIENT_MUSIC_STORE)) {
+                db.createObjectStore(AMBIENT_MUSIC_STORE);
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+
+const ambientMusicPut = async (blob: Blob) => {
+    const db = await openAmbientMusicDb();
+    return new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(AMBIENT_MUSIC_STORE, 'readwrite');
+        tx.objectStore(AMBIENT_MUSIC_STORE).put(blob, AMBIENT_MUSIC_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+};
+
+const ambientMusicGet = async () => {
+    const db = await openAmbientMusicDb();
+    return new Promise<Blob | null>((resolve, reject) => {
+        const tx = db.transaction(AMBIENT_MUSIC_STORE, 'readonly');
+        const request = tx.objectStore(AMBIENT_MUSIC_STORE).get(AMBIENT_MUSIC_KEY);
+        request.onsuccess = () => resolve((request.result as Blob) || null);
+        request.onerror = () => reject(request.error);
+    });
+};
+
+const ambientMusicClear = async () => {
+    const db = await openAmbientMusicDb();
+    return new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(AMBIENT_MUSIC_STORE, 'readwrite');
+        tx.objectStore(AMBIENT_MUSIC_STORE).delete(AMBIENT_MUSIC_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+};
+
+export const ambientMusicStorage = {
+    key: AMBIENT_MUSIC_KEY,
+    save: ambientMusicPut,
+    load: ambientMusicGet,
+    clear: ambientMusicClear,
+};
 
 export const useStore = create<AppStore>()(
     persist<AppStore>(
@@ -166,6 +221,7 @@ export const useStore = create<AppStore>()(
             ambientMusicUrl: null,
             ambientMusicVolume: 0.4,
             ambientMusicSuppressedBy: [],
+            ambientMusicStorageKey: null,
 
             // ActionsPiP State
             pipFileId: null,
@@ -256,6 +312,7 @@ export const useStore = create<AppStore>()(
                 set((state) => ({
                     ambientMusicSuppressedBy: state.ambientMusicSuppressedBy.filter((entry) => entry !== source),
                 })),
+            setAmbientMusicStorageKey: (key) => set({ ambientMusicStorageKey: key }),
 
             setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 
@@ -944,6 +1001,10 @@ export const useStore = create<AppStore>()(
         {
             name: STORAGE_KEY,
             storage: createJSONStorage(() => localStorage),
+            partialize: (state) => {
+                const { ambientMusicUrl, ...rest } = state;
+                return rest;
+            },
         }
     )
 );

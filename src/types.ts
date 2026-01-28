@@ -164,4 +164,5 @@ export interface AppState {
     ambientMusicUrl?: string | null;
     ambientMusicVolume?: number;
     ambientMusicSuppressedBy?: string[];
+    ambientMusicStorageKey?: string | null;
 }

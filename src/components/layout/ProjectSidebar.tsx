@@ -27,7 +27,7 @@ import {
     CheckCircle, WarningCircle, CloudCheck, CloudWarning
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { useStore } from "@/store/useStore";
+import { ambientMusicStorage, useStore } from "@/store/useStore";
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
 import { getIcon } from "@/utils/iconMap";
 import {
@@ -172,6 +172,7 @@ export default function ProjectSidebar() {
         ambientMusicVolume,
         setAmbientMusicUrl,
         setAmbientMusicVolume,
+        setAmbientMusicStorageKey,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -263,17 +264,21 @@ export default function ProjectSidebar() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'audio/*';
-        input.onchange = (e: Event) => {
+        input.onchange = async (e: Event) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                const result = reader.result as string;
-                setAmbientMusicUrl(result);
-            };
-            reader.readAsDataURL(file);
+            await ambientMusicStorage.save(file);
+            const url = URL.createObjectURL(file);
+            setAmbientMusicUrl(url);
+            setAmbientMusicStorageKey(ambientMusicStorage.key);
         };
         input.click();
+    };
+
+    const handleRemoveAmbientMusic = async () => {
+        await ambientMusicStorage.clear();
+        setAmbientMusicUrl(null);
+        setAmbientMusicStorageKey(null);
     };
 
     const handleUpdateGraph = (name: string, color: string, icon: string) => {
@@ -1949,7 +1954,7 @@ export default function ProjectSidebar() {
                                             Upload Audio
                                         </Button>
                                         {ambientMusicUrl && (
-                                            <Button variant="ghost" onClick={() => setAmbientMusicUrl(null)}>
+                                            <Button variant="ghost" onClick={handleRemoveAmbientMusic}>
                                                 Remove
                                             </Button>
                                         )}
