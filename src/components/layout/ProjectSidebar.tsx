@@ -527,6 +527,25 @@ export default function ProjectSidebar() {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
+                                    onClick={() => {
+                                        navigate('/');
+                                        setSidebarView('main');
+                                    }}
+                                    className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-accent hover:opacity-80 transition-colors"
+                                >
+                                    <img
+                                        src={LOGO_MAP[accentTheme as AccentTheme] || whistlerLogoOrange}
+                                        alt="Whistlerbox"
+                                        className="w-6 h-6 rounded-md"
+                                    />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">Whistlerbox</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
                                     onClick={() => useStore.getState().setSpotlightOpen(true)}
                                     className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
