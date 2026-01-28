@@ -992,10 +992,10 @@ export default function ProjectSidebar() {
                                     <AnimatePresence initial={false}>
                                         {(collectionsOpen || isSlim) && !isSidebarCollapsed && (
                                             <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                className="space-y-1 overflow-hidden"
+                                                initial={isSlim ? false : { height: 0, opacity: 0 }}
+                                                animate={isSlim ? { height: "auto", opacity: 1 } : { height: "auto", opacity: 1 }}
+                                                exit={isSlim ? undefined : { height: 0, opacity: 0 }}
+                                                className="space-y-1 overflow-visible"
                                             >
                                                 {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => {
                                                     const Icon = getIcon(collection.icon);
@@ -1051,11 +1051,11 @@ export default function ProjectSidebar() {
                                                     onClick={handleAddCollection}
                                                     className={cn(
                                                         "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                                                        isSlim && "justify-center px-1"
+                                                        isSlim && "justify-center px-1 h-9"
                                                     )}
                                                     title="Create Collection"
                                                 >
-                                                    <Plus weight="bold" className="text-lg shrink-0" />
+                                                    <Plus weight="bold" className={cn("text-lg shrink-0", isSlim && "size-5")} />
                                                     {!isSlim && <span className="truncate">New Collection</span>}
                                                 </button>
                                             </motion.div>
