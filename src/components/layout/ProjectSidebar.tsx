@@ -197,6 +197,7 @@ export default function ProjectSidebar() {
     const [accentDialogOpen, setAccentDialogOpen] = useState(false);
     const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
     const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
+    const [appearanceTab, setAppearanceTab] = useState<'appearance' | 'music'>('appearance');
 
     const handleEditGraph = (e: ReactMouseEvent, graph: any) => {
         e.stopPropagation();
@@ -1683,221 +1684,245 @@ export default function ProjectSidebar() {
                             Configure colors and background image.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-2 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Accent</p>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {ACCENT_OPTIONS.map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => setAccentTheme(option.id)}
-                                            className={cn(
-                                                "flex items-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                accentTheme === option.id
-                                                    ? "bg-primary/10 text-primary border-primary/20"
-                                                    : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
-                                            )}
-                                        >
-                                            <span className={cn("h-4 w-4 rounded-full border border-border/60", option.previewClass)} />
-                                            <span className="flex-1 text-left">{option.label}</span>
-                                            {accentTheme === option.id && <CheckCircle weight="bold" className="text-primary" size={14} />}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="pt-4 space-y-3 border-t border-border">
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Base</p>
+                    <div className="flex items-center gap-2 border-b border-border/60 pb-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={appearanceTab === 'appearance' ? "default" : "ghost"}
+                            onClick={() => setAppearanceTab('appearance')}
+                        >
+                            Appearance
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={appearanceTab === 'music' ? "default" : "ghost"}
+                            onClick={() => setAppearanceTab('music')}
+                        >
+                            Music
+                        </Button>
+                    </div>
+                    {appearanceTab === 'appearance' ? (
+                        <div className="py-2 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Accent</p>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {BASE_OPTIONS.map((option) => (
+                                        {ACCENT_OPTIONS.map((option) => (
                                             <button
                                                 key={option.id}
                                                 type="button"
-                                                onClick={() => setBaseTheme(option.id)}
+                                                onClick={() => setAccentTheme(option.id)}
                                                 className={cn(
                                                     "flex items-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                    baseTheme === option.id
+                                                    accentTheme === option.id
                                                         ? "bg-primary/10 text-primary border-primary/20"
                                                         : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
                                                 )}
                                             >
                                                 <span className={cn("h-4 w-4 rounded-full border border-border/60", option.previewClass)} />
                                                 <span className="flex-1 text-left">{option.label}</span>
-                                                {baseTheme === option.id && <CheckCircle weight="bold" className="text-primary" size={14} />}
+                                                {accentTheme === option.id && <CheckCircle weight="bold" className="text-primary" size={14} />}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="pt-3 space-y-2 border-t border-border mt-3">
-                                        <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Sidebar Mode</p>
+                                    <div className="pt-4 space-y-3 border-t border-border">
+                                        <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Base</p>
                                         <div className="grid grid-cols-2 gap-2">
-                                            <button
-                                                onClick={() => setSidebarMode('full')}
-                                                className={cn(
-                                                    "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                    sidebarMode === 'full'
-                                                        ? "bg-primary/10 text-primary border-primary/20"
-                                                        : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
-                                                )}
-                                            >
-                                                <SidebarSimple weight="fill" className="text-lg" />
-                                                <span>Full</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setSidebarMode('slim')}
-                                                className={cn(
-                                                    "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                    sidebarMode === 'slim'
-                                                        ? "bg-primary/10 text-primary border-primary/20"
-                                                        : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
-                                                )}
-                                            >
-                                                <SidebarSimple weight="regular" className="text-lg" />
-                                                <span>Slim</span>
-                                            </button>
+                                            {BASE_OPTIONS.map((option) => (
+                                                <button
+                                                    key={option.id}
+                                                    type="button"
+                                                    onClick={() => setBaseTheme(option.id)}
+                                                    className={cn(
+                                                        "flex items-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
+                                                        baseTheme === option.id
+                                                            ? "bg-primary/10 text-primary border-primary/20"
+                                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
+                                                    )}
+                                                >
+                                                    <span className={cn("h-4 w-4 rounded-full border border-border/60", option.previewClass)} />
+                                                    <span className="flex-1 text-left">{option.label}</span>
+                                                    {baseTheme === option.id && <CheckCircle weight="bold" className="text-primary" size={14} />}
+                                                </button>
+                                            ))}
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Background</p>
-                                
-                                <div className="rounded-lg border border-border bg-card p-3 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium">Color Overlay</span>
-                                        <div className="flex items-center gap-2">
-                                            <div className="relative w-6 h-6 rounded-full overflow-hidden border border-border/60 cursor-pointer shadow-sm">
-                                                <input 
-                                                    type="color" 
-                                                    value={backgroundColor || '#000000'}
-                                                    onChange={(e: ReactChangeEvent<HTMLInputElement>) => setBackgroundColor(e.target.value)}
-                                                    className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 border-0 opacity-0 cursor-pointer"
-                                                />
-                                                <div 
-                                                    className="w-full h-full"
-                                                    style={{ backgroundColor: backgroundColor || '#000000' }}
-                                                />
+                                        <div className="pt-3 space-y-2 border-t border-border mt-3">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Sidebar Mode</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={() => setSidebarMode('full')}
+                                                    className={cn(
+                                                        "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
+                                                        sidebarMode === 'full'
+                                                            ? "bg-primary/10 text-primary border-primary/20"
+                                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
+                                                    )}
+                                                >
+                                                    <SidebarSimple weight="fill" className="text-lg" />
+                                                    <span>Full</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setSidebarMode('slim')}
+                                                    className={cn(
+                                                        "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
+                                                        sidebarMode === 'slim'
+                                                            ? "bg-primary/10 text-primary border-primary/20"
+                                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
+                                                    )}
+                                                >
+                                                    <SidebarSimple weight="regular" className="text-lg" />
+                                                    <span>Slim</span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
+                                </div>
+                                <div className="space-y-3">
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Background</p>
+                                    
+                                    <div className="rounded-lg border border-border bg-card p-3 space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[11px] text-muted-foreground">Opacity</span>
-                                            <span className="text-[11px]">{Math.round((backgroundOverlayOpacity ?? 0.5) * 100)}%</span>
-                                        </div>
-                                        <Slider
-                                            value={[Math.round((backgroundOverlayOpacity ?? 0.5) * 100)]}
-                                            onValueChange={(vals: number[]) => setBackgroundOverlayOpacity((vals[0] ?? 50) / 100)}
-                                            max={100}
-                                            step={1}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="rounded-lg border border-border bg-card overflow-hidden">
-                                    <div className="aspect-video relative">
-                                        {backgroundImageUrl ? (
-                                            <img src={backgroundImageUrl} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                <span className="text-xs">No background image</span>
+                                            <span className="text-xs font-medium">Color Overlay</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="relative w-6 h-6 rounded-full overflow-hidden border border-border/60 cursor-pointer shadow-sm">
+                                                    <input 
+                                                        type="color" 
+                                                        value={backgroundColor || '#000000'}
+                                                        onChange={(e: ReactChangeEvent<HTMLInputElement>) => setBackgroundColor(e.target.value)}
+                                                        className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 border-0 opacity-0 cursor-pointer"
+                                                    />
+                                                    <div 
+                                                        className="w-full h-full"
+                                                        style={{ backgroundColor: backgroundColor || '#000000' }}
+                                                    />
+                                                </div>
                                             </div>
-                                        )}
-                                        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent, var(--background))', opacity: 0.6 }} />
-                                    </div>
-                                    <div className="p-3 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => {
-                                                    const input = document.createElement('input');
-                                                    input.type = 'file';
-                                                    input.accept = 'image/*';
-                input.onchange = async (e: Event) => {
-                                                        const file = (e.target as HTMLInputElement).files?.[0];
-                                                        if (!file) return;
-                                                        const reader = new FileReader();
-                                                        reader.onload = () => {
-                                                            const result = reader.result as string;
-                                                            setBackgroundImageUrl(result);
-                                                        if ((backgroundImageOpacity ?? 0) === 0) {
-                                                            setBackgroundImageOpacity(0.2);
-                                                        }
-                                                        };
-                                                        reader.readAsDataURL(file);
-                                                    };
-                                                    input.click();
-                                                }}
-                                            >
-                                                Upload Image
-                                            </Button>
-                                            {backgroundImageUrl && (
-                                                <Button variant="ghost" onClick={() => setBackgroundImageUrl(null)}>
-                                                    Remove
-                                                </Button>
-                                            )}
                                         </div>
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[11px] text-muted-foreground">Opacity</span>
-                                                <span className="text-[11px]">{Math.round((backgroundImageOpacity ?? 0) * 100)}%</span>
+                                                <span className="text-[11px]">{Math.round((backgroundOverlayOpacity ?? 0.5) * 100)}%</span>
                                             </div>
                                             <Slider
-                                                value={[Math.round((backgroundImageOpacity ?? 0.2) * 100)]}
-                                                onValueChange={(vals: number[]) => setBackgroundImageOpacity((vals[0] ?? 20) / 100)}
+                                                value={[Math.round((backgroundOverlayOpacity ?? 0.5) * 100)]}
+                                                onValueChange={(vals: number[]) => setBackgroundOverlayOpacity((vals[0] ?? 50) / 100)}
+                                                max={100}
+                                                step={1}
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-lg border border-border bg-card overflow-hidden">
+                                        <div className="aspect-video relative">
+                                            {backgroundImageUrl ? (
+                                                <img src={backgroundImageUrl} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                                    <span className="text-xs">No background image</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent, var(--background))', opacity: 0.6 }} />
+                                        </div>
+                                        <div className="p-3 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                        const input = document.createElement('input');
+                                                        input.type = 'file';
+                                                        input.accept = 'image/*';
+                    input.onchange = async (e: Event) => {
+                                                            const file = (e.target as HTMLInputElement).files?.[0];
+                                                            if (!file) return;
+                                                            const reader = new FileReader();
+                                                            reader.onload = () => {
+                                                                const result = reader.result as string;
+                                                                setBackgroundImageUrl(result);
+                                                            if ((backgroundImageOpacity ?? 0) === 0) {
+                                                                setBackgroundImageOpacity(0.2);
+                                                            }
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        };
+                                                        input.click();
+                                                    }}
+                                                >
+                                                    Upload Image
+                                                </Button>
+                                                {backgroundImageUrl && (
+                                                    <Button variant="ghost" onClick={() => setBackgroundImageUrl(null)}>
+                                                        Remove
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[11px] text-muted-foreground">Opacity</span>
+                                                    <span className="text-[11px]">{Math.round((backgroundImageOpacity ?? 0) * 100)}%</span>
+                                                </div>
+                                                <Slider
+                                                    value={[Math.round((backgroundImageOpacity ?? 0.2) * 100)]}
+                                                    onValueChange={(vals: number[]) => setBackgroundImageOpacity((vals[0] ?? 20) / 100)}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="pt-3 space-y-2 border-t border-border">
-                            <button
-                                type="button"
-                                onClick={() => setEnableDefaultColorControls(!enableDefaultColorControls)}
-                                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                            >
-                                <span className="text-[11px] font-medium">Advanced default colors</span>
-                                <span
-                                    className={cn(
-                                        "w-8 h-4 rounded-full relative transition-colors",
-                                        enableDefaultColorControls ? "bg-primary" : "bg-zinc-700"
-                                    )}
+                            <div className="pt-3 space-y-2 border-t border-border">
+                                <button
+                                    type="button"
+                                    onClick={() => setEnableDefaultColorControls(!enableDefaultColorControls)}
+                                    className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                 >
+                                    <span className="text-[11px] font-medium">Advanced default colors</span>
                                     <span
                                         className={cn(
-                                            "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                            enableDefaultColorControls ? "right-0.5" : "left-0.5"
+                                            "w-8 h-4 rounded-full relative transition-colors",
+                                            enableDefaultColorControls ? "bg-primary" : "bg-zinc-700"
                                         )}
-                                    />
-                                </span>
-                            </button>
-                            {enableDefaultColorControls && (
-                                <div className="space-y-1">
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Default colors</p>
-                                    <div className="grid grid-cols-2 gap-1">
-                                        {DEFAULT_COLOR_ENTITIES.map((entity) => (
-                                            <button
-                                                key={entity.key}
-                                                type="button"
-                                                onClick={() => {
-                                                    setActiveDefaultColorEntity(entity.key);
-                                                    setDefaultColorDialogOpen(true);
-                                                }}
-                                                className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                            >
-                                                <span
-                                                    className="h-3.5 w-3.5 rounded-full border border-border/60"
-                                                    style={{ backgroundColor: (defaultColors && defaultColors[entity.key]) || "hsl(var(--primary))" }}
-                                                />
-                                                <span className="flex-1 text-left">{entity.label}</span>
-                                            </button>
-                                        ))}
+                                    >
+                                        <span
+                                            className={cn(
+                                                "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                enableDefaultColorControls ? "right-0.5" : "left-0.5"
+                                            )}
+                                        />
+                                    </span>
+                                </button>
+                                {enableDefaultColorControls && (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Default colors</p>
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {DEFAULT_COLOR_ENTITIES.map((entity) => (
+                                                <button
+                                                    key={entity.key}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveDefaultColorEntity(entity.key);
+                                                        setDefaultColorDialogOpen(true);
+                                                    }}
+                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                                >
+                                                    <span
+                                                        className="h-3.5 w-3.5 rounded-full border border-border/60"
+                                                        style={{ backgroundColor: (defaultColors && defaultColors[entity.key]) || "hsl(var(--primary))" }}
+                                                    />
+                                                    <span className="flex-1 text-left">{entity.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground px-1">Used when creating new items.</p>
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground px-1">Used when creating new items.</p>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="py-10 text-center text-sm text-muted-foreground">
+                            Music settings coming soon.
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
 
