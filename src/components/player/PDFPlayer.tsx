@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useImperativeHandle, forwardRef, useCallback, type MouseEvent } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { 
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { globalWorker } from '@/pdf-worker';
+import { playSfx } from '@/utils/sound';
 
 // Note: Worker is configured globally in src/pdf-worker.ts
 
@@ -47,7 +48,7 @@ interface PDFPlayerProps {
     className?: string;
 }
 
-export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ 
+export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({ 
     url, 
     fileId, 
     highlightId,
@@ -124,19 +125,20 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         return () => clearTimeout(timer);
     }, [url]);
 
-    const handleLoadSuccess = React.useCallback(({ numPages }: { numPages: number }) => { 
+    const handleLoadSuccess = useCallback(({ numPages }: { numPages: number }) => { 
         setNumPages(numPages); 
         setHasError(false); 
         setLoadedUrl(safeUrl);
     }, [safeUrl]);
 
-    const handleLoadError = React.useCallback((err: Error) => {
+    const handleLoadError = useCallback((err: Error) => {
         if (err.message.includes('Worker was terminated')) {
             // Ignore worker termination errors (race condition)
             return;
         }
         console.error("PDF Load Error:", err);
         setHasError(true);
+        playSfx('error');
     }, []);
 
     // --- Effects ---
@@ -227,7 +229,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     // --- Logic ---
     
     // Wrap updateHighlights in useCallback to prevent re-creation on every render
-    const updateHighlights = React.useCallback(() => {
+    const updateHighlights = useCallback(() => {
         if (!pageWrapperRef.current) return;
         const textLayer = pageWrapperRef.current.querySelector('.react-pdf__Page__textContent');
         if (!textLayer) return; // Not ready yet
@@ -395,7 +397,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                 >
                     <Button
                         size="sm"
-                        onClick={(e: React.MouseEvent) => {
+                        onClick={(e: MouseEvent) => {
                             e.stopPropagation();
                             handleAddHighlight();
                             setSelectionRect(null);
@@ -453,9 +455,9 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                     onLoadSuccess={updateHighlights}
                                     onRenderTextLayerSuccess={updateHighlights}
                                     onRenderError={() => setHasError(true)}
-                                    onGetTextError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
-                                    onGetAnnotationsError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
-                                    onGetStructTreeError={(e) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                    onGetTextError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                    onGetAnnotationsError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                    onGetStructTreeError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
                                     loading={
                                         <div 
                                             style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
@@ -504,6 +506,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={() => changePage(-1)}
                         disabled={pageNumber <= 1 || !!lockedPage || !loadedUrl}
+                        data-sound-back
                     >
                         <CaretLeft size={14} weight="bold" />
                     </Button>
@@ -516,7 +519,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); changePage(1); }}
+                        onClick={(e: MouseEvent) => { e.stopPropagation(); changePage(1); }}
                         disabled={pageNumber >= numPages || !!lockedPage || !loadedUrl}
                     >
                         <CaretRight size={14} weight="bold" />
@@ -548,7 +551,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                        onClick={(e: React.MouseEvent) => { 
+                        onClick={(e: MouseEvent) => { 
                             e.stopPropagation(); 
                             setScale((s: number) => Math.min(s + 0.1, 3.0)); 
                         }}
@@ -600,7 +603,7 @@ export const PDFPlayer = React.forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e: React.MouseEvent) => {
+                            onClick={(e: MouseEvent) => {
                                 e.stopPropagation();
                                 onHideControls();
                             }}

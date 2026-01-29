@@ -18,9 +18,13 @@ import { WelcomeView } from "@/components/views/WelcomeView";
 import type { AccentTheme } from "@/types";
 
 import HomeView from "@/components/views/HomeView";
+import { preloadSounds, playSfx } from "@/utils/sound";
 
 const NotFoundView = () => {
   const navigate = useNavigate();
+  useEffect(() => {
+    playSfx('error');
+  }, []);
   return (
     <div className="flex h-full w-full items-center justify-center">
       <div className="flex flex-col items-center justify-center text-red-400 gap-2 h-full">
@@ -37,6 +41,29 @@ const NotFoundView = () => {
 export default function App() {
   const { projects, accentTheme, baseTheme } = useStore();
   useSync();
+
+  useEffect(() => {
+    preloadSounds();
+
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const interactive = target.closest('button, a, [role="button"], input, select, textarea, .cursor-pointer');
+
+      if (!interactive) return;
+
+      // Check for specific overrides
+      if (interactive.hasAttribute('data-sound-confirm')) {
+        playSfx('confirm');
+      } else if (interactive.hasAttribute('data-sound-back')) {
+        playSfx('back');
+      } else if (!interactive.hasAttribute('data-no-sfx')) {
+        playSfx('cursor');
+      }
+    };
+
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;

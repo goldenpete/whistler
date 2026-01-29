@@ -12,7 +12,7 @@ declare module "react" {
     target: { value?: string } & T;
   };
   export type ChangeEvent<T = any> = {
-    target: { value?: string } & T;
+    target: { value?: string; files?: FileList | null } & T;
   };
   export type MouseEvent<T = any> = {
     preventDefault: () => void;
@@ -22,8 +22,12 @@ declare module "react" {
     clientX: number;
     clientY: number;
   };
+  export type FormEvent<T = any> = {
+    preventDefault: () => void;
+    target: any;
+  };
 
-  export function useState<T>(initial: T | (() => T)): [T, (next: T) => void];
+  export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void];
   export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
   export function useRef<T>(initialValue: T): { current: T };
   export function useRef<T>(initialValue: T | null): { current: T | null };
@@ -37,6 +41,9 @@ declare module "react" {
   
   export namespace JSX {
       interface Element { }
+      interface IntrinsicAttributes {
+          key?: any;
+      }
       interface IntrinsicElements {
           [elemName: string]: any;
       }
@@ -54,6 +61,10 @@ declare module "react" {
       forwardRef: typeof forwardRef;
       Fragment: any;
       createElement: any;
+      KeyboardEvent: any;
+      MouseEvent: any;
+      ChangeEvent: any;
+      FormEvent: any;
   };
   export default React;
 }
@@ -192,6 +203,19 @@ declare module "@phosphor-icons/react" {
   export const ArrowsOutSimple: (props: IconProps) => any;
   export const CircleNotch: (props: IconProps) => any;
   export const SquaresFour: (props: IconProps) => any;
+  
+  // Newly added missing icons
+  export const CloudArrowUp: (props: IconProps) => any;
+  export const CloudArrowDown: (props: IconProps) => any;
+  export const SignIn: (props: IconProps) => any;
+  export const SignOut: (props: IconProps) => any;
+  export const Shuffle: (props: IconProps) => any;
+  export const ShieldCheck: (props: IconProps) => any;
+  export const Warning: (props: IconProps) => any;
+  export const QrCode: (props: IconProps) => any;
+  export const Circle: (props: IconProps) => any;
+  export const LineSegment: (props: IconProps) => any;
+  export const Article: (props: IconProps) => any;
 }
 
 // Image imports
@@ -203,6 +227,7 @@ declare module "*.png" {
 // External libs
 declare module "date-fns" {
   export function formatDistanceToNow(date: number | Date, options?: any): string;
+  export function format(date: number | Date, formatStr: string, options?: any): string;
 }
 
 declare module "react-router-dom" {

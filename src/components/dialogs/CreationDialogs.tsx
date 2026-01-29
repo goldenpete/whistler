@@ -126,7 +126,7 @@ export function NewProjectDialog({ open, onOpenChange, onSubmit }: NewProjectDia
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()}>
+                    <Button onClick={handleSubmit} disabled={!name.trim()} data-sound-confirm>
                         Create
                     </Button>
                 </DialogFooter>

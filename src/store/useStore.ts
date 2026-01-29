@@ -25,6 +25,7 @@ interface AppStore extends AppState {
     ambientMusicVolume: number;
     ambientMusicSuppressedBy: string[];
     ambientMusicStorageKey: string | null;
+    sfxEnabled: boolean;
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -100,6 +101,7 @@ interface AppStore extends AppState {
     addAmbientMusicSuppression: (source: string) => void;
     removeAmbientMusicSuppression: (source: string) => void;
     setAmbientMusicStorageKey: (key: string | null) => void;
+    setSfxEnabled: (enabled: boolean) => void;
 
     setAutoSyncInterval: (interval: number) => void;
 
@@ -222,6 +224,7 @@ export const useStore = create<AppStore>()(
             ambientMusicVolume: 0.4,
             ambientMusicSuppressedBy: [],
             ambientMusicStorageKey: null,
+            sfxEnabled: true,
 
             // ActionsPiP State
             pipFileId: null,
@@ -313,6 +316,7 @@ export const useStore = create<AppStore>()(
                     ambientMusicSuppressedBy: state.ambientMusicSuppressedBy.filter((entry) => entry !== source),
                 })),
             setAmbientMusicStorageKey: (key) => set({ ambientMusicStorageKey: key }),
+            setSfxEnabled: (enabled) => set({ sfxEnabled: enabled }),
 
             setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 

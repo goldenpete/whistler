@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -158,7 +158,7 @@ export function WelcomeView() {
         }
     };
 
-    const handleTotpVerify = async (e: React.FormEvent) => {
+    const handleTotpVerify = async (e: FormEvent) => {
         e.preventDefault();
         if (totpCode.length !== 6) {
             setError("Enter a 6-digit code");
@@ -188,7 +188,7 @@ export function WelcomeView() {
         }
     };
 
-    const handleWelcomeSignIn = async (e: React.FormEvent) => {
+    const handleWelcomeSignIn = async (e: FormEvent) => {
         e.preventDefault();
         const cleanId = getCleanAccountId(syncId);
         if (cleanId.length !== 16) {
@@ -241,7 +241,7 @@ export function WelcomeView() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'application/json';
-        input.onchange = async (e) => {
+        input.onchange = async (e: Event) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (!file) return;
 
@@ -374,7 +374,7 @@ export function WelcomeView() {
                 </div>
             </div>
 
-            <Dialog open={signInOpen} onOpenChange={(open) => {
+            <Dialog open={signInOpen} onOpenChange={(open: boolean) => {
                 setSignInOpen(open);
                 if (!open) {
                     setPhase('login');
@@ -401,7 +401,7 @@ export function WelcomeView() {
                                     type="text"
                                     placeholder="16-digit ID"
                                     value={syncId}
-                                    onChange={(e) => setSyncId(formatAccountId(e.target.value))}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
                                     className="h-9 font-mono text-sm bg-zinc-900 border-zinc-700"
                                     maxLength={19}
                                     minLength={16}
@@ -437,6 +437,7 @@ export function WelcomeView() {
                                 type="submit"
                                 className="w-full h-9"
                                 disabled={isLoading || getCleanAccountId(syncId).length < 16}
+                                data-sound-confirm
                             >
                                 {isLoading ? "Connecting..." : "Connect & Load"}
                             </Button>
@@ -451,7 +452,7 @@ export function WelcomeView() {
                                     type="text"
                                     placeholder="000000"
                                     value={totpCode}
-                                    onChange={(e) => {
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                         const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                                         setTotpCode(val);
                                     }}
@@ -474,6 +475,7 @@ export function WelcomeView() {
                                     className="h-9 w-9 p-0 border-zinc-700"
                                     onClick={() => setPhase('login')}
                                     disabled={isLoading}
+                                    data-sound-back
                                 >
                                     <CaretLeft size={16} />
                                 </Button>
@@ -507,7 +509,7 @@ export function WelcomeView() {
                                 type="text"
                                 placeholder="My Project"
                                 value={newProjectName}
-                                onChange={(e) => setNewProjectName(e.target.value)}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
                                 className="h-9 bg-zinc-900 border-zinc-700"
                                 autoFocus
                             />

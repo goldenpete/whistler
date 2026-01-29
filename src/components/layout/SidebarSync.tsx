@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ChangeEvent, type FormEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
@@ -158,7 +158,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
 
     const getCleanAccountId = (value: string) => value.replace(/\D/g, "").slice(0, 16);
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
         const cleanId = getCleanAccountId(syncId);
         if (cleanId.length !== 16) {
@@ -452,7 +452,8 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 inputMode="numeric"
                                 maxLength={6}
                                 value={totpCode}
-                                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                autoComplete="one-time-code"
                                 className="h-10 text-center tracking-[0.5em] text-lg font-mono"
                                 placeholder="000000"
                             />
@@ -518,7 +519,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 type="text" 
                                 placeholder="16-digit ID" 
                                 value={syncId}
-                                onChange={(e) => setSyncId(formatAccountId(e.target.value))}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
                                 className="h-8 text-sm font-mono"
                                 maxLength={19}
                                 minLength={16}
@@ -554,6 +555,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             type="submit"
                             className="w-full h-8"
                             disabled={isLoading || getCleanAccountId(syncId).length < 16}
+                            data-sound-confirm
                         >
                             {isLoading ? "Connecting..." : "Connect"}
                         </Button>
@@ -583,6 +585,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             setTotpCode("");
                             setError(null);
                         }}
+                        data-sound-back
                     >
                         <CaretLeft className="text-muted-foreground" />
                     </Button>
@@ -616,6 +619,15 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
 
                     {setupMode === 'enable' && setupStep === 'scan' && (
                         <div className="w-full space-y-6">
+                            <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+                                <QrCode size={128} className="bg-white p-2 rounded-lg text-black" />
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium">Scan with your authenticator app</p>
+                                </div>
+                            </div>
+
+                            <Separator className="bg-sidebar-border" />
+
                             <div className="space-y-2 text-center">
                                 <p className="text-sm font-medium">1. Copy Secret Key</p>
                                 <p className="text-xs text-muted-foreground">
@@ -648,7 +660,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     inputMode="numeric"
                                     maxLength={6}
                                     value={totpCode}
-                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                     className="h-10 text-center tracking-[0.5em] text-lg font-mono"
                                     placeholder="000000"
                                 />
@@ -682,7 +694,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     inputMode="numeric"
                                     maxLength={6}
                                     value={totpCode}
-                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                     className="h-10 text-center tracking-[0.5em] text-lg font-mono"
                                     placeholder="000000"
                                 />
@@ -779,19 +791,19 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     <div className="flex items-center gap-1">
                                         <Input
                                             value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
+                                            onChange={(e: ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)}
                                             className="h-6 text-sm px-1 py-0"
                                             autoFocus
-                                            onKeyDown={(e) => {
+                                            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                                                 if (e.key === 'Enter') handleSaveName();
                                                 if (e.key === 'Escape') setIsEditingName(false);
                                             }}
-                                            onClick={(e) => e.stopPropagation()}
+                                            onClick={(e: MouseEvent) => e.stopPropagation()}
                                         />
-                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={(e) => { e.stopPropagation(); handleSaveName(); }}>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={(e: MouseEvent) => { e.stopPropagation(); handleSaveName(); }}>
                                             <Check size={14} />
                                         </Button>
-                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-red-400 hover:text-red-500 hover:bg-red-500/10" onClick={(e) => { e.stopPropagation(); setIsEditingName(false); }}>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-red-400 hover:text-red-500 hover:bg-red-500/10" onClick={(e: MouseEvent) => { e.stopPropagation(); setIsEditingName(false); }}>
                                             <X size={14} />
                                         </Button>
                                     </div>
@@ -801,7 +813,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                             {user.email && user.email !== accountId ? user.email : "Anonymous"}
                                             <button 
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity text-foreground/70 hover:text-foreground"
-                                                onClick={(e) => { e.stopPropagation(); handleStartEditName(); }}
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); handleStartEditName(); }}
                                                 title="Edit display name"
                                             >
                                                 <PencilSimple size={12} />
@@ -904,7 +916,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     min={1}
                                     max={60}
                                     step={1}
-                                    onValueChange={(vals) => setAutoSyncInterval(vals[0] * 60000)}
+                                    onValueChange={(vals: number[]) => setAutoSyncInterval(vals[0] * 60000)}
                                     disabled={!autoSyncEnabled}
                                     className="py-1"
                                 />

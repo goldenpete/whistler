@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import {
@@ -67,6 +67,7 @@ const ICONS = [
 
 
 interface CollectionFormProps {
+    key?: any;
     defaultName?: string;
     defaultColor?: string;
     defaultIcon?: string;
@@ -85,7 +86,7 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
         onSubmit(name.trim(), color, iconName);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Enter") {
             e.preventDefault();
             handleSubmit();
@@ -100,7 +101,7 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
                     id="collection-name"
                     placeholder="My Collection"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                     onKeyDown={handleKeyDown}
                     autoFocus
                     className="bg-zinc-900 border-zinc-800"
@@ -139,7 +140,7 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
                 <Button variant="ghost" onClick={onCancel} className="hover:bg-white/10 text-zinc-400 hover:text-white">
                     Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground" data-sound-confirm>
                     {submitLabel}
                 </Button>
             </DialogFooter>

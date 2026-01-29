@@ -184,7 +184,7 @@ export function EntityForm({
                 <Button variant="ghost" onClick={onCancel} className="hover:bg-white/10 text-zinc-400 hover:text-white">
                     Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground" data-sound-confirm>
                     {submitLabel}
                 </Button>
             </DialogFooter>
@@ -322,7 +322,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={!url.trim()}>
+                    <Button onClick={handleSubmit} disabled={!url.trim()} data-sound-confirm>
                         Add File
                     </Button>
                 </DialogFooter>
@@ -520,7 +520,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                     <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground" data-sound-confirm>
                         Save Changes
                     </Button>
                 </DialogFooter>

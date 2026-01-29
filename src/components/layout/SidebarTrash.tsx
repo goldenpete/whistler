@@ -173,7 +173,7 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
         <div className="flex flex-col h-full min-h-0 bg-sidebar-background">
             <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack}>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack} data-sound-back>
                         <CaretLeft className="text-muted-foreground" />
                     </Button>
                     <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">

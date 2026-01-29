@@ -456,7 +456,7 @@ export default function VideoPlayer() {
                             {isHeaderVisible ? <EyeSlash weight="bold" size={24} /> : <Eye weight="bold" size={24} />}
                         </Button>
 
-                        <Button variant="ghost" size="icon" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close">
+                        <Button variant="ghost" size="icon" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close" data-sound-back>
                             <X weight="bold" size={24} />
                         </Button>
                     </div>

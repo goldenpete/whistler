@@ -124,7 +124,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
                     <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground min-h-[32px] px-1">
                         {currentFolderId ? (
                             <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleBack}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleBack} data-sound-back>
                                     <CaretLeft />
                                 </Button>
                                 <span className="font-medium text-foreground flex items-center gap-2">

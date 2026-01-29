@@ -173,6 +173,8 @@ export default function ProjectSidebar() {
         setAmbientMusicUrl,
         setAmbientMusicVolume,
         setAmbientMusicStorageKey,
+        sfxEnabled,
+        setSfxEnabled,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -1134,7 +1136,7 @@ export default function ProjectSidebar() {
                                                     <button
                                                         onClick={() => navigate('/collections')}
                                                         className={cn(
-                                                            "flex items-center justify-center rounded-l-md rounded-r-none transition-all duration-200 group relative cursor-pointer px-2 w-full h-9 border-r border-transparent hover:border-border",
+                                                            "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full h-9 border border-transparent hover:border-border",
                                                             location.pathname.startsWith('/collections')
                                                                 ? "bg-primary/20 text-primary shadow-sm"
                                                                 : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -1154,21 +1156,6 @@ export default function ProjectSidebar() {
                                                     {createMenuContent}
                                                 </ContextMenuContent>
                                             </ContextMenu>
-                                            <button
-                                                onClick={(e: ReactMouseEvent) => {
-                                                    e.stopPropagation();
-                                                    setCreateCollectionOpen(true);
-                                                }}
-                                                className={cn(
-                                                    "flex items-center justify-center rounded-r-md rounded-l-none transition-all duration-200 cursor-pointer w-8 h-9",
-                                                    location.pathname.startsWith('/collections')
-                                                        ? "bg-primary/20 text-primary shadow-sm hover:bg-primary/30"
-                                                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                                )}
-                                                title="New Collection"
-                                            >
-                                                <Plus weight="bold" size={14} />
-                                            </button>
                                         </div>
                                     ) : isSlim ? (
                                         <div className="flex justify-center mb-2">
@@ -1501,6 +1488,7 @@ export default function ProjectSidebar() {
                                             // But if we are on storage page, main view doesn't make much sense unless we navigate away.
                                             // Let's just switch view for now.
                                         }}
+                                        data-sound-back
                                     >
                                         <CaretLeft className="text-muted-foreground" />
                                     </Button>
@@ -1971,6 +1959,35 @@ export default function ProjectSidebar() {
                                             step={1}
                                         />
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-3 pt-3 border-t border-border">
+                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Sound Effects</p>
+                                <div className="rounded-lg border border-border bg-card p-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSfxEnabled(!sfxEnabled)}
+                                        className="w-full flex items-center justify-between"
+                                    >
+                                        <span className="text-sm">Enable website sounds</span>
+                                        <span
+                                            className={cn(
+                                                "w-8 h-4 rounded-full relative transition-colors",
+                                                sfxEnabled ? "bg-primary" : "bg-zinc-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                    sfxEnabled ? "right-0.5" : "left-0.5"
+                                                )}
+                                            />
+                                        </span>
+                                    </button>
+                                    <p className="text-[10px] text-muted-foreground mt-2">
+                                        Plays sounds for clicks, confirmations, and errors.
+                                    </p>
                                 </div>
                             </div>
                         </div>
