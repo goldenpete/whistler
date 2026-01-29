@@ -247,6 +247,7 @@ declare module "@phosphor-icons/react" {
     export const CornersIn: any;
     export const CornersOut: any;
     export const Check: any;
+    export const Link: any;
     export const Play: any;
     export const Pause: any;
     export const SpeakerHigh: any;

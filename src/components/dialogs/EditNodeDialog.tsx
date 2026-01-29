@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import {
     Dialog,
     DialogContent,
@@ -342,7 +342,7 @@ export function NodeDialog({
                         <Label>Title</Label>
                         <Input 
                             value={title} 
-                            onChange={(e) => setTitle(e.target.value)} 
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)} 
                             placeholder={type === 'note' ? "Note Title" : "Optional (defaults to selection)"}
                             className="bg-zinc-900 border-zinc-800"
                         />
@@ -374,7 +374,7 @@ export function NodeDialog({
                             <Label>URL</Label>
                             <Input 
                                 value={linkUrl} 
-                                onChange={(e) => setLinkUrl(e.target.value)} 
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)} 
                                 placeholder="https://..."
                                 className="bg-zinc-900 border-zinc-800"
                             />
@@ -490,7 +490,11 @@ export function NodeDialog({
 
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSubmit} className="bg-primary text-primary-foreground">
+                    <Button
+                        onClick={handleSubmit}
+                        className="bg-primary text-primary-foreground"
+                        data-sound-confirm={mode === "create" ? true : undefined}
+                    >
                         {mode === 'create' ? 'Create' : 'Save'}
                     </Button>
                 </DialogFooter>
