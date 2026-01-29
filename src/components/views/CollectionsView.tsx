@@ -165,6 +165,16 @@ export default function CollectionsView() {
                     </DropdownMenu>
 
                     <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 gap-2"
+                        onClick={() => setCreateCollectionOpen(true)}
+                    >
+                        <Plus />
+                        New Collection
+                    </Button>
+
+                    <Button 
                         variant={selectionMode ? "secondary" : "ghost"} 
                         size="sm" 
                         className="h-9"
@@ -244,6 +254,12 @@ export default function CollectionsView() {
                     )}
                 </div>
             </ScrollArea>
+
+            <CreateCollectionDialog 
+                open={createCollectionOpen} 
+                onOpenChange={setCreateCollectionOpen} 
+                onSubmit={handleCreateCollection}
+            />
         </div>
     );
 }

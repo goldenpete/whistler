@@ -1128,13 +1128,13 @@ export default function ProjectSidebar() {
                                 {/* Collections Section */}
                                 <div className="mb-6">
                                     {(!isSidebarCollapsed && !isSlim) ? (
-                                        <div className="flex items-center justify-between mb-2 px-1 group">
+                                        <div className="flex items-center justify-between mb-2 px-1 group gap-0.5">
                                             <ContextMenu>
-                                                <ContextMenuTrigger className="w-full">
+                                                <ContextMenuTrigger className="flex-1">
                                                     <button
                                                         onClick={() => navigate('/collections')}
                                                         className={cn(
-                                                            "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full h-9",
+                                                            "flex items-center justify-center rounded-l-md rounded-r-none transition-all duration-200 group relative cursor-pointer px-2 w-full h-9 border-r border-transparent hover:border-border",
                                                             location.pathname.startsWith('/collections')
                                                                 ? "bg-primary/20 text-primary shadow-sm"
                                                                 : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -1154,6 +1154,21 @@ export default function ProjectSidebar() {
                                                     {createMenuContent}
                                                 </ContextMenuContent>
                                             </ContextMenu>
+                                            <button
+                                                onClick={(e: ReactMouseEvent) => {
+                                                    e.stopPropagation();
+                                                    setCreateCollectionOpen(true);
+                                                }}
+                                                className={cn(
+                                                    "flex items-center justify-center rounded-r-md rounded-l-none transition-all duration-200 cursor-pointer w-8 h-9",
+                                                    location.pathname.startsWith('/collections')
+                                                        ? "bg-primary/20 text-primary shadow-sm hover:bg-primary/30"
+                                                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                )}
+                                                title="New Collection"
+                                            >
+                                                <Plus weight="bold" size={14} />
+                                            </button>
                                         </div>
                                     ) : isSlim ? (
                                         <div className="flex justify-center mb-2">
