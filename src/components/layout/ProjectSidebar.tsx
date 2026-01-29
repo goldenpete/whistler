@@ -1273,26 +1273,7 @@ export default function ProjectSidebar() {
                                                         {isSlim ? "No col." : "No collections"}
                                                     </div>
                                                 )}
-                                                {isSlim && (
-                                                    <div className="flex justify-center mt-2 pb-2">
-                                                        <button
-                                                            onClick={handleAddCollection}
-                                                            className="text-muted-foreground hover:text-primary transition-colors p-1"
-                                                            title="New Collection"
-                                                        >
-                                                            <Plus weight="bold" className="size-4" />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                {!isSlim && (
-                                                    <button
-                                                        onClick={handleAddCollection}
-                                                        className="w-full flex items-center justify-center py-2 mt-1 text-muted-foreground hover:text-primary hover:bg-accent/50 rounded-md transition-colors"
-                                                        title="New Collection"
-                                                    >
-                                                        <Plus weight="bold" className="size-4" />
-                                                    </button>
-                                                )}
+
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
