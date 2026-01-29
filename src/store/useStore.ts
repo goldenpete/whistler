@@ -1002,7 +1002,7 @@ export const useStore = create<AppStore>()(
             name: STORAGE_KEY,
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => {
-                const { ambientMusicUrl, ...rest } = state;
+                const { ambientMusicUrl, ambientMusicSuppressedBy, ...rest } = state;
                 return rest;
             },
         }

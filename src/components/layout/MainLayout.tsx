@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
@@ -12,6 +12,7 @@ export function MainLayout() {
     const { backgroundImageUrl, backgroundImageOpacity, backgroundColor, backgroundOverlayOpacity, ambientMusicUrl, ambientMusicVolume, ambientMusicSuppressedBy, ambientMusicStorageKey, setAmbientMusicUrl, setAmbientMusicStorageKey } = useStore();
     const audioRef = useRef<HTMLAudioElement>(null);
     const ambientUrlRef = useRef<string | null>(null);
+    const [ambientAutoplayBlocked, setAmbientAutoplayBlocked] = useState(false);
     
     // Track previous path to determine if we are navigating FROM a player
     const prevPath = usePrevious(location.pathname);
@@ -72,15 +73,40 @@ export function MainLayout() {
             audio.src = ambientMusicUrl;
             audio.load();
         }
+        audio.loop = true;
         if (isAmbientSuppressed) {
             audio.pause();
         } else {
             const playPromise = audio.play();
             if (playPromise) {
-                playPromise.catch(() => {});
+                playPromise.catch(() => {
+                    setAmbientAutoplayBlocked(true);
+                });
             }
         }
     }, [ambientMusicUrl, isAmbientSuppressed]);
+
+    useEffect(() => {
+        if (!ambientAutoplayBlocked || !ambientMusicUrl || isAmbientSuppressed) return;
+        const tryPlay = () => {
+            const audio = audioRef.current;
+            if (!audio) return;
+            const playPromise = audio.play();
+            if (playPromise) {
+                playPromise
+                    .then(() => {
+                        setAmbientAutoplayBlocked(false);
+                    })
+                    .catch(() => {});
+            }
+        };
+        window.addEventListener("pointerdown", tryPlay, { once: true });
+        window.addEventListener("keydown", tryPlay, { once: true });
+        return () => {
+            window.removeEventListener("pointerdown", tryPlay);
+            window.removeEventListener("keydown", tryPlay);
+        };
+    }, [ambientAutoplayBlocked, ambientMusicUrl, isAmbientSuppressed]);
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground animate-in fade-in duration-300">
