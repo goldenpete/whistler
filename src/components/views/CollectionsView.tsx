@@ -188,17 +188,7 @@ export default function CollectionsView() {
                     </DropdownMenu>
 
                     <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-9 gap-2"
-                        onClick={() => setCreateCollectionOpen(true)}
-                    >
-                        <Plus />
-                        New Collection
-                    </Button>
-
-                    <Button 
-                        variant={selectionMode ? "secondary" : "ghost"} 
+                        variant={selectionMode ? "secondary" : "outline"} 
                         size="sm" 
                         className="h-9"
                         onClick={() => {
@@ -207,6 +197,16 @@ export default function CollectionsView() {
                         }}
                     >
                         {selectionMode ? "Cancel Select" : "Select"}
+                    </Button>
+
+                    <Button 
+                        variant="default" 
+                        size="sm" 
+                        className="h-9 gap-2"
+                        onClick={() => setCreateCollectionOpen(true)}
+                    >
+                        <Plus />
+                        New Collection
                     </Button>
                     
                     {selectionMode && (
