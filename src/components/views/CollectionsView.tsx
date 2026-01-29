@@ -11,6 +11,7 @@ import {
     PencilSimple,
     Plus
 } from "@phosphor-icons/react";
+import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -45,6 +46,28 @@ export default function CollectionsView() {
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
+
+    const handleCreateCollection = (name: string, color: string, icon: string) => {
+        if (!activeProjectId) return;
+        if (name) {
+            const newCollection: Collection = {
+                id: crypto.randomUUID(),
+                projectId: activeProjectId,
+                parentId: null,
+                name,
+                color,
+                icon,
+                created: Date.now(),
+                lastModified: Date.now()
+            };
+            useStore.setState((state: any) => ({
+                collections: [...state.collections, newCollection],
+                activeCollectionId: newCollection.id
+            }));
+            navigate('/collections');
+        }
+    };
 
     // Filter by project and search
     const filteredCollections = useMemo(() => {
