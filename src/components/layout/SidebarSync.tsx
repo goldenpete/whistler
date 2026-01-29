@@ -800,7 +800,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                             }}
                                             onClick={(e: MouseEvent) => e.stopPropagation()}
                                         />
-                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={(e: MouseEvent) => { e.stopPropagation(); handleSaveName(); }}>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-green-500 hover:text-green-600 hover:bg-green-500/10" onClick={(e: MouseEvent) => { e.stopPropagation(); handleSaveName(); }} data-sound-confirm>
                                             <Check size={14} />
                                         </Button>
                                         <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-red-400 hover:text-red-500 hover:bg-red-500/10" onClick={(e: MouseEvent) => { e.stopPropagation(); setIsEditingName(false); }}>

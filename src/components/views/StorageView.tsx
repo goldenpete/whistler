@@ -56,6 +56,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { globalWorker } from "@/pdf-worker";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { playSfx } from '@/utils/sound';
 
 
 
@@ -617,6 +618,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
                     <div
                         ref={setDroppableRef}
                         onClick={handleClick}
+                        data-sound-cursor
                         className={cn(
                             "flex flex-col gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/50 transition-all duration-200 aspect-[4/3] relative group hover:shadow-lg hover:shadow-primary/5 cursor-pointer select-none",
                             isOver && "ring-2 ring-primary bg-primary/10",
@@ -636,7 +638,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
                         )}
 
                         {!selectionMode && (file.type === 'video' || file.type === 'pdf') ? (
-                            <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => e.stopPropagation()} />
+                            <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => { e.stopPropagation(); playSfx('cursor'); }} />
                         ) : null}
 
                         <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none">
@@ -699,6 +701,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
                     <div
                         ref={setDroppableRef}
                         onClick={handleClick}
+                        data-sound-cursor
                         className={cn(
                             "flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-md cursor-pointer select-none relative",
                             isOver && "ring-2 ring-primary bg-primary/10",
@@ -718,7 +721,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
                         )}
 
                         {!selectionMode && (file.type === 'video' || file.type === 'pdf') ? (
-                            <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => e.stopPropagation()} />
+                            <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => { e.stopPropagation(); playSfx('cursor'); }} />
                         ) : null}
 
                         {/* Thumbnail */}

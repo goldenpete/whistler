@@ -1,11 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { Dialog as DialogPrimitive } from "radix-ui"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { XIcon } from "@phosphor-icons/react"
+import { X } from "@phosphor-icons/react"
 
 function Dialog({
   ...props
@@ -38,6 +38,7 @@ function DialogOverlay({
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
+      data-sound-back
       className={cn("data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50", className)}
       {...props}
     />
@@ -67,7 +68,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
             <Button variant="ghost" className="absolute top-2 right-2" size="icon-sm">
-              <XIcon
+              <X
               />
               <span className="sr-only">Close</span>
             </Button>

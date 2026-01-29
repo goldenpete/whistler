@@ -535,6 +535,7 @@ export function WelcomeView() {
                                     setNewProjectOpen(false);
                                     setNewProjectName("");
                                 }}
+                                data-sound-confirm
                             >
                                 Create
                             </Button>

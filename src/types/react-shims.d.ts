@@ -26,6 +26,8 @@ declare module "react" {
     preventDefault: () => void;
     target: any;
   };
+  
+  export type ComponentProps<T> = any;
 
   export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void];
   export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
@@ -271,4 +273,29 @@ declare namespace JSX {
   interface IntrinsicElements {
     [elemName: string]: any;
   }
+}
+
+declare module "@radix-ui/react-dialog" {
+    export const Root: any;
+    export const Trigger: any;
+    export const Portal: any;
+    export const Close: any;
+    export const Overlay: any;
+    export const Content: any;
+    export const Title: any;
+    export const Description: any;
+}
+
+declare module "radix-ui" {
+    export const Dialog: any;
+    export const ContextMenu: any;
+    export const DropdownMenu: any;
+    export const Popover: any;
+    export const Tooltip: any;
+    export const Label: any;
+    export const ScrollArea: any;
+    export const Select: any;
+    export const Separator: any;
+    export const Button: any;
+    export const AlertDialog: any;
 }

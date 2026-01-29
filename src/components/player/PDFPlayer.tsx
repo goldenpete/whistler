@@ -534,7 +534,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                        onClick={(e: React.MouseEvent) => { 
+                        onClick={(e: MouseEvent) => { 
                             e.stopPropagation(); 
                             setScale((s: number) => Math.max(s - 0.1, 0.5)); 
                         }}
@@ -585,7 +585,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e: React.MouseEvent) => {
+                            onClick={(e: MouseEvent) => {
                                 e.stopPropagation();
                                 onToggleFullscreen();
                             }}
