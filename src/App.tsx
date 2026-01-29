@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import StorageView from "@/components/views/StorageView";
 import FileView from "@/components/views/FileView";
@@ -7,17 +7,32 @@ import DocsView from "@/components/views/DocsView";
 import GraphView from "@/components/views/GraphView";
 import CollectionView from "@/components/views/CollectionView";
 import CollectionsView from "@/components/views/CollectionsView";
+import { Button } from "@/components/ui/button";
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
 import { useInitialData } from "@/hooks/useInitialData";
 import { useSync } from "@/hooks/useSync";
 
-import { useNavigate } from "react-router-dom"; // unused if we render conditional
 import { useStore } from "@/store/useStore";
 import { WelcomeView } from "@/components/views/WelcomeView";
 import type { AccentTheme } from "@/types";
 
 import HomeView from "@/components/views/HomeView";
+
+const NotFoundView = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <div className="flex flex-col items-center justify-center text-red-400 gap-2 h-full">
+        <span className="text-lg font-medium">Page not found</span>
+        <span className="text-sm text-white/50">The page you’re looking for doesn’t exist.</span>
+        <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+          Back to home
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   const { projects, accentTheme, baseTheme } = useStore();
@@ -100,6 +115,7 @@ export default function App() {
           <Route path="/graphs" element={<GraphView />} />
           <Route path="/collections" element={<CollectionsView />} />
           <Route path="/collection/:id" element={<CollectionView />} />
+          <Route path="*" element={<NotFoundView />} />
         </Route>
       </Routes>
     </>
