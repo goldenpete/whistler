@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useImperativeHandle, forwardRef, useCallback, type MouseEvent } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
     CaretLeft, 
@@ -9,7 +10,8 @@ import {
     SidebarSimple,
     EyeSlash,
     CornersIn,
-    CornersOut
+    CornersOut,
+    Trash
 } from '@phosphor-icons/react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';

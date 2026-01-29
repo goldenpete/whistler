@@ -83,7 +83,7 @@ const ExpandableNote = ({ text }: { text: string }) => {
 export default function VideoPlayer() {
     const { fileId } = useParams() as { fileId: string };
     const navigate = useNavigate();
-    const { files, highlights, collections, addVideoHighlight, removeHighlight, updateHighlight, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen, addAmbientMusicSuppression, removeAmbientMusicSuppression } = useStore();
+    const { files, highlights, collections, addVideoHighlight, removeHighlight, updateHighlight, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen, addAmbientMusicSuppression, removeAmbientMusicSuppression, trashFile } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -429,24 +429,20 @@ export default function VideoPlayer() {
                                     <Palette size={20} weight={file.color ? "fill" : "bold"} />
                                 </Button>
 
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" title="Delete">
-                                            <Trash size={20} weight="bold" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete feature coming soon</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Deleting files from this view is not available yet. This feature is coming soon.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Close</AlertDialogCancel>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" 
+                                    title="Delete"
+                                    onClick={() => {
+                                        if (confirm("Are you sure you want to move this file to trash?")) {
+                                            trashFile(file.id);
+                                            navigate(-1);
+                                        }
+                                    }}
+                                >
+                                    <Trash size={20} weight="bold" />
+                                </Button>
                             </div>
 
                             <div className="w-px h-6 bg-border mx-1" /> {/* Divider */}

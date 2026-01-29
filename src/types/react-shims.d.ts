@@ -67,8 +67,26 @@ declare module "react" {
       MouseEvent: any;
       ChangeEvent: any;
       FormEvent: any;
+      
   };
   export default React;
+}
+
+// Global JSX namespace for implicit JSX element types
+declare namespace JSX {
+    interface Element { }
+    interface IntrinsicElements {
+        [elemName: string]: any;
+    }
+}
+
+declare module "react/jsx-runtime" {
+  export namespace JSX {
+      interface Element { }
+      interface IntrinsicElements {
+          [elemName: string]: any;
+      }
+  }
 }
 
 declare module "zustand" {
@@ -100,179 +118,22 @@ declare module "zustand/middleware" {
     export const createJSONStorage: any;
 }
 
-declare module "react-dom" {
-    export function createPortal(children: any, container: any): any;
+declare module "radix-ui" {
+    export const Dialog: any;
+    export const DialogTrigger: any;
+    export const DialogContent: any;
+    export const DialogHeader: any;
+    export const DialogTitle: any;
+    export const DialogDescription: any;
+    export const DialogFooter: any;
+    export const DialogClose: any;
 }
 
-declare module "react/jsx-runtime" {
-  export const jsx: any;
-  export const jsxs: any;
-  export const Fragment: any;
-  
-  export namespace JSX {
-      interface Element { }
-      interface IntrinsicElements {
-          [elemName: string]: any;
-      }
-  }
-}
-
-declare module "@phosphor-icons/react" {
-  export type IconProps = { size?: number; weight?: string; className?: string; style?: any };
-  export const Folder: (props: IconProps) => any;
-  export const Star: (props: IconProps) => any;
-  export const Heart: (props: IconProps) => any;
-  export const Flag: (props: IconProps) => any;
-  export const Tag: (props: IconProps) => any;
-  export const Bookmark: (props: IconProps) => any;
-  export const Briefcase: (props: IconProps) => any;
-  export const House: (props: IconProps) => any;
-  export const User: (props: IconProps) => any;
-  export const Users: (props: IconProps) => any;
-  export const Planet: (props: IconProps) => any;
-  export const Rocket: (props: IconProps) => any;
-  export const Code: (props: IconProps) => any;
-  export const Cpu: (props: IconProps) => any;
-  export const Database: (props: IconProps) => any;
-  export const GameController: (props: IconProps) => any;
-  export const MusicNotes: (props: IconProps) => any;
-  export const Image: (props: IconProps) => any;
-  export const FilmStrip: (props: IconProps) => any;
-  export const FileText: (props: IconProps) => any;
-  export const Book: (props: IconProps) => any;
-  export const Palette: (props: IconProps) => any;
-  export const Check: (props: IconProps) => any;
-  
-  // Added icons
-  export const File: (props: IconProps) => any;
-  export const MusicNote: (props: IconProps) => any;
-  export const FilePdf: (props: IconProps) => any;
-  export const Clock: (props: IconProps) => any;
-  export const Plus: (props: IconProps) => any;
-  export const Graph: (props: IconProps) => any;
-  export const HardDrives: (props: IconProps) => any;
-  export const NotePencil: (props: IconProps) => any;
-  export const ProjectorScreenChart: (props: IconProps) => any;
-  export const Copy: (props: IconProps) => any;
-  export const Trash: (props: IconProps) => any;
-  export const ArrowSquareOut: (props: IconProps) => any;
-  export const PencilSimple: (props: IconProps) => any;
-
-  // More added icons
-  export const SidebarSimple: (props: IconProps) => any;
-  export const FolderOpen: (props: IconProps) => any;
-  export const FolderPlus: (props: IconProps) => any;
-  export const MagnifyingGlass: (props: IconProps) => any;
-  export const ArrowsClockwise: (props: IconProps) => any;
-  export const WaveSine: (props: IconProps) => any;
-  export const CaretDown: (props: IconProps) => any;
-  export const CaretLeft: (props: IconProps) => any;
-  export const CaretRight: (props: IconProps) => any;
-  export const Cloud: (props: IconProps) => any;
-  export const Gear: (props: IconProps) => any;
-  export const Share: (props: IconProps) => any;
-  export const CheckCircle: (props: IconProps) => any;
-  export const WarningCircle: (props: IconProps) => any;
-  export const CloudCheck: (props: IconProps) => any;
-  export const CloudWarning: (props: IconProps) => any;
-  export const UploadSimple: (props: IconProps) => any;
-  export const DownloadSimple: (props: IconProps) => any;
-  export const ClockCounterClockwise: (props: IconProps) => any;
-  export const CheckSquare: (props: IconProps) => any;
-  export const Square: (props: IconProps) => any;
-  export const X: (props: IconProps) => any;
-  export const Rows: (props: IconProps) => any;
-  export const GridFour: (props: IconProps) => any;
-  export const LinkSimple: (props: IconProps) => any;
-  export const ShareNetwork: (props: IconProps) => any;
-  export const FileVideo: (props: IconProps) => any;
-  export const Lightning: (props: IconProps) => any;
-  
-  // Missing icons
-  export const MagnifyingGlassPlus: (props: IconProps) => any;
-  export const MagnifyingGlassMinus: (props: IconProps) => any;
-  export const EyeSlash: (props: IconProps) => any;
-  export const Eye: (props: IconProps) => any;
-  export const CornersIn: (props: IconProps) => any;
-  export const CornersOut: (props: IconProps) => any;
-  export const Play: (props: IconProps) => any;
-  export const Pause: (props: IconProps) => any;
-  export const SpeakerHigh: (props: IconProps) => any;
-  export const SpeakerX: (props: IconProps) => any;
-  export const Minus: (props: IconProps) => any;
-  export const Repeat: (props: IconProps) => any;
-  export const Gauge: (props: IconProps) => any;
-  export const ArrowsOutSimple: (props: IconProps) => any;
-  export const CircleNotch: (props: IconProps) => any;
-  export const SquaresFour: (props: IconProps) => any;
-  
-  // Newly added missing icons
-  export const CloudArrowUp: (props: IconProps) => any;
-  export const CloudArrowDown: (props: IconProps) => any;
-  export const SignIn: (props: IconProps) => any;
-  export const SignOut: (props: IconProps) => any;
-  export const Shuffle: (props: IconProps) => any;
-  export const ShieldCheck: (props: IconProps) => any;
-  export const Warning: (props: IconProps) => any;
-  export const QrCode: (props: IconProps) => any;
-  export const Circle: (props: IconProps) => any;
-  export const LineSegment: (props: IconProps) => any;
-  export const Article: (props: IconProps) => any;
-}
-
-// Image imports
-declare module "*.png" {
-  const value: string;
-  export default value;
-}
-
-// External libs
-declare module "date-fns" {
-  export function formatDistanceToNow(date: number | Date, options?: any): string;
-  export function format(date: number | Date, formatStr: string, options?: any): string;
-}
-
-declare module "react-router-dom" {
-  export const Link: any;
-  export function useNavigate(): (path: string | number) => void;
-  export function useLocation(): { pathname: string };
-  export function useSearchParams(): [URLSearchParams, (params: any) => void];
-  export const Outlet: any;
-  export function useOutlet(): any;
-  export const Routes: any;
-  export const Route: any;
-  export const Navigate: any;
-  export function useParams<K extends string = string>(): Readonly<Record<K, string | undefined>>;
-}
-
-declare module "react-pdf" {
-    export const Document: any;
-    export const Page: any;
-    export const pdfjs: any;
-}
-
-declare module "react-pdf/dist/Page/AnnotationLayer.css" {}
-declare module "react-pdf/dist/Page/TextLayer.css" {}
-
-declare module "usehooks-ts" {
-    export function useDebounceValue<T>(value: T, delay: number): [T, (value: T) => void];
-}
-
-declare namespace NodeJS {
-    interface Timeout {}
-}
-
-declare module "framer-motion" {
-    export const motion: any;
-    export const AnimatePresence: any;
-}
-
-// Global JSX namespace
-declare namespace JSX {
-  interface Element { }
-  interface IntrinsicElements {
-    [elemName: string]: any;
-  }
+declare module "@radix-ui/react-slider" {
+    export const Root: any;
+    export const Track: any;
+    export const Range: any;
+    export const Thumb: any;
 }
 
 declare module "@radix-ui/react-dialog" {
@@ -286,16 +147,152 @@ declare module "@radix-ui/react-dialog" {
     export const Description: any;
 }
 
-declare module "radix-ui" {
-    export const Dialog: any;
-    export const ContextMenu: any;
-    export const DropdownMenu: any;
-    export const Popover: any;
-    export const Tooltip: any;
-    export const Label: any;
-    export const ScrollArea: any;
-    export const Select: any;
-    export const Separator: any;
-    export const Button: any;
-    export const AlertDialog: any;
+declare module "date-fns" {
+    export function formatDistanceToNow(date: Date | number, options?: any): string;
+    export function format(date: Date | number, formatStr: string, options?: any): string;
+}
+
+declare module "react-router-dom" {
+    export function useNavigate(): any;
+    export function useLocation(): any;
+    export function useOutlet(): any;
+    export function useParams(): any;
+    export function Link(props: any): any;
+    export function Outlet(): any;
+    export function RouterProvider(props: any): any;
+    export function createBrowserRouter(routes: any): any;
+    export function Routes(props: any): any;
+    export function Route(props: any): any;
+    export function Navigate(props: any): any;
+}
+
+declare module "framer-motion" {
+    export const motion: any;
+    export const AnimatePresence: any;
+}
+
+declare module "react-pdf" {
+    export const Document: any;
+    export const Page: any;
+    export const pdfjs: any;
+}
+
+declare module "react-pdf/dist/Page/AnnotationLayer.css";
+declare module "react-pdf/dist/Page/TextLayer.css";
+
+declare module "usehooks-ts" {
+    export const useDebounceValue: any;
+}
+
+declare module "*.png" {
+    const value: string;
+    export default value;
+}
+
+declare module "@phosphor-icons/react" {
+    export const CaretDown: any;
+    export const CaretLeft: any;
+    export const CaretRight: any;
+    export const Circle: any;
+    export const Cloud: any;
+    export const CloudArrowDown: any;
+    export const CloudArrowUp: any;
+    export const Star: any;
+    export const Heart: any;
+    export const Flag: any;
+    export const Tag: any;
+    export const Bookmark: any;
+    export const Briefcase: any;
+    export const House: any;
+    export const User: any;
+    export const Users: any;
+    export const Planet: any;
+    export const Rocket: any;
+    export const Code: any;
+    export const Cpu: any;
+    export const Database: any;
+    export const GameController: any;
+    export const MusicNotes: any;
+    export const Image: any;
+    export const FilmStrip: any;
+    export const FileText: any;
+    export const Book: any;
+    export const Gear: any;
+    export const Share: any;
+    export const CheckCircle: any;
+    export const WarningCircle: any;
+    export const CloudCheck: any;
+    export const CloudWarning: any;
+    export const Plus: any;
+    export const Trash: any;
+    export const PencilSimple: any;
+    export const MagnifyingGlass: any;
+    export const ArrowsClockwise: any;
+    export const WaveSine: any;
+    export const SidebarSimple: any;
+    export const Folder: any;
+    export const FolderOpen: any;
+    export const FolderPlus: any;
+    export const NotePencil: any;
+    export const Graph: any;
+    export const HardDrives: any;
+    export const UploadSimple: any;
+    export const DownloadSimple: any;
+    export const Clock: any;
+    export const ClockCounterClockwise: any;
+    export const X: any;
+    export const ArrowSquareOut: any;
+    export const Copy: any;
+    export const ShareNetwork: any;
+    export const CornersIn: any;
+    export const CornersOut: any;
+    export const Check: any;
+    export const Play: any;
+    export const Pause: any;
+    export const SpeakerHigh: any;
+    export const SpeakerX: any;
+    export const File: any;
+    export const FilePdf: any;
+    export const Palette: any;
+    export const Minus: any;
+    export const Lightning: any;
+    export const Repeat: any;
+    export const GridFour: any;
+    export const CircleNotch: any;
+    export const LineSegment: any;
+    export const Eye: any;
+    export const EyeSlash: any;
+    export const MagnifyingGlassPlus: any;
+    export const MagnifyingGlassMinus: any;
+    export const Article: any;
+    export const MusicNote: any;
+    export const ProjectorScreenChart: any;
+    export const QrCode: any;
+    export const Shuffle: any;
+    export const ShieldCheck: any;
+    export const SignIn: any;
+    export const SignOut: any;
+    export const Warning: any;
+}
+
+declare module "@dnd-kit/core" {
+    export const DndContext: any;
+    export const closestCenter: any;
+    export const KeyboardSensor: any;
+    export const PointerSensor: any;
+    export const useSensor: any;
+    export const useSensors: any;
+    export type DragEndEvent = any;
+}
+
+declare module "@dnd-kit/sortable" {
+    export const arrayMove: any;
+    export const SortableContext: any;
+    export const sortableKeyboardCoordinates: any;
+    export const verticalListSortingStrategy: any;
+    export const useSortable: any;
+}
+
+declare module "@dnd-kit/utilities" {
+    export const CSS: any;
 }

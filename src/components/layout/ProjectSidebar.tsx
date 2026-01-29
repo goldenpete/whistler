@@ -26,6 +26,23 @@ import {
     FilmStrip, FileText, Book, Gear, Share,
     CheckCircle, WarningCircle, CloudCheck, CloudWarning
 } from "@phosphor-icons/react";
+import {
+    DndContext, 
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { cn } from "@/lib/utils";
 import { ambientMusicStorage, useStore } from "@/store/useStore";
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
@@ -114,6 +131,106 @@ const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph'
     { key: 'graph', label: 'Graphs' },
     { key: 'node', label: 'Nodes' },
 ];
+
+function SortableCollectionItem({
+    collection,
+    location,
+    isSlim,
+    handleSelectCollection,
+    handleEditCollectionClick,
+    handleDeleteCollection,
+    setCollectionToEdit,
+    setEditCollectionOpen,
+    trashCollection,
+    createMenuContent
+}: any) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: collection.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 50 : "auto",
+        position: "relative" as const,
+    };
+
+    const Icon = getIcon(collection.icon);
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            <ContextMenu>
+                <ContextMenuTrigger className="block w-full">
+                    <Link
+                        to={`/collection/${collection.id}`}
+                        onClick={() => handleSelectCollection(collection.id)}
+                        className="block w-full group/item"
+                        title={isSlim ? collection.name : undefined}
+                    >
+                        <div className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors relative",
+                            (location.pathname === `/collection/${collection.id}`)
+                                ? "bg-primary/20 text-primary font-medium"
+                                : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                            isSlim && "justify-center px-1"
+                        )}>
+                            <Icon
+                                className={cn("text-lg transition-colors")}
+                                weight="fill"
+                                style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
+                            />
+                            {!isSlim && <span className="truncate flex-1">{collection.name}</span>}
+
+                            {!isSlim && (
+                                <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e: ReactMouseEvent) => handleEditCollectionClick(e, collection)}
+                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                    >
+                                        <PencilSimple weight="bold" />
+                                    </button>
+                                    <button
+                                        onClick={(e: ReactMouseEvent) => handleDeleteCollection(e, collection.id)}
+                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                    >
+                                        <Trash weight="bold" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </Link>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-48">
+                    {createMenuContent}
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCollectionToEdit(collection);
+                        setEditCollectionOpen(true);
+                    }}>
+                        <PencilSimple className="mr-2 h-4 w-4" />
+                        Rename Collection
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        trashCollection(collection.id);
+                    }} className="text-red-500 focus:text-red-500">
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete Collection
+                    </ContextMenuItem>
+                </ContextMenuContent>
+            </ContextMenu>
+        </div>
+    );
+}
 
 export default function ProjectSidebar() {
     const navigate = useNavigate();
@@ -231,6 +348,25 @@ export default function ProjectSidebar() {
     const projectStorages = storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted);
     const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
     const projectGraphs = graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted);
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id || !activeProjectId) return;
+
+        const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
+        const oldIndex = projectCollections.findIndex((c: Collection) => c.id === active.id);
+        const newIndex = projectCollections.findIndex((c: Collection) => c.id === over.id);
+
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const reordered = arrayMove(projectCollections, oldIndex, newIndex);
+        const otherCollections = collections.filter((c: Collection) => !(c.projectId === activeProjectId && !c.deleted));
+        useStore.setState({ collections: [...otherCollections, ...reordered] });
+    };
 
     const handleCreateStorage = () => {
         if (!activeProjectId) return;
@@ -755,14 +891,6 @@ export default function ProjectSidebar() {
                                         </ContextMenu>
                                     );
                                 })}
-
-                                <button
-                                    onClick={handleAddCollection}
-                                    className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-primary transition-colors"
-                                    title="New Collection"
-                                >
-                                    <Plus weight="bold" className="size-4" />
-                                </button>
                             </div>
                         </ScrollArea>
 
@@ -1156,6 +1284,17 @@ export default function ProjectSidebar() {
                                                     {createMenuContent}
                                                 </ContextMenuContent>
                                             </ContextMenu>
+                                            <button
+                                                onClick={(e: ReactMouseEvent) => {
+                                                    e.stopPropagation();
+                                                    setCreateCollectionOpen(true);
+                                                }}
+                                                className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                title="New Collection"
+                                                data-sound-confirm
+                                            >
+                                                <Plus weight="bold" className="size-4" />
+                                            </button>
                                         </div>
                                     ) : isSlim ? (
                                         <div className="flex justify-center mb-2">
@@ -1187,74 +1326,32 @@ export default function ProjectSidebar() {
                                                 exit={isSlim ? undefined : { height: 0, opacity: 0 }}
                                                 className="space-y-1 overflow-visible"
                                             >
-                                                {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => {
-                                                    const Icon = getIcon(collection.icon);
-                                                    return (
-                                                    <ContextMenu key={collection.id}>
-                                                        <ContextMenuTrigger className="block w-full">
-                                                            <Link
-                                                                to={`/collection/${collection.id}`}
-                                                                onClick={() => handleSelectCollection(collection.id)}
-                                                                className="block w-full group/item"
-                                                                title={isSlim ? collection.name : undefined}
-                                                            >
-                                                                <div className={cn(
-                                                                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors relative",
-                                                                    (location.pathname === `/collection/${collection.id}`)
-                                                                        ? "bg-primary/20 text-primary font-medium"
-                                                                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
-                                                                    isSlim && "justify-center px-1"
-                                                                )}>
-                                                                    <Icon
-                                                                        className={cn("text-lg transition-colors")}
-                                                                        weight="fill"
-                                                                        style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
-                                                                    />
-                                                                    {!isSlim && <span className="truncate flex-1">{collection.name}</span>}
-
-                                                                    {!isSlim && (
-                                                                        <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                                            <button
-                                                                                onClick={(e: ReactMouseEvent) => handleEditCollectionClick(e, collection)}
-                                                                                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                                            >
-                                                                                <PencilSimple weight="bold" />
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={(e: ReactMouseEvent) => handleDeleteCollection(e, collection.id)}
-                                                                                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
-                                                                            >
-                                                                                <Trash weight="bold" />
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </Link>
-                                                        </ContextMenuTrigger>
-                                                        <ContextMenuContent className="w-48">
-                                                            {createMenuContent}
-                                                            <ContextMenuSeparator />
-                                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setCollectionToEdit(collection);
-                                                                setEditCollectionOpen(true);
-                                                            }}>
-                                                                <PencilSimple className="mr-2 h-4 w-4" />
-                                                                Rename Collection
-                                                            </ContextMenuItem>
-                                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                trashCollection(collection.id);
-                                                            }} className="text-red-500 focus:text-red-500">
-                                                                <Trash className="mr-2 h-4 w-4" />
-                                                                Delete Collection
-                                                            </ContextMenuItem>
-                                                        </ContextMenuContent>
-                                                    </ContextMenu>
-                                                    )
-                                                })}
+                                                <DndContext 
+                                                    sensors={sensors} 
+                                                    collisionDetection={closestCenter} 
+                                                    onDragEnd={handleDragEnd}
+                                                >
+                                                    <SortableContext 
+                                                        items={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((c: Collection) => c.id)}
+                                                        strategy={verticalListSortingStrategy}
+                                                    >
+                                                        {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => (
+                                                            <SortableCollectionItem
+                                                                key={collection.id}
+                                                                collection={collection}
+                                                                location={location}
+                                                                isSlim={isSlim}
+                                                                handleSelectCollection={handleSelectCollection}
+                                                                handleEditCollectionClick={handleEditCollectionClick}
+                                                                handleDeleteCollection={handleDeleteCollection}
+                                                                setCollectionToEdit={setCollectionToEdit}
+                                                                setEditCollectionOpen={setEditCollectionOpen}
+                                                                trashCollection={trashCollection}
+                                                                createMenuContent={createMenuContent}
+                                                            />
+                                                        ))}
+                                                    </SortableContext>
+                                                </DndContext>
                                                 {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).length === 0 && (
                                                     <div className={cn("px-3 py-4 text-xs text-muted-foreground/60 italic text-center border-2 border-dashed border-border/30 rounded-md", isSlim && "px-1 text-[10px]")}>
                                                         {isSlim ? "No col." : "No collections"}

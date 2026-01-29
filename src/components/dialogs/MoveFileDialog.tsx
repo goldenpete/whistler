@@ -165,7 +165,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
 
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleMove} disabled={!selectedStorageId}>
+                    <Button onClick={handleMove} disabled={!selectedStorageId} data-sound-confirm>
                         Move Here
                     </Button>
                 </DialogFooter>
