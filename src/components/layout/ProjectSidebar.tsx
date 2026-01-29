@@ -1258,16 +1258,23 @@ export default function ProjectSidebar() {
                                 {/* Collections Section */}
                                 <div className="mb-6">
                                     {(!isSidebarCollapsed && !isSlim) ? (
-                                        <div className="flex items-center justify-between mb-2 px-1 group gap-0">
+                                        <div
+                                            className={cn(
+                                                "flex items-center justify-between mb-2 px-1 group gap-0 rounded-md border border-transparent overflow-hidden transition-colors",
+                                                location.pathname.startsWith('/collections')
+                                                    ? "bg-primary/20 border-primary/30 shadow-sm"
+                                                    : "hover:bg-primary/20 hover:border-border"
+                                            )}
+                                        >
                                             <ContextMenu>
                                                 <ContextMenuTrigger className="flex-1">
                                                     <button
                                                         onClick={() => navigate('/collections')}
                                                         className={cn(
-                                                            "flex items-center justify-center rounded-l-md rounded-r-none transition-all duration-200 group relative cursor-pointer px-2 w-full h-9 border border-transparent hover:border-border",
+                                                            "flex items-center justify-center rounded-l-md rounded-r-none transition-all duration-200 group relative cursor-pointer px-2 w-full h-9 border border-transparent",
                                                             location.pathname.startsWith('/collections')
-                                                                ? "bg-primary/20 text-primary shadow-sm"
-                                                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                                ? "text-primary"
+                                                                : "text-muted-foreground group-hover:text-primary"
                                                         )}
                                                     >
                                                         <FolderOpen
@@ -1289,7 +1296,7 @@ export default function ProjectSidebar() {
                                                     e.stopPropagation();
                                                     setCreateCollectionOpen(true);
                                                 }}
-                                                className="h-9 w-9 flex items-center justify-center rounded-r-md rounded-l-none border border-transparent border-l-0 hover:border-border text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                className="h-9 w-9 flex items-center justify-center rounded-r-md rounded-l-none border border-transparent border-l border-l-border/40 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                                                 title="New Collection"
                                                 data-sound-confirm
                                             >
