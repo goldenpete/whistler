@@ -30,11 +30,10 @@ import { Separator } from "@/components/ui/separator";
 
 declare global {
     interface Window {
-        onTurnstileSuccess?: (token: string) => void;
-        onTurnstileExpired?: () => void;
         turnstile?: {
             reset: (container?: string | HTMLElement) => void;
             render: (container: string | HTMLElement, options: any) => string;
+            remove: (widgetId: string) => void;
         };
     }
 }
@@ -99,34 +98,49 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
     const [editName, setEditName] = useState("");
 
     useEffect(() => {
-        window.onTurnstileSuccess = (token: string) => {
-            setCaptchaToken(token);
-            setError(null);
-        };
-        window.onTurnstileExpired = () => {
-            setCaptchaToken(null);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (turnstileWidgetId) return;
+        let widgetId: string | null = null;
         const interval = setInterval(() => {
-            if (window.turnstile) {
+            if (window.turnstile && !widgetId) {
                 const container = document.getElementById("turnstile-container");
                 if (container) {
-                    const id = window.turnstile.render(container, {
-                        sitekey: TURNSTILE_SITE_KEY,
-                        theme: "dark",
-                        callback: (token: string) => window.onTurnstileSuccess?.(token),
-                        "expired-callback": () => window.onTurnstileExpired?.(),
-                    });
-                    setTurnstileWidgetId(id);
-                    clearInterval(interval);
+                    // Check if container already has content to avoid double render
+                    if (container.hasChildNodes()) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    
+                    try {
+                        widgetId = window.turnstile.render(container, {
+                            sitekey: TURNSTILE_SITE_KEY,
+                            theme: "dark",
+                            callback: (token: string) => {
+                                setCaptchaToken(token);
+                                setError(null);
+                            },
+                            "expired-callback": () => {
+                                setCaptchaToken(null);
+                            },
+                        });
+                        setTurnstileWidgetId(widgetId);
+                        clearInterval(interval);
+                    } catch (e) {
+                        console.error("Turnstile render error:", e);
+                    }
                 }
             }
         }, 500);
-        return () => clearInterval(interval);
-    }, [turnstileWidgetId]);
+
+        return () => {
+            clearInterval(interval);
+            if (widgetId && window.turnstile) {
+                try {
+                    window.turnstile.remove(widgetId);
+                } catch (e) {
+                    // Ignore removal errors
+                }
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const storedAccount = localStorage.getItem("whistler_account_id");

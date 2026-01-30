@@ -17,6 +17,16 @@ import { importProject, type ProjectExportData } from "@/utils/projectData";
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
+declare global {
+    interface Window {
+        turnstile?: {
+            reset: (container?: string | HTMLElement) => void;
+            render: (container: string | HTMLElement, options: any) => string;
+            remove: (widgetId: string) => void;
+        };
+    }
+}
+
 export function WelcomeView() {
     const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore(useShallow((state) => ({
         addProject: state.addProject,
@@ -41,34 +51,53 @@ export function WelcomeView() {
     const [importError, setImportError] = useState<string | null>(null);
 
     useEffect(() => {
-        window.onTurnstileSuccess = (token: string) => {
-            setCaptchaToken(token);
-            setError(null);
-        };
-        window.onTurnstileExpired = () => {
-            setCaptchaToken(null);
-        };
-    }, []);
+        if (!signInOpen) return;
 
-    useEffect(() => {
-        if (!signInOpen || turnstileWidgetId) return;
+        let widgetId: string | null = null;
         const interval = setInterval(() => {
-            if (window.turnstile) {
+            if (window.turnstile && !widgetId) {
                 const container = document.getElementById("welcome-turnstile-container");
                 if (container) {
-                    const id = window.turnstile.render(container, {
-                        sitekey: TURNSTILE_SITE_KEY,
-                        theme: "dark",
-                        callback: (token: string) => window.onTurnstileSuccess?.(token),
-                        "expired-callback": () => window.onTurnstileExpired?.(),
-                    });
-                    setTurnstileWidgetId(id);
-                    clearInterval(interval);
+                    // Check if container already has content
+                    if (container.hasChildNodes()) {
+                        clearInterval(interval);
+                        return;
+                    }
+
+                    try {
+                        widgetId = window.turnstile.render(container, {
+                            sitekey: TURNSTILE_SITE_KEY,
+                            theme: "dark",
+                            callback: (token: string) => {
+                                setCaptchaToken(token);
+                                setError(null);
+                            },
+                            "expired-callback": () => {
+                                setCaptchaToken(null);
+                            },
+                        });
+                        setTurnstileWidgetId(widgetId);
+                        clearInterval(interval);
+                    } catch (e) {
+                        console.error("Turnstile render error:", e);
+                    }
                 }
             }
         }, 500);
-        return () => clearInterval(interval);
-    }, [signInOpen, turnstileWidgetId]);
+
+        return () => {
+            clearInterval(interval);
+            if (widgetId && window.turnstile) {
+                try {
+                    window.turnstile.remove(widgetId);
+                } catch (e) {
+                    // Ignore removal errors
+                }
+            }
+            setTurnstileWidgetId(null);
+            setCaptchaToken(null);
+        };
+    }, [signInOpen]);
 
     const formatAccountId = (id: string) => {
         const clean = id.replace(/\D/g, "").slice(0, 16);
