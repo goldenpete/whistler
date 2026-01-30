@@ -1,5 +1,6 @@
 import React, { Component, type ReactNode, type ErrorInfo } from "react";
 import { Button } from "@/components/ui/button";
+import { Copy } from "@phosphor-icons/react";
 
 interface Props {
   children?: ReactNode;
@@ -49,8 +50,20 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 </div>
 
                 {/* Right Side: Console Output */}
-                <div className="flex-1 h-[400px] w-full bg-zinc-950/50 rounded-lg border border-red-900/20 p-4 font-mono text-xs text-zinc-400 overflow-auto shadow-inner">
-                    <div className="text-red-400 font-bold mb-2">
+                <div className="flex-1 h-[400px] w-full bg-zinc-950/50 rounded-lg border border-red-900/20 p-4 font-mono text-xs text-zinc-400 overflow-auto shadow-inner relative group">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 text-zinc-400 hover:text-white bg-black/20 hover:bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                            const text = `${this.state.error?.toString()}\n\n${this.state.errorInfo?.componentStack || this.state.error?.stack || ""}`;
+                            navigator.clipboard.writeText(text);
+                        }}
+                        title="Copy Error"
+                    >
+                        <Copy size={16} />
+                    </Button>
+                    <div className="text-red-400 font-bold mb-2 pr-8">
                         {this.state.error?.toString()}
                     </div>
                     <div className="whitespace-pre-wrap opacity-70">
