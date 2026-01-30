@@ -292,7 +292,7 @@ function DocEditor({ doc }: DocEditorProps) {
                         )}
                         title="Bold"
                     >
-                        <TextBolder />
+                        <TextB />
                     </Button>
                     <Button
                         variant="ghost"
