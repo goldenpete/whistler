@@ -40,6 +40,20 @@ const NotFoundView = () => {
 };
 
 export default function App() {
+  const [shouldThrow, setShouldThrow] = useState(false);
+
+  useEffect(() => {
+    // Expose debug function to window
+    (window as any).triggerError = () => setShouldThrow(true);
+    return () => {
+      delete (window as any).triggerError;
+    };
+  }, []);
+
+  if (shouldThrow) {
+    throw new Error("Test error triggered manually via console");
+  }
+
   const { projects, accentTheme, baseTheme } = useStore(useShallow((state) => ({
     projects: state.projects,
     accentTheme: state.accentTheme,
