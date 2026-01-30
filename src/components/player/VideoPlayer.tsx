@@ -86,6 +86,7 @@ export default function VideoPlayer() {
     const { files, highlights, collections, addVideoHighlight, removeHighlight, updateHighlight, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen, addAmbientMusicSuppression, removeAmbientMusicSuppression, trashFile } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
+    const imageRef = useRef<ImagePlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // State
@@ -463,8 +464,8 @@ export default function VideoPlayer() {
                     className="flex-1 flex items-center justify-center bg-transparent relative overflow-hidden"
                     onClick={isMediaFile ? togglePlay : undefined}
                 >
-                    {/* Loading Spinner (only for media files) */}
-                    {isMediaFile && isLoading && (
+                    {/* Loading Spinner (only for video files) */}
+                    {file.type === 'video' && isLoading && (
                         <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50 pointer-events-none">
                             <CircleNotch className="animate-spin text-white/50" size={48} />
                         </div>
@@ -484,6 +485,29 @@ export default function VideoPlayer() {
                                 onHideControls={() => setShowControls(false)}
                                 onToggleFullscreen={toggleFullscreen}
                                 isFullscreen={isFullscreen}
+                            />
+                        </div>
+                    ) : file.type === 'image' ? (
+                        <div className="absolute inset-0 z-10">
+                            <ImagePlayer
+                                ref={imageRef}
+                                url={file.url || ""}
+                                fileId={file.id}
+                                onSelectionChange={(hasSelection) => { /* Optional: update state if needed */ }}
+                                onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                                isSidebarOpen={sidebarOpen}
+                                showControls={showControls}
+                                onHideControls={() => setShowControls(false)}
+                                onToggleFullscreen={toggleFullscreen}
+                                isFullscreen={isFullscreen}
+                            />
+                        </div>
+                    ) : file.type === 'audio' ? (
+                        <div className="absolute inset-0 z-10 bg-zinc-950">
+                            <AudioPlayer
+                                url={file.url || ""}
+                                fileId={file.id}
+                                className="w-full h-full"
                             />
                         </div>
                     ) : (
@@ -510,8 +534,8 @@ export default function VideoPlayer() {
                     )}
                 </div>
 
-                {/* Bottom Bar (only for media files) */}
-                {isMediaFile && (
+                {/* Bottom Bar (only for video files) */}
+                {file.type === 'video' && (
                     <div
                         className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-30 pb-4 pt-8 px-4 pointer-events-none",
@@ -747,13 +771,15 @@ export default function VideoPlayer() {
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <button
                                                     className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
-                                                    onClick={() => seekToHighlight(h.start)}
+                                                    onClick={() => seekToHighlight(h)}
                                                 >
                                                     {file.type === 'pdf'
                                                         ? (h.end && h.end !== h.start
                                                             ? `Page ${h.start}-${h.end}`
                                                             : `Page ${h.start}`)
-                                                        : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
+                                                        : file.type === 'image'
+                                                            ? 'View Region'
+                                                            : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
                                                     }
                                                 </button>
                                                 {collectionName && (

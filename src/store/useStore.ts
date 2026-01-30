@@ -553,6 +553,32 @@ export const useStore = create<AppStore>()(
                     }, ...state.history]
                 };
             }),
+            addImageHighlight: (fileId, rect, collectionId) => set((state) => {
+                const collectionIdToUse = collectionId ?? state.activeCollectionId ?? null;
+                const newHighlight: Highlight = {
+                    id: crypto.randomUUID(),
+                    fileId,
+                    collectionId: collectionIdToUse,
+                    start: 0,
+                    end: 0,
+                    rect,
+                    note: "",
+                    text: "",
+                    created: Date.now()
+                };
+                return {
+                    highlights: [...state.highlights, newHighlight],
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: state.activeProjectId || 'global',
+                        action: 'create',
+                        entityType: 'highlight',
+                        entityId: newHighlight.id,
+                        entityName: 'Highlight',
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
             addHighlight: (fileId, page, text, collectionIdOverride, pdfRange) => set((state) => {
                 const collectionId = collectionIdOverride ?? state.activeCollectionId ?? null;
                 const newHighlight: Highlight = {
