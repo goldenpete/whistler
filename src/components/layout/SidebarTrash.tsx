@@ -50,7 +50,25 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
         restoreStorage,
         permanentDeleteStorage,
         emptyTrash,
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        files: state.files,
+        collections: state.collections,
+        graphs: state.graphs,
+        docs: state.docs,
+        storages: state.storages,
+        activeProjectId: state.activeProjectId,
+        restoreFile: state.restoreFile,
+        permanentDeleteFile: state.permanentDeleteFile,
+        restoreCollection: state.restoreCollection,
+        permanentDeleteCollection: state.permanentDeleteCollection,
+        restoreGraph: state.restoreGraph,
+        permanentDeleteGraph: state.permanentDeleteGraph,
+        restoreDoc: state.restoreDoc,
+        permanentDeleteDoc: state.permanentDeleteDoc,
+        restoreStorage: state.restoreStorage,
+        permanentDeleteStorage: state.permanentDeleteStorage,
+        emptyTrash: state.emptyTrash,
+    })));
 
     const trashedFiles = useMemo(
         () => files.filter((f) => f.projectId === activeProjectId && f.deleted),

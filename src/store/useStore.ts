@@ -10,7 +10,7 @@ interface User {
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync';
 
-interface AppStore extends AppState {
+export interface AppStore extends AppState {
     activeFileId: string | null;
     user: User | null;
     lastSyncTime: number | null;
@@ -60,6 +60,7 @@ interface AppStore extends AppState {
     getState: () => AppState;
 
     addVideoHighlight: (fileId: string, time: number, collectionId?: string) => void;
+    addImageHighlight: (fileId: string, rect: { x: number; y: number; width: number; height: number }, collectionId?: string) => void;
     addHighlight: (fileId: string, page: number, text: string, collectionId?: string | null, pdfRange?: { start: number; end: number } | null) => void;
     removeHighlight: (id: string) => void;
     updateHighlight: (id: string, updates: Partial<Highlight>) => void;
@@ -529,23 +530,25 @@ export const useStore = create<AppStore>()(
             }),
 
             addVideoHighlight: (fileId, time, collectionId) => set((state) => {
-                const newHighlight: Highlight = {
+                const highlight: Highlight = {
                     id: crypto.randomUUID(),
                     fileId,
-                    collectionId: collectionId || state.activeCollectionId || null,
                     start: time,
                     end: time,
+                    text: `Timestamp: ${time}`,
                     note: '',
                     created: Date.now(),
+                    collectionId: collectionId || state.activeCollectionId || undefined,
+                    color: state.defaultColors.node
                 };
                 return {
-                    highlights: [...state.highlights, newHighlight],
+                    highlights: [...state.highlights, highlight],
                     history: [{
                         id: crypto.randomUUID(),
                         projectId: state.activeProjectId || 'global',
                         action: 'create',
                         entityType: 'highlight',
-                        entityId: newHighlight.id,
+                        entityId: highlight.id,
                         entityName: 'Video Highlight',
                         timestamp: Date.now()
                     }, ...state.history]
@@ -553,24 +556,27 @@ export const useStore = create<AppStore>()(
             }),
 
             addImageHighlight: (fileId, rect, collectionId) => set((state) => {
-                const newHighlight: Highlight = {
+                const highlight: Highlight = {
                     id: crypto.randomUUID(),
                     fileId,
-                    collectionId: collectionId || state.activeCollectionId || null,
-                    start: 0,
-                    end: 0,
-                    note: '',
                     rect,
+                    // For images, start/end might not be relevant, but type requires them?
+                    // Checking Highlight type definition would be good, but assuming optional or we can set 0
+                    start: 0,
+                    text: 'Image Highlight',
+                    note: '',
                     created: Date.now(),
+                    collectionId: collectionId || state.activeCollectionId || undefined,
+                    color: state.defaultColors.node
                 };
                 return {
-                    highlights: [...state.highlights, newHighlight],
+                    highlights: [...state.highlights, highlight],
                     history: [{
                         id: crypto.randomUUID(),
                         projectId: state.activeProjectId || 'global',
                         action: 'create',
                         entityType: 'highlight',
-                        entityId: newHighlight.id,
+                        entityId: highlight.id,
                         entityName: 'Image Highlight',
                         timestamp: Date.now()
                     }, ...state.history]

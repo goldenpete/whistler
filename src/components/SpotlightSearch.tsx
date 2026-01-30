@@ -24,6 +24,7 @@ import {
     Trash,
 } from "@phosphor-icons/react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
 import { formatTime } from "@/lib/utils";
@@ -40,7 +41,16 @@ export function SpotlightSearch() {
         projects,
         isSpotlightOpen,
         setSpotlightOpen,
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        files: state.files,
+        collections: state.collections,
+        highlights: state.highlights,
+        activeProjectId: state.activeProjectId,
+        setActiveProject: state.setActiveProject,
+        projects: state.projects,
+        isSpotlightOpen: state.isSpotlightOpen,
+        setSpotlightOpen: state.setSpotlightOpen,
+    })));
 
     const projectFiles = useMemo(
         () => files.filter((f) => f.projectId === activeProjectId && !f.deleted),

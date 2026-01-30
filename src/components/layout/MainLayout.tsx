@@ -4,12 +4,35 @@ import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
 import ProjectSidebar from "./ProjectSidebar";
 import { ambientMusicStorage, useStore } from "@/store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 
 export function MainLayout() {
     const location = useLocation();
     const currentOutlet = useOutlet();
     const isPlayer = location.pathname.startsWith('/file/');
-    const { backgroundImageUrl, backgroundImageOpacity, backgroundColor, backgroundOverlayOpacity, ambientMusicUrl, ambientMusicVolume, ambientMusicSuppressedBy, ambientMusicStorageKey, setAmbientMusicUrl, setAmbientMusicStorageKey } = useStore();
+    const { 
+        backgroundImageUrl, 
+        backgroundImageOpacity, 
+        backgroundColor, 
+        backgroundOverlayOpacity, 
+        ambientMusicUrl, 
+        ambientMusicVolume, 
+        ambientMusicSuppressedBy, 
+        ambientMusicStorageKey, 
+        setAmbientMusicUrl, 
+        setAmbientMusicStorageKey 
+    } = useStore(useShallow((state) => ({
+        backgroundImageUrl: state.backgroundImageUrl,
+        backgroundImageOpacity: state.backgroundImageOpacity,
+        backgroundColor: state.backgroundColor,
+        backgroundOverlayOpacity: state.backgroundOverlayOpacity,
+        ambientMusicUrl: state.ambientMusicUrl,
+        ambientMusicVolume: state.ambientMusicVolume,
+        ambientMusicSuppressedBy: state.ambientMusicSuppressedBy,
+        ambientMusicStorageKey: state.ambientMusicStorageKey,
+        setAmbientMusicUrl: state.setAmbientMusicUrl,
+        setAmbientMusicStorageKey: state.setAmbientMusicStorageKey,
+    })));
     const audioRef = useRef<HTMLAudioElement>(null);
     const ambientUrlRef = useRef<string | null>(null);
     const [ambientAutoplayBlocked, setAmbientAutoplayBlocked] = useState(false);

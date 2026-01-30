@@ -1,0 +1,2 @@
+import * as Icons from "@phosphor-icons/react";
+console.log(Object.keys(Icons).filter(k => k.startsWith("Text") || k.startsWith("Arrow") || k.startsWith("List") || k.startsWith("Layout") || k.startsWith("Rows") || k.startsWith("XCircle")));

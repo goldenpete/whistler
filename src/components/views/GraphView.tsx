@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,9 +39,30 @@ export default function GraphView() {
     const imagesRef = useRef<Record<string, HTMLImageElement>>({});
     const navigate = useNavigate();
     const { 
-        graphs, graphNodes, graphEdges, highlights, activeProjectId, activeGraphId,
-        addNode, updateNode, removeNode, addEdge, removeEdge
-    } = useStore();
+        graphs, 
+        graphNodes, 
+        graphEdges, 
+        highlights, 
+        activeProjectId, 
+        activeGraphId,
+        addNode, 
+        updateNode, 
+        removeNode, 
+        addEdge, 
+        removeEdge 
+    } = useStore(useShallow((state) => ({
+        graphs: state.graphs,
+        graphNodes: state.graphNodes,
+        graphEdges: state.graphEdges,
+        highlights: state.highlights,
+        activeProjectId: state.activeProjectId,
+        activeGraphId: state.activeGraphId,
+        addNode: state.addNode,
+        updateNode: state.updateNode,
+        removeNode: state.removeNode,
+        addEdge: state.addEdge,
+        removeEdge: state.removeEdge
+    })));
 
     const activeGraph = graphs.find(g => g.id === activeGraphId && !g.deleted);
     const nodes = graphNodes.filter(n => n.graphId === activeGraphId);

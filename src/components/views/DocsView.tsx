@@ -90,7 +90,13 @@ function DocEditor({ doc }: DocEditorProps) {
         files,
         collections,
         highlights,
-    } = useStore();
+    } = useStore(useShallow((state: AppStore) => ({
+        docViewMode: state.docViewMode,
+        setDocViewMode: state.setDocViewMode,
+        files: state.files,
+        collections: state.collections,
+        highlights: state.highlights,
+    })));
     const saveTimeoutRef = useRef<number | null>(null);
     const [linkDialogOpen, setLinkDialogOpen] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
@@ -284,7 +290,7 @@ function DocEditor({ doc }: DocEditorProps) {
                         )}
                         title="Bold"
                     >
-                        <TextB weight="bold" />
+                        <TextBolder />
                     </Button>
                     <Button
                         variant="ghost"

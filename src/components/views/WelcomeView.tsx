@@ -8,6 +8,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import type { Project, File } from "@/types";
 import { Plus, DownloadSimple, Lightning, Shuffle, CaretLeft } from "@phosphor-icons/react";
@@ -17,7 +18,13 @@ const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
 export function WelcomeView() {
-    const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore();
+    const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore(useShallow((state) => ({
+        addProject: state.addProject,
+        setActiveProject: state.setActiveProject,
+        login: state.login,
+        setLastSyncTime: state.setLastSyncTime,
+        setState: state.setState,
+    })));
 
     const [signInOpen, setSignInOpen] = useState(false);
     const [phase, setPhase] = useState<'login' | 'totp'>('login');

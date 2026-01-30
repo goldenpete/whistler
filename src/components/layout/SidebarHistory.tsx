@@ -1,4 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import { format } from "date-fns";
 import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase, ShareNetwork, Circle, LineSegment, Article } from "@phosphor-icons/react";
@@ -13,7 +14,10 @@ interface SidebarHistoryProps {
 
 // History sidebar component
 export function SidebarHistory({ onBack }: SidebarHistoryProps) {
-    const { history, clearHistory } = useStore();
+    const { history, clearHistory } = useStore(useShallow((state) => ({
+        history: state.history,
+        clearHistory: state.clearHistory
+    })));
 
     // Group history by date
     const groupedHistory = history.reduce((groups, entry) => {

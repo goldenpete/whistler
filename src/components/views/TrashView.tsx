@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import {
     Trash,
-    ArrowCounterClockwise,
+    ArrowsCounterClockwise,
     XCircle,
     FilmStrip,
     FilePdf,
@@ -43,7 +44,22 @@ export default function TrashView() {
         restoreDoc,
         permanentDeleteDoc,
         emptyTrash,
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        files: state.files,
+        collections: state.collections,
+        graphs: state.graphs,
+        docs: state.docs,
+        activeProjectId: state.activeProjectId,
+        restoreFile: state.restoreFile,
+        permanentDeleteFile: state.permanentDeleteFile,
+        restoreCollection: state.restoreCollection,
+        permanentDeleteCollection: state.permanentDeleteCollection,
+        restoreGraph: state.restoreGraph,
+        permanentDeleteGraph: state.permanentDeleteGraph,
+        restoreDoc: state.restoreDoc,
+        permanentDeleteDoc: state.permanentDeleteDoc,
+        emptyTrash: state.emptyTrash,
+    })));
 
     const trashedFiles = useMemo(
         () => files.filter((f) => f.projectId === activeProjectId && f.deleted),
@@ -184,7 +200,7 @@ export default function TrashView() {
                                                     onClick={() => restoreFile(file.id)}
                                                     title="Restore"
                                                 >
-                                                    <ArrowCounterClockwise className="h-4 w-4" />
+                                                    <ArrowsCounterClockwise className="h-4 w-4" />
                                                 </Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
@@ -253,7 +269,7 @@ export default function TrashView() {
                                                     onClick={() => restoreCollection(collection.id)}
                                                     title="Restore"
                                                 >
-                                                    <ArrowCounterClockwise className="h-4 w-4" />
+                                                    <ArrowsCounterClockwise className="h-4 w-4" />
                                                 </Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
@@ -319,7 +335,7 @@ export default function TrashView() {
                                                     onClick={() => restoreGraph(graph.id)}
                                                     title="Restore"
                                                 >
-                                                    <ArrowCounterClockwise className="h-4 w-4" />
+                                                    <ArrowsCounterClockwise className="h-4 w-4" />
                                                 </Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
@@ -385,7 +401,7 @@ export default function TrashView() {
                                                     onClick={() => restoreDoc(doc.id)}
                                                     title="Restore"
                                                 >
-                                                    <ArrowCounterClockwise className="h-4 w-4" />
+                                                    <ArrowsCounterClockwise className="h-4 w-4" />
                                                 </Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>

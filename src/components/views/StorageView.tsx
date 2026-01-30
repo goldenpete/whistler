@@ -69,7 +69,15 @@ export default function StorageView() {
         activeStorageId,
         trashFile,
         addStorage,
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        projects: state.projects,
+        activeProjectId: state.activeProjectId,
+        files: state.files,
+        storages: state.storages,
+        activeStorageId: state.activeStorageId,
+        trashFile: state.trashFile,
+        addStorage: state.addStorage,
+    })));
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [addFileOpen, setAddFileOpen] = useState(false);

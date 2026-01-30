@@ -118,6 +118,10 @@ declare module "zustand/middleware" {
     export const createJSONStorage: any;
 }
 
+declare module "zustand/react/shallow" {
+    export function useShallow<T, U>(selector: (state: T) => U): (state: T) => U;
+}
+
 declare module "radix-ui" {
     export const Dialog: any;
     export const DialogTrigger: any;
@@ -274,6 +278,25 @@ declare module "@phosphor-icons/react" {
     export const SignIn: any;
     export const SignOut: any;
     export const Warning: any;
+    export const TextBolder: any;
+    export const TextItalic: any;
+    export const ListBullets: any;
+    export const TextUnderline: any;
+    export const TextStrikethrough: any;
+    export const TextAlignLeft: any;
+    export const TextAlignCenter: any;
+    export const TextAlignRight: any;
+    export const ArrowsCounterClockwise: any;
+    export const ArrowsClockwise: any;
+    export const Rows: any;
+    export const ArrowsOutSimple: any;
+    export const Layout: any;
+    export const Note: any;
+    export const XCircle: any;
+}
+
+declare module "react-dom/server" {
+    export function renderToStaticMarkup(element: any): string;
 }
 
 declare module "@dnd-kit/core" {

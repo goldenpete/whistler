@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import { useNavigate } from "react-router-dom";
 import {
@@ -38,7 +39,14 @@ export default function CollectionsView() {
         updateCollection,
         setActiveCollection,
         setSidebarView
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        collections: state.collections,
+        activeProjectId: state.activeProjectId,
+        deleteCollection: state.deleteCollection,
+        updateCollection: state.updateCollection,
+        setActiveCollection: state.setActiveCollection,
+        setSidebarView: state.setSidebarView
+    })));
     const navigate = useNavigate();
 
     const [searchQuery, setSearchQuery] = useState("");

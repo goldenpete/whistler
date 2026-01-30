@@ -91,7 +91,8 @@ export default function HomeView() {
         files, 
         docs, 
         collections, 
-        highlights,
+        highlights, 
+        graphs,
         storages,
         activeProjectId,
         activeStorageId
@@ -237,7 +238,7 @@ export default function HomeView() {
     const projectFiles = files.filter((f: File) => f.projectId === activeProjectId && !f.deleted);
     const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
     const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
-    const projectGraphs = (useStore.getState().graphs || []).filter((g: any) => g.projectId === activeProjectId);
+    const projectGraphs = (graphs || []).filter((g: any) => g.projectId === activeProjectId);
 
     // Recent Highlights logic
     const projectFileIds = new Set(projectFiles.map((f: File) => f.id));

@@ -54,7 +54,16 @@ export default function CollectionView() {
         activeCollectionId,
         setActiveCollection,
         updateHighlight
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        projects: state.projects,
+        activeProjectId: state.activeProjectId,
+        collections: state.collections,
+        highlights: state.highlights,
+        files: state.files,
+        activeCollectionId: state.activeCollectionId,
+        setActiveCollection: state.setActiveCollection,
+        updateHighlight: state.updateHighlight
+    })));
     const navigate = useNavigate();
     const { id } = useParams();
 

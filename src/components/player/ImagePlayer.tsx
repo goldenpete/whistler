@@ -9,6 +9,7 @@ import {
     CornersOut,
     Trash
 } from '@phosphor-icons/react';
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
@@ -64,7 +65,12 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     className 
 }, ref) => {
     const navigate = useNavigate();
-    const { highlights, addImageHighlight, trashFile, collections } = useStore();
+    const { highlights, addImageHighlight, trashFile, collections } = useStore(useShallow((state) => ({
+        highlights: state.highlights,
+        addImageHighlight: state.addImageHighlight,
+        trashFile: state.trashFile,
+        collections: state.collections
+    })));
     
     // State
     const [scale, setScale] = useState<number>(1.0);
@@ -328,7 +334,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e: MouseEvent) => {
+                            onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 onHideControls();
                             }}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
+import { useStore, type AppStore } from "@/store/useStore";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn, formatTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,7 @@ import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
-import { type Highlight, type File as AppFile } from "@/types";
+import { type Highlight, type File as AppFile, type Collection } from "@/types";
 
 const ExpandableNote = ({ text }: { text: string }) => {
     const [expanded, setExpanded] = useState(false);
@@ -88,7 +89,49 @@ const ExpandableNote = ({ text }: { text: string }) => {
 export default function VideoPlayer() {
     const { fileId } = useParams() as { fileId: string };
     const navigate = useNavigate();
-    const { files, highlights, collections, addVideoHighlight, removeHighlight, updateHighlight, updateFile, activeCollectionId, activeProjectId, setPipFile, togglePip, isPipOpen, pipFileId, fileProgress, setFileProgress, isSidebarOpen: sidebarOpen, toggleSidebar: setSidebarOpen, addAmbientMusicSuppression, removeAmbientMusicSuppression, trashFile } = useStore();
+    const { 
+        files, 
+        highlights, 
+        collections, 
+        addVideoHighlight, 
+        removeHighlight, 
+        updateHighlight, 
+        updateFile, 
+        activeCollectionId, 
+        activeProjectId, 
+        setPipFile, 
+        togglePip, 
+        isPipOpen, 
+        pipFileId, 
+        fileProgress, 
+        setFileProgress, 
+        isSidebarOpen: sidebarOpen, 
+        toggleSidebar: setSidebarOpen, 
+        addAmbientMusicSuppression, 
+        removeAmbientMusicSuppression, 
+        trashFile 
+    } = useStore(useShallow((state: AppStore) => ({
+        files: state.files,
+        highlights: state.highlights,
+        collections: state.collections,
+        addVideoHighlight: state.addVideoHighlight,
+        removeHighlight: state.removeHighlight,
+        updateHighlight: state.updateHighlight,
+        updateFile: state.updateFile,
+        activeCollectionId: state.activeCollectionId,
+        activeProjectId: state.activeProjectId,
+        setPipFile: state.setPipFile,
+        togglePip: state.togglePip,
+        isPipOpen: state.isPipOpen,
+        pipFileId: state.pipFileId,
+        fileProgress: state.fileProgress,
+        setFileProgress: state.setFileProgress,
+        isSidebarOpen: state.isSidebarOpen,
+        toggleSidebar: state.toggleSidebar,
+        addAmbientMusicSuppression: state.addAmbientMusicSuppression,
+        removeAmbientMusicSuppression: state.removeAmbientMusicSuppression,
+        trashFile: state.trashFile
+    })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const imageRef = useRef<ImagePlayerHandle>(null);
@@ -277,11 +320,11 @@ export default function VideoPlayer() {
         if (file.url) navigator.clipboard.writeText(file.url);
     };
 
-    const seekToHighlight = (time: number) => {
+    const seekToHighlight = (highlight: Highlight) => {
         if (file?.type === 'pdf') {
-            pdfRef.current?.jumpToPage(time);
+            pdfRef.current?.jumpToPage(highlight.start);
         } else if (videoRef.current) {
-            videoRef.current.currentTime = time;
+            videoRef.current.currentTime = highlight.start;
             videoRef.current.play();
         }
     };
@@ -559,8 +602,8 @@ export default function VideoPlayer() {
                         >
                             {/* Timestamp Markers */}
                             <div className="absolute top-0 bottom-0 left-2 right-2 pointer-events-none z-10">
-                                {fileHighlights.map((h: any) => {
-                                    const collection = collections.find(c => c.id === h.collectionId);
+                                {fileHighlights.map((h: Highlight) => {
+                                    const collection = collections.find((c: Collection) => c.id === h.collectionId);
                                     const color = collection ? collection.color : 'var(--primary)';
                                     return (
                                         <div
@@ -886,7 +929,7 @@ export default function VideoPlayer() {
                 }}
                 highlight={selectedHighlight}
                 file={file}
-                collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
+                collections={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted)}
                 onSave={(updates) => selectedHighlight && updateHighlight(selectedHighlight.id, updates)}
             />
 

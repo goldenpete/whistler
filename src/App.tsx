@@ -14,6 +14,7 @@ import { useInitialData } from "@/hooks/useInitialData";
 import { useSync } from "@/hooks/useSync";
 
 import { useStore } from "@/store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { WelcomeView } from "@/components/views/WelcomeView";
 import type { AccentTheme } from "@/types";
 
@@ -39,7 +40,11 @@ const NotFoundView = () => {
 };
 
 export default function App() {
-  const { projects, accentTheme, baseTheme } = useStore();
+  const { projects, accentTheme, baseTheme } = useStore(useShallow((state) => ({
+    projects: state.projects,
+    accentTheme: state.accentTheme,
+    baseTheme: state.baseTheme,
+  })));
   useSync();
 
   useEffect(() => {

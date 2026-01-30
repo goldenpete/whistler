@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ChangeEvent, type FormEvent } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,21 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         setAutoSyncInterval,
         syncStatus,
         setSyncStatus
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        user: state.user,
+        login: state.login,
+        logout: state.logout,
+        updateUser: state.updateUser,
+        lastSyncTime: state.lastSyncTime,
+        setLastSyncTime: state.setLastSyncTime,
+        setState: state.setState,
+        autoSyncEnabled: state.autoSyncEnabled,
+        setAutoSyncEnabled: state.setAutoSyncEnabled,
+        autoSyncInterval: state.autoSyncInterval,
+        setAutoSyncInterval: state.setAutoSyncInterval,
+        syncStatus: state.syncStatus,
+        setSyncStatus: state.setSyncStatus
+    })));
     const { handleSync, error: syncError } = useSync();
     const [syncId, setSyncId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
