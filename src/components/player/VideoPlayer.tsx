@@ -44,11 +44,16 @@ import {
     GridFour,
     CircleNotch,
     Eye,
-    EyeSlash
+    EyeSlash,
+    Image as ImageIcon,
+    MusicNotes
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
 import type { PDFPlayerHandle } from './PDFPlayer';
+import { ImagePlayer } from './ImagePlayer';
+import type { ImagePlayerHandle } from './ImagePlayer';
+import { AudioPlayer } from './AudioPlayer';
 import { SeekPreview } from './SeekPreview';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
@@ -281,11 +286,7 @@ export default function VideoPlayer() {
         }
     };
 
-    const formatTime = (time: number) => {
-        const mins = Math.floor(time / 60);
-        const secs = Math.floor(time % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
+
 
     const handleSeek = (value: number[]) => {
         const time = value[0];
@@ -330,6 +331,9 @@ export default function VideoPlayer() {
 
         if (file.type === 'pdf') {
             pdfRef.current?.addHighlightFromSelection();
+            return;
+        } else if (file.type === 'image') {
+            imageRef.current?.addHighlightFromSelection();
             return;
         }
 
@@ -379,6 +383,10 @@ export default function VideoPlayer() {
                     )}>
                         {file.type === 'pdf' ? (
                             <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                        ) : file.type === 'image' ? (
+                            <ImageIcon className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                        ) : file.type === 'audio' ? (
+                            <MusicNotes className="text-muted-foreground shrink-0" size={24} weight="bold" />
                         ) : (
                             <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
                         )}
