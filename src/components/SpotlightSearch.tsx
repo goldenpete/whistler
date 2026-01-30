@@ -26,6 +26,7 @@ import {
 import { useStore } from "@/store/useStore";
 import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
+import { formatTime } from "@/lib/utils";
 
 export function SpotlightSearch() {
     const navigate = useNavigate();

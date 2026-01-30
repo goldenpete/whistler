@@ -501,7 +501,7 @@ export default function VideoPlayer() {
                                 ref={imageRef}
                                 url={file.url || ""}
                                 fileId={file.id}
-                                onSelectionChange={(hasSelection) => { /* Optional: update state if needed */ }}
+                                onSelectionChange={(hasSelection: boolean) => { /* Optional: update state if needed */ }}
                                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                                 isSidebarOpen={sidebarOpen}
                                 showControls={showControls}

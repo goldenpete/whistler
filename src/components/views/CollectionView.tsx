@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import {
     AlertDialog,
     AlertDialogAction,

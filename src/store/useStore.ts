@@ -528,17 +528,15 @@ export const useStore = create<AppStore>()(
                 };
             }),
 
-            addVideoHighlight: (fileId, time) => set((state) => {
-                const collectionId = state.activeCollectionId;
+            addVideoHighlight: (fileId, time, collectionId) => set((state) => {
                 const newHighlight: Highlight = {
                     id: crypto.randomUUID(),
                     fileId,
-                    collectionId,
+                    collectionId: collectionId || state.activeCollectionId || null,
                     start: time,
-                    end: time + 5,
-                    note: "",
-                    text: "",
-                    created: Date.now()
+                    end: time,
+                    note: '',
+                    created: Date.now(),
                 };
                 return {
                     highlights: [...state.highlights, newHighlight],
@@ -548,23 +546,22 @@ export const useStore = create<AppStore>()(
                         action: 'create',
                         entityType: 'highlight',
                         entityId: newHighlight.id,
-                        entityName: 'Highlight',
+                        entityName: 'Video Highlight',
                         timestamp: Date.now()
                     }, ...state.history]
                 };
             }),
+
             addImageHighlight: (fileId, rect, collectionId) => set((state) => {
-                const collectionIdToUse = collectionId ?? state.activeCollectionId ?? null;
                 const newHighlight: Highlight = {
                     id: crypto.randomUUID(),
                     fileId,
-                    collectionId: collectionIdToUse,
+                    collectionId: collectionId || state.activeCollectionId || null,
                     start: 0,
                     end: 0,
+                    note: '',
                     rect,
-                    note: "",
-                    text: "",
-                    created: Date.now()
+                    created: Date.now(),
                 };
                 return {
                     highlights: [...state.highlights, newHighlight],
@@ -574,7 +571,7 @@ export const useStore = create<AppStore>()(
                         action: 'create',
                         entityType: 'highlight',
                         entityId: newHighlight.id,
-                        entityName: 'Highlight',
+                        entityName: 'Image Highlight',
                         timestamp: Date.now()
                     }, ...state.history]
                 };

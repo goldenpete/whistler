@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, type MouseEvent } from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
     MagnifyingGlassPlus, 
@@ -127,7 +127,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     }, [selection, onSelectionChange]);
 
     // Mouse events for selection
-    const handleMouseDown = (e: MouseEvent) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (readonly || !imageRef.current) return;
         
         // Only allow left click
@@ -142,7 +142,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         setSelection(null);
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isDragging || !dragStart || !imageRef.current) return;
 
         const rect = imageRef.current.getBoundingClientRect();
@@ -208,7 +208,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                 >
                     <Button
                         size="sm"
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation();
                             handleAddHighlight();
                         }}
@@ -234,7 +234,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                         alt="View"
                         className="max-w-full max-h-full object-contain select-none pointer-events-none"
                         draggable={false}
-                        onLoad={(e) => setImageDimensions({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
+                        onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => setImageDimensions({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
                     />
                     
                     {/* Interaction Layer (Overlay) */}

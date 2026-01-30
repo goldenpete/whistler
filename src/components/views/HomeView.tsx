@@ -6,6 +6,7 @@ import whistlerLogoSky from "../../../whistlerlogo-sky.png";
 import whistlerLogoViolet from "../../../whistlerlogo-violet.png";
 import type { AccentTheme, File, Doc, Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
+import { formatTime } from "@/lib/utils";
 import { 
     FileText, 
     Folder, 
