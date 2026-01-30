@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ChangeEvent, type FormEvent } from "react";
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useEffect } from "react";
 import {

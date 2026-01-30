@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import {

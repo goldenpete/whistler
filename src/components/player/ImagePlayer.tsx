@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, type MouseEvent as ReactMouseEvent, type SyntheticEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
     MagnifyingGlassPlus, 
@@ -6,25 +6,14 @@ import {
     SidebarSimple,
     EyeSlash,
     CornersIn,
-    CornersOut,
-    Trash
+    CornersOut
 } from '@phosphor-icons/react';
-import { useShallow } from "zustand/react/shallow";
-import { useStore } from '@/store/useStore';
+import { useStore, type AppStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useNavigate } from 'react-router-dom';
-import { 
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import type { Highlight, Collection } from "@/types";
 
 export interface ImagePlayerHandle {
     zoomIn: () => void;
@@ -65,12 +54,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     className 
 }, ref) => {
     const navigate = useNavigate();
-    const { highlights, addImageHighlight, trashFile, collections } = useStore(useShallow((state) => ({
-        highlights: state.highlights,
-        addImageHighlight: state.addImageHighlight,
-        trashFile: state.trashFile,
-        collections: state.collections
-    })));
+    const { highlights, addImageHighlight, trashFile, collections } = useStore();
     
     // State
     const [scale, setScale] = useState<number>(1.0);
@@ -78,12 +62,11 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState<{ x: number, y: number } | null>(null);
     const [imageDimensions, setImageDimensions] = useState<{ width: number, height: number } | null>(null);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     
-    const fileHighlights = highlights.filter(h => h.fileId === fileId);
+    const fileHighlights = highlights.filter((h: Highlight) => h.fileId === fileId);
 
     // Zoom handlers
     const zoomIn = () => setScale(s => Math.min(s + 0.25, 5.0));
@@ -172,36 +155,11 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         }
     };
 
-    const handleDelete = () => {
-        trashFile(fileId);
-        navigate(-1);
-    };
-
     return (
         <div className={cn("relative h-full w-full bg-black/90 flex flex-col overflow-hidden", className)}
              onMouseUp={handleMouseUp}
              onMouseLeave={handleMouseUp}>
              
-            {/* Toolbar */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2 z-50">
-                <Button variant="secondary" size="icon" onClick={zoomIn} title="Zoom In">
-                    <MagnifyingGlassPlus size={20} />
-                </Button>
-                <Button variant="secondary" size="icon" onClick={zoomOut} title="Zoom Out">
-                    <MagnifyingGlassMinus size={20} />
-                </Button>
-                {!readonly && (
-                    <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        onClick={() => setDeleteDialogOpen(true)}
-                        title="Delete Image"
-                    >
-                        <Trash size={20} />
-                    </Button>
-                )}
-            </div>
-
             {/* Floating Highlight Button */}
             {selection && !readonly && (
                 <div 
@@ -240,7 +198,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                         alt="View"
                         className="max-w-full max-h-full object-contain select-none pointer-events-none"
                         draggable={false}
-                        onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => setImageDimensions({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
+                        onLoad={(e: SyntheticEvent<HTMLImageElement>) => setImageDimensions({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
                     />
                     
                     {/* Interaction Layer (Overlay) */}
@@ -293,6 +251,38 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                 "absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/10 shadow-2xl z-[60] transition-all duration-300",
                 showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
             )}>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                    onClick={(e: ReactMouseEvent) => {
+                        e.stopPropagation();
+                        zoomOut();
+                    }}
+                    title="Zoom Out"
+                >
+                    <MagnifyingGlassMinus size={14} weight="bold" />
+                </Button>
+
+                <span className="text-zinc-400 text-[10px] w-8 text-center select-none">
+                    {Math.round(scale * 100)}%
+                </span>
+
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                    onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        zoomIn();
+                    }}
+                    title="Zoom In"
+                >
+                    <MagnifyingGlassPlus size={14} weight="bold" />
+                </Button>
+
+                <div className="w-px h-4 bg-white/10 mx-1" />
+
                 {showSidebarToggle && (
                     <>
                         <Button
@@ -316,10 +306,10 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e: MouseEvent) => {
-                                e.stopPropagation();
-                                onToggleFullscreen();
-                            }}
+                            onClick={(e: ReactMouseEvent) => {
+                        e.stopPropagation();
+                        onToggleFullscreen();
+                    }}
                             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                         >
                             {isFullscreen ? <CornersIn size={14} weight="bold" /> : <CornersOut size={14} weight="bold" />}
@@ -345,23 +335,6 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                     </>
                 )}
             </div>
-            
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will move the file to trash. You can restore it later.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     );
 });

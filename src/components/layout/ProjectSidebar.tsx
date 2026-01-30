@@ -45,7 +45,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from "@/lib/utils";
 import { ambientMusicStorage, useStore } from "@/store/useStore";
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "@/lib/zustand-shallow";
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
 import { getIcon } from "@/utils/iconMap";
 import {

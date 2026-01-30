@@ -8,7 +8,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
 import type { Project, File } from "@/types";
 import { Plus, DownloadSimple, Lightning, Shuffle, CaretLeft } from "@phosphor-icons/react";

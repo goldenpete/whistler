@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
 import { format } from "date-fns";
 import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase, ShareNetwork, Circle, LineSegment, Article } from "@phosphor-icons/react";

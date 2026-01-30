@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import {

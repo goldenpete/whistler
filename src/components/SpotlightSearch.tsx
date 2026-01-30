@@ -24,7 +24,7 @@ import {
     Trash,
 } from "@phosphor-icons/react";
 import { useStore } from "@/store/useStore";
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "@/lib/zustand-shallow";
 import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
 import { formatTime } from "@/lib/utils";

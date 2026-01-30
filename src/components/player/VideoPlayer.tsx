@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn, formatTime } from "@/lib/utils";
@@ -8,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import {
     AlertDialog,
+    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -110,28 +110,7 @@ export default function VideoPlayer() {
         addAmbientMusicSuppression, 
         removeAmbientMusicSuppression, 
         trashFile 
-    } = useStore(useShallow((state: AppStore) => ({
-        files: state.files,
-        highlights: state.highlights,
-        collections: state.collections,
-        addVideoHighlight: state.addVideoHighlight,
-        removeHighlight: state.removeHighlight,
-        updateHighlight: state.updateHighlight,
-        updateFile: state.updateFile,
-        activeCollectionId: state.activeCollectionId,
-        activeProjectId: state.activeProjectId,
-        setPipFile: state.setPipFile,
-        togglePip: state.togglePip,
-        isPipOpen: state.isPipOpen,
-        pipFileId: state.pipFileId,
-        fileProgress: state.fileProgress,
-        setFileProgress: state.setFileProgress,
-        isSidebarOpen: state.isSidebarOpen,
-        toggleSidebar: state.toggleSidebar,
-        addAmbientMusicSuppression: state.addAmbientMusicSuppression,
-        removeAmbientMusicSuppression: state.removeAmbientMusicSuppression,
-        trashFile: state.trashFile
-    })));
+    } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const imageRef = useRef<ImagePlayerHandle>(null);
@@ -164,6 +143,7 @@ export default function VideoPlayer() {
     const [highlightPlayerOpen, setHighlightPlayerOpen] = useState(false);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [colorPickerOpen, setColorPickerOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [returnToHighlightPlayer, setReturnToHighlightPlayer] = useState(false);
     const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
@@ -486,12 +466,7 @@ export default function VideoPlayer() {
                                     size="icon" 
                                     className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" 
                                     title="Delete"
-                                    onClick={() => {
-                                        if (confirm("Are you sure you want to move this file to trash?")) {
-                                            trashFile(file.id);
-                                            navigate(-1);
-                                        }
-                                    }}
+                                    onClick={() => setDeleteDialogOpen(true)}
                                 >
                                     <Trash size={20} weight="bold" />
                                 </Button>
@@ -943,6 +918,26 @@ export default function VideoPlayer() {
                     setColorPickerOpen(false);
                 }}
             />
+
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will move the file to trash. You can restore it later.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => {
+                            trashFile(file.id);
+                            navigate(-1);
+                        }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

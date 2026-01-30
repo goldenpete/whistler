@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate } from "react-router-dom";
 import {
     MagnifyingGlass,

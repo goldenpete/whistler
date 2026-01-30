@@ -14,7 +14,7 @@ import { useInitialData } from "@/hooks/useInitialData";
 import { useSync } from "@/hooks/useSync";
 
 import { useStore } from "@/store/useStore";
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "@/lib/zustand-shallow";
 import { WelcomeView } from "@/components/views/WelcomeView";
 import type { AccentTheme } from "@/types";
 

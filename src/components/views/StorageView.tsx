@@ -1,5 +1,6 @@
 import { useState, useEffect, createElement } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { Link, useSearchParams } from "react-router-dom";
 import {
     File as FileIcon,

@@ -1,5 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
     NotePencil, TextB, TextItalic, ListBullets,

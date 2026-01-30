@@ -29,6 +29,35 @@ declare module "react" {
   
   export type ComponentProps<T> = any;
 
+  export class Component<P = {}, S = {}, SS = any> {
+      constructor(props: P, context?: any);
+      setState<K extends keyof S>(
+          state: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null),
+          callback?: () => void
+      ): void;
+      forceUpdate(callback?: () => void): void;
+      render(): ReactNode;
+      readonly props: Readonly<P>;
+      state: Readonly<S>;
+      context: any;
+      refs: {
+          [key: string]: any;
+      };
+      componentDidMount?(): void;
+      shouldComponentUpdate?(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): boolean;
+      componentWillUnmount?(): void;
+      componentDidCatch?(error: Error, errorInfo: any): void;
+      getSnapshotBeforeUpdate?(prevProps: Readonly<P>, prevState: Readonly<S>): SS | null;
+      componentDidUpdate?(prevProps: Readonly<P>, prevState: Readonly<S>, snapshot?: SS): void;
+      static getDerivedStateFromError?(error: any): Partial<S> | null;
+  }
+
+  export interface ErrorInfo {
+      componentStack: string;
+  }
+
+  export const StrictMode: any;
+
   export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void];
   export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
   export function useRef<T>(initialValue: T): { current: T };
@@ -67,7 +96,8 @@ declare module "react" {
       MouseEvent: any;
       ChangeEvent: any;
       FormEvent: any;
-      
+      Component: typeof Component;
+      StrictMode: any;
   };
   export default React;
 }
@@ -87,6 +117,14 @@ declare module "react/jsx-runtime" {
           [elemName: string]: any;
       }
   }
+}
+
+declare module "react-dom/client" {
+    import React from "react";
+    export function createRoot(container: Element | DocumentFragment | null): {
+        render(children: React.ReactNode): void;
+        unmount(): void;
+    };
 }
 
 declare module "zustand" {
@@ -168,6 +206,7 @@ declare module "react-router-dom" {
     export function Routes(props: any): any;
     export function Route(props: any): any;
     export function Navigate(props: any): any;
+    export function BrowserRouter(props: any): any;
 }
 
 declare module "framer-motion" {
@@ -189,6 +228,11 @@ declare module "usehooks-ts" {
 }
 
 declare module "*.png" {
+    const value: string;
+    export default value;
+}
+
+declare module "*.css" {
     const value: string;
     export default value;
 }

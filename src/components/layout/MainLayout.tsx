@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
 import ProjectSidebar from "./ProjectSidebar";
 import { ambientMusicStorage, useStore } from "@/store/useStore";
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "@/lib/zustand-shallow";
 
 export function MainLayout() {
     const location = useLocation();
