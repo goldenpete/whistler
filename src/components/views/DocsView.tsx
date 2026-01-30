@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-    NotePencil, TextB, TextItalic, ListBullets,
+    NotePencil, TextBolder, TextItalic, ListBullets,
     TextUnderline, TextStrikethrough, TextAlignLeft, TextAlignCenter, TextAlignRight,
-    ArrowCounterClockwise, ArrowClockwise, Link, File, Rows, ArrowsOutSimple, Layout, Plus
+    ArrowsCounterClockwise, ArrowsClockwise, Link, File, Rows, ArrowsOutSimple, Layout, Plus
 } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -207,13 +207,13 @@ function DocEditor({ doc }: DocEditorProps) {
         updateFormatState();
     };
     const projectFiles = files.filter(
-        (f) => f.projectId === doc.projectId && !f.deleted
+        (f: any) => f.projectId === doc.projectId && !f.deleted
     );
     const projectCollections = collections.filter(
-        (c) => c.projectId === doc.projectId && !c.deleted
+        (c: any) => c.projectId === doc.projectId && !c.deleted
     );
-    const projectHighlights = highlights.filter((t) => {
-        const file = files.find((f) => f.id === t.fileId && !f.deleted);
+    const projectHighlights = highlights.filter((t: any) => {
+        const file = files.find((f: any) => f.id === t.fileId && !f.deleted);
         return !!file && file.projectId === doc.projectId;
     });
     const handleInsertLink = () => {
@@ -263,7 +263,7 @@ function DocEditor({ doc }: DocEditorProps) {
             <div className="flex items-center gap-1 p-2 border-b border-border bg-card/30 flex-wrap">
                 <Input
                     value={docName}
-                    onChange={(e) => setDocName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDocName(e.target.value)}
                     className="max-w-xs font-medium border-none shadow-none focus-visible:ring-0 bg-transparent px-2 text-base mr-auto"
                     placeholder="Untitled"
                 />
@@ -275,7 +275,7 @@ function DocEditor({ doc }: DocEditorProps) {
                         <ArrowCounterClockwise />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => execCommand('redo')} className="size-8" title="Redo">
-                        <ArrowClockwise />
+                        <ArrowsClockwise />
                     </Button>
                 </div>
 

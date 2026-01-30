@@ -260,6 +260,10 @@ export default function StorageView() {
         useStore.setState(state => ({ files: [...state.files, newFile] }));
     };
 
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over || active.id === over.id) return;

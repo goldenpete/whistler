@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
@@ -359,7 +359,7 @@ export default function GraphView() {
         }
     };
 
-    const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const handleDoubleClick = (e: ReactMouseEvent<HTMLCanvasElement>) => {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
 
@@ -445,7 +445,7 @@ export default function GraphView() {
         }
     };
 
-    const handleMouseUp = (e: React.MouseEvent) => {
+    const handleMouseUp = (e: ReactMouseEvent) => {
         if (connectingNodeId) {
              const rect = canvasRef.current?.getBoundingClientRect();
              if (rect) {
@@ -486,7 +486,7 @@ export default function GraphView() {
         setIsPanning(false);
     };
 
-    const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    const handleWheel = (e: ReactWheelEvent<HTMLCanvasElement>) => {
         e.preventDefault();
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;

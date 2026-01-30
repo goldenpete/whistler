@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, type MouseEvent as ReactMouseEvent, type SyntheticEvent } from 'react';
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef, type MouseEvent as ReactMouseEvent, type SyntheticEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
     MagnifyingGlassPlus, 
@@ -115,8 +115,20 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         onSelectionChange?.(!!selection);
     }, [selection, onSelectionChange]);
 
+    const handleWheel = (e: ReactWheelEvent | WheelEvent) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        }
+    };
+
     // Mouse events for selection
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
         if (readonly || !imageRef.current) return;
         
         // Only allow left click
@@ -172,7 +184,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                 >
                     <Button
                         size="sm"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        onClick={(e: ReactMouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation();
                             handleAddHighlight();
                         }}
@@ -272,7 +284,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                    onClick={(e: React.MouseEvent) => {
+                    onClick={(e: ReactMouseEvent) => {
                         e.stopPropagation();
                         zoomIn();
                     }}
