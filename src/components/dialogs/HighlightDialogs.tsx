@@ -11,16 +11,11 @@ import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/useStore";
 import { type Highlight, type File, type Collection } from "@/types";
 import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
 
 // --- Time Helper ---
-const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
 
 const parseTime = (timeStr: string) => {
     const parts = timeStr.split(':');

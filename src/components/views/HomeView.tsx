@@ -247,11 +247,6 @@ export default function HomeView() {
         if (file?.type === 'pdf') {
             return h.end && h.end !== h.start ? `Page ${h.start}-${h.end}` : `Page ${h.start}`;
         }
-        const formatTime = (seconds: number) => {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
-        };
         return `${formatTime(h.start)} - ${formatTime(h.end || h.start)}`;
     };
 

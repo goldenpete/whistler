@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useParams, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";

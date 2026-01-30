@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { type File } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 
 interface SeekPreviewProps {
     file: File;
@@ -22,12 +22,7 @@ export function SeekPreview({ file, time, x, visible }: SeekPreviewProps) {
         }
     }, [time]);
 
-    // Format time for timestamp display
-    const formatTime = (time: number) => {
-        const mins = Math.floor(time / 60);
-        const secs = Math.floor(time % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
+
 
     if (!file.url || (file.type !== 'video' && file.type !== 'audio')) return null;
 
