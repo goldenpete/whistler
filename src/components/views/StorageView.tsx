@@ -165,6 +165,7 @@ export default function StorageView() {
         !f.deleted &&
         (normalizedQuery === "" || f.name.toLowerCase().includes(normalizedQuery))
     );
+    const orderedProjectFiles = [...projectFiles].sort((a, b) => a.order - b.order);
 
     const handleRenameInit = (file: File) => {
         if (file.type === 'folder') {
@@ -285,7 +286,10 @@ export default function StorageView() {
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
+        if (!over || active.id === over.id) {
+            setActiveId(null);
+            return;
+        }
 
         const targetFolderId = over.id === 'root' ? null : over.id as string;
 
@@ -310,6 +314,31 @@ export default function StorageView() {
                         : f
                 )
             }));
+            setActiveId(null);
+            return;
+        }
+
+        if (activeFile && overFile && activeFile.parentId === overFile.parentId && activeFile.storageId === overFile.storageId) {
+            const siblings = files
+                .filter(f =>
+                    f.projectId === activeFile.projectId &&
+                    f.storageId === activeFile.storageId &&
+                    f.parentId === activeFile.parentId &&
+                    !f.deleted
+                )
+                .sort((a, b) => a.order - b.order);
+            const oldIndex = siblings.findIndex(f => f.id === active.id);
+            const newIndex = siblings.findIndex(f => f.id === over.id);
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const reordered = arrayMove(siblings, oldIndex, newIndex);
+                useStore.setState(state => ({
+                    files: state.files.map(f => {
+                        const idx = reordered.findIndex(r => r.id === f.id);
+                        if (idx === -1) return f;
+                        return { ...f, order: idx, lastModified: Date.now() };
+                    })
+                }));
+            }
         }
         
         setActiveId(null);
@@ -378,7 +407,13 @@ export default function StorageView() {
     };
 
     return (
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveId(null)}
+        >
             {showEmptyState ? (
                 <div className="flex h-full bg-transparent overflow-hidden">
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -503,7 +538,7 @@ export default function StorageView() {
                         <div className="flex-1 overflow-auto p-4">
                             {viewMode === 'grid' ? (
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 pb-20">
-                                    {projectFiles.map(file => (
+                                    {orderedProjectFiles.map(file => (
                                         <FileCardGrid
                                             key={file.id}
                                             file={file}
@@ -516,11 +551,11 @@ export default function StorageView() {
                                             onColor={handleColorInit}
                                         />
                                     ))}
-                                    {projectFiles.length === 0 && <EmptyState />}
+                                    {orderedProjectFiles.length === 0 && <EmptyState />}
                                 </div>
                             ) : (
                                 <div className="space-y-1 pb-20">
-                                    {projectFiles.map(file => (
+                                    {orderedProjectFiles.map(file => (
                                         <FileCardList
                                             key={file.id}
                                             file={file}
@@ -533,7 +568,7 @@ export default function StorageView() {
                                             onColor={handleColorInit}
                                         />
                                     ))}
-                                    {projectFiles.length === 0 && <EmptyState />}
+                                    {orderedProjectFiles.length === 0 && <EmptyState />}
                                 </div>
                             )}
                         </div>
@@ -643,15 +678,17 @@ interface FileCardInnerProps {
     selectionMode: boolean;
     onClick?: (e: React.MouseEvent) => void;
     linkTo?: string;
+    domRef?: (element: HTMLElement | null) => void;
     children?: React.ReactNode;
     style?: React.CSSProperties;
     className?: string;
     showSelection?: boolean;
 }
 
-function FileCardGridInner({ file, isSelected, isOver, selectionMode, onClick, linkTo, children, style, className, showSelection = true }: FileCardInnerProps) {
+function FileCardGridInner({ file, isSelected, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     return (
         <div
+            ref={domRef}
             onClick={onClick}
             data-sound-cursor
             className={cn(
@@ -676,7 +713,7 @@ function FileCardGridInner({ file, isSelected, isOver, selectionMode, onClick, l
                 </div>
             )}
 
-            {!selectionMode && linkTo && (file.type === 'video' || file.type === 'pdf') ? (
+            {!selectionMode && linkTo && (file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image') ? (
                 <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => { e.stopPropagation(); playSfx('cursor'); }} />
             ) : null}
 
@@ -689,12 +726,13 @@ function FileCardGridInner({ file, isSelected, isOver, selectionMode, onClick, l
     );
 }
 
-function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, linkTo, children, style, className, showSelection = true }: FileCardInnerProps) {
+function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
     
     return (
         <div
+            ref={domRef}
             onClick={onClick}
             data-sound-cursor
             className={cn(
@@ -719,7 +757,7 @@ function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, l
                 </div>
             )}
 
-            {!selectionMode && linkTo && (file.type === 'video' || file.type === 'pdf') ? (
+            {!selectionMode && linkTo && (file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image') ? (
                 <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => { e.stopPropagation(); playSfx('cursor'); }} />
             ) : null}
 
@@ -750,7 +788,7 @@ function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, l
 
 function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColor }: FileCardProps) {
     const Icon = getFileIcon(file.type);
-    const linkTo = file.type === 'video' || file.type === 'pdf' ? `/file/${file.id}` : '#';
+    const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: file.id,
@@ -760,7 +798,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
 
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
         id: file.id,
-        disabled: file.type !== 'folder' || selectionMode,
+        disabled: selectionMode,
         data: file
     });
 
@@ -809,7 +847,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
 }
 
 function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColor }: FileCardProps) {
-    const linkTo = file.type === 'video' || file.type === 'pdf' ? `/file/${file.id}` : '#';
+    const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
 
@@ -821,7 +859,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
 
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
         id: file.id,
-        disabled: file.type !== 'folder' || selectionMode,
+        disabled: selectionMode,
         data: file
     });
 
