@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef, type MouseEvent as ReactMouseEvent, type SyntheticEvent, type WheelEvent as ReactWheelEvent } from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
+import type * as ReactTypes from 'react';
 import { Button } from '@/components/ui/button';
 import { 
     MagnifyingGlassPlus, 
@@ -115,7 +116,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         onSelectionChange?.(!!selection);
     }, [selection, onSelectionChange]);
 
-    const handleWheel = (e: ReactWheelEvent | WheelEvent) => {
+    const handleWheel = (e: ReactTypes.WheelEvent | globalThis.WheelEvent) => {
         if (e.ctrlKey) {
             e.preventDefault();
             e.stopPropagation();
@@ -128,7 +129,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     };
 
     // Mouse events for selection
-    const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const handleMouseDown = (e: ReactTypes.MouseEvent<HTMLDivElement>) => {
         if (readonly || !imageRef.current) return;
         
         // Only allow left click
@@ -143,7 +144,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         setSelection(null);
     };
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseMove = (e: ReactTypes.MouseEvent<HTMLDivElement>) => {
         if (!isDragging || !dragStart || !imageRef.current) return;
 
         const rect = imageRef.current.getBoundingClientRect();
@@ -170,7 +171,8 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     return (
         <div className={cn("relative h-full w-full bg-black/90 flex flex-col overflow-hidden", className)}
              onMouseUp={handleMouseUp}
-             onMouseLeave={handleMouseUp}>
+             onMouseLeave={handleMouseUp}
+             onWheel={handleWheel}>
              
             {/* Floating Highlight Button */}
             {selection && !readonly && (
@@ -184,7 +186,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                 >
                     <Button
                         size="sm"
-                        onClick={(e: ReactMouseEvent<HTMLButtonElement>) => {
+                        onClick={(e: ReactTypes.MouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation();
                             handleAddHighlight();
                         }}
@@ -267,7 +269,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                    onClick={(e: ReactMouseEvent) => {
+                    onClick={(e: MouseEvent) => {
                         e.stopPropagation();
                         zoomOut();
                     }}
@@ -284,7 +286,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                    onClick={(e: ReactMouseEvent) => {
+                    onClick={(e: MouseEvent) => {
                         e.stopPropagation();
                         zoomIn();
                     }}
@@ -318,7 +320,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e: ReactMouseEvent) => {
+                            onClick={(e: MouseEvent) => {
                         e.stopPropagation();
                         onToggleFullscreen();
                     }}
@@ -336,7 +338,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            onClick={(e: React.MouseEvent) => {
+                            onClick={(e: MouseEvent) => {
                                 e.stopPropagation();
                                 onHideControls();
                             }}

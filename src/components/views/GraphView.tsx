@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import type * as ReactTypes from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
@@ -359,7 +360,7 @@ export default function GraphView() {
         }
     };
 
-    const handleDoubleClick = (e: ReactMouseEvent<HTMLCanvasElement>) => {
+    const handleDoubleClick = (e: ReactTypes.MouseEvent<HTMLCanvasElement>) => {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
 
@@ -375,7 +376,7 @@ export default function GraphView() {
         setPreviewNodeId(node.id);
     };
 
-    const handleMouseDown = (e: React.MouseEvent) => {
+    const handleMouseDown = (e: ReactTypes.MouseEvent) => {
         // Close preview if clicking elsewhere (will be handled by overlay click if not on card, 
         // but if we click canvas, we should close it)
         if (previewNodeId) {
@@ -445,7 +446,7 @@ export default function GraphView() {
         }
     };
 
-    const handleMouseUp = (e: ReactMouseEvent) => {
+    const handleMouseUp = (e: React.MouseEvent) => {
         if (connectingNodeId) {
              const rect = canvasRef.current?.getBoundingClientRect();
              if (rect) {
@@ -486,7 +487,7 @@ export default function GraphView() {
         setIsPanning(false);
     };
 
-    const handleWheel = (e: ReactWheelEvent<HTMLCanvasElement>) => {
+    const handleWheel = (e: ReactTypes.WheelEvent<HTMLCanvasElement>) => {
         e.preventDefault();
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
@@ -735,7 +736,7 @@ export default function GraphView() {
                         </div>
 
                         <ContextMenu
-                            onOpenChange={(open) => {
+                            onOpenChange={(open: boolean) => {
                                 if (!open) {
                                     setContextMenu(null);
                                 }
@@ -820,7 +821,7 @@ export default function GraphView() {
 
                         <NodeDialog 
                             open={nodeDialog.open} 
-                            onOpenChange={(open) => setNodeDialog(prev => ({ ...prev, open }))}
+                            onOpenChange={(open: boolean) => setNodeDialog(prev => ({ ...prev, open }))}
                             mode={nodeDialog.mode}
                             type={nodeDialog.type}
                             node={nodeDialog.node}

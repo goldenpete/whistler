@@ -21,7 +21,9 @@ import {
     HardDrives,
     Tag,
     NotePencil,
-    ProjectorScreenChart
+    ProjectorScreenChart,
+    FunnelSimple,
+    Check
 } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,7 @@ import { QuickAccessDialog } from "@/components/dialogs/QuickAccessDialog";
 import type { QuickAccessType } from "@/components/dialogs/QuickAccessDialog";
 import { FileContextMenu } from "@/components/views/StorageView";
 import { Copy, Trash, ArrowSquareOut, PencilSimple, Lightning } from "@phosphor-icons/react";
+import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
     orange: whistlerLogoOrange,
@@ -84,6 +87,193 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
     return 'file';
 }
 
+const CardPreview = ({ item }: { item: any }) => {
+    // Image File
+    if (item.type === 'file' && item.subType === 'image' && item.data.url) {
+        return (
+            <div className="absolute inset-0 bg-black/20">
+                <img 
+                    src={item.data.url} 
+                    alt="" 
+                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
+                    onContextMenu={(e: any) => e.preventDefault()}
+                />
+            </div>
+        );
+    }
+    
+    // Video File
+    if (item.type === 'file' && item.subType === 'video' && item.data.url) {
+        return (
+            <div className="absolute inset-0 bg-black/20">
+                <video
+                    src={item.data.url + "#t=0.1"}
+                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    muted
+                    loop
+                    playsInline
+                    onMouseOver={(e: any) => e.currentTarget.play()}
+                    onMouseOut={(e: any) => e.currentTarget.pause()}
+                    onContextMenu={(e: any) => e.preventDefault()}
+                />
+            </div>
+        );
+    }
+
+    // PDF File
+    if (item.type === 'file' && item.subType === 'pdf' && item.data.url) {
+        return (
+            <div className="absolute inset-0">
+                <PdfThumbnail 
+                    url={item.data.url} 
+                    onError={() => {}}
+                    width={400}
+                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                />
+            </div>
+        );
+    }
+
+    // Audio File
+    if (item.type === 'file' && item.subType === 'audio') {
+        return (
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none">
+                <MusicNote size={200} weight="fill" />
+            </div>
+        );
+    }
+
+    // Doc
+    if (item.type === 'doc') {
+        const text = item.data.content?.replace(/<[^>]*>/g, '') || '';
+        return (
+            <>
+                {item.data.color && (
+                    <div 
+                        className="absolute inset-0 opacity-[0.08]"
+                        style={{ backgroundColor: item.data.color }}
+                    />
+                )}
+                <div 
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    style={item.data.color ? { color: item.data.color } : undefined}
+                >
+                    <NotePencil size={180} weight="fill" />
+                </div>
+                <div 
+                    className="absolute inset-0 p-6 text-[10px] text-foreground/20 font-mono break-words leading-relaxed overflow-hidden select-none pointer-events-none"
+                    style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent)' }}
+                >
+                    {text.slice(0, 1000)}
+                </div>
+            </>
+        );
+    }
+
+    // Collection
+    if (item.type === 'collection') {
+        return (
+            <>
+                <div 
+                    className="absolute inset-0 opacity-[0.08]"
+                    style={{ backgroundColor: item.data.color }}
+                />
+                <div 
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    style={{ color: item.data.color }}
+                >
+                    <Tag size={180} weight="fill" />
+                </div>
+            </>
+        );
+    }
+
+    // Graph
+    if (item.type === 'graph') {
+        return (
+            <>
+                {item.data.color && (
+                    <div 
+                        className="absolute inset-0 opacity-[0.08]"
+                        style={{ backgroundColor: item.data.color }}
+                    />
+                )}
+                <div 
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    style={item.data.color ? { color: item.data.color, opacity: 0.05 } : undefined}
+                >
+                    <Graph size={200} weight="fill" />
+                </div>
+            </>
+        );
+    }
+
+    // Highlight
+    if (item.type === 'highlight') {
+        const file = item.data.file;
+        
+        if (file?.url && (file.type === 'video' || file.type === 'image')) {
+            if (file.type === 'image') {
+                return (
+                    <div className="absolute inset-0 bg-black/20">
+                        <img 
+                            src={file.url} 
+                            alt="" 
+                            className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
+                            onContextMenu={(e: any) => e.preventDefault()}
+                        />
+                    </div>
+                );
+            }
+            
+            if (file.type === 'video') {
+                return (
+                    <div className="absolute inset-0 bg-black/20">
+                        <video
+                            src={`${file.url}#t=${item.data.start || 0.1}`}
+                            className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                            muted
+                            loop
+                            playsInline
+                            onMouseOver={(e: any) => e.currentTarget.play()}
+                            onMouseOut={(e: any) => e.currentTarget.pause()}
+                            onContextMenu={(e: any) => e.preventDefault()}
+                        />
+                    </div>
+                );
+            }
+        }
+
+        return (
+            <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none transition-transform duration-700 group-hover:-translate-y-1">
+                “
+            </div>
+        );
+    }
+
+    // Folder
+    if (item.type === 'file' && item.subType === 'folder') {
+        return (
+            <>
+                {item.data.color && (
+                    <div 
+                        className="absolute inset-0 opacity-[0.08]"
+                        style={{ backgroundColor: item.data.color }}
+                    />
+                )}
+                <div 
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    style={item.data.color ? { color: item.data.color } : undefined}
+                >
+                    <Folder size={180} weight="fill" />
+                </div>
+            </>
+        );
+    }
+
+    return null;
+};
+
 export default function HomeView() {
     const { 
         accentTheme, 
@@ -94,6 +284,7 @@ export default function HomeView() {
         highlights, 
         graphs,
         storages,
+        projects,
         activeProjectId,
         activeStorageId
     } = useStore();
@@ -107,7 +298,30 @@ export default function HomeView() {
     const [addStorageOpen, setAddStorageOpen] = useState(false);
     const [addProjectOpen, setAddProjectOpen] = useState(false);
     
-    // Quick Access State
+    // Filter State
+    const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
+    const [activeFilters, setActiveFilters] = useState<Set<string>>(() => {
+        const saved = localStorage.getItem('home_view_filters');
+        if (saved) {
+            try {
+                return new Set(JSON.parse(saved));
+            } catch (e) {
+                console.error("Failed to parse filters", e);
+            }
+        }
+        return new Set(['file', 'doc', 'collection', 'graph', 'highlight', 'storage', 'project']);
+    });
+
+    const toggleFilter = (type: string) => {
+        const newFilters = new Set(activeFilters);
+        if (newFilters.has(type)) {
+            newFilters.delete(type);
+        } else {
+            newFilters.add(type);
+        }
+        setActiveFilters(newFilters);
+        localStorage.setItem('home_view_filters', JSON.stringify(Array.from(newFilters)));
+    };
     const [quickAccessOpen, setQuickAccessOpen] = useState(false);
     const [quickAccessType, setQuickAccessType] = useState<QuickAccessType | null>(null);
     const [quickAccessPopoverOpen, setQuickAccessPopoverOpen] = useState(false);
@@ -304,11 +518,27 @@ export default function HomeView() {
                 timestamp: h.created || 0,
                 data: { ...h, file }
             };
-        })
+        }),
+        ...storages.filter((s: any) => s.projectId === activeProjectId).map((s: any) => ({
+            id: s.id,
+            type: 'storage' as const,
+            name: s.name,
+            timestamp: Math.max(s.lastModified || s.created, s.lastViewed || 0),
+            data: s
+        })),
+        ...(projects || []).map((p: any) => ({
+            id: p.id,
+            type: 'project' as const,
+            name: p.name,
+            timestamp: Math.max(p.lastModified || p.created, p.lastViewed || 0),
+            data: p
+        }))
     ].sort((a, b) => b.timestamp - a.timestamp);
 
+    const filteredItems = allItems.filter(item => activeFilters.has(item.type));
+
     const getItemIcon = (item: typeof allItems[0]) => {
-        if ((item.type === 'collection' || item.type === 'doc' || item.type === 'graph') && item.data.icon) {
+        if ((item.type === 'collection' || item.type === 'doc' || item.type === 'graph' || item.type === 'storage') && item.data.icon) {
             const customIcon = ICONS.find(i => i.name === item.data.icon)?.icon;
             if (customIcon) return customIcon;
         }
@@ -319,6 +549,8 @@ export default function HomeView() {
             case 'collection': return Tag;
             case 'graph': return Graph;
             case 'highlight': return Clock;
+            case 'storage': return HardDrives;
+            case 'project': return ProjectorScreenChart;
         }
     };
 
@@ -334,6 +566,10 @@ export default function HomeView() {
                 return 'Graph';
             case 'highlight':
                 return 'Highlight';
+            case 'storage':
+                return 'Storage';
+            case 'project':
+                return 'Project';
             default:
                 return 'Unknown';
         }
@@ -366,6 +602,13 @@ export default function HomeView() {
                     useStore.getState().setActiveFile(item.data.file.id);
                     navigate(`/file/${item.data.file.id}`);
                 }
+                break;
+            case 'storage':
+                useStore.setState({ activeStorageId: item.id });
+                navigate('/storage');
+                break;
+            case 'project':
+                useStore.setState({ activeProjectId: item.id });
                 break;
         }
     };
@@ -446,187 +689,7 @@ export default function HomeView() {
         }
     };
 
-    const CardPreview = ({ item }: { item: typeof allItems[0] }) => {
-        // Image File
-        if (item.type === 'file' && item.subType === 'image' && item.data.url) {
-            return (
-                <div className="absolute inset-0 bg-black/20">
-                    <img 
-                        src={item.data.url} 
-                        alt="" 
-                        className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
-                        onContextMenu={(e: any) => e.preventDefault()}
-                    />
-                </div>
-            );
-        }
-        
-        // Video File
-        if (item.type === 'file' && item.subType === 'video' && item.data.url) {
-            return (
-                <div className="absolute inset-0 bg-black/20">
-                    <video
-                        src={item.data.url + "#t=0.1"}
-                        className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
-                        muted
-                        loop
-                        playsInline
-                        onMouseOver={(e: any) => e.currentTarget.play()}
-                        onMouseOut={(e: any) => e.currentTarget.pause()}
-                        onContextMenu={(e: any) => e.preventDefault()}
-                    />
-                </div>
-            );
-        }
 
-        // PDF File
-        if (item.type === 'file' && item.subType === 'pdf') {
-            return (
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] rotate-12 scale-150 pointer-events-none">
-                    <FilePdf size={200} weight="fill" />
-                </div>
-            );
-        }
-
-        // Audio File
-        if (item.type === 'file' && item.subType === 'audio') {
-            return (
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none">
-                    <MusicNote size={200} weight="fill" />
-                </div>
-            );
-        }
-
-        // Doc
-        if (item.type === 'doc') {
-            const text = item.data.content?.replace(/<[^>]*>/g, '') || '';
-            return (
-                <>
-                    {item.data.color && (
-                        <div 
-                            className="absolute inset-0 opacity-[0.08]"
-                            style={{ backgroundColor: item.data.color }}
-                        />
-                    )}
-                    <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                        style={item.data.color ? { color: item.data.color } : undefined}
-                    >
-                        <NotePencil size={180} weight="fill" />
-                    </div>
-                    <div 
-                        className="absolute inset-0 p-6 text-[10px] text-foreground/20 font-mono break-words leading-relaxed overflow-hidden select-none pointer-events-none"
-                        style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent)' }}
-                    >
-                        {text.slice(0, 1000)}
-                    </div>
-                </>
-            );
-        }
-
-        // Collection
-        if (item.type === 'collection') {
-            return (
-                <>
-                    <div 
-                        className="absolute inset-0 opacity-[0.08]"
-                        style={{ backgroundColor: item.data.color }}
-                    />
-                    <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                        style={{ color: item.data.color }}
-                    >
-                        <Tag size={180} weight="fill" />
-                    </div>
-                </>
-            );
-        }
-
-        // Graph
-        if (item.type === 'graph') {
-            return (
-                <>
-                    {item.data.color && (
-                        <div 
-                            className="absolute inset-0 opacity-[0.08]"
-                            style={{ backgroundColor: item.data.color }}
-                        />
-                    )}
-                    <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                        style={item.data.color ? { color: item.data.color, opacity: 0.05 } : undefined}
-                    >
-                        <Graph size={200} weight="fill" />
-                    </div>
-                </>
-            );
-        }
-
-        // Highlight
-        if (item.type === 'highlight') {
-            const file = item.data.file;
-            
-            if (file?.url && (file.type === 'video' || file.type === 'image')) {
-                if (file.type === 'image') {
-                    return (
-                        <div className="absolute inset-0 bg-black/20">
-                            <img 
-                                src={file.url} 
-                                alt="" 
-                                className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
-                                onContextMenu={(e: any) => e.preventDefault()}
-                            />
-                        </div>
-                    );
-                }
-                
-                if (file.type === 'video') {
-                    return (
-                        <div className="absolute inset-0 bg-black/20">
-                            <video
-                                src={`${file.url}#t=${item.data.start || 0.1}`}
-                                className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
-                                muted
-                                loop
-                                playsInline
-                                onMouseOver={(e: any) => e.currentTarget.play()}
-                                onMouseOut={(e: any) => e.currentTarget.pause()}
-                                onContextMenu={(e: any) => e.preventDefault()}
-                            />
-                        </div>
-                    );
-                }
-            }
-
-            return (
-                <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none transition-transform duration-700 group-hover:-translate-y-1">
-                    “
-                </div>
-            );
-        }
-
-        // Folder
-        if (item.type === 'file' && item.subType === 'folder') {
-            return (
-                <>
-                    {item.data.color && (
-                        <div 
-                            className="absolute inset-0 opacity-[0.08]"
-                            style={{ backgroundColor: item.data.color }}
-                        />
-                    )}
-                    <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                        style={item.data.color ? { color: item.data.color } : undefined}
-                    >
-                        <Folder size={180} weight="fill" />
-                    </div>
-                </>
-            );
-        }
-
-        return null;
-    };
 
     return (
         <div className="flex flex-col h-full bg-transparent overflow-hidden">
@@ -640,6 +703,33 @@ export default function HomeView() {
                 <h1 className="text-2xl font-semibold tracking-tight text-foreground flex-1">
                     {getGreeting(username)}
                 </h1>
+                
+                <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="gap-2">
+                            <FunnelSimple weight="bold" />
+                            Filter
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-1" align="end">
+                        <div className="p-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Filter Items
+                        </div>
+                        {['file', 'doc', 'collection', 'graph', 'highlight', 'storage', 'project'].map((type) => (
+                            <Button
+                                key={type}
+                                variant="ghost"
+                                className="w-full justify-start gap-2 h-9 px-2 font-normal"
+                                onClick={() => toggleFilter(type)}
+                            >
+                                <div className={`flex items-center justify-center w-4 h-4 rounded-sm border ${activeFilters.has(type) ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground opacity-50'}`}>
+                                    {activeFilters.has(type) && <Check size={10} weight="bold" />}
+                                </div>
+                                <span className="capitalize">{type === 'file' ? 'Files' : type + 's'}</span>
+                            </Button>
+                        ))}
+                    </PopoverContent>
+                </Popover>
                 
                 <Popover open={quickAccessPopoverOpen} onOpenChange={setQuickAccessPopoverOpen}>
                     <PopoverTrigger asChild>
@@ -713,9 +803,9 @@ export default function HomeView() {
                         <h2 className="text-sm font-medium uppercase tracking-wider">Recent Activity</h2>
                     </div>
                     
-                    {allItems.length > 0 ? (
+                    {filteredItems.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {allItems.slice(0, 50).map(item => {
+                            {filteredItems.slice(0, 50).map(item => {
                                 const Icon = getItemIcon(item) || FileIcon;
                                 const label = getItemLabel(item);
                                 

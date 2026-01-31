@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, type ChangeEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate } from "react-router-dom";
@@ -263,7 +263,7 @@ function DocEditor({ doc }: DocEditorProps) {
             <div className="flex items-center gap-1 p-2 border-b border-border bg-card/30 flex-wrap">
                 <Input
                     value={docName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDocName(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setDocName(e.target.value)}
                     className="max-w-xs font-medium border-none shadow-none focus-visible:ring-0 bg-transparent px-2 text-base mr-auto"
                     placeholder="Untitled"
                 />
@@ -272,7 +272,7 @@ function DocEditor({ doc }: DocEditorProps) {
 
                 <div className="flex items-center gap-0.5">
                     <Button variant="ghost" size="icon" onClick={() => execCommand('undo')} className="size-8" title="Undo">
-                        <ArrowCounterClockwise />
+                        <ArrowsCounterClockwise />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => execCommand('redo')} className="size-8" title="Redo">
                         <ArrowsClockwise />
@@ -292,7 +292,7 @@ function DocEditor({ doc }: DocEditorProps) {
                         )}
                         title="Bold"
                     >
-                        <TextB />
+                        <TextBolder />
                     </Button>
                     <Button
                         variant="ghost"
@@ -490,7 +490,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                     type="url"
                                     placeholder="https://example.com"
                                     value={linkUrl}
-                                    onChange={(e) => setLinkUrl(e.target.value)}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)}
                                     className="h-9 bg-zinc-900 border-zinc-700"
                                     autoFocus
                                 />

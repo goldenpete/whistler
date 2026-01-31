@@ -337,6 +337,7 @@ declare module "@phosphor-icons/react" {
     export const Layout: any;
     export const Note: any;
     export const XCircle: any;
+    export const FunnelSimple: any;
 }
 
 declare module "react-dom/server" {
