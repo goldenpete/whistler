@@ -322,7 +322,7 @@ declare module "@phosphor-icons/react" {
     export const SignIn: any;
     export const SignOut: any;
     export const Warning: any;
-    export const TextBolder: any;
+    export const TextB: any;
     export const TextItalic: any;
     export const ListBullets: any;
     export const TextUnderline: any;

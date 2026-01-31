@@ -1,5 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
-import type * as ReactTypes from "react";
+import React, { useRef, useState, useEffect, useCallback, type MouseEvent, type WheelEvent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
@@ -360,7 +359,7 @@ export default function GraphView() {
         }
     };
 
-    const handleDoubleClick = (e: ReactTypes.MouseEvent<HTMLCanvasElement>) => {
+    const handleDoubleClick = (e: MouseEvent<HTMLCanvasElement>) => {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
 
@@ -376,7 +375,7 @@ export default function GraphView() {
         setPreviewNodeId(node.id);
     };
 
-    const handleMouseDown = (e: ReactTypes.MouseEvent) => {
+    const handleMouseDown = (e: MouseEvent) => {
         // Close preview if clicking elsewhere (will be handled by overlay click if not on card, 
         // but if we click canvas, we should close it)
         if (previewNodeId) {
@@ -415,7 +414,7 @@ export default function GraphView() {
         }
     };
 
-    const handleMouseMove = (e: React.MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
         const screenX = e.clientX - rect.left;
@@ -446,7 +445,7 @@ export default function GraphView() {
         }
     };
 
-    const handleMouseUp = (e: React.MouseEvent) => {
+    const handleMouseUp = (e: MouseEvent) => {
         if (connectingNodeId) {
              const rect = canvasRef.current?.getBoundingClientRect();
              if (rect) {
@@ -487,7 +486,7 @@ export default function GraphView() {
         setIsPanning(false);
     };
 
-    const handleWheel = (e: ReactTypes.WheelEvent<HTMLCanvasElement>) => {
+    const handleWheel = (e: WheelEvent<HTMLCanvasElement>) => {
         e.preventDefault();
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
@@ -589,7 +588,7 @@ export default function GraphView() {
     };
 
 
-    const handleContextMenu = (e: React.MouseEvent) => {
+    const handleContextMenu = (e: MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
         

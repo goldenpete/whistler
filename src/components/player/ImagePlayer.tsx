@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
-import type * as ReactTypes from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, type MouseEvent, type WheelEvent, type SyntheticEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
     MagnifyingGlassPlus, 
@@ -116,7 +115,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         onSelectionChange?.(!!selection);
     }, [selection, onSelectionChange]);
 
-    const handleWheel = (e: ReactTypes.WheelEvent | globalThis.WheelEvent) => {
+    const handleWheel = (e: WheelEvent | globalThis.WheelEvent) => {
         if (e.ctrlKey) {
             e.preventDefault();
             e.stopPropagation();
@@ -129,7 +128,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     };
 
     // Mouse events for selection
-    const handleMouseDown = (e: ReactTypes.MouseEvent<HTMLDivElement>) => {
+    const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
         if (readonly || !imageRef.current) return;
         
         // Only allow left click
@@ -144,7 +143,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         setSelection(null);
     };
 
-    const handleMouseMove = (e: ReactTypes.MouseEvent<HTMLDivElement>) => {
+    const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
         if (!isDragging || !dragStart || !imageRef.current) return;
 
         const rect = imageRef.current.getBoundingClientRect();
@@ -186,7 +185,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                 >
                     <Button
                         size="sm"
-                        onClick={(e: ReactTypes.MouseEvent<HTMLButtonElement>) => {
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation();
                             handleAddHighlight();
                         }}
