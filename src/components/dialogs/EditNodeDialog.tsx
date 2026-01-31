@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import { useStore } from "@/store/useStore";
-import type { GraphNode } from "@/types";
+import type { GraphNode, File, Highlight, Collection, Doc } from "@/types";
 import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon } from "@phosphor-icons/react";
 import { FilePickerDialog } from "./FilePickerDialog";
 import { HighlightPickerDialog } from "./HighlightPickerDialog";
@@ -85,7 +85,7 @@ export function NodeDialog({
                 }
                 if (node.type === 'highlight') {
                     const linkedId = node.linkedId || "";
-                    const hExists = highlights.some(t => t.id === linkedId);
+                    const hExists = highlights.some((t: Highlight) => t.id === linkedId);
                     setSelectedHighlightId(hExists ? linkedId : "");
                 } else {
                     setSelectedHighlightId("");
@@ -107,7 +107,8 @@ export function NodeDialog({
                 }
             } else {
                 setTitle("");
-                const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+                const accentKey = (accentTheme || "orange") as keyof typeof ACCENT_COLOR_MAP;
+                const accentColor = ACCENT_COLOR_MAP[accentKey] ?? PRESET_COLORS[0];
                 const nodeColor = enableDefaultColorControls && defaultColors?.node
                     ? defaultColors.node
                     : accentColor;
@@ -125,13 +126,13 @@ export function NodeDialog({
     useEffect(() => {
         if (mode === 'create') {
             if (type === 'file' && selectedFileId) {
-                const f = files.find(f => f.id === selectedFileId);
+                const f = files.find((f: File) => f.id === selectedFileId);
                 if (f) setTitle(f.name);
             } else if (type === 'collection' && selectedCollectionId) {
-                const c = collections.find(c => c.id === selectedCollectionId);
+                const c = collections.find((c: Collection) => c.id === selectedCollectionId);
                 if (c) setTitle(c.name);
             } else if (type === 'doc' && selectedDocId) {
-                const d = docs.find(d => d.id === selectedDocId);
+                const d = docs.find((d: Doc) => d.id === selectedDocId);
                 if (d) setTitle(d.name);
             }
         }
@@ -145,13 +146,13 @@ export function NodeDialog({
         
         let finalTitle = title;
         if (!finalTitle.trim()) {
-            if (type === 'file') finalTitle = files.find(f => f.id === selectedFileId)?.name || "File";
-            else if (type === 'collection') finalTitle = collections.find(c => c.id === selectedCollectionId)?.name || "Collection";
+            if (type === 'file') finalTitle = files.find((f: File) => f.id === selectedFileId)?.name || "File";
+            else if (type === 'collection') finalTitle = collections.find((c: Collection) => c.id === selectedCollectionId)?.name || "Collection";
             else if (type === 'link') finalTitle = linkUrl;
-            else if (type === 'doc') finalTitle = docs.find(d => d.id === selectedDocId)?.name || "Document";
+            else if (type === 'doc') finalTitle = docs.find((d: Doc) => d.id === selectedDocId)?.name || "Document";
             else if (type === 'highlight') {
-                const h = highlights.find(t => t.id === selectedHighlightId);
-                const file = h ? files.find(f => f.id === h.fileId) : undefined;
+                const h = highlights.find((t: Highlight) => t.id === selectedHighlightId);
+                const file = h ? files.find((f: File) => f.id === h.fileId) : undefined;
                 if (h) {
                     const mins = Math.floor(h.start / 60);
                     const secs = Math.floor(h.start % 60);
@@ -184,15 +185,15 @@ export function NodeDialog({
         onOpenChange(false);
     };
 
-    const projectCollections = collections.filter(c => c.projectId === activeProjectId && !c.deleted);
-    const projectDocs = docs.filter(d => d.projectId === activeProjectId && !d.deleted);
+    const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
+    const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
     
     // Helpers to display selected file
-    const selectedFile = files.find(f => f.id === selectedFileId);
-    const selectedHighlight = highlights.find(t => t.id === selectedHighlightId);
-    const selectedHighlightFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) : undefined;
-    const selectedDoc = docs.find(d => d.id === selectedDocId);
-    const selectedCollection = projectCollections.find(c => c.id === selectedCollectionId);
+    const selectedFile = files.find((f: File) => f.id === selectedFileId);
+    const selectedHighlight = highlights.find((t: Highlight) => t.id === selectedHighlightId);
+    const selectedHighlightFile = selectedHighlight ? files.find((f: File) => f.id === selectedHighlight.fileId) : undefined;
+    const selectedDoc = docs.find((d: Doc) => d.id === selectedDocId);
+    const selectedCollection = projectCollections.find((c: Collection) => c.id === selectedCollectionId);
 
     const fileSelector = (
         <div className="space-y-2">
@@ -318,7 +319,7 @@ export function NodeDialog({
                     <SelectValue placeholder="Choose a document..." />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                    {projectDocs.map(d => (
+                    {projectDocs.map((d: Doc) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                 </SelectContent>
@@ -361,7 +362,7 @@ export function NodeDialog({
                                     <SelectValue placeholder="Choose a collection..." />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                                    {projectCollections.map(c => (
+                                    {projectCollections.map((c: Collection) => (
                                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                     ))}
                                 </SelectContent>

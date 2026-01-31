@@ -1,9 +1,10 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
 import { format } from "date-fns";
 import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase, ShareNetwork, Circle, LineSegment, Article } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import type { HistoryEntry } from "@/types";
 
 import { CaretLeft } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -14,20 +15,20 @@ interface SidebarHistoryProps {
 
 // History sidebar component
 export function SidebarHistory({ onBack }: SidebarHistoryProps) {
-    const { history, clearHistory } = useStore(useShallow((state) => ({
+    const { history, clearHistory } = useStore(useShallow((state: AppStore) => ({
         history: state.history,
         clearHistory: state.clearHistory
     })));
 
     // Group history by date
-    const groupedHistory = history.reduce((groups, entry) => {
+    const groupedHistory = history.reduce((groups: Record<string, HistoryEntry[]>, entry: HistoryEntry) => {
         const date = format(entry.timestamp, 'yyyy-MM-dd');
         if (!groups[date]) {
             groups[date] = [];
         }
         groups[date].push(entry);
         return groups;
-    }, {} as Record<string, typeof history>);
+    }, {} as Record<string, HistoryEntry[]>);
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -83,13 +84,15 @@ export function SidebarHistory({ onBack }: SidebarHistoryProps) {
                         No history records found.
                     </div>
                 ) : (
-                    Object.entries(groupedHistory).sort((a, b) => b[0].localeCompare(a[0])).map(([date, entries]) => (
+                    (Object.entries(groupedHistory) as [string, HistoryEntry[]][])
+                        .sort((a, b) => b[0].localeCompare(a[0]))
+                        .map(([date, entries]) => (
                         <div key={date} className="mb-4 last:mb-0">
                             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 sticky top-0 bg-sidebar-background/95 backdrop-blur py-1 z-10">
                                 {format(new Date(date), 'MMMM d, yyyy')}
                             </h3>
                             <div className="space-y-1">
-                                {entries.map(entry => {
+                                {entries.map((entry: HistoryEntry) => {
                                     const Icon = getIcon(entry.entityType);
                                     return (
                                         <div key={entry.id} className="flex items-start gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group">

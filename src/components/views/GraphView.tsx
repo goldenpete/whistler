@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, type MouseEvent, type WheelEvent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import {
     Plus, Circle,
@@ -10,7 +10,7 @@ import {
     MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash, ArrowsOutSimple
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import type { GraphNode } from "@/types";
+import type { GraphNode, GraphEdge, Graph, Highlight } from "@/types";
 import { NodeDialog } from "@/components/dialogs/EditNodeDialog";
 import { NodePreviewCard } from "@/components/graph/NodePreviewCard";
 import { iconMap } from "@/utils/iconMap";
@@ -50,7 +50,7 @@ export default function GraphView() {
         removeNode, 
         addEdge, 
         removeEdge 
-    } = useStore(useShallow((state) => ({
+    } = useStore(useShallow((state: AppStore) => ({
         graphs: state.graphs,
         graphNodes: state.graphNodes,
         graphEdges: state.graphEdges,
@@ -64,14 +64,14 @@ export default function GraphView() {
         removeEdge: state.removeEdge
     })));
 
-    const activeGraph = graphs.find(g => g.id === activeGraphId && !g.deleted);
-    const nodes = graphNodes.filter(n => n.graphId === activeGraphId);
-    const edges = graphEdges.filter(e => e.graphId === activeGraphId);
+    const activeGraph = graphs.find((g: Graph) => g.id === activeGraphId && !g.deleted);
+    const nodes: GraphNode[] = graphNodes.filter((n: GraphNode) => n.graphId === activeGraphId);
+    const edges: GraphEdge[] = graphEdges.filter((e: GraphEdge) => e.graphId === activeGraphId);
 
     // Auto-select first graph if none active
     useEffect(() => {
         if (!activeProjectId) return;
-        const projectGraphs = graphs.filter(g => g.projectId === activeProjectId && !g.deleted);
+        const projectGraphs = graphs.filter((g: Graph) => g.projectId === activeProjectId && !g.deleted);
         if (!activeGraphId && projectGraphs.length > 0) {
             useStore.setState({ activeGraphId: projectGraphs[0].id });
         }
@@ -224,9 +224,9 @@ export default function GraphView() {
         // Draw edges
         ctx.strokeStyle = 'rgba(255,255,255,0.15)';
         ctx.lineWidth = 2 / scale;
-        edges.forEach(edge => {
-            const from = nodes.find(n => n.id === edge.fromId);
-            const to = nodes.find(n => n.id === edge.toId);
+        edges.forEach((edge: GraphEdge) => {
+            const from = nodes.find((n: GraphNode) => n.id === edge.fromId);
+            const to = nodes.find((n: GraphNode) => n.id === edge.toId);
             if (from && to) {
                 ctx.beginPath();
                 ctx.moveTo(from.x, from.y);
@@ -237,7 +237,7 @@ export default function GraphView() {
 
         // Draw connection line
         if (connectingNodeId) {
-            const from = nodes.find(n => n.id === connectingNodeId);
+            const from = nodes.find((n: GraphNode) => n.id === connectingNodeId);
             if (from) {
                 ctx.beginPath();
                 ctx.moveTo(from.x, from.y);
@@ -249,7 +249,7 @@ export default function GraphView() {
             }
         }
 
-        nodes.forEach(node => {
+        nodes.forEach((node: GraphNode) => {
             ctx.beginPath();
             ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
             ctx.fillStyle = node.color || COLORS[0];
@@ -302,7 +302,7 @@ export default function GraphView() {
     // --- Mouse Handlers ---
     const getNodeAt = (x: number, y: number): GraphNode | undefined => {
         // x, y are world coords
-        return nodes.find(n => Math.hypot(n.x - x, n.y - y) <= NODE_RADIUS);
+        return nodes.find((n: GraphNode) => Math.hypot(n.x - x, n.y - y) <= NODE_RADIUS);
     };
 
     const distToSegment = (p_x: number, p_y: number, v_x: number, v_y: number, w_x: number, w_y: number) => {
@@ -315,9 +315,9 @@ export default function GraphView() {
 
     const getEdgeAt = (x: number, y: number) => {
         const threshold = 10 / scale; // Hit area depends on scale
-        return edges.find(edge => {
-            const from = nodes.find(n => n.id === edge.fromId);
-            const to = nodes.find(n => n.id === edge.toId);
+        return edges.find((edge: GraphEdge) => {
+            const from = nodes.find((n: GraphNode) => n.id === edge.fromId);
+            const to = nodes.find((n: GraphNode) => n.id === edge.toId);
             if (!from || !to) return false;
             
             const d = distToSegment(x, y, from.x, from.y, to.x, to.y);
@@ -344,7 +344,7 @@ export default function GraphView() {
         }
 
         if (node.type === 'highlight' && node.linkedId) {
-            const ts = highlights.find(t => t.id === node.linkedId);
+            const ts = highlights.find((t: Highlight) => t.id === node.linkedId);
             if (ts) {
                 navigate(`/file/${ts.fileId}?t=${ts.start}`);
             } else {
@@ -430,8 +430,8 @@ export default function GraphView() {
         }
 
         if (draggingNode) {
-            useStore.setState(state => ({
-                graphNodes: state.graphNodes.map(n =>
+            useStore.setState((state: AppStore) => ({
+                graphNodes: state.graphNodes.map((n: GraphNode) =>
                     n.id === draggingNode ? { ...n, x: worldX - offset.x, y: worldY - offset.y } : n
                 )
             }));
@@ -457,9 +457,9 @@ export default function GraphView() {
                 
                 if (targetNode && targetNode.id !== connectingNodeId) {
                     // Create edge
-                    useStore.setState(state => {
+                    useStore.setState((state: AppStore) => {
                         // Check if edge exists
-                        const exists = state.graphEdges.some(edge => 
+                        const exists = state.graphEdges.some((edge: GraphEdge) => 
                             (edge.fromId === connectingNodeId && edge.toId === targetNode.id) ||
                             (edge.fromId === targetNode.id && edge.toId === connectingNodeId)
                         );
@@ -617,7 +617,7 @@ export default function GraphView() {
         setContextMenu(null);
 
         if (action === 'connect' && type === 'node') {
-            const node = graphNodes.find(n => n.id === id);
+            const node = graphNodes.find((n: GraphNode) => n.id === id);
             if (node) {
                 setConnectingNodeId(id);
                 setMousePos({ x: node.x, y: node.y });
@@ -627,18 +627,18 @@ export default function GraphView() {
 
         if (action === 'delete') {
             if (type === 'node') {
-                useStore.setState(state => ({
+            useStore.setState((state: AppStore) => ({
                     graphNodes: state.graphNodes.filter(n => n.id !== id),
                     graphEdges: state.graphEdges.filter(e => e.fromId !== id && e.toId !== id)
                 }));
             } else if (type === 'edge') {
-                useStore.setState(state => ({
+            useStore.setState((state: AppStore) => ({
                     graphEdges: state.graphEdges.filter(e => e.id !== id)
                 }));
             }
         } else if (action === 'edit') {
             if (type === 'node') {
-                const node = graphNodes.find(n => n.id === id);
+                const node = graphNodes.find((n: GraphNode) => n.id === id);
                 if (node) {
                     setNodeDialog({
                         open: true,
@@ -671,7 +671,7 @@ export default function GraphView() {
             lastModified: Date.now()
         };
 
-        useStore.setState(state => ({
+        useStore.setState((state: AppStore) => ({
             graphs: [...state.graphs, newGraph],
             activeGraphId: newGraph.id
         }));

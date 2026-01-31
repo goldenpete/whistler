@@ -16,6 +16,7 @@ import {
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useStore } from '@/store/useStore';
+import type { Highlight } from "@/types";
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -99,7 +100,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
 
     // Filter highlights for the current page
     const pageHighlights = useMemo(() => 
-        highlights.filter(h => 
+        highlights.filter((h: Highlight) => 
             h.fileId === fileId && 
             h.start === pageNumber &&
             (!highlightId || h.id === highlightId)

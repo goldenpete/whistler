@@ -9,7 +9,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
 import type { Project, File } from "@/types";
 import { Plus, DownloadSimple, Lightning, Shuffle, CaretLeft } from "@phosphor-icons/react";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
@@ -28,7 +28,7 @@ declare global {
 }
 
 export function WelcomeView() {
-    const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore(useShallow((state) => ({
+    const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore(useShallow((state: AppStore) => ({
         addProject: state.addProject,
         setActiveProject: state.setActiveProject,
         login: state.login,
@@ -288,7 +288,7 @@ export function WelcomeView() {
 
                 const importedData = importProject(data);
 
-                useStore.setState(state => ({
+                useStore.setState((state: AppStore) => ({
                     projects: [...state.projects, importedData.project],
                     files: [...state.files, ...importedData.files],
                     collections: [...state.collections, ...importedData.collections],
@@ -350,7 +350,7 @@ export function WelcomeView() {
             lastModified: Date.now()
         };
 
-        useStore.setState(state => ({
+        useStore.setState((state: AppStore) => ({
             projects: [...state.projects, p1],
             storages: [...state.storages, s1],
             files: [...state.files, f1, f2],

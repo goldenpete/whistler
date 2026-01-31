@@ -1,6 +1,6 @@
 import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ChangeEvent, type FormEvent } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         setAutoSyncInterval,
         syncStatus,
         setSyncStatus
-    } = useStore(useShallow((state) => ({
+    } = useStore(useShallow((state: AppStore) => ({
         user: state.user,
         login: state.login,
         logout: state.logout,

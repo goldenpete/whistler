@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback, type ChangeEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
+import type { Doc, File as AppFile, Collection, Highlight } from "@/types";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,12 +29,12 @@ import { cn } from "@/lib/utils";
 
 export default function DocsView() {
     const { docs, activeDocId, activeProjectId } = useStore();
-    const activeDoc = docs.find(d => d.id === activeDocId && !d.deleted);
+    const activeDoc = docs.find((d: Doc) => d.id === activeDocId && !d.deleted);
 
     // Auto-select first doc if none active
     useEffect(() => {
         if (!activeProjectId) return;
-        const projectDocs = docs.filter(d => d.projectId === activeProjectId && !d.deleted);
+        const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
         if (!activeDocId && projectDocs.length > 0) {
             useStore.setState({ activeDocId: projectDocs[0].id });
         }
@@ -51,7 +52,7 @@ export default function DocsView() {
             lastModified: Date.now()
         };
 
-        useStore.setState(state => ({
+        useStore.setState((state: AppStore) => ({
             docs: [...state.docs, newDoc],
             activeDocId: newDoc.id
         }));
@@ -151,8 +152,8 @@ function DocEditor({ doc }: DocEditorProps) {
     const saveContent = useCallback(() => {
         if (editorRef.current) {
             const content = editorRef.current.innerHTML;
-            useStore.setState(state => ({
-                docs: state.docs.map(d =>
+            useStore.setState((state: AppStore) => ({
+                docs: state.docs.map((d: Doc) =>
                     d.id === doc.id
                         ? { ...d, content, lastModified: Date.now() }
                         : d
@@ -172,8 +173,8 @@ function DocEditor({ doc }: DocEditorProps) {
     useEffect(() => {
         if (docName !== doc.name) {
              const timer = setTimeout(() => {
-                useStore.setState(state => ({
-                    docs: state.docs.map(d =>
+                useStore.setState((state: AppStore) => ({
+                    docs: state.docs.map((d: Doc) =>
                         d.id === doc.id
                             ? { ...d, name: docName, lastModified: Date.now() }
                             : d
@@ -207,13 +208,13 @@ function DocEditor({ doc }: DocEditorProps) {
         updateFormatState();
     };
     const projectFiles = files.filter(
-        (f: any) => f.projectId === doc.projectId && !f.deleted
+        (f: AppFile) => f.projectId === doc.projectId && !f.deleted
     );
     const projectCollections = collections.filter(
-        (c: any) => c.projectId === doc.projectId && !c.deleted
+        (c: Collection) => c.projectId === doc.projectId && !c.deleted
     );
-    const projectHighlights = highlights.filter((t: any) => {
-        const file = files.find((f: any) => f.id === t.fileId && !f.deleted);
+    const projectHighlights = highlights.filter((t: Highlight) => {
+        const file = files.find((f: AppFile) => f.id === t.fileId && !f.deleted);
         return !!file && file.projectId === doc.projectId;
     });
     const handleInsertLink = () => {
@@ -224,15 +225,15 @@ function DocEditor({ doc }: DocEditorProps) {
         } else {
             let href = "";
             if (internalType === "file") {
-                const target = projectFiles.find((f) => f.id === internalId);
+                const target = projectFiles.find((f: AppFile) => f.id === internalId);
                 if (!target) return;
                 href = `/file/${target.id}`;
             } else if (internalType === "collection") {
-                const target = projectCollections.find((c) => c.id === internalId);
+                const target = projectCollections.find((c: Collection) => c.id === internalId);
                 if (!target) return;
                 href = `/collections?collectionId=${target.id}`;
             } else if (internalType === "highlight") {
-                const target = projectHighlights.find((t) => t.id === internalId);
+                const target = projectHighlights.find((t: Highlight) => t.id === internalId);
                 if (!target) return;
                 href = `/file/${target.fileId}?t=${target.start}`;
             }
@@ -549,7 +550,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                     <div className="p-2 space-y-1">
                                         {internalType === "file" &&
                                             (projectFiles.length > 0 ? (
-                                                projectFiles.map((f) => (
+                                                projectFiles.map((f: AppFile) => (
                                                     <button
                                                         key={f.id}
                                                         type="button"
@@ -574,7 +575,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                             ))}
                                         {internalType === "collection" &&
                                             (projectCollections.length > 0 ? (
-                                                projectCollections.map((c) => (
+                                                projectCollections.map((c: Collection) => (
                                                     <button
                                                         key={c.id}
                                                         type="button"
@@ -599,9 +600,9 @@ function DocEditor({ doc }: DocEditorProps) {
                                             ))}
                                         {internalType === "highlight" &&
                                             (projectHighlights.length > 0 ? (
-                                                projectHighlights.map((t) => {
+                                                projectHighlights.map((t: Highlight) => {
                                                     const file = files.find(
-                                                        (f) => f.id === t.fileId
+                                                        (f: AppFile) => f.id === t.fileId
                                                     );
                                                     const mins = Math.floor(t.start / 60);
                                                     const secs = Math.floor(t.start % 60)

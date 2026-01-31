@@ -4,7 +4,7 @@ import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
 import whistlerLogoSky from "../../../whistlerlogo-sky.png";
 import whistlerLogoViolet from "../../../whistlerlogo-violet.png";
-import type { AccentTheme, File, Doc, Collection } from "@/types";
+import type { AccentTheme, File as AppFile, Doc, Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { formatTime } from "@/lib/utils";
 import { 
@@ -336,15 +336,15 @@ export default function HomeView() {
     // Storage Dialog States
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [colorPickerDialogOpen, setColorPickerDialogOpen] = useState(false);
-    const [fileToMove, setFileToMove] = useState<File | null>(null);
-    const [fileToColor, setFileToColor] = useState<File | null>(null);
+    const [fileToMove, setFileToMove] = useState<AppFile | null>(null);
+    const [fileToColor, setFileToColor] = useState<AppFile | null>(null);
 
-    const handleMoveInit = (file: File) => {
+    const handleMoveInit = (file: AppFile) => {
         setFileToMove(file);
         setMoveDialogOpen(true);
     };
 
-    const handleColorInit = (file: File) => {
+    const handleColorInit = (file: AppFile) => {
         setFileToColor(file);
         setColorPickerDialogOpen(true);
     };
@@ -376,7 +376,7 @@ export default function HomeView() {
         }
 
         const type = getFileTypeFromUrl(url);
-        const newFile: File = {
+        const newFile: AppFile = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
             storageId: targetStorageId,
@@ -384,7 +384,7 @@ export default function HomeView() {
             name,
             url,
             type,
-            order: files.filter((f: File) => f.projectId === activeProjectId && !f.parentId).length,
+            order: files.filter((f: AppFile) => f.projectId === activeProjectId && !f.parentId).length,
             created: Date.now(),
             lastModified: Date.now()
         };
@@ -449,13 +449,13 @@ export default function HomeView() {
     const username = user?.email?.split('@')[0] || "User";
 
     // Filter items for current project
-    const projectFiles = files.filter((f: File) => f.projectId === activeProjectId && !f.deleted);
+    const projectFiles = files.filter((f: AppFile) => f.projectId === activeProjectId && !f.deleted);
     const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
     const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
     const projectGraphs = (graphs || []).filter((g: any) => g.projectId === activeProjectId);
 
     // Recent Highlights logic
-    const projectFileIds = new Set(projectFiles.map((f: File) => f.id));
+    const projectFileIds = new Set(projectFiles.map((f: AppFile) => f.id));
     const projectHighlights = highlights
         .filter((h: any) => projectFileIds.has(h.fileId));
 
@@ -466,7 +466,7 @@ export default function HomeView() {
         return `${formatTime(h.start)} - ${formatTime(h.end || h.start)}`;
     };
 
-    const getFileIcon = (type: File['type']) => {
+    const getFileIcon = (type: AppFile['type']) => {
         switch (type) {
             case 'video': return FilmStrip;
             case 'image': return ImageIcon;
@@ -479,7 +479,7 @@ export default function HomeView() {
 
     // Unify all items
     const allItems = [
-        ...projectFiles.map((f: File) => ({
+        ...projectFiles.map((f: AppFile) => ({
             id: f.id,
             type: 'file' as const,
             subType: f.type,
@@ -509,7 +509,7 @@ export default function HomeView() {
             data: g
         })),
         ...projectHighlights.map((h: any) => {
-            const file = files.find((f: File) => f.id === h.fileId);
+            const file = files.find((f: AppFile) => f.id === h.fileId);
             const label = formatHighlightLabel(h, file);
             return {
                 id: h.id,
@@ -984,7 +984,7 @@ export default function HomeView() {
                         onColorSelect={(color) => {
                             if (fileToColor) {
                                 useStore.setState((state: any) => ({
-                                    files: state.files.map((f: File) => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
+                                    files: state.files.map((f: AppFile) => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
                                 }));
                             }
                         }}

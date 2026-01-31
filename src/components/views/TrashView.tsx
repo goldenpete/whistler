@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
+import type { File, Collection, Graph as GraphType, Doc } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
     Trash,
@@ -44,7 +45,7 @@ export default function TrashView() {
         restoreDoc,
         permanentDeleteDoc,
         emptyTrash,
-    } = useStore(useShallow((state) => ({
+    } = useStore(useShallow((state: AppStore) => ({
         files: state.files,
         collections: state.collections,
         graphs: state.graphs,
@@ -62,22 +63,22 @@ export default function TrashView() {
     })));
 
     const trashedFiles = useMemo(
-        () => files.filter((f) => f.projectId === activeProjectId && f.deleted),
+        () => files.filter((f: File) => f.projectId === activeProjectId && f.deleted),
         [files, activeProjectId]
     );
 
     const trashedCollections = useMemo(
-        () => collections.filter((c) => c.projectId === activeProjectId && c.deleted),
+        () => collections.filter((c: Collection) => c.projectId === activeProjectId && c.deleted),
         [collections, activeProjectId]
     );
 
     const trashedGraphs = useMemo(
-        () => graphs.filter((g) => g.projectId === activeProjectId && g.deleted),
+        () => graphs.filter((g: GraphType) => g.projectId === activeProjectId && g.deleted),
         [graphs, activeProjectId]
     );
 
     const trashedDocs = useMemo(
-        () => docs.filter((d) => d.projectId === activeProjectId && d.deleted),
+        () => docs.filter((d: Doc) => d.projectId === activeProjectId && d.deleted),
         [docs, activeProjectId]
     );
 
@@ -180,7 +181,7 @@ export default function TrashView() {
                                     Files ({trashedFiles.length})
                                 </h3>
                                 <div className="space-y-2">
-                                    {trashedFiles.map((file) => (
+                                    {trashedFiles.map((file: File) => (
                                         <div
                                             key={file.id}
                                             className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/40 group"
@@ -246,7 +247,7 @@ export default function TrashView() {
                                     Collections ({trashedCollections.length})
                                 </h3>
                                 <div className="space-y-2">
-                                    {trashedCollections.map((collection) => (
+                                    {trashedCollections.map((collection: Collection) => (
                                         <div
                                             key={collection.id}
                                             className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/40 group"
@@ -315,7 +316,7 @@ export default function TrashView() {
                                     Graphs ({trashedGraphs.length})
                                 </h3>
                                 <div className="space-y-2">
-                                    {trashedGraphs.map((graph) => (
+                                    {trashedGraphs.map((graph: GraphType) => (
                                         <div
                                             key={graph.id}
                                             className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/40 group"
@@ -381,7 +382,7 @@ export default function TrashView() {
                                     Documents ({trashedDocs.length})
                                 </h3>
                                 <div className="space-y-2">
-                                    {trashedDocs.map((doc) => (
+                                    {trashedDocs.map((doc: Doc) => (
                                         <div
                                             key={doc.id}
                                             className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/40 group"

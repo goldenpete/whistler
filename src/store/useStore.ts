@@ -539,7 +539,7 @@ export const useStore = create<AppStore>()(
                     note: '',
                     created: Date.now(),
                     collectionId: collectionId || state.activeCollectionId || undefined,
-                    color: state.defaultColors.node
+                    color: state.defaultColors?.node
                 };
                 return {
                     highlights: [...state.highlights, highlight],
@@ -567,7 +567,7 @@ export const useStore = create<AppStore>()(
                     note: '',
                     created: Date.now(),
                     collectionId: collectionId || state.activeCollectionId || undefined,
-                    color: state.defaultColors.node
+                    color: state.defaultColors?.node
                 };
                 return {
                     highlights: [...state.highlights, highlight],

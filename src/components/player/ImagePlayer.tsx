@@ -222,9 +222,9 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                     />
 
                     {/* Highlights */}
-                    {fileHighlights.map(h => {
+                    {fileHighlights.map((h: Highlight) => {
                         if (!h.rect) return null;
-                        const collection = collections.find(c => c.id === h.collectionId);
+                        const collection = collections.find((c: Collection) => c.id === h.collectionId);
                         const color = collection?.color || 'var(--primary)';
                         
                         return (

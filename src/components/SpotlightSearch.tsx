@@ -23,7 +23,7 @@ import {
     Graph,
     Trash,
 } from "@phosphor-icons/react";
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
@@ -41,7 +41,7 @@ export function SpotlightSearch() {
         projects,
         isSpotlightOpen,
         setSpotlightOpen,
-    } = useStore(useShallow((state) => ({
+    } = useStore(useShallow((state: AppStore) => ({
         files: state.files,
         collections: state.collections,
         highlights: state.highlights,
@@ -53,18 +53,18 @@ export function SpotlightSearch() {
     })));
 
     const projectFiles = useMemo(
-        () => files.filter((f) => f.projectId === activeProjectId && !f.deleted),
+        () => files.filter((f: File) => f.projectId === activeProjectId && !f.deleted),
         [files, activeProjectId]
     );
 
     const projectCollections = useMemo(
-        () => collections.filter((c) => c.projectId === activeProjectId && !c.deleted),
+        () => collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted),
         [collections, activeProjectId]
     );
 
     const projectHighlights = useMemo(() => {
-        const fileIds = new Set(projectFiles.map((f) => f.id));
-        return highlights.filter((t) => fileIds.has(t.fileId));
+        const fileIds = new Set(projectFiles.map((f: File) => f.id));
+        return highlights.filter((t: Highlight) => fileIds.has(t.fileId));
     }, [highlights, projectFiles]);
 
     useKeybind("ctrl+k", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
@@ -165,7 +165,7 @@ export function SpotlightSearch() {
                 {/* Files */}
                 {projectFiles.length > 0 && (
                     <CommandGroup heading="Files">
-                        {projectFiles.slice(0, 10).map((file) => (
+                        {projectFiles.slice(0, 10).map((file: File) => (
                             <CommandItem
                                 key={file.id}
                                 value={file.name}
@@ -181,7 +181,7 @@ export function SpotlightSearch() {
                 {/* Collections */}
                 {projectCollections.length > 0 && (
                     <CommandGroup heading="Collections">
-                        {projectCollections.map((collection) => (
+                        {projectCollections.map((collection: Collection) => (
                             <CommandItem
                                 key={collection.id}
                                 value={collection.name}
@@ -200,8 +200,8 @@ export function SpotlightSearch() {
                 {/* Highlights */}
                 {projectHighlights.length > 0 && (
                     <CommandGroup heading="Highlights">
-                        {projectHighlights.slice(0, 10).map((highlight) => {
-                            const file = files.find((f) => f.id === highlight.fileId);
+                        {projectHighlights.slice(0, 10).map((highlight: Highlight) => {
+                            const file = files.find((f: File) => f.id === highlight.fileId);
                             const label = file?.type === "pdf"
                                 ? (highlight.end && highlight.end !== highlight.start
                                     ? `Page ${highlight.start}-${highlight.end}`
@@ -232,8 +232,8 @@ export function SpotlightSearch() {
                 {projects.length > 1 && (
                     <CommandGroup heading="Switch Project">
                         {projects
-                            .filter((p) => p.id !== activeProjectId)
-                            .map((project) => (
+                            .filter((p: { id: string }) => p.id !== activeProjectId)
+                            .map((project: { id: string; name: string }) => (
                                 <CommandItem
                                     key={project.id}
                                     value={`project ${project.name}`}

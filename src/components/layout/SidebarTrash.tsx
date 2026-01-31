@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Trash,
-    ArrowCounterClockwise,
+    ArrowsCounterClockwise,
     XCircle,
     Folder,
     FileText,
@@ -146,13 +146,13 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         onRestore();
                     }}
                     title="Restore"
                 >
-                    <ArrowCounterClockwise className="h-3 w-3" />
+                    <ArrowsCounterClockwise className="h-3 w-3" />
                 </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -160,7 +160,7 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
                             title="Delete Permanently"
                         >
                             <XCircle className="h-3 w-3" />

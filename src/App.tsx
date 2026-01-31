@@ -13,7 +13,7 @@ import { SpotlightSearch } from "@/components/SpotlightSearch";
 import { useInitialData } from "@/hooks/useInitialData";
 import { useSync } from "@/hooks/useSync";
 
-import { useStore } from "@/store/useStore";
+import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { WelcomeView } from "@/components/views/WelcomeView";
 import type { AccentTheme } from "@/types";
@@ -54,7 +54,7 @@ export default function App() {
     throw new Error("Test error triggered manually via console");
   }
 
-  const { projects, accentTheme, baseTheme } = useStore(useShallow((state) => ({
+  const { projects, accentTheme, baseTheme } = useStore(useShallow((state: AppStore) => ({
     projects: state.projects,
     accentTheme: state.accentTheme,
     baseTheme: state.baseTheme,

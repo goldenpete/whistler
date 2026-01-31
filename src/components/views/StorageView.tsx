@@ -1,63 +1,79 @@
-import { useState, useEffect, createElement } from "react";
-import { useStore } from "@/store/useStore";
+import React, { useRef, useState, useEffect, type ReactElement } from "react";
+import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
-import { Link, useSearchParams } from "react-router-dom";
-import {
-    File as FileIcon,
-    Folder,
-    FileVideo,
-    FilePdf,
-    MusicNote,
-    Image,
-    Plus,
-    FolderOpen,
-    GridFour,
-    Rows,
-    PencilSimple,
-    Trash,
-    ArrowSquareOut,
-    CheckSquare,
-    Square,
-    X,
-    MagnifyingGlass,
-    HardDrives,
-    Palette,
-    LinkSimple,
-    Copy,
-    ShareNetwork,
-} from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import {
+    HardDrives, Folder, File as FileIcon, FilePdf, FileText, Image, MusicNote, VideoCamera,
+    DotsThreeVertical, Trash, PencilSimple, DownloadSimple, ShareNetwork,
+    MagnifyingGlass, Plus, CaretRight, FileVideo, CheckSquare, Square,
+    LinkSimple, CaretDown, ArrowsOutSimple,
+    GridFour, Rows, FolderOpen, ArrowSquareOut, X, Copy, Palette, Share
+} from "@phosphor-icons/react";
+import { formatDistanceToNow } from "date-fns";
+import { type File as AppFile } from "@/types";
+import {
+    DndContext, 
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+    DragOverlay,
+    useDraggable,
+    useDroppable,
+    type DragStartEvent
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import {
     Breadcrumb,
+    BreadcrumbList,
     BreadcrumbItem,
     BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
     ContextMenu,
+    ContextMenuTrigger,
     ContextMenuContent,
     ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger,
     ContextMenuLabel,
+    ContextMenuSeparator,
 } from "@/components/ui/context-menu";
-import { AddFileDialog, NewFolderDialog, RenameFileDialog, EditFolderDialog, ICONS } from "@/components/dialogs/StorageDialogs";
+import { AnimatePresence, motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
+import {
+    AddFileDialog,
+    NewFolderDialog,
+    RenameFileDialog,
+    EditFolderDialog
+} from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
-import type { File } from "@/types";
-import { Input } from "@/components/ui/input";
-import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, type DragStartEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-import { globalWorker } from "@/pdf-worker";
-import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { playSfx } from '@/utils/sound';
+
+const STORAGE_COLORS = [
+    "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
+    "#06b6d4", "#3b82f6", "#6366f1", "#8b5cf6", "#d946ef",
+    "#f43f5e", "#64748b"
+];
 
 
 
@@ -954,7 +970,7 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
     return 'file';
 }
 
-function FileThumbnail({ file, iconSize }: { file: File, iconSize: number }) {
+function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) {
     const Icon = (() => {
         let icon = getFileIcon(file.type);
         if (file.type === 'folder' && file.icon) {

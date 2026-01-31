@@ -3,7 +3,7 @@ import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
 import ProjectSidebar from "./ProjectSidebar";
-import { ambientMusicStorage, useStore } from "@/store/useStore";
+import { ambientMusicStorage, useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 
 export function MainLayout() {
@@ -21,7 +21,7 @@ export function MainLayout() {
         ambientMusicStorageKey, 
         setAmbientMusicUrl, 
         setAmbientMusicStorageKey 
-    } = useStore(useShallow((state) => ({
+    } = useStore(useShallow((state: AppStore) => ({
         backgroundImageUrl: state.backgroundImageUrl,
         backgroundImageOpacity: state.backgroundImageOpacity,
         backgroundColor: state.backgroundColor,

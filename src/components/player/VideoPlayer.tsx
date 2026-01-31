@@ -54,6 +54,7 @@ import { PDFPlayer } from './PDFPlayer';
 import type { PDFPlayerHandle } from './PDFPlayer';
 import { ImagePlayer } from './ImagePlayer';
 import type { ImagePlayerHandle } from './ImagePlayer';
+import type { Highlight, File as AppFile, Collection } from "@/types";
 import { AudioPlayer } from './AudioPlayer';
 import { SeekPreview } from './SeekPreview';
 
@@ -61,7 +62,6 @@ import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
-import { type Highlight, type File as AppFile, type Collection } from "@/types";
 
 const ExpandableNote = ({ text }: { text: string }) => {
     const [expanded, setExpanded] = useState(false);
@@ -152,7 +152,7 @@ export default function VideoPlayer() {
     const [hoverX, setHoverX] = useState(0);
     const progressRef = useRef<HTMLDivElement>(null);
 
-    const selectedHighlight = highlights.find(t => t.id === selectedHighlightId) || null;
+    const selectedHighlight = highlights.find((t: Highlight) => t.id === selectedHighlightId) || null;
 
     const file = files.find((f: AppFile) => f.id === fileId);
     const fileHighlights = highlights.filter((t: Highlight) => t.fileId === fileId);
@@ -778,8 +778,8 @@ export default function VideoPlayer() {
                         {fileHighlights.length === 0 ? (
                             <div className="text-muted-foreground text-xs text-center mt-4">No highlights yet.</div>
                         ) : (
-                            fileHighlights.map((h: any) => {
-                                const collection = collections.find(c => c.id === h.collectionId);
+                            fileHighlights.map((h: Highlight) => {
+                                const collection = collections.find((c: Collection) => c.id === h.collectionId);
                                 const borderColor = collection ? collection.color : 'transparent';
                                 const collectionName = collection ? collection.name : null;
 
@@ -883,8 +883,8 @@ export default function VideoPlayer() {
                 onOpenChange={setHighlightPlayerOpen}
                 highlight={selectedHighlight}
                 file={file || null}
-                collection={collections.find(c => c.id === selectedHighlight?.collectionId)}
-                collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
+                collection={collections.find((c: Collection) => c.id === selectedHighlight?.collectionId)}
+                collections={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted)}
                 onUpdate={(updates) => selectedHighlight && updateHighlight(selectedHighlight.id, updates)}
                 onEditHighlight={() => {
                     setHighlightPlayerOpen(false);

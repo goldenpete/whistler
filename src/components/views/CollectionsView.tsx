@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { getIcon } from "@/utils/iconMap";
-import { Collection } from "@/types";
+import { type Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 
 type SortOption = "name" | "date" | "items";
@@ -35,14 +35,14 @@ export default function CollectionsView() {
     const { 
         collections, 
         activeProjectId, 
-        deleteCollection,
+        trashCollection,
         updateCollection,
         setActiveCollection,
         setSidebarView
     } = useStore(useShallow((state) => ({
         collections: state.collections,
         activeProjectId: state.activeProjectId,
-        deleteCollection: state.deleteCollection,
+        trashCollection: state.trashCollection,
         updateCollection: state.updateCollection,
         setActiveCollection: state.setActiveCollection,
         setSidebarView: state.setSidebarView
@@ -166,7 +166,7 @@ export default function CollectionsView() {
                         <Input 
                             placeholder="Search collections..." 
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                             className="pl-8 h-9"
                         />
                     </div>

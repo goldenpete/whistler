@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
+import type { File, Storage } from "@/types";
 import { Folder, HardDrives, CaretLeft } from "@phosphor-icons/react";
 
 interface MoveFileDialogProps {
@@ -25,7 +26,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
 
     // Filter storages for current project
     const projectStorages = useMemo(() => 
-        storages.filter(s => s.projectId === activeProjectId && !s.deleted),
+        storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted),
         [storages, activeProjectId]
     );
 
@@ -33,7 +34,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
     useEffect(() => {
         if (open) {
             // Default to the storage of the first file, or the active storage
-            const firstFile = useStore.getState().files.find(f => f.id === fileIds[0]);
+            const firstFile = useStore.getState().files.find((f: File) => f.id === fileIds[0]);
             const initialStorageId = firstFile?.storageId || globalActiveStorageId || projectStorages[0]?.id || null;
             
             setSelectedStorageId(initialStorageId);
@@ -45,7 +46,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
     const displayedFolders = useMemo(() => {
         if (!activeProjectId || !selectedStorageId) return [];
 
-        return files.filter(f => 
+        return files.filter((f: File) => 
             f.projectId === activeProjectId && 
             f.storageId === selectedStorageId &&
             // Handle null/undefined parentId consistently
@@ -53,11 +54,11 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
             !f.deleted &&
             f.type === 'folder' && 
             !fileIds.includes(f.id) // Don't show folders being moved to avoid circular dependency
-        ).sort((a, b) => a.name.localeCompare(b.name));
+        ).sort((a: File, b: File) => a.name.localeCompare(b.name));
     }, [files, activeProjectId, selectedStorageId, currentFolderId, fileIds]);
 
     const currentFolder = useMemo(() => 
-        files.find(f => f.id === currentFolderId),
+        files.find((f: File) => f.id === currentFolderId),
         [files, currentFolderId]
     );
 
@@ -97,7 +98,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
                 {/* Storage Tabs */}
                 {projectStorages.length > 0 ? (
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border no-scrollbar">
-                        {projectStorages.map(storage => (
+                        {projectStorages.map((storage: Storage) => (
                             <Button
                                 key={storage.id}
                                 variant={selectedStorageId === storage.id ? "default" : "ghost"}
@@ -148,7 +149,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
                             </div>
                         ) : (
                             <div className="space-y-1">
-                                {displayedFolders.map(folder => (
+                                {displayedFolders.map((folder: File) => (
                                     <button
                                         key={folder.id}
                                         className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground text-sm text-left transition-colors"

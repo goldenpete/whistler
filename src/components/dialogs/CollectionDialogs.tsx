@@ -157,7 +157,8 @@ interface CreateCollectionDialogProps {
 
 export function CreateCollectionDialog({ open, onOpenChange, onSubmit }: CreateCollectionDialogProps) {
     const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
-    const accentColor = ACCENT_COLOR_MAP[accentTheme || "orange"] ?? PRESET_COLORS[0];
+    const accentKey = (accentTheme || "orange") as keyof typeof ACCENT_COLOR_MAP;
+    const accentColor = ACCENT_COLOR_MAP[accentKey] ?? PRESET_COLORS[0];
     const collectionColor = enableDefaultColorControls && defaultColors?.collection
         ? defaultColors.collection
         : accentColor;
