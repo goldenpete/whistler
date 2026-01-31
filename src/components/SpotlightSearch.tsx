@@ -28,6 +28,7 @@ import { useShallow } from "@/lib/zustand-shallow";
 import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
 import { formatTime } from "@/lib/utils";
+import { playSfx } from "@/utils/sound";
 
 export function SpotlightSearch() {
     const navigate = useNavigate();
@@ -91,6 +92,7 @@ export function SpotlightSearch() {
 
 
     const handleSelectFile = (file: File) => {
+        playSfx("search");
         setSpotlightOpen(false);
         if (file.type === "folder") {
             // Navigate to storage with folder open (future: add folder navigation state)
@@ -101,17 +103,20 @@ export function SpotlightSearch() {
     };
 
     const handleSelectCollection = (collection: Collection) => {
+        playSfx("search");
         setSpotlightOpen(false);
         useStore.setState({ activeCollectionId: collection.id });
         navigate("/collections");
     };
 
     const handleNavigation = (path: string) => {
+        playSfx("search");
         setSpotlightOpen(false);
         navigate(path);
     };
 
     const handleSelectHighlight = (highlight: Highlight) => {
+        playSfx("search");
         setSpotlightOpen(false);
         navigate(`/file/${highlight.fileId}`);
         // We might need to set a state to jump to the highlight time/page
@@ -238,6 +243,7 @@ export function SpotlightSearch() {
                                     key={project.id}
                                     value={`project ${project.name}`}
                                     onSelect={() => {
+                                        playSfx("search");
                                         setActiveProject(project.id);
                                         setSpotlightOpen(false);
                                     }}

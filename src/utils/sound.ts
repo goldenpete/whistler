@@ -1,12 +1,13 @@
 import { useStore } from "@/store/useStore";
 
-type SoundType = 'cursor' | 'confirm' | 'error' | 'back';
+type SoundType = 'cursor' | 'confirm' | 'error' | 'back' | 'search';
 
 const SOUNDS: Record<SoundType, string> = {
     cursor: '/sounds/cursor.wav',
     confirm: '/sounds/confirm.wav',
     error: '/sounds/error.wav',
     back: '/sounds/back.wav',
+    search: '/sounds/search.wav',
 };
 
 const audioCache: Record<string, HTMLAudioElement> = {};
