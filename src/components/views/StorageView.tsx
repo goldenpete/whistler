@@ -97,6 +97,7 @@ export default function StorageView() {
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState("");
+    const [activeId, setActiveId] = useState<string | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const projectStorages = storages.filter(s => s.projectId === activeProjectId && !s.deleted);
