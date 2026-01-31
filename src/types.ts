@@ -139,6 +139,7 @@ export interface AppState {
     activeCollectionId: string | null;
     activeGraphId: string | null;
     activeDocId: string | null;
+    floatingPlayerFileId: string | null;
 
     // PiP State
     pipFileId: string | null;

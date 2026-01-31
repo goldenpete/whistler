@@ -86,8 +86,16 @@ const ExpandableNote = ({ text }: { text: string }) => {
     );
 };
 
-export default function VideoPlayer() {
-    const { fileId } = useParams() as { fileId: string };
+interface VideoPlayerProps {
+    fileIdOverride?: string;
+    floating?: boolean;
+    onClose?: () => void;
+    onExitFloating?: () => void;
+}
+
+export default function VideoPlayer({ fileIdOverride, floating = false, onClose, onExitFloating }: VideoPlayerProps) {
+    const { fileId: routeFileId } = useParams() as { fileId?: string };
+    const fileId = fileIdOverride ?? routeFileId;
     const navigate = useNavigate();
     const { 
         files, 
@@ -109,7 +117,8 @@ export default function VideoPlayer() {
         toggleSidebar: setSidebarOpen, 
         addAmbientMusicSuppression, 
         removeAmbientMusicSuppression, 
-        trashFile 
+        trashFile,
+        setFloatingPlayer
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
@@ -131,6 +140,10 @@ export default function VideoPlayer() {
     const [isLoading, setIsLoading] = useState(true);
     const [enableSidebarAnimation, setEnableSidebarAnimation] = useState(false);
     const [hasPdfSelection, setHasPdfSelection] = useState(false);
+    const [isWindowed, setIsWindowed] = useState(floating);
+    const [isMinimized, setIsMinimized] = useState(false);
+    const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
+    const windowRectInitialized = useRef(false);
 
     useEffect(() => {
         // Enable sidebar animation after initial render
@@ -158,7 +171,8 @@ export default function VideoPlayer() {
     const fileHighlights = highlights.filter((t: Highlight) => t.fileId === fileId);
 
     const handleCreateHighlight = (time: number) => {
-        addVideoHighlight(fileId!, time, activeCollectionId || undefined);
+        if (!fileId) return;
+        addVideoHighlight(fileId, time, activeCollectionId || undefined);
     };
 
     if (!file) {
@@ -285,7 +299,40 @@ export default function VideoPlayer() {
     };
 
     const handleClose = () => {
+        if (onClose) {
+            onClose();
+            return;
+        }
         navigate(-1);
+    };
+
+    const handleToggleWindowed = () => {
+        if (!fileId) return;
+        if (!floating) {
+            setFloatingPlayer(fileId);
+            if (window.history.length > 1) {
+                navigate(-1);
+            } else {
+                navigate("/storage");
+            }
+            return;
+        }
+        if (isWindowed) {
+            if (onExitFloating) {
+                onExitFloating();
+            }
+            return;
+        }
+        setIsWindowed(true);
+    };
+
+    const handleMinimize = () => {
+        setIsMinimized(true);
+    };
+
+    const handleRestore = () => {
+        setIsMinimized(false);
+        setShowControls(true);
     };
 
     const toggleFullscreen = () => {
@@ -375,12 +422,53 @@ export default function VideoPlayer() {
         setHoverX(x);
     };
 
+    useEffect(() => {
+        if (!floating) return;
+        setIsWindowed(true);
+    }, [floating]);
+
+    useEffect(() => {
+        if (!isWindowed) {
+            setIsMinimized(false);
+        }
+    }, [isWindowed]);
+
+    useEffect(() => {
+        if (!isWindowed || windowRectInitialized.current) return;
+        const maxWidth = Math.min(960, window.innerWidth - 48);
+        const maxHeight = Math.min(640, window.innerHeight - 48);
+        setWindowRect({
+            x: Math.max(24, window.innerWidth - maxWidth - 24),
+            y: 24,
+            width: Math.max(360, maxWidth),
+            height: Math.max(240, maxHeight)
+        });
+        windowRectInitialized.current = true;
+    }, [isWindowed]);
+
     return (
         <div 
             ref={containerRef} 
-            className="flex h-full w-full bg-black overflow-hidden relative"
+            className={cn(
+                "flex bg-black overflow-hidden relative",
+                isWindowed ? "fixed z-[80]" : "h-full w-full",
+                isMinimized && "opacity-0 pointer-events-none"
+            )}
+            style={isWindowed ? {
+                top: windowRect.y,
+                left: windowRect.x,
+                width: windowRect.width,
+                height: windowRect.height,
+                resize: "both",
+                overflow: "hidden",
+                minWidth: 360,
+                minHeight: 240,
+                maxWidth: "95vw",
+                maxHeight: "95vh",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.6)"
+            } : undefined}
             onMouseMove={handleMouseMove}
-            onClick={handleMouseMove} // Also show controls on click
+            onClick={handleMouseMove}
         >
 
             {/* Player Container (Top Bar + Stage + Bottom Bar) */}
@@ -479,6 +567,14 @@ export default function VideoPlayer() {
                             {isHeaderVisible ? <EyeSlash weight="bold" size={24} /> : <Eye weight="bold" size={24} />}
                         </Button>
 
+                        <Button variant="ghost" size="icon" onClick={handleToggleWindowed} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title={isWindowed ? "Exit Window" : "Resize Window"}>
+                            {isWindowed ? <CornersIn weight="bold" size={24} /> : <CornersOut weight="bold" size={24} />}
+                        </Button>
+                        {isWindowed && (
+                            <Button variant="ghost" size="icon" onClick={handleMinimize} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Minimize">
+                                <Minus weight="bold" size={24} />
+                            </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close" data-sound-back>
                             <X weight="bold" size={24} />
                         </Button>
@@ -863,6 +959,14 @@ export default function VideoPlayer() {
                         )}
                     </ScrollArea>
                 </motion.div>
+            )}
+
+            {isWindowed && isMinimized && (
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90]">
+                    <Button variant="secondary" className="h-8 px-3 text-xs" onClick={handleRestore}>
+                        {file.name}
+                    </Button>
+                </div>
             )}
 
             <MoveFileDialog

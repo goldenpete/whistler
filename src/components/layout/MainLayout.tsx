@@ -3,6 +3,7 @@ import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
 import ProjectSidebar from "./ProjectSidebar";
+import { FloatingPlayer } from "@/components/player/FloatingPlayer";
 import { ambientMusicStorage, useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 
@@ -187,6 +188,7 @@ export function MainLayout() {
                     </motion.div>
                 </AnimatePresence>
             </main>
+            <FloatingPlayer />
         </div>
     );
 }

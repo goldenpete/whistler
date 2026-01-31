@@ -12,6 +12,7 @@ type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' 
 
 export interface AppStore extends AppState {
     activeFileId: string | null;
+    floatingPlayerFileId: string | null;
     user: User | null;
     lastSyncTime: number | null;
     autoSyncEnabled: boolean;
@@ -37,6 +38,7 @@ export interface AppStore extends AppState {
     setActiveCollection: (id: string | null) => void;
     setActiveDoc: (id: string | null) => void;
     setActiveGraph: (id: string | null) => void;
+    setFloatingPlayer: (id: string | null) => void;
     addProject: (name: string) => Project;
     addStorage: (name: string, projectId: string, color?: string, icon?: string) => void;
     addDoc: (name: string, projectId: string, color?: string, icon?: string) => void;
@@ -211,6 +213,7 @@ export const useStore = create<AppStore>()(
             activeGraphId: null,
             activeDocId: null,
             activeFileId: null,
+            floatingPlayerFileId: null,
 
             user: null,
             lastSyncTime: null,
@@ -276,6 +279,7 @@ export const useStore = create<AppStore>()(
                 activeGraphId: id,
                 graphs: id ? state.graphs.map(g => g.id === id ? { ...g, lastViewed: Date.now() } : g) : state.graphs
             })),
+            setFloatingPlayer: (id) => set({ floatingPlayerFileId: id }),
 
             setPipFile: (id) => set({ pipFileId: id, isPipOpen: !!id }),
             togglePip: (isOpen) => set({ isPipOpen: isOpen }),
@@ -1035,7 +1039,7 @@ export const useStore = create<AppStore>()(
             name: STORAGE_KEY,
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => {
-                const { ambientMusicUrl, ambientMusicSuppressedBy, ...rest } = state;
+                const { ambientMusicUrl, ambientMusicSuppressedBy, floatingPlayerFileId, ...rest } = state;
                 return rest;
             },
         }
