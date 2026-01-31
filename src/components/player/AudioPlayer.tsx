@@ -18,16 +18,20 @@ import { useStore } from '@/store/useStore';
 import { formatTime } from '@/lib/utils'; // Assuming this helper exists, or I'll redefine it
 import { useNavigate } from 'react-router-dom';
 
+import type { Highlight } from "@/types";
+
 interface AudioPlayerProps {
     url: string;
     fileId: string;
     showControls?: boolean;
     className?: string;
+    highlights?: Highlight[];
+    highlight?: Highlight; // If provided, loops this segment
 }
 
-export function AudioPlayer({ url, fileId, className }: AudioPlayerProps) {
+export function AudioPlayer({ url, fileId, className, highlights = [], highlight, showControls = true }: AudioPlayerProps) {
     const audioRef = useRef<HTMLAudioElement>(null);
-    const { addAmbientMusicSuppression, removeAmbientMusicSuppression, fileProgress, setFileProgress } = useStore();
+    const { addAmbientMusicSuppression, removeAmbientMusicSuppression, fileProgress, setFileProgress, collections } = useStore();
     
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -37,16 +41,22 @@ export function AudioPlayer({ url, fileId, className }: AudioPlayerProps) {
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isLooping, setIsLooping] = useState(false);
 
-    // Initial load progress
+    // Initial load progress or highlight start
     useEffect(() => {
         if (audioRef.current) {
-            const savedProgress = fileProgress[fileId];
-            if (savedProgress) {
-                audioRef.current.currentTime = savedProgress;
-                setCurrentTime(savedProgress);
+            if (highlight) {
+                audioRef.current.currentTime = highlight.start;
+                setCurrentTime(highlight.start);
+                setIsLooping(true); // Auto-enable loop for single highlight
+            } else {
+                const savedProgress = fileProgress[fileId];
+                if (savedProgress) {
+                    audioRef.current.currentTime = savedProgress;
+                    setCurrentTime(savedProgress);
+                }
             }
         }
-    }, [fileId]);
+    }, [fileId, highlight]);
 
     const togglePlay = () => {
         if (!audioRef.current) return;
@@ -60,9 +70,19 @@ export function AudioPlayer({ url, fileId, className }: AudioPlayerProps) {
     const handleTimeUpdate = () => {
         if (audioRef.current) {
             const time = audioRef.current.currentTime;
+            
+            // Highlight loop logic
+            if (highlight && isLooping) {
+                if (time >= (highlight.end || highlight.start + 5) || time < highlight.start) {
+                    audioRef.current.currentTime = highlight.start;
+                    setCurrentTime(highlight.start);
+                    return;
+                }
+            }
+
             setCurrentTime(time);
             // Debounce saving progress? Or just save every few seconds
-            if (Math.abs(time - (fileProgress[fileId] || 0)) > 5) {
+            if (!highlight && Math.abs(time - (fileProgress[fileId] || 0)) > 5) {
                 setFileProgress(fileId, time);
             }
         }
@@ -166,91 +186,116 @@ export function AudioPlayer({ url, fileId, className }: AudioPlayerProps) {
             </div>
 
             {/* Controls Container */}
-            <div className="w-full max-w-2xl bg-zinc-900/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-800/50 shadow-xl">
-                {/* Progress Bar */}
-                <div className="mb-6 space-y-2">
-                    <Slider
-                        value={[currentTime]}
-                        max={duration || 100}
-                        step={1}
-                        onValueChange={handleSeek}
-                        className="cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs font-mono text-zinc-500">
-                        <span>{formatSeconds(currentTime)}</span>
-                        <span>{formatSeconds(duration)}</span>
-                    </div>
-                </div>
-
-                {/* Main Controls */}
-                <div className="flex items-center justify-between">
-                    {/* Left: Volume */}
-                    <div className="flex items-center gap-2 w-32">
-                        <Button variant="ghost" size="icon" onClick={toggleMute} className="text-zinc-400 hover:text-white">
-                            {isMuted ? <SpeakerX size={20} /> : volume > 0.5 ? <SpeakerHigh size={20} /> : <SpeakerLow size={20} />}
-                        </Button>
+            {showControls && (
+                <div className="w-full max-w-2xl bg-zinc-900/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-800/50 shadow-xl">
+                    {/* Progress Bar */}
+                    <div className="mb-6 space-y-2 relative group/seek">
+                        {/* Highlights Overlay */}
+                        {highlights.length > 0 && duration > 0 && (
+                            <div className="absolute top-0 bottom-0 left-0 right-0 pointer-events-none z-10">
+                                {highlights.map(h => {
+                                    const collection = collections.find(c => c.id === h.collectionId);
+                                    const color = collection?.color || 'var(--primary)';
+                                    const startPct = (h.start / duration) * 100;
+                                    // Simple marker for now
+                                    return (
+                                        <div 
+                                            key={h.id}
+                                            className="absolute top-1/2 -translate-y-1/2 w-1 h-3 rounded-full opacity-60 transition-opacity hover:opacity-100"
+                                            style={{ 
+                                                left: `${startPct}%`,
+                                                backgroundColor: color,
+                                                boxShadow: `0 0 4px ${color}`
+                                            }}
+                                            title={h.note || "Highlight"}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
                         <Slider
-                            value={[isMuted ? 0 : volume]}
-                            max={1}
-                            step={0.01}
-                            onValueChange={handleVolumeChange}
-                            className="w-20"
+                            value={[currentTime]}
+                            max={duration || 100}
+                            step={1}
+                            onValueChange={handleSeek}
+                            className="cursor-pointer"
                         />
+                        <div className="flex justify-between text-xs font-mono text-zinc-500">
+                            <span>{formatSeconds(currentTime)}</span>
+                            <span>{formatSeconds(duration)}</span>
+                        </div>
                     </div>
 
-                    {/* Center: Playback */}
-                    <div className="flex items-center gap-4">
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => { if (audioRef.current) audioRef.current.currentTime -= 10; }}
-                            className="text-zinc-400 hover:text-white"
-                        >
-                            <Rewind size={24} weight="fill" />
-                        </Button>
+                    {/* Main Controls */}
+                    <div className="flex items-center justify-between">
+                        {/* Left: Volume */}
+                        <div className="flex items-center gap-2 w-32">
+                            <Button variant="ghost" size="icon" onClick={toggleMute} className="text-zinc-400 hover:text-white">
+                                {isMuted ? <SpeakerX size={20} /> : volume > 0.5 ? <SpeakerHigh size={20} /> : <SpeakerLow size={20} />}
+                            </Button>
+                            <Slider
+                                value={[isMuted ? 0 : volume]}
+                                max={1}
+                                step={0.01}
+                                onValueChange={handleVolumeChange}
+                                className="w-20"
+                            />
+                        </div>
 
-                        <Button 
-                            size="icon" 
-                            onClick={togglePlay}
-                            className="h-14 w-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg scale-100 hover:scale-105 transition-transform"
-                        >
-                            {isPlaying ? <Pause size={28} weight="fill" /> : <Play size={28} weight="fill" className="ml-1" />}
-                        </Button>
+                        {/* Center: Playback */}
+                        <div className="flex items-center gap-4">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => { if (audioRef.current) audioRef.current.currentTime -= 10; }}
+                                className="text-zinc-400 hover:text-white"
+                            >
+                                <Rewind size={24} weight="fill" />
+                            </Button>
 
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => { if (audioRef.current) audioRef.current.currentTime += 10; }}
-                            className="text-zinc-400 hover:text-white"
-                        >
-                            <FastForward size={24} weight="fill" />
-                        </Button>
-                    </div>
+                            <Button 
+                                size="icon" 
+                                onClick={togglePlay}
+                                className="h-14 w-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg scale-100 hover:scale-105 transition-transform"
+                            >
+                                {isPlaying ? <Pause size={28} weight="fill" /> : <Play size={28} weight="fill" className="ml-1" />}
+                            </Button>
 
-                    {/* Right: Options */}
-                    <div className="flex items-center gap-2 w-32 justify-end">
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={changeSpeed}
-                            className="text-xs font-bold text-zinc-400 hover:text-white w-12"
-                        >
-                            {playbackRate}x
-                        </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={toggleLoop}
-                            className={cn(
-                                "transition-colors",
-                                isLooping ? "text-primary bg-primary/10" : "text-zinc-400 hover:text-white"
-                            )}
-                        >
-                            <Repeat size={20} />
-                        </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => { if (audioRef.current) audioRef.current.currentTime += 10; }}
+                                className="text-zinc-400 hover:text-white"
+                            >
+                                <FastForward size={24} weight="fill" />
+                            </Button>
+                        </div>
+
+                        {/* Right: Options */}
+                        <div className="flex items-center gap-2 w-32 justify-end">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={changeSpeed}
+                                className="text-xs font-bold text-zinc-400 hover:text-white w-12"
+                            >
+                                {playbackRate}x
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={toggleLoop}
+                                className={cn(
+                                    "transition-colors",
+                                    isLooping ? "text-primary bg-primary/10" : "text-zinc-400 hover:text-white"
+                                )}
+                            >
+                                <Repeat size={20} />
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             <style>{`
                 @keyframes music-bar {

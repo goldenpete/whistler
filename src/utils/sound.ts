@@ -21,8 +21,9 @@ export const preloadSounds = () => {
 };
 
 export const playSfx = (type: SoundType) => {
-    const { sfxEnabled } = useStore.getState();
+    const { sfxEnabled, enabledSounds } = useStore.getState();
     if (!sfxEnabled) return;
+    if (enabledSounds && !enabledSounds[type]) return;
 
     const audio = audioCache[type] || new Audio(SOUNDS[type]);
     

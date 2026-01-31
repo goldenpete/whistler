@@ -27,6 +27,13 @@ export interface AppStore extends AppState {
     ambientMusicSuppressedBy: string[];
     ambientMusicStorageKey: string | null;
     sfxEnabled: boolean;
+    enabledSounds: {
+        cursor: boolean;
+        confirm: boolean;
+        error: boolean;
+        back: boolean;
+        search: boolean;
+    };
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -232,6 +239,13 @@ export const useStore = create<AppStore>()(
             ambientMusicSuppressedBy: [],
             ambientMusicStorageKey: null,
             sfxEnabled: true,
+            enabledSounds: {
+                cursor: true,
+                confirm: true,
+                error: true,
+                back: true,
+                search: true,
+            },
 
             // ActionsPiP State
             pipFileId: null,
@@ -352,6 +366,21 @@ export const useStore = create<AppStore>()(
                 })),
             setAmbientMusicStorageKey: (key) => set({ ambientMusicStorageKey: key }),
             setSfxEnabled: (enabled) => set({ sfxEnabled: enabled }),
+            toggleSound: (type) => set((state) => {
+                const currentSounds = state.enabledSounds || {
+                    cursor: true,
+                    confirm: true,
+                    error: true,
+                    back: true,
+                    search: true,
+                };
+                return {
+                    enabledSounds: {
+                        ...currentSounds,
+                        [type]: !currentSounds[type]
+                    }
+                };
+            }),
 
             setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 

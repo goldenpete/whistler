@@ -115,6 +115,15 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
         onSelectionChange?.(!!selection);
     }, [selection, onSelectionChange]);
 
+    useEffect(() => {
+        if (highlightId && imageDimensions) {
+            const h = fileHighlights.find(h => h.id === highlightId);
+            if (h && h.rect) {
+                zoomToRect(h.rect);
+            }
+        }
+    }, [highlightId, imageDimensions]);
+
     const handleWheel = (e: WheelEvent | globalThis.WheelEvent) => {
         if (e.ctrlKey) {
             e.preventDefault();

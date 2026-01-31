@@ -293,6 +293,8 @@ export default function ProjectSidebar() {
         setAmbientMusicStorageKey,
         sfxEnabled,
         setSfxEnabled,
+        enabledSounds,
+        toggleSound,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -2069,7 +2071,7 @@ export default function ProjectSidebar() {
                             
                             <div className="space-y-3 pt-3 border-t border-border">
                                 <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Sound Effects</p>
-                                <div className="rounded-lg border border-border bg-card p-3">
+                                <div className="rounded-lg border border-border bg-card p-3 space-y-4">
                                     <button
                                         type="button"
                                         onClick={() => setSfxEnabled(!sfxEnabled)}
@@ -2090,6 +2092,35 @@ export default function ProjectSidebar() {
                                             />
                                         </span>
                                     </button>
+
+                                    {sfxEnabled && (
+                                        <div className="space-y-2 pl-2 border-l-2 border-border/50">
+                                            {Object.entries(enabledSounds || { cursor: true, confirm: true, error: true, back: true, search: true }).map(([key, enabled]) => (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    onClick={() => toggleSound(key as any)}
+                                                    className="w-full flex items-center justify-between group"
+                                                >
+                                                    <span className="text-xs text-muted-foreground group-hover:text-foreground capitalize">{key}</span>
+                                                    <span
+                                                        className={cn(
+                                                            "w-6 h-3 rounded-full relative transition-colors",
+                                                            enabled ? "bg-primary/70" : "bg-zinc-700"
+                                                        )}
+                                                    >
+                                                        <span
+                                                            className={cn(
+                                                                "absolute top-0.5 w-2 h-2 bg-white rounded-full transition-transform",
+                                                                enabled ? "right-0.5" : "left-0.5"
+                                                            )}
+                                                        />
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <p className="text-[10px] text-muted-foreground mt-2">
                                         Plays sounds for clicks, confirmations, and errors.
                                     </p>

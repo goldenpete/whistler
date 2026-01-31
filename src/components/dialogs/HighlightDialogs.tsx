@@ -14,6 +14,8 @@ import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut
 import { cn, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
+import { ImagePlayer } from "@/components/player/ImagePlayer";
+import { AudioPlayer } from "@/components/player/AudioPlayer";
 
 // --- Time Helper ---
 
@@ -67,11 +69,19 @@ interface HighlightPlayerDialogProps {
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
-    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression } = useStore();
+    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights } = useStore();
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+    // File Type Flags
+    const isPdf = file?.name.toLowerCase().endsWith('.pdf');
+    const isImage = file?.type === 'image';
+    const isAudio = file?.type === 'audio';
+    const isVideo = !isPdf && !isImage && !isAudio;
+    
+    const fileHighlights = allHighlights.filter(h => h.fileId === file?.id);
 
     // State
     const [isPlaying, setIsPlaying] = useState(false);
@@ -117,7 +127,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         if (editNote !== highlight.note) calculatedUpdates.note = editNote;
         if (editCollectionId !== highlight.collectionId) calculatedUpdates.collectionId = editCollectionId;
         
-        if (!file?.name.toLowerCase().endsWith('.pdf')) {
+        if (isVideo || isAudio) {
             const startSecs = parseTime(editStart);
             const endSecs = parseTime(editEnd);
             
@@ -317,9 +327,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         {/* Video Stage */}
                         <div 
                             className="flex-1 flex items-center justify-center relative overflow-hidden cursor-pointer"
-                            onClick={file.name.toLowerCase().endsWith('.pdf') ? undefined : togglePlay}
+                            onClick={isVideo ? togglePlay : undefined}
                         >
-                            {file.name.toLowerCase().endsWith('.pdf') ? (
+                            {isPdf ? (
                                 <div className="w-full h-full flex items-center justify-center bg-zinc-950">
                                     {file.url ? (
                                         <PDFPlayer
@@ -346,6 +356,30 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         </div>
                                     )}
                                 </div>
+                            ) : isImage ? (
+                                <ImagePlayer
+                                    key={file.id}
+                                    url={file.url || ""}
+                                    fileId={file.id}
+                                    highlightId={highlight.id}
+                                    className="w-full h-full"
+                                    showControls={showControls}
+                                    onHideControls={() => setShowControls(false)}
+                                    onToggleFullscreen={toggleFullscreen}
+                                    isFullscreen={isFullscreen}
+                                />
+                            ) : isAudio ? (
+                                <div className="w-full max-w-4xl px-8 flex items-center justify-center h-full">
+                                    <AudioPlayer
+                                        key={file.id}
+                                        url={file.url || ""}
+                                        fileId={file.id}
+                                        className="w-full"
+                                        highlights={fileHighlights}
+                                        highlight={highlight}
+                                        showControls={true}
+                                    />
+                                </div>
                             ) : (
                                 <video
                                     ref={videoRef}
@@ -367,13 +401,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         </div>
 
                         {/* Bottom Bar (Controls) */}
-                        {!file.name.toLowerCase().endsWith('.pdf') && (
+                        {isVideo && (
                         <div className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-all duration-200 ease-out z-50 pb-4 pt-8 px-4",
                             showControls ? "opacity-100" : "opacity-0 pointer-events-none"
                         )}>
                             {/* Seekbar - Video Only */}
-                            {!file.name.toLowerCase().endsWith('.pdf') && (
+                            {isVideo && (
                                 <div className="mb-4 px-2 group/seek relative">
                                     <Slider
                                         value={[progress]}

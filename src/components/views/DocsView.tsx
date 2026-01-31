@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { sanitizeHTML } from "@/utils/security";
 
 export default function DocsView() {
     const { docs, activeDocId, activeProjectId } = useStore();
@@ -143,7 +144,8 @@ function DocEditor({ doc }: DocEditorProps) {
 
     useEffect(() => {
         if (editorRef.current) {
-            editorRef.current.innerHTML = doc.content;
+            // Sanitize content before setting it
+            editorRef.current.innerHTML = sanitizeHTML(doc.content);
         }
         setDocName(doc.name);
         updateFormatState();
