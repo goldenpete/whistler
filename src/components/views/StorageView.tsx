@@ -986,7 +986,7 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
     const [error, setError] = useState(false);
 
     if (error || !file.url) {
-        return createElement(Icon, {
+        return React.createElement(Icon, {
             size: iconSize,
             weight: "regular",
             className: "text-muted-foreground group-hover:text-primary transition-colors",
@@ -1022,7 +1022,7 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
         );
     }
 
-    return createElement(Icon, {
+    return React.createElement(Icon, {
         size: iconSize,
         weight: "regular",
         className: "text-muted-foreground group-hover:text-primary transition-colors"
