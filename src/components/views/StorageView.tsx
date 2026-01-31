@@ -292,6 +292,8 @@ export default function StorageView() {
                 )
             }));
         }
+        
+        setActiveId(null);
     };
 
     const handleNavigateFolder = (folderId: string | null) => {
