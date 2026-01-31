@@ -5,11 +5,12 @@ import VideoPlayer from "@/components/player/VideoPlayer";
 
 export function FloatingPlayer() {
     const navigate = useNavigate();
-    const { floatingPlayerWindows, setFloatingPlayerMinimized, removeFloatingPlayer, files } = useStore(useShallow((state: AppStore) => ({
+    const { floatingPlayerWindows, setFloatingPlayerMinimized, removeFloatingPlayer, files, bringFloatingPlayerToFront } = useStore(useShallow((state: AppStore) => ({
         floatingPlayerWindows: state.floatingPlayerWindows,
         setFloatingPlayerMinimized: state.setFloatingPlayerMinimized,
         removeFloatingPlayer: state.removeFloatingPlayer,
-        files: state.files
+        files: state.files,
+        bringFloatingPlayerToFront: state.bringFloatingPlayerToFront
     })));
 
     if (floatingPlayerWindows.length === 0) return null;
@@ -18,12 +19,14 @@ export function FloatingPlayer() {
 
     return (
         <>
-            {floatingPlayerWindows.map((window) => (
+            {floatingPlayerWindows.map((window, index) => (
                 <VideoPlayer
                     key={window.id}
                     fileIdOverride={window.fileId}
                     floating
                     isMinimized={window.minimized}
+                    windowZIndex={80 + index}
+                    onFocus={() => bringFloatingPlayerToFront(window.id)}
                     onMinimize={() => setFloatingPlayerMinimized(window.id, true)}
                     onClose={() => removeFloatingPlayer(window.id)}
                     onExitFloating={() => {

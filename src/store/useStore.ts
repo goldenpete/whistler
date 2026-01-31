@@ -38,9 +38,10 @@ export interface AppStore extends AppState {
     setActiveCollection: (id: string | null) => void;
     setActiveDoc: (id: string | null) => void;
     setActiveGraph: (id: string | null) => void;
-    addFloatingPlayer: (id: string) => void;
+    addFloatingPlayer: (id: string) => string;
     removeFloatingPlayer: (id: string) => void;
     setFloatingPlayerMinimized: (id: string, minimized: boolean) => void;
+    bringFloatingPlayerToFront: (id: string) => void;
     addProject: (name: string) => Project;
     addStorage: (name: string, projectId: string, color?: string, icon?: string) => void;
     addDoc: (name: string, projectId: string, color?: string, icon?: string) => void;
@@ -281,12 +282,16 @@ export const useStore = create<AppStore>()(
                 activeGraphId: id,
                 graphs: id ? state.graphs.map(g => g.id === id ? { ...g, lastViewed: Date.now() } : g) : state.graphs
             })),
-            addFloatingPlayer: (id) => set((state) => ({
-                floatingPlayerWindows: [
-                    ...state.floatingPlayerWindows,
-                    { id: crypto.randomUUID(), fileId: id, minimized: false }
-                ]
-            })),
+            addFloatingPlayer: (id) => {
+                const windowId = crypto.randomUUID();
+                set((state) => ({
+                    floatingPlayerWindows: [
+                        ...state.floatingPlayerWindows,
+                        { id: windowId, fileId: id, minimized: false }
+                    ]
+                }));
+                return windowId;
+            },
             removeFloatingPlayer: (id) => set((state) => ({
                 floatingPlayerWindows: state.floatingPlayerWindows.filter((window) => window.id !== id)
             })),
@@ -295,6 +300,16 @@ export const useStore = create<AppStore>()(
                     window.id === id ? { ...window, minimized } : window
                 )
             })),
+            bringFloatingPlayerToFront: (id) => set((state) => {
+                const target = state.floatingPlayerWindows.find((window) => window.id === id);
+                if (!target) return state;
+                return {
+                    floatingPlayerWindows: [
+                        ...state.floatingPlayerWindows.filter((window) => window.id !== id),
+                        target
+                    ]
+                };
+            }),
 
             setPipFile: (id) => set({ pipFileId: id, isPipOpen: !!id }),
             togglePip: (isOpen) => set({ isPipOpen: isOpen }),

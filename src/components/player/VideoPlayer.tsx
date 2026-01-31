@@ -90,12 +90,14 @@ interface VideoPlayerProps {
     fileIdOverride?: string;
     floating?: boolean;
     isMinimized?: boolean;
+    windowZIndex?: number;
+    onFocus?: () => void;
     onMinimize?: () => void;
     onClose?: () => void;
     onExitFloating?: () => void;
 }
 
-export default function VideoPlayer({ fileIdOverride, floating = false, isMinimized: isMinimizedProp, onMinimize, onClose, onExitFloating }: VideoPlayerProps) {
+export default function VideoPlayer({ fileIdOverride, floating = false, isMinimized: isMinimizedProp, windowZIndex, onFocus, onMinimize, onClose, onExitFloating }: VideoPlayerProps) {
     const { fileId: routeFileId } = useParams() as { fileId?: string };
     const fileId = fileIdOverride ?? routeFileId;
     const navigate = useNavigate();
@@ -120,7 +122,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         addAmbientMusicSuppression, 
         removeAmbientMusicSuppression, 
         trashFile,
-        addFloatingPlayer
+        addFloatingPlayer,
+        setFloatingPlayerMinimized
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
@@ -331,11 +334,23 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     };
 
     const handleMinimize = () => {
-        if (onMinimize) onMinimize();
+        if (onMinimize) {
+            onMinimize();
+            return;
+        }
+        if (!fileId) return;
+        const windowId = addFloatingPlayer(fileId);
+        setFloatingPlayerMinimized(windowId, true);
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate("/storage");
+        }
     };
 
     const handleDragStart = (e: any) => {
         if (!isWindowed) return;
+        if (onFocus) onFocus();
         dragActiveRef.current = true;
         dragOffsetRef.current = {
             x: e.clientX - windowRect.x,
@@ -350,8 +365,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         if (!dragActiveRef.current) return;
         setWindowRect((prev) => ({
             ...prev,
-            x: Math.max(0, Math.min(window.innerWidth - prev.width, e.clientX - dragOffsetRef.current.x)),
-            y: Math.max(0, Math.min(window.innerHeight - prev.height, e.clientY - dragOffsetRef.current.y))
+            x: Math.max(-prev.width + 80, Math.min(window.innerWidth - 80, e.clientX - dragOffsetRef.current.x)),
+            y: Math.max(-prev.height + 80, Math.min(window.innerHeight - 80, e.clientY - dragOffsetRef.current.y))
         }));
     };
 
@@ -475,11 +490,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     return (
         <>
-            <div 
+        <div 
                 ref={containerRef} 
                 className={cn(
                     "flex bg-black overflow-hidden relative",
-                    isWindowed ? "fixed z-[80]" : "h-full w-full",
+                isWindowed ? "fixed" : "h-full w-full",
                     isMinimized && "opacity-0 pointer-events-none"
                 )}
                 style={isWindowed ? {
@@ -487,6 +502,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     left: windowRect.x,
                     width: windowRect.width,
                     height: windowRect.height,
+                zIndex: windowZIndex ?? 80,
                     resize: "both",
                     overflow: "hidden",
                     minWidth: 360,
@@ -496,7 +512,13 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     boxShadow: "0 20px 60px rgba(0,0,0,0.6)"
                 } : undefined}
                 onMouseMove={handleMouseMove}
-                onClick={handleMouseMove}
+            onClick={() => {
+                if (onFocus) onFocus();
+                handleMouseMove();
+            }}
+            onPointerDown={() => {
+                if (onFocus) onFocus();
+            }}
             >
 
             {/* Player Container (Top Bar + Stage + Bottom Bar) */}
@@ -603,11 +625,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                         <Button variant="ghost" size="icon" onClick={handleToggleWindowed} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title={isWindowed ? "Exit Window" : "Resize Window"}>
                             {isWindowed ? <CornersIn weight="bold" size={24} /> : <CornersOut weight="bold" size={24} />}
                         </Button>
-                        {isWindowed && (
-                            <Button variant="ghost" size="icon" onClick={handleMinimize} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Minimize">
-                                <Minus weight="bold" size={24} />
-                            </Button>
-                        )}
+                        <Button variant="ghost" size="icon" onClick={handleMinimize} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Minimize">
+                            <Minus weight="bold" size={24} />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close" data-sound-back>
                             <X weight="bold" size={24} />
                         </Button>
