@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import { type File as AppFile } from "@/types";
+import { playSfx } from "@/utils/sound";
 import {
     DndContext, 
     closestCenter,
