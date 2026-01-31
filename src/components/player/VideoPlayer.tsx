@@ -144,6 +144,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
     const [isMinimized, setIsMinimized] = useState(false);
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
     const windowRectInitialized = useRef(false);
+    const dragActiveRef = useRef(false);
+    const dragOffsetRef = useRef({ x: 0, y: 0 });
 
     useEffect(() => {
         // Enable sidebar animation after initial render
@@ -335,6 +337,40 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
         setShowControls(true);
     };
 
+    const handleDragStart = (e: any) => {
+        if (!isWindowed) return;
+        dragActiveRef.current = true;
+        dragOffsetRef.current = {
+            x: e.clientX - windowRect.x,
+            y: e.clientY - windowRect.y
+        };
+        e.currentTarget.setPointerCapture(e.pointerId);
+        window.addEventListener("pointermove", handleDragMove);
+        window.addEventListener("pointerup", handleDragEnd);
+    };
+
+    const handleDragMove = (e: PointerEvent) => {
+        if (!dragActiveRef.current) return;
+        setWindowRect((prev) => ({
+            ...prev,
+            x: Math.max(0, Math.min(window.innerWidth - prev.width, e.clientX - dragOffsetRef.current.x)),
+            y: Math.max(0, Math.min(window.innerHeight - prev.height, e.clientY - dragOffsetRef.current.y))
+        }));
+    };
+
+    const handleDragEnd = () => {
+        dragActiveRef.current = false;
+        window.removeEventListener("pointermove", handleDragMove);
+        window.removeEventListener("pointerup", handleDragEnd);
+    };
+
+    useEffect(() => {
+        return () => {
+            window.removeEventListener("pointermove", handleDragMove);
+            window.removeEventListener("pointerup", handleDragEnd);
+        };
+    }, []);
+
     const toggleFullscreen = () => {
         if (document.fullscreenElement) {
             document.exitFullscreen();
@@ -447,29 +483,30 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
     }, [isWindowed]);
 
     return (
-        <div 
-            ref={containerRef} 
-            className={cn(
-                "flex bg-black overflow-hidden relative",
-                isWindowed ? "fixed z-[80]" : "h-full w-full",
-                isMinimized && "opacity-0 pointer-events-none"
-            )}
-            style={isWindowed ? {
-                top: windowRect.y,
-                left: windowRect.x,
-                width: windowRect.width,
-                height: windowRect.height,
-                resize: "both",
-                overflow: "hidden",
-                minWidth: 360,
-                minHeight: 240,
-                maxWidth: "95vw",
-                maxHeight: "95vh",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.6)"
-            } : undefined}
-            onMouseMove={handleMouseMove}
-            onClick={handleMouseMove}
-        >
+        <>
+            <div 
+                ref={containerRef} 
+                className={cn(
+                    "flex bg-black overflow-hidden relative",
+                    isWindowed ? "fixed z-[80]" : "h-full w-full",
+                    isMinimized && "opacity-0 pointer-events-none"
+                )}
+                style={isWindowed ? {
+                    top: windowRect.y,
+                    left: windowRect.x,
+                    width: windowRect.width,
+                    height: windowRect.height,
+                    resize: "both",
+                    overflow: "hidden",
+                    minWidth: 360,
+                    minHeight: 240,
+                    maxWidth: "95vw",
+                    maxHeight: "95vh",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.6)"
+                } : undefined}
+                onMouseMove={handleMouseMove}
+                onClick={handleMouseMove}
+            >
 
             {/* Player Container (Top Bar + Stage + Bottom Bar) */}
             <motion.div
@@ -492,15 +529,20 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
                         "flex items-center gap-4 min-w-0 flex-1 mr-4 pointer-events-auto transition-opacity duration-300",
                         !isHeaderVisible && "opacity-0 pointer-events-none"
                     )}>
-                        {file.type === 'pdf' ? (
-                            <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
-                        ) : file.type === 'image' ? (
-                            <ImageIcon className="text-muted-foreground shrink-0" size={24} weight="bold" />
-                        ) : file.type === 'audio' ? (
-                            <MusicNotes className="text-muted-foreground shrink-0" size={24} weight="bold" />
-                        ) : (
-                            <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
-                        )}
+                        <div
+                            onPointerDown={handleDragStart}
+                            className={cn(isWindowed && "cursor-move")}
+                        >
+                            {file.type === 'pdf' ? (
+                                <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                            ) : file.type === 'image' ? (
+                                <ImageIcon className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                            ) : file.type === 'audio' ? (
+                                <MusicNotes className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                            ) : (
+                                <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
+                            )}
+                        </div>
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 group/edit cursor-pointer" onClick={() => setEditOpen(true)}>
                                 <h1 className="text-white font-medium text-base truncate">{file.name}</h1>
@@ -961,14 +1003,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
                 </motion.div>
             )}
 
-            {isWindowed && isMinimized && (
-                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90]">
-                    <Button variant="secondary" className="h-8 px-3 text-xs" onClick={handleRestore}>
-                        {file.name}
-                    </Button>
-                </div>
-            )}
-
             <MoveFileDialog
                 open={moveDialogOpen}
                 onOpenChange={setMoveDialogOpen}
@@ -1043,5 +1077,13 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
                 </AlertDialogContent>
             </AlertDialog>
         </div>
+        {isWindowed && isMinimized && (
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90]">
+                <Button variant="secondary" className="h-8 px-3 text-xs" onClick={handleRestore}>
+                    {file.name}
+                </Button>
+            </div>
+        )}
+        </>
     );
 }
