@@ -4,7 +4,7 @@ import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-    NotePencil, TextBolder, TextItalic, ListBullets,
+    NotePencil, TextB, TextItalic, ListBullets,
     TextUnderline, TextStrikethrough, TextAlignLeft, TextAlignCenter, TextAlignRight,
     ArrowsCounterClockwise, ArrowsClockwise, Link, File, Rows, ArrowsOutSimple, Layout, Plus
 } from "@phosphor-icons/react";
