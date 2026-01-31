@@ -179,7 +179,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const handleCreateHighlight = (time: number) => {
         if (!fileId) return;
-        addVideoHighlight(fileId, time, activeCollectionId || undefined);
+        // Create highlight ending at the selected time, defaulting to 5 seconds duration
+        const start = Math.max(0, time - 5);
+        addVideoHighlight(fileId, start, time, activeCollectionId || undefined);
     };
 
     if (!file) {
@@ -455,7 +457,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             return;
         }
 
-        addVideoHighlight(fileId, currentTime, activeCollectionId || undefined);
+        // Create highlight for the last 5 seconds ending at current time
+        const start = Math.max(0, currentTime - 5);
+        addVideoHighlight(fileId, start, currentTime, activeCollectionId || undefined);
     };
 
     const handleSeekHover = (e: MouseEvent<HTMLDivElement>) => {

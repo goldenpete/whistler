@@ -5,12 +5,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import React, { useEffect, useState, useRef, type MouseEvent, type ChangeEvent } from "react";
+import { useEffect, useState, useRef, type MouseEvent, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/useStore";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, PencilSimple, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, SidebarSimple, CornersIn, GridFour, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
+import { Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, CornersOut, Minus, Plus, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
 import { cn, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
@@ -29,29 +29,6 @@ const parseTime = (timeStr: string) => {
         }
     }
     return null;
-};
-
-const ExpandableNote = ({ text }: { text: string }) => {
-    const [expanded, setExpanded] = useState(false);
-    const limit = 150;
-
-    if (!text) return <span className="text-muted-foreground/50 italic text-xs">No note</span>;
-    if (text.length <= limit) return <>{text}</>;
-
-    return (
-        <span>
-            {expanded ? text : `${text.slice(0, limit)}...`}
-            <button 
-                onClick={(e: MouseEvent) => { 
-                    e.stopPropagation(); 
-                    setExpanded(!expanded); 
-                }} 
-                className="text-primary text-xs ml-1 hover:underline font-medium"
-            >
-                {expanded ? "Show less" : "Show more"}
-            </button>
-        </span>
-    );
 };
 
 // --- Highlight Player Dialog ---

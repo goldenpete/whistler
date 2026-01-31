@@ -140,6 +140,9 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const segmentDuration = highlight ? (highlight.end || highlight.start + 5) - highlight.start : duration;
+    const relativeTime = highlight ? Math.max(0, currentTime - highlight.start) : currentTime;
+
     return (
         <div className={cn("flex flex-col items-center justify-center h-full w-full bg-zinc-950 p-8", className)}>
             <audio
@@ -190,8 +193,8 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                 <div className="w-full max-w-2xl bg-zinc-900/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-800/50 shadow-xl">
                     {/* Progress Bar */}
                     <div className="mb-6 space-y-2 relative group/seek">
-                        {/* Highlights Overlay */}
-                        {highlights.length > 0 && duration > 0 && (
+                        {/* Highlights Overlay - Only show when not in highlight mode */}
+                        {!highlight && highlights.length > 0 && duration > 0 && (
                             <div className="absolute top-0 bottom-0 left-0 right-0 pointer-events-none z-10">
                                 {highlights.map(h => {
                                     const collection = collections.find(c => c.id === h.collectionId);
@@ -214,15 +217,18 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                             </div>
                         )}
                         <Slider
-                            value={[currentTime]}
-                            max={duration || 100}
-                            step={1}
-                            onValueChange={handleSeek}
+                            value={[relativeTime]}
+                            max={segmentDuration || 100}
+                            step={0.1}
+                            onValueChange={(val) => {
+                                const newTime = highlight ? highlight.start + val[0] : val[0];
+                                handleSeek([newTime]);
+                            }}
                             className="cursor-pointer"
                         />
                         <div className="flex justify-between text-xs font-mono text-zinc-500">
-                            <span>{formatSeconds(currentTime)}</span>
-                            <span>{formatSeconds(duration)}</span>
+                            <span>{formatSeconds(relativeTime)}</span>
+                            <span>{formatSeconds(segmentDuration)}</span>
                         </div>
                     </div>
 

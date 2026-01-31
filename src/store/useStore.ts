@@ -592,13 +592,13 @@ export const useStore = create<AppStore>()(
                 };
             }),
 
-            addVideoHighlight: (fileId, time, collectionId) => set((state) => {
+            addVideoHighlight: (fileId, start, end, collectionId) => set((state) => {
                 const highlight: Highlight = {
                     id: crypto.randomUUID(),
                     fileId,
-                    start: time,
-                    end: time,
-                    text: `Timestamp: ${time}`,
+                    start,
+                    end,
+                    text: `Timestamp: ${start} - ${end}`,
                     note: '',
                     created: Date.now(),
                     collectionId: collectionId || state.activeCollectionId || undefined,
