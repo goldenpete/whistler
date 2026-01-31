@@ -89,11 +89,13 @@ const ExpandableNote = ({ text }: { text: string }) => {
 interface VideoPlayerProps {
     fileIdOverride?: string;
     floating?: boolean;
+    isMinimized?: boolean;
+    onMinimize?: () => void;
     onClose?: () => void;
     onExitFloating?: () => void;
 }
 
-export default function VideoPlayer({ fileIdOverride, floating = false, onClose, onExitFloating }: VideoPlayerProps) {
+export default function VideoPlayer({ fileIdOverride, floating = false, isMinimized: isMinimizedProp, onMinimize, onClose, onExitFloating }: VideoPlayerProps) {
     const { fileId: routeFileId } = useParams() as { fileId?: string };
     const fileId = fileIdOverride ?? routeFileId;
     const navigate = useNavigate();
@@ -118,7 +120,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
         addAmbientMusicSuppression, 
         removeAmbientMusicSuppression, 
         trashFile,
-        setFloatingPlayer
+        addFloatingPlayer
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
@@ -141,11 +143,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
     const [enableSidebarAnimation, setEnableSidebarAnimation] = useState(false);
     const [hasPdfSelection, setHasPdfSelection] = useState(false);
     const [isWindowed, setIsWindowed] = useState(floating);
-    const [isMinimized, setIsMinimized] = useState(false);
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
     const windowRectInitialized = useRef(false);
     const dragActiveRef = useRef(false);
     const dragOffsetRef = useRef({ x: 0, y: 0 });
+    const isMinimized = floating ? !!isMinimizedProp : false;
 
     useEffect(() => {
         // Enable sidebar animation after initial render
@@ -311,7 +313,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
     const handleToggleWindowed = () => {
         if (!fileId) return;
         if (!floating) {
-            setFloatingPlayer(fileId);
+            addFloatingPlayer(fileId);
             if (window.history.length > 1) {
                 navigate(-1);
             } else {
@@ -329,12 +331,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
     };
 
     const handleMinimize = () => {
-        setIsMinimized(true);
-    };
-
-    const handleRestore = () => {
-        setIsMinimized(false);
-        setShowControls(true);
+        if (onMinimize) onMinimize();
     };
 
     const handleDragStart = (e: any) => {
@@ -462,12 +459,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
         if (!floating) return;
         setIsWindowed(true);
     }, [floating]);
-
-    useEffect(() => {
-        if (!isWindowed) {
-            setIsMinimized(false);
-        }
-    }, [isWindowed]);
 
     useEffect(() => {
         if (!isWindowed || windowRectInitialized.current) return;
@@ -1077,13 +1068,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, onClose,
                 </AlertDialogContent>
             </AlertDialog>
         </div>
-        {isWindowed && isMinimized && (
-            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90]">
-                <Button variant="secondary" className="h-8 px-3 text-xs" onClick={handleRestore}>
-                    {file.name}
-                </Button>
-            </div>
-        )}
         </>
     );
 }

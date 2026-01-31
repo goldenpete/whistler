@@ -5,29 +5,49 @@ import VideoPlayer from "@/components/player/VideoPlayer";
 
 export function FloatingPlayer() {
     const navigate = useNavigate();
-    const { floatingPlayerFileId, setFloatingPlayer } = useStore(useShallow((state: AppStore) => ({
-        floatingPlayerFileId: state.floatingPlayerFileId,
-        setFloatingPlayer: state.setFloatingPlayer
+    const { floatingPlayerWindows, setFloatingPlayerMinimized, removeFloatingPlayer, files } = useStore(useShallow((state: AppStore) => ({
+        floatingPlayerWindows: state.floatingPlayerWindows,
+        setFloatingPlayerMinimized: state.setFloatingPlayerMinimized,
+        removeFloatingPlayer: state.removeFloatingPlayer,
+        files: state.files
     })));
 
-    if (!floatingPlayerFileId) return null;
+    if (floatingPlayerWindows.length === 0) return null;
 
-    const handleClose = () => {
-        setFloatingPlayer(null);
-    };
-
-    const handleExitFloating = () => {
-        const targetId = floatingPlayerFileId;
-        setFloatingPlayer(null);
-        navigate(`/file/${targetId}`);
-    };
+    const minimizedWindows = floatingPlayerWindows.filter((window) => window.minimized);
 
     return (
-        <VideoPlayer
-            fileIdOverride={floatingPlayerFileId}
-            floating
-            onClose={handleClose}
-            onExitFloating={handleExitFloating}
-        />
+        <>
+            {floatingPlayerWindows.map((window) => (
+                <VideoPlayer
+                    key={window.id}
+                    fileIdOverride={window.fileId}
+                    floating
+                    isMinimized={window.minimized}
+                    onMinimize={() => setFloatingPlayerMinimized(window.id, true)}
+                    onClose={() => removeFloatingPlayer(window.id)}
+                    onExitFloating={() => {
+                        removeFloatingPlayer(window.id);
+                        navigate(`/file/${window.fileId}`);
+                    }}
+                />
+            ))}
+            {minimizedWindows.length > 0 && (
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] flex items-center gap-2">
+                    {minimizedWindows.map((window) => {
+                        const name = files.find((file) => file.id === window.fileId)?.name || "Window";
+                        return (
+                            <button
+                                key={window.id}
+                                className="h-8 px-3 text-xs rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                                onClick={() => setFloatingPlayerMinimized(window.id, false)}
+                            >
+                                {name}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </>
     );
 }

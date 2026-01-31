@@ -122,6 +122,12 @@ export interface HistoryEntry {
 export type AccentTheme = 'orange' | 'emerald' | 'violet' | 'sky';
 export type BaseTheme = 'zinc' | 'stone' | 'neutral' | 'gray';
 
+export interface FloatingPlayerWindow {
+    id: string;
+    fileId: string;
+    minimized: boolean;
+}
+
 export interface AppState {
     projects: Project[];
     files: File[];
@@ -139,7 +145,7 @@ export interface AppState {
     activeCollectionId: string | null;
     activeGraphId: string | null;
     activeDocId: string | null;
-    floatingPlayerFileId: string | null;
+    floatingPlayerWindows: FloatingPlayerWindow[];
 
     // PiP State
     pipFileId: string | null;

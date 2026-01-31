@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { type AppState, type File, type Project, type Collection, type Highlight, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type BaseTheme } from '@/types';
+import { type AppState, type File, type Project, type Collection, type Highlight, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type BaseTheme, type FloatingPlayerWindow } from '@/types';
 
 interface User {
     id: string;
@@ -12,7 +12,7 @@ type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' 
 
 export interface AppStore extends AppState {
     activeFileId: string | null;
-    floatingPlayerFileId: string | null;
+    floatingPlayerWindows: FloatingPlayerWindow[];
     user: User | null;
     lastSyncTime: number | null;
     autoSyncEnabled: boolean;
@@ -38,7 +38,9 @@ export interface AppStore extends AppState {
     setActiveCollection: (id: string | null) => void;
     setActiveDoc: (id: string | null) => void;
     setActiveGraph: (id: string | null) => void;
-    setFloatingPlayer: (id: string | null) => void;
+    addFloatingPlayer: (id: string) => void;
+    removeFloatingPlayer: (id: string) => void;
+    setFloatingPlayerMinimized: (id: string, minimized: boolean) => void;
     addProject: (name: string) => Project;
     addStorage: (name: string, projectId: string, color?: string, icon?: string) => void;
     addDoc: (name: string, projectId: string, color?: string, icon?: string) => void;
@@ -213,7 +215,7 @@ export const useStore = create<AppStore>()(
             activeGraphId: null,
             activeDocId: null,
             activeFileId: null,
-            floatingPlayerFileId: null,
+            floatingPlayerWindows: [],
 
             user: null,
             lastSyncTime: null,
@@ -279,7 +281,20 @@ export const useStore = create<AppStore>()(
                 activeGraphId: id,
                 graphs: id ? state.graphs.map(g => g.id === id ? { ...g, lastViewed: Date.now() } : g) : state.graphs
             })),
-            setFloatingPlayer: (id) => set({ floatingPlayerFileId: id }),
+            addFloatingPlayer: (id) => set((state) => ({
+                floatingPlayerWindows: [
+                    ...state.floatingPlayerWindows,
+                    { id: crypto.randomUUID(), fileId: id, minimized: false }
+                ]
+            })),
+            removeFloatingPlayer: (id) => set((state) => ({
+                floatingPlayerWindows: state.floatingPlayerWindows.filter((window) => window.id !== id)
+            })),
+            setFloatingPlayerMinimized: (id, minimized) => set((state) => ({
+                floatingPlayerWindows: state.floatingPlayerWindows.map((window) =>
+                    window.id === id ? { ...window, minimized } : window
+                )
+            })),
 
             setPipFile: (id) => set({ pipFileId: id, isPipOpen: !!id }),
             togglePip: (isOpen) => set({ isPipOpen: isOpen }),
@@ -1039,7 +1054,7 @@ export const useStore = create<AppStore>()(
             name: STORAGE_KEY,
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => {
-                const { ambientMusicUrl, ambientMusicSuppressedBy, floatingPlayerFileId, ...rest } = state;
+                const { ambientMusicUrl, ambientMusicSuppressedBy, floatingPlayerWindows, ...rest } = state;
                 return rest;
             },
         }
