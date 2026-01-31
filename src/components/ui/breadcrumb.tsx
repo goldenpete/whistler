@@ -28,15 +28,17 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
   )
 }
 
-function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
-  return (
+const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li">>(
+  ({ className, ...props }, ref) => (
     <li
+      ref={ref}
       data-slot="breadcrumb-item"
       className={cn("gap-1 inline-flex items-center", className)}
       {...props}
     />
   )
-}
+)
+BreadcrumbItem.displayName = "BreadcrumbItem"
 
 function BreadcrumbLink({
   asChild,
