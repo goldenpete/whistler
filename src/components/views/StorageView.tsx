@@ -58,6 +58,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ICONS } from "@/components/dialogs/StorageDialogs";
 import { cn } from "@/lib/utils";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import {
