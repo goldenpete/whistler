@@ -16,6 +16,7 @@ import { playSfx } from "@/utils/sound";
 import {
     DndContext, 
     closestCenter,
+    pointerWithin,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -368,6 +369,13 @@ export default function StorageView() {
             },
         })
     );
+    const collisionDetection = (args: any) => {
+        const pointerCollisions = pointerWithin(args);
+        if (pointerCollisions.length > 0) {
+            return pointerCollisions;
+        }
+        return closestCenter(args);
+    };
 
     // Selection Mode Handlers
     const toggleSelectionMode = () => {
@@ -409,7 +417,7 @@ export default function StorageView() {
     return (
         <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={collisionDetection}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragCancel={() => setActiveId(null)}

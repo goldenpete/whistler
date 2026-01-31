@@ -324,6 +324,7 @@ declare module "*.css" {
 declare module "@dnd-kit/core" {
     export const DndContext: any;
     export const closestCenter: any;
+    export const pointerWithin: any;
     export const KeyboardSensor: any;
     export const PointerSensor: any;
     export const useSensor: any;
