@@ -81,8 +81,6 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const isAudio = file?.type === 'audio';
     const isVideo = !isPdf && !isImage && !isAudio;
     
-    const fileHighlights = allHighlights.filter(h => h.fileId === file?.id);
-
     // State
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -358,28 +356,29 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 </div>
                             ) : isImage ? (
                                 <ImagePlayer
-                                    key={file.id}
-                                    url={file.url || ""}
-                                    fileId={file.id}
-                                    highlightId={highlight.id}
-                                    className="w-full h-full"
-                                    showControls={showControls}
-                                    onHideControls={() => setShowControls(false)}
-                                    onToggleFullscreen={toggleFullscreen}
-                                    isFullscreen={isFullscreen}
-                                />
-                            ) : isAudio ? (
-                                <div className="w-full max-w-4xl px-8 flex items-center justify-center h-full">
-                                    <AudioPlayer
                                         key={file.id}
                                         url={file.url || ""}
                                         fileId={file.id}
-                                        className="w-full"
-                                        highlights={fileHighlights}
-                                        highlight={highlight}
-                                        showControls={true}
+                                        highlightId={highlight.id}
+                                        highlights={[highlight]}
+                                        className="w-full h-full"
+                                        showControls={showControls}
+                                        onHideControls={() => setShowControls(false)}
+                                        onToggleFullscreen={toggleFullscreen}
+                                        isFullscreen={isFullscreen}
                                     />
-                                </div>
+                                ) : isAudio ? (
+                                    <div className="w-full max-w-4xl px-8 flex items-center justify-center h-full">
+                                        <AudioPlayer
+                                            key={file.id}
+                                            url={file.url || ""}
+                                            fileId={file.id}
+                                            className="w-full"
+                                            highlights={[]}
+                                            highlight={highlight}
+                                            showControls={true}
+                                        />
+                                    </div>
                             ) : (
                                 <video
                                     ref={videoRef}
@@ -622,14 +621,14 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         </div>
 
                                         {/* Time Range or Highlighted Text */}
-                                        {file.name.toLowerCase().endsWith('.pdf') ? (
+                                        {isPdf ? (
                                             <div className="flex flex-col gap-2">
                                                 <Label className="text-xs font-mono text-muted-foreground uppercase">Highlighted Text</Label>
                                                 <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground italic border border-border/50 max-h-[150px] overflow-y-auto">
                                                     "{highlight.text || 'No text selected'}"
                                                 </div>
                                             </div>
-                                        ) : (
+                                        ) : !isImage && (
                                             <div className="flex flex-col gap-2">
                                                 <Label className="text-xs font-mono text-muted-foreground uppercase">Time Range</Label>
                                                 <div className="flex items-center gap-2">

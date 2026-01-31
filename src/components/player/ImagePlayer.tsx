@@ -36,6 +36,7 @@ interface ImagePlayerProps {
     onToggleFullscreen?: () => void;
     isFullscreen?: boolean;
     className?: string;
+    highlights?: Highlight[];
 }
 
 export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({ 
@@ -51,10 +52,11 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     onHideControls,
     onToggleFullscreen,
     isFullscreen = false,
-    className 
+    className,
+    highlights: passedHighlights
 }, ref) => {
     const navigate = useNavigate();
-    const { highlights, addImageHighlight, trashFile, collections } = useStore();
+    const { highlights: storeHighlights, addImageHighlight, trashFile, collections } = useStore();
     
     // State
     const [scale, setScale] = useState<number>(1.0);
@@ -66,7 +68,8 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     const containerRef = useRef<HTMLDivElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     
-    const fileHighlights = highlights.filter((h: Highlight) => h.fileId === fileId);
+    // Use passed highlights or fall back to store
+    const fileHighlights = passedHighlights || storeHighlights.filter((h: Highlight) => h.fileId === fileId);
 
     // Zoom handlers
     const zoomIn = () => setScale(s => Math.min(s + 0.25, 5.0));
