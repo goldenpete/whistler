@@ -548,6 +548,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     inline
                     onRequestMinimize={handleMinimize}
                     onRequestClose={() => setActiveHighlight(null)}
+                    onSelectHighlight={setActiveHighlight}
+                    isDraggable={isWindowed}
+                    onDragHandlePointerDown={handleDragStart}
                 />
             ) : (
                 <motion.div

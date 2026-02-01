@@ -46,13 +46,15 @@ interface HighlightPlayerDialogProps {
     collection?: Collection;
     collections?: Collection[];
     onUpdate?: (updates: Partial<Highlight>) => void;
-    onEditHighlight?: () => void;
     inline?: boolean;
     onRequestMinimize?: () => void;
     onRequestClose?: () => void;
+    onSelectHighlight?: (id: string) => void;
+    isDraggable?: boolean;
+    onDragHandlePointerDown?: (event: any) => void;
 }
 
-export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight, inline = false, onRequestMinimize, onRequestClose }: HighlightPlayerDialogProps) {
+export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
     const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized } = useStore();
     // Refs
@@ -93,6 +95,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const start = highlight?.start || 0;
     const end = highlight?.end || 0;
     const segmentDuration = end - start;
+    const fileHighlights = file ? allHighlights.filter((h: Highlight) => h.fileId === file.id) : [];
+    const sortedHighlights = fileHighlights.slice().sort((a: Highlight, b: Highlight) => a.start - b.start);
 
     // Windowed Logic
     const handleToggleWindowed = () => {
@@ -138,6 +142,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         window.removeEventListener("pointermove", handleDragMove);
         window.removeEventListener("pointerup", handleDragEnd);
     };
+
+    const handleTopBarDrag = inline ? onDragHandlePointerDown : handleDragStart;
 
     useEffect(() => {
         return () => {
@@ -338,8 +344,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
                 )}>
                     <div 
-                        className={cn("flex items-center gap-4 min-w-0 flex-1 mr-4", isWindowed && "cursor-move")}
-                        onPointerDown={handleDragStart}
+                        className={cn("flex items-center gap-4 min-w-0 flex-1 mr-4", (inline ? isDraggable : isWindowed) && "cursor-move")}
+                        onPointerDown={handleTopBarDrag}
                     >
                         {file.name.toLowerCase().endsWith('.pdf') ? (
                             <FilePdf className="text-muted-foreground shrink-0" size={24} weight="bold" />
@@ -764,15 +770,55 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 )}
 
                                 {/* Note */}
-                                <div className="flex flex-col gap-2 flex-1">
+                                <div className="flex flex-col gap-2">
                                     <Label className="text-xs font-mono text-muted-foreground uppercase">Note</Label>
                                     <Textarea 
                                         value={editNote}
                                         onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditNote(e.target.value)}
                                         onBlur={() => handleSave({ note: editNote })}
-                                        className="flex-1 bg-muted/30 border-border/50 resize-none min-h-[200px] leading-relaxed p-3 focus-visible:ring-1"
+                                        className="bg-muted/30 border-border/50 resize-none h-40 leading-relaxed p-3 focus-visible:ring-1 overflow-y-auto"
                                         placeholder="Add a note..."
                                     />
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <Label className="text-xs font-mono text-muted-foreground uppercase">Highlights</Label>
+                                    <div className="flex flex-col gap-2">
+                                        {sortedHighlights.length === 0 ? (
+                                            <div className="text-xs text-muted-foreground">No highlights yet.</div>
+                                        ) : (
+                                            sortedHighlights.map((h: Highlight) => {
+                                                const isActive = h.id === highlight.id;
+                                                const hCollection = collections?.find(c => c.id === h.collectionId);
+                                                return (
+                                                    <button
+                                                        key={h.id}
+                                                        onClick={() => onSelectHighlight?.(h.id)}
+                                                        className={cn(
+                                                            "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs transition-colors border border-transparent",
+                                                            isActive
+                                                                ? "bg-primary/10 text-primary border-primary/40"
+                                                                : "bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                                        )}
+                                                    >
+                                                        <span className="font-mono truncate">
+                                                            {isPdf
+                                                                ? (h.end && h.end !== h.start ? `Page ${h.start}-${h.end}` : `Page ${h.start}`)
+                                                                : isImage
+                                                                    ? "View Region"
+                                                                    : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
+                                                            }
+                                                        </span>
+                                                        {hCollection && (
+                                                            <span className="truncate uppercase tracking-tight text-[10px]" style={{ color: hCollection.color }}>
+                                                                {hCollection.name}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
