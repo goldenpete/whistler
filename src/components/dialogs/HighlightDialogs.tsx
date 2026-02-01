@@ -341,7 +341,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         >
             
             {/* Player Area */}
-            <div className="flex-1 flex flex-col relative min-w-0 bg-black">
+            <div className="flex-1 flex flex-col relative min-w-0 bg-black overflow-hidden">
                 
                 {/* Top Bar (Title + Close) */}
                 <div className={cn(
@@ -489,23 +489,29 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 />
                             </div>
                     ) : (
-                        <video
-                            ref={videoRef}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            src={(file as any).webkitRelativePath || (file as any).url || ""}
-                            className="max-w-full max-h-full object-contain focus:outline-none"
-                            style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
-                            onPause={() => {
-                                setIsPlaying(false);
-                                removeAmbientMusicSuppression('highlight-player');
-                            }}
-                            onPlay={() => {
-                                setIsPlaying(true);
-                                addAmbientMusicSuppression('highlight-player');
-                            }}
-                            onTimeUpdate={handleTimeUpdate}
-                            autoPlay
-                        />
+                        <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                            <div
+                                className="flex items-center justify-center"
+                                style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
+                            >
+                                <video
+                                    ref={videoRef}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    src={(file as any).webkitRelativePath || (file as any).url || ""}
+                                    className="max-w-full max-h-full object-contain focus:outline-none"
+                                    onPause={() => {
+                                        setIsPlaying(false);
+                                        removeAmbientMusicSuppression('highlight-player');
+                                    }}
+                                    onPlay={() => {
+                                        setIsPlaying(true);
+                                        addAmbientMusicSuppression('highlight-player');
+                                    }}
+                                    onTimeUpdate={handleTimeUpdate}
+                                    autoPlay
+                                />
+                            </div>
+                        </div>
                     )}
                 </div>
 

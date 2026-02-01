@@ -731,27 +731,33 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                         />
                     </div>
                     ) : (
-                        <video
-                            ref={videoRef}
-                            src={file.url || ""}
-                            className="max-w-full max-h-full object-contain focus:outline-none"
-                            style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
-                            autoPlay
-                            onWaiting={() => setIsLoading(true)}
-                            onCanPlay={() => setIsLoading(false)}
-                            onPlay={() => {
-                                setIsPlaying(true);
-                                setIsLoading(false);
-                                addAmbientMusicSuppression('main-player');
-                            }}
-                            onPause={() => {
-                                setIsPlaying(false);
-                                removeAmbientMusicSuppression('main-player');
-                            }}
-                            onTimeUpdate={handleTimeUpdate}
-                            onLoadedMetadata={handleLoadedMetadata}
-                            loop={isLooping}
-                        />
+                        <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                            <div
+                                className="flex items-center justify-center"
+                                style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
+                            >
+                                <video
+                                    ref={videoRef}
+                                    src={file.url || ""}
+                                    className="max-w-full max-h-full object-contain focus:outline-none"
+                                    autoPlay
+                                    onWaiting={() => setIsLoading(true)}
+                                    onCanPlay={() => setIsLoading(false)}
+                                    onPlay={() => {
+                                        setIsPlaying(true);
+                                        setIsLoading(false);
+                                        addAmbientMusicSuppression('main-player');
+                                    }}
+                                    onPause={() => {
+                                        setIsPlaying(false);
+                                        removeAmbientMusicSuppression('main-player');
+                                    }}
+                                    onTimeUpdate={handleTimeUpdate}
+                                    onLoadedMetadata={handleLoadedMetadata}
+                                    loop={isLooping}
+                                />
+                            </div>
+                        </div>
                     )}
                 </div>
 
