@@ -941,7 +941,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
                     animate={{ width: 320, opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="bg-background border-l border-border flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full"
+                    className="bg-background border-l border-border flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full min-h-0"
                 >
                     <div className="p-4 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between">
                         <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
@@ -956,7 +956,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             <Plus weight="bold" size={14} />
                         </Button>
                     </div>
-                    <ScrollArea className="flex-1 w-full">
+                    <ScrollArea className="flex-1 w-full min-h-0">
                         {fileHighlights.length === 0 ? (
                             <div className="text-muted-foreground text-xs text-center mt-4">No highlights yet.</div>
                         ) : (
