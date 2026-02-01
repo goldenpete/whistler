@@ -712,7 +712,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             fileId={file.id}
                             className="w-full h-full"
                             highlights={fileHighlights}
-                            onTimeUpdate={(time) => setCurrentTime(time)}
                         />
                     </div>
                     ) : (
@@ -931,6 +930,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     </div>
                 )}
             </motion.div>
+            )}
 
             {/* Sidebar (Full Height, Sibling to Player Container) */}
             {sidebarOpen && (
