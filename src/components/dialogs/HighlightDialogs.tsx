@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/useStore";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, CornersOut, CornersIn, Minus, Plus, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip } from "@phosphor-icons/react";
+import { Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, CornersOut, CornersIn, Minus, Plus, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip, GridFour } from "@phosphor-icons/react";
 import { cn, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
