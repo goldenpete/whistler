@@ -81,6 +81,9 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
             }
 
             setCurrentTime(time);
+            if (onTimeUpdate) {
+                onTimeUpdate(time);
+            }
             // Debounce saving progress? Or just save every few seconds
             if (!highlight && Math.abs(time - (fileProgress[fileId] || 0)) > 5) {
                 setFileProgress(fileId, time);

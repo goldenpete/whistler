@@ -71,7 +71,7 @@ export interface AppStore extends AppState {
     setState: (state: Partial<AppState>) => void;
     getState: () => AppState;
 
-    addVideoHighlight: (fileId: string, time: number, collectionId?: string) => void;
+    addVideoHighlight: (fileId: string, start: number, end: number, collectionId?: string) => void;
     addImageHighlight: (fileId: string, rect: { x: number; y: number; width: number; height: number }, collectionId?: string) => void;
     addHighlight: (fileId: string, page: number, text: string, collectionId?: string | null, pdfRange?: { start: number; end: number } | null) => void;
     removeHighlight: (id: string) => void;

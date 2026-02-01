@@ -688,6 +688,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             fileId={file.id}
                             className="w-full h-full"
                             highlights={fileHighlights}
+                            onTimeUpdate={(time) => setCurrentTime(time)}
                         />
                     </div>
                     ) : (
