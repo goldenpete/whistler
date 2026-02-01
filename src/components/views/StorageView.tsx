@@ -8,7 +8,7 @@ import {
     DotsThreeVertical, Trash, PencilSimple, DownloadSimple, ShareNetwork,
     MagnifyingGlass, Plus, CaretRight, FileVideo, CheckSquare, Square,
     LinkSimple, CaretDown, ArrowsOutSimple,
-    GridFour, Rows, FolderOpen, ArrowSquareOut, X, Copy, Palette, Share
+    SquaresFour, Rows, FolderOpen, ArrowSquareOut, X, Copy, Palette, Share
 } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import { type File as AppFile } from "@/types";
@@ -478,7 +478,7 @@ export default function StorageView() {
                                     <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
                                 </Button>
                                 <Button variant="ghost" size="icon" className="size-8" title="View as grid" onClick={() => setViewMode('grid')}>
-                                    <GridFour weight={viewMode === 'grid' ? "fill" : "regular"} size={16} className={viewMode === 'grid' ? "text-primary" : ""} />
+                                    <SquaresFour weight={viewMode === 'grid' ? "fill" : "regular"} size={16} className={viewMode === 'grid' ? "text-primary" : ""} />
                                 </Button>
                                 <Button variant="ghost" size="icon" className="size-8" title="View as list" onClick={() => setViewMode('list')}>
                                     <Rows weight={viewMode === 'list' ? "fill" : "regular"} size={16} className={viewMode === 'list' ? "text-primary" : ""} />

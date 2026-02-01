@@ -214,7 +214,7 @@ declare module "@phosphor-icons/react" {
     export const Check: any;
     export const ArrowsDownUp: any;
     export const FunnelSimple: any;
-    export const GridFour: any;
+    export const SquaresFour: any;
     export const List: any;
     export const CaretLeft: any;
     export const DownloadSimple: any;

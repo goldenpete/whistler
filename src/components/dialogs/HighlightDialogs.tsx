@@ -11,7 +11,11 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/useStore";
 import { type Highlight, type File, type Collection } from "@/types";
-import { Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, CornersOut, CornersIn, Minus, Plus, ArrowSquareOut, FilePdf, EyeSlash, FilmStrip, GridFour } from "@phosphor-icons/react";
+import { 
+    Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, 
+    CornersOut, CornersIn, Minus, Plus, ArrowSquareOut, 
+    FilePdf, EyeSlash, FilmStrip, SidebarSimple 
+} from "@phosphor-icons/react";
 import { cn, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
@@ -607,7 +611,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     </Popover>
 
                                     <Button variant="ghost" size="icon" onClick={togglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
-                                        <GridFour weight="bold" size={20} />
+                                        <CornersOut weight="bold" size={20} />
                                     </Button>
 
                                     <div className="w-px h-5 bg-white/20 mx-1" />

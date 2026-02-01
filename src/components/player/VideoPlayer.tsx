@@ -42,7 +42,6 @@ import {
     Plus,
     Minus,
     Repeat,
-    GridFour,
     CircleNotch,
     Eye,
     EyeSlash,
@@ -870,7 +869,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 </Popover>
 
                                 <Button variant="ghost" size="icon" onClick={handleTogglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
-                                    <GridFour weight="bold" size={20} />
+                                    <CornersOut weight="bold" size={20} />
                                 </Button>
 
                                 <div className="w-px h-5 bg-border mx-1" />
