@@ -936,7 +936,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             )}
 
             {/* Sidebar (Full Height, Sibling to Player Container) */}
-            {sidebarOpen && (
+            {sidebarOpen && !activeHighlightForFile && (
                 <motion.div
                     initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
                     animate={{ width: 320, opacity: 1 }}

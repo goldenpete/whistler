@@ -795,13 +795,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                         key={h.id}
                                                         onClick={() => onSelectHighlight?.(h.id)}
                                                         className={cn(
-                                                            "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs transition-colors border border-transparent",
+                                                            "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors border border-transparent w-full",
                                                             isActive
                                                                 ? "bg-primary/10 text-primary border-primary/40"
                                                                 : "bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                                         )}
                                                     >
-                                                        <span className="font-mono truncate">
+                                                        <span className="font-mono shrink-0">
                                                             {isPdf
                                                                 ? (h.end && h.end !== h.start ? `Page ${h.start}-${h.end}` : `Page ${h.start}`)
                                                                 : isImage
@@ -809,8 +809,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                                     : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
                                                             }
                                                         </span>
+                                                        <span className={cn("flex-1 truncate", isActive ? "text-primary/90" : "text-muted-foreground")}>
+                                                            {h.note?.trim() ? h.note : "No note"}
+                                                        </span>
                                                         {hCollection && (
-                                                            <span className="truncate uppercase tracking-tight text-[10px]" style={{ color: hCollection.color }}>
+                                                            <span className="shrink-0 truncate uppercase tracking-tight text-[10px]" style={{ color: hCollection.color }}>
                                                                 {hCollection.name}
                                                             </span>
                                                         )}
