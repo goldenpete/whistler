@@ -48,7 +48,8 @@ import {
     Image as ImageIcon,
     MusicNotes,
     MagnifyingGlassMinus,
-    MagnifyingGlassPlus
+    MagnifyingGlassPlus,
+    ArrowsClockwise
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
@@ -128,8 +129,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         addFloatingPlayer,
         setFloatingPlayerMinimized,
         windowOutlineEnabled,
-        videoZoom,
-        setVideoZoom
+        videoZoomByFile,
+        setVideoZoomForFile,
+        videoZoomManualByFile,
+        setVideoZoomManualForFile
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
@@ -195,6 +198,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     }
 
     const isMediaFile = file.type === 'video' || file.type === 'audio';
+    const isManualZoom = fileId ? !!videoZoomManualByFile[fileId] : false;
+    const zoomForFile = isManualZoom && fileId ? (videoZoomByFile[fileId] ?? 1) : 1;
 
     // Controls visibility timer
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -730,7 +735,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             ref={videoRef}
                             src={file.url || ""}
                             className="max-w-full max-h-full object-contain focus:outline-none"
-                            style={{ transform: `scale(${videoZoom})`, transformOrigin: "center" }}
+                            style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
                             autoPlay
                             onWaiting={() => setIsLoading(true)}
                             onCanPlay={() => setIsLoading(false)}
@@ -855,18 +860,29 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    onClick={() => setVideoZoom(clampZoom(videoZoom - 0.1))}
+                                    onClick={() => fileId && setVideoZoomManualForFile(fileId, !isManualZoom)}
+                                    className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isManualZoom && "text-primary hover:text-primary/80")}
+                                    title={isManualZoom ? "Manual Zoom On" : "Auto Zoom On"}
+                                >
+                                    <ArrowsClockwise weight="bold" size={18} />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile - 0.1))}
                                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                     title="Zoom Out"
+                                    disabled={!isManualZoom}
                                 >
                                     <MagnifyingGlassMinus weight="bold" size={18} />
                                 </Button>
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    onClick={() => setVideoZoom(clampZoom(videoZoom + 0.1))}
+                                    onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile + 0.1))}
                                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                     title="Zoom In"
+                                    disabled={!isManualZoom}
                                 >
                                     <MagnifyingGlassPlus weight="bold" size={18} />
                                 </Button>

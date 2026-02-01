@@ -29,7 +29,8 @@ export interface AppStore extends AppState {
     ambientMusicSuppressedBy: string[];
     ambientMusicStorageKey: string | null;
     windowOutlineEnabled: boolean;
-    videoZoom: number;
+    videoZoomByFile: Record<string, number>;
+    videoZoomManualByFile: Record<string, boolean>;
     sfxEnabled: boolean;
     enabledSounds: {
         cursor: boolean;
@@ -122,7 +123,8 @@ export interface AppStore extends AppState {
     setSfxEnabled: (enabled: boolean) => void;
     toggleSound: (type: SoundKey) => void;
     setWindowOutlineEnabled: (enabled: boolean) => void;
-    setVideoZoom: (zoom: number) => void;
+    setVideoZoomForFile: (fileId: string, zoom: number) => void;
+    setVideoZoomManualForFile: (fileId: string, manual: boolean) => void;
 
     setAutoSyncInterval: (interval: number) => void;
 
@@ -248,7 +250,8 @@ export const useStore = create<AppStore>()(
             ambientMusicSuppressedBy: [],
             ambientMusicStorageKey: null,
             windowOutlineEnabled: false,
-            videoZoom: 1,
+            videoZoomByFile: {},
+            videoZoomManualByFile: {},
             sfxEnabled: true,
             enabledSounds: {
                 cursor: true,
@@ -379,7 +382,18 @@ export const useStore = create<AppStore>()(
             setAmbientMusicStorageKey: (key) => set({ ambientMusicStorageKey: key }),
             setSfxEnabled: (enabled) => set({ sfxEnabled: enabled }),
             setWindowOutlineEnabled: (enabled) => set({ windowOutlineEnabled: enabled }),
-            setVideoZoom: (zoom) => set({ videoZoom: zoom }),
+            setVideoZoomForFile: (fileId, zoom) => set((state) => ({
+                videoZoomByFile: {
+                    ...(state.videoZoomByFile || {}),
+                    [fileId]: zoom
+                }
+            })),
+            setVideoZoomManualForFile: (fileId, manual) => set((state) => ({
+                videoZoomManualByFile: {
+                    ...(state.videoZoomManualByFile || {}),
+                    [fileId]: manual
+                }
+            })),
             toggleSound: (type) => set((state) => {
                 const currentSounds = state.enabledSounds || {
                     cursor: true,

@@ -176,5 +176,6 @@ export interface AppState {
     ambientMusicSuppressedBy?: string[];
     ambientMusicStorageKey?: string | null;
     windowOutlineEnabled?: boolean;
-    videoZoom?: number;
+    videoZoomByFile?: Record<string, number>;
+    videoZoomManualByFile?: Record<string, boolean>;
 }

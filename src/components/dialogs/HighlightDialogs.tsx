@@ -15,7 +15,7 @@ import {
     Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, 
     CornersOut, CornersIn, Minus, Plus, ArrowSquareOut, 
     FilePdf, EyeSlash, FilmStrip, SidebarSimple,
-    MagnifyingGlassMinus, MagnifyingGlassPlus
+    MagnifyingGlassMinus, MagnifyingGlassPlus, ArrowsClockwise
 } from "@phosphor-icons/react";
 import { cn, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,7 +57,7 @@ interface HighlightPlayerDialogProps {
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
-    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoom, setVideoZoom } = useStore();
+    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile } = useStore();
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -146,6 +146,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
     const handleTopBarDrag = inline ? onDragHandlePointerDown : handleDragStart;
     const clampZoom = (value: number) => Math.min(2, Math.max(0.5, value));
+    const isManualZoom = file?.id ? !!videoZoomManualByFile[file.id] : false;
+    const zoomForFile = isManualZoom && file?.id ? (videoZoomByFile[file.id] ?? 1) : 1;
 
     useEffect(() => {
         return () => {
@@ -492,7 +494,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             src={(file as any).webkitRelativePath || (file as any).url || ""}
                             className="max-w-full max-h-full object-contain focus:outline-none"
-                            style={{ transform: `scale(${videoZoom})`, transformOrigin: "center" }}
+                            style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
                             onPause={() => {
                                 setIsPlaying(false);
                                 removeAmbientMusicSuppression('highlight-player');
@@ -594,18 +596,29 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={(e: MouseEvent) => { e.stopPropagation(); setVideoZoom(clampZoom(videoZoom - 0.1)); }}
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); if (file?.id) setVideoZoomManualForFile(file.id, !isManualZoom); }}
+                                                className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isManualZoom && "text-primary hover:text-primary/80")}
+                                                title={isManualZoom ? "Manual Zoom On" : "Auto Zoom On"}
+                                            >
+                                                <ArrowsClockwise weight="bold" size={18} />
+                                            </Button>
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); if (file?.id && isManualZoom) setVideoZoomForFile(file.id, clampZoom(zoomForFile - 0.1)); }}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 title="Zoom Out"
+                                                disabled={!isManualZoom}
                                             >
                                                 <MagnifyingGlassMinus weight="bold" size={18} />
                                             </Button>
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={(e: MouseEvent) => { e.stopPropagation(); setVideoZoom(clampZoom(videoZoom + 0.1)); }}
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); if (file?.id && isManualZoom) setVideoZoomForFile(file.id, clampZoom(zoomForFile + 0.1)); }}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 title="Zoom In"
+                                                disabled={!isManualZoom}
                                             >
                                                 <MagnifyingGlassPlus weight="bold" size={18} />
                                             </Button>
