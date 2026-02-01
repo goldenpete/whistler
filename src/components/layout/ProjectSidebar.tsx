@@ -295,6 +295,8 @@ export default function ProjectSidebar() {
         setSfxEnabled,
         enabledSounds,
         toggleSound,
+        windowOutlineEnabled,
+        setWindowOutlineEnabled,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -324,7 +326,22 @@ export default function ProjectSidebar() {
     const [accentDialogOpen, setAccentDialogOpen] = useState(false);
     const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
     const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
-    const [appearanceTab, setAppearanceTab] = useState<'appearance' | 'music'>('appearance');
+    const [appearanceTab, setAppearanceTab] = useState<'appearance' | 'music' | 'reset'>('appearance');
+
+    const handleResetForUpdates = async () => {
+        if ("caches" in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map((name) => caches.delete(name)));
+        }
+        window.location.reload();
+    };
+
+    const handleResetAllData = async () => {
+        localStorage.clear();
+        sessionStorage.clear();
+        indexedDB.deleteDatabase("whistler_media");
+        window.location.reload();
+    };
 
     const handleEditGraph = (e: ReactMouseEvent, graph: any) => {
         e.stopPropagation();
@@ -1818,6 +1835,14 @@ export default function ProjectSidebar() {
                         >
                             Music
                         </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={appearanceTab === 'reset' ? "default" : "ghost"}
+                            onClick={() => setAppearanceTab('reset')}
+                        >
+                            Reset
+                        </Button>
                     </div>
                     {appearanceTab === 'appearance' ? (
                         <div className="py-2 space-y-6">
@@ -2034,8 +2059,31 @@ export default function ProjectSidebar() {
                                     </div>
                                 )}
                             </div>
+                            <div className="pt-3 space-y-2 border-t border-border">
+                                <button
+                                    type="button"
+                                    onClick={() => setWindowOutlineEnabled(!windowOutlineEnabled)}
+                                    className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                >
+                                    <span className="text-[11px] font-medium">Window outlines</span>
+                                    <span
+                                        className={cn(
+                                            "w-8 h-4 rounded-full relative transition-colors",
+                                            windowOutlineEnabled ? "bg-primary" : "bg-zinc-700"
+                                        )}
+                                    >
+                                        <span
+                                            className={cn(
+                                                "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                windowOutlineEnabled ? "right-0.5" : "left-0.5"
+                                            )}
+                                        />
+                                    </span>
+                                </button>
+                                <p className="text-[10px] text-muted-foreground px-1">Uses the file color for window borders.</p>
+                            </div>
                         </div>
-                    ) : (
+                    ) : appearanceTab === 'music' ? (
                         <div className="py-2 space-y-6">
                             <div className="space-y-3">
                                 <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Ambient Music</p>
@@ -2124,6 +2172,31 @@ export default function ProjectSidebar() {
                                     <p className="text-[10px] text-muted-foreground mt-2">
                                         Plays sounds for clicks, confirmations, and errors.
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-2 space-y-6">
+                            <div className="space-y-3">
+                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Updates</p>
+                                <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        Reload the app and refresh cached assets.
+                                    </p>
+                                    <Button variant="outline" onClick={handleResetForUpdates}>
+                                        Reload for updates
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="space-y-3 pt-3 border-t border-border">
+                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Data</p>
+                                <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        Clears all local data on this device.
+                                    </p>
+                                    <Button variant="destructive" onClick={handleResetAllData}>
+                                        Reset all data
+                                    </Button>
                                 </div>
                             </div>
                         </div>

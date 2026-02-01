@@ -154,6 +154,10 @@ declare module "react-dom/client" {
   };
 }
 
+declare module "react-dom" {
+  export function createPortal(children: any, container: Element): any;
+}
+
 declare module "lucide-react" {
   export const ChevronRight: any;
   export const ChevronDown: any;

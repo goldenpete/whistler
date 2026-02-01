@@ -14,7 +14,8 @@ import { type Highlight, type File, type Collection } from "@/types";
 import { 
     Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, 
     CornersOut, CornersIn, Minus, Plus, ArrowSquareOut, 
-    FilePdf, EyeSlash, FilmStrip, SidebarSimple 
+    FilePdf, EyeSlash, FilmStrip, SidebarSimple,
+    MagnifyingGlassMinus, MagnifyingGlassPlus
 } from "@phosphor-icons/react";
 import { cn, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,7 +57,7 @@ interface HighlightPlayerDialogProps {
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
-    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized } = useStore();
+    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoom, setVideoZoom } = useStore();
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -144,6 +145,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     };
 
     const handleTopBarDrag = inline ? onDragHandlePointerDown : handleDragStart;
+    const clampZoom = (value: number) => Math.min(2, Math.max(0.5, value));
 
     useEffect(() => {
         return () => {
@@ -329,7 +331,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                 minWidth: 360,
                 minHeight: 240,
                 maxWidth: "95vw",
-                maxHeight: "95vh"
+                maxHeight: "95vh",
+                border: windowOutlineEnabled && file?.color ? `2px solid ${file.color}` : undefined
             } : undefined}
             onMouseMove={handleMouseMove}
             onClick={handleMouseMove} // Also show controls on click
@@ -489,6 +492,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             src={(file as any).webkitRelativePath || (file as any).url || ""}
                             className="max-w-full max-h-full object-contain focus:outline-none"
+                            style={{ transform: `scale(${videoZoom})`, transformOrigin: "center" }}
                             onPause={() => {
                                 setIsPlaying(false);
                                 removeAmbientMusicSuppression('highlight-player');
@@ -585,6 +589,28 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     >
                                         <Repeat weight="bold" size={18} />
                                     </Button>
+                                    {isVideo && (
+                                        <>
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); setVideoZoom(clampZoom(videoZoom - 0.1)); }}
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                title="Zoom Out"
+                                            >
+                                                <MagnifyingGlassMinus weight="bold" size={18} />
+                                            </Button>
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={(e: MouseEvent) => { e.stopPropagation(); setVideoZoom(clampZoom(videoZoom + 0.1)); }}
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                title="Zoom In"
+                                            >
+                                                <MagnifyingGlassPlus weight="bold" size={18} />
+                                            </Button>
+                                        </>
+                                    )}
 
                                     <Popover>
                                         <PopoverTrigger asChild>

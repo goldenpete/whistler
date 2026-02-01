@@ -28,6 +28,8 @@ export interface AppStore extends AppState {
     ambientMusicVolume: number;
     ambientMusicSuppressedBy: string[];
     ambientMusicStorageKey: string | null;
+    windowOutlineEnabled: boolean;
+    videoZoom: number;
     sfxEnabled: boolean;
     enabledSounds: {
         cursor: boolean;
@@ -119,6 +121,8 @@ export interface AppStore extends AppState {
     setAmbientMusicStorageKey: (key: string | null) => void;
     setSfxEnabled: (enabled: boolean) => void;
     toggleSound: (type: SoundKey) => void;
+    setWindowOutlineEnabled: (enabled: boolean) => void;
+    setVideoZoom: (zoom: number) => void;
 
     setAutoSyncInterval: (interval: number) => void;
 
@@ -243,6 +247,8 @@ export const useStore = create<AppStore>()(
             ambientMusicVolume: 0.4,
             ambientMusicSuppressedBy: [],
             ambientMusicStorageKey: null,
+            windowOutlineEnabled: false,
+            videoZoom: 1,
             sfxEnabled: true,
             enabledSounds: {
                 cursor: true,
@@ -372,6 +378,8 @@ export const useStore = create<AppStore>()(
                 })),
             setAmbientMusicStorageKey: (key) => set({ ambientMusicStorageKey: key }),
             setSfxEnabled: (enabled) => set({ sfxEnabled: enabled }),
+            setWindowOutlineEnabled: (enabled) => set({ windowOutlineEnabled: enabled }),
+            setVideoZoom: (zoom) => set({ videoZoom: zoom }),
             toggleSound: (type) => set((state) => {
                 const currentSounds = state.enabledSounds || {
                     cursor: true,

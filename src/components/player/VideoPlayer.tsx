@@ -46,7 +46,9 @@ import {
     Eye,
     EyeSlash,
     Image as ImageIcon,
-    MusicNotes
+    MusicNotes,
+    MagnifyingGlassMinus,
+    MagnifyingGlassPlus
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
@@ -124,7 +126,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         removeAmbientMusicSuppression, 
         trashFile,
         addFloatingPlayer,
-        setFloatingPlayerMinimized
+        setFloatingPlayerMinimized,
+        windowOutlineEnabled,
+        videoZoom,
+        setVideoZoom
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
@@ -358,6 +363,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         }
     };
 
+    const clampZoom = (value: number) => Math.min(2, Math.max(0.5, value));
+
     const handleDragStart = (e: any) => {
         if (!isWindowed) return;
         if (onFocus) onFocus();
@@ -521,7 +528,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     minHeight: 240,
                     maxWidth: "95vw",
                     maxHeight: "95vh",
-                    boxShadow: "0 20px 60px rgba(0,0,0,0.6)"
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+                    border: windowOutlineEnabled && file?.color ? `2px solid ${file.color}` : undefined
                 } : undefined}
                 onMouseMove={handleMouseMove}
             onClick={() => {
@@ -722,6 +730,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             ref={videoRef}
                             src={file.url || ""}
                             className="max-w-full max-h-full object-contain focus:outline-none"
+                            style={{ transform: `scale(${videoZoom})`, transformOrigin: "center" }}
                             autoPlay
                             onWaiting={() => setIsLoading(true)}
                             onCanPlay={() => setIsLoading(false)}
@@ -842,6 +851,24 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     title={isLooping ? "Loop On" : "Loop Off"}
                                 >
                                     <Repeat weight="bold" size={18} />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => setVideoZoom(clampZoom(videoZoom - 0.1))}
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    title="Zoom Out"
+                                >
+                                    <MagnifyingGlassMinus weight="bold" size={18} />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => setVideoZoom(clampZoom(videoZoom + 0.1))}
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    title="Zoom In"
+                                >
+                                    <MagnifyingGlassPlus weight="bold" size={18} />
                                 </Button>
 
                                 <Popover>
