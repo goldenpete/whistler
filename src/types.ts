@@ -145,6 +145,7 @@ export interface AppState {
     activeCollectionId: string | null;
     activeGraphId: string | null;
     activeDocId: string | null;
+    activeHighlightId?: string | null;
     floatingPlayerWindows: FloatingPlayerWindow[];
 
     // PiP State

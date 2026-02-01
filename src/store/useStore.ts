@@ -12,6 +12,7 @@ type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' 
 
 export interface AppStore extends AppState {
     activeFileId: string | null;
+    activeHighlightId: string | null;
     floatingPlayerWindows: FloatingPlayerWindow[];
     user: User | null;
     lastSyncTime: number | null;
@@ -42,6 +43,7 @@ export interface AppStore extends AppState {
     setHighlights: (highlights: Highlight[]) => void;
     setActiveProject: (id: string | null) => void;
     setActiveFile: (id: string | null) => void;
+    setActiveHighlight: (id: string | null) => void;
     setActiveCollection: (id: string | null) => void;
     setActiveDoc: (id: string | null) => void;
     setActiveGraph: (id: string | null) => void;
@@ -223,6 +225,7 @@ export const useStore = create<AppStore>()(
             activeGraphId: null,
             activeDocId: null,
             activeFileId: null,
+            activeHighlightId: null,
             floatingPlayerWindows: [],
 
             user: null,
@@ -284,6 +287,7 @@ export const useStore = create<AppStore>()(
                 activeFileId: id,
                 files: id ? state.files.map(f => f.id === id ? { ...f, lastViewed: Date.now() } : f) : state.files
             })),
+            setActiveHighlight: (id: string | null) => set({ activeHighlightId: id }),
             setActiveCollection: (id: string | null) => set((state) => ({ 
                 activeCollectionId: id,
                 collections: id ? state.collections.map(c => c.id === id ? { ...c, lastViewed: Date.now() } : c) : state.collections

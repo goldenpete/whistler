@@ -40,7 +40,7 @@ import {
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import type { Highlight } from "@/types";
-import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
+import { EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { getIcon } from "@/utils/iconMap";
 
 
@@ -54,7 +54,11 @@ export default function CollectionView() {
         files,
         activeCollectionId,
         setActiveCollection,
-        updateHighlight
+        updateHighlight,
+        setActiveHighlight,
+        floatingPlayerWindows,
+        setFloatingPlayerMinimized,
+        bringFloatingPlayerToFront
     } = useStore(useShallow((state) => ({
         projects: state.projects,
         activeProjectId: state.activeProjectId,
@@ -63,7 +67,11 @@ export default function CollectionView() {
         files: state.files,
         activeCollectionId: state.activeCollectionId,
         setActiveCollection: state.setActiveCollection,
-        updateHighlight: state.updateHighlight
+        updateHighlight: state.updateHighlight,
+        setActiveHighlight: state.setActiveHighlight,
+        floatingPlayerWindows: state.floatingPlayerWindows,
+        setFloatingPlayerMinimized: state.setFloatingPlayerMinimized,
+        bringFloatingPlayerToFront: state.bringFloatingPlayerToFront
     })));
     const navigate = useNavigate();
     const { id } = useParams();
@@ -77,9 +85,7 @@ export default function CollectionView() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-    const [highlightPlayerOpen, setHighlightPlayerOpen] = useState(false);
     const [editHighlightOpen, setEditHighlightOpen] = useState(false);
-    const [returnToPlayer, setReturnToPlayer] = useState(false);
     const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
@@ -94,14 +100,25 @@ export default function CollectionView() {
         (h.note || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const openHighlight = (h: Highlight) => {
+        setSelectedHighlightId(h.id);
+        setActiveHighlight(h.id);
+        const matchingWindow = floatingPlayerWindows.find((window) => window.fileId === h.fileId);
+        if (matchingWindow) {
+            setFloatingPlayerMinimized(matchingWindow.id, false);
+            bringFloatingPlayerToFront(matchingWindow.id);
+        } else {
+            navigate(`/file/${h.fileId}`);
+        }
+    };
+
     const handleHighlightClick = (h: Highlight) => {
         if (selectionMode) {
             toggleSelection(h.id);
             return;
         }
 
-        setSelectedHighlightId(h.id);
-        setHighlightPlayerOpen(true);
+        openHighlight(h);
     };
 
     const toggleSelection = (id: string) => {
@@ -321,8 +338,7 @@ export default function CollectionView() {
                                     </ContextMenuItem>
                                     <ContextMenuItem
                                         onClick={() => {
-                                            setSelectedHighlightId(h.id);
-                                            setHighlightPlayerOpen(true);
+                                            openHighlight(h);
                                         }}
                                         className="gap-2"
                                     >
@@ -363,33 +379,10 @@ export default function CollectionView() {
                 </div>
             </ScrollArea>
 
-            <HighlightPlayerDialog
-                open={highlightPlayerOpen}
-                onOpenChange={setHighlightPlayerOpen}
-                highlight={selectedHighlight}
-                file={selectedFile}
-                collection={collections.find(c => c.id === selectedHighlight?.collectionId)}
-                collections={collections.filter(c => c.projectId === activeProjectId && !c.deleted)}
-                onUpdate={(updates) => {
-                    if (selectedHighlight) {
-                        updateHighlight(selectedHighlight.id, updates);
-                    }
-                }}
-                onEditHighlight={() => {
-                    setHighlightPlayerOpen(false);
-                    setReturnToPlayer(true);
-                    setEditHighlightOpen(true);
-                }}
-            />
-
             <EditHighlightDialog
                 open={editHighlightOpen}
                 onOpenChange={(open) => {
                     setEditHighlightOpen(open);
-                    if (!open && returnToPlayer) {
-                        setReturnToPlayer(false);
-                        setHighlightPlayerOpen(true);
-                    }
                 }}
                 highlight={selectedHighlight}
                 collections={collections}

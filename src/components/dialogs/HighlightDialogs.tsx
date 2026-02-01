@@ -47,9 +47,12 @@ interface HighlightPlayerDialogProps {
     collections?: Collection[];
     onUpdate?: (updates: Partial<Highlight>) => void;
     onEditHighlight?: () => void;
+    inline?: boolean;
+    onRequestMinimize?: () => void;
+    onRequestClose?: () => void;
 }
 
-export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight }: HighlightPlayerDialogProps) {
+export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, onEditHighlight, inline = false, onRequestMinimize, onRequestClose }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
     const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized } = useStore();
     // Refs
@@ -93,10 +96,15 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
     // Windowed Logic
     const handleToggleWindowed = () => {
+        if (inline) return;
         setIsWindowed(!isWindowed);
     };
 
     const handleMinimize = () => {
+        if (onRequestMinimize) {
+            onRequestMinimize();
+            return;
+        }
         if (!file) return;
         // Close the dialog and add to floating players
         onOpenChange(false);
@@ -339,7 +347,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             <FilmStrip className="text-muted-foreground shrink-0" size={24} weight="bold" />
                         )}
                         <div className="flex flex-col min-w-0">
-                            <DialogTitle className="text-white font-medium text-base truncate select-none">{file.name}</DialogTitle>
+                            {inline ? (
+                                <div className="text-white font-medium text-base truncate select-none">{file.name}</div>
+                            ) : (
+                                <DialogTitle className="text-white font-medium text-base truncate select-none">{file.name}</DialogTitle>
+                            )}
                             {file.description && (
                                 <div className="text-xs text-muted-foreground truncate max-w-[400px] select-none">
                                     {file.description}
@@ -353,10 +365,12 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             size="icon"
                             onClick={() => {
                                 onOpenChange(false);
-                                navigate(`/file/${file.id}`);
+                                if (!inline) {
+                                    navigate(`/file/${file.id}`);
+                                }
                             }}
                             className="text-muted-foreground hover:text-foreground hover:bg-white/10"
-                            title="View Original File"
+                            title={inline ? "Return to File" : "View Original File"}
                         >
                             <ArrowSquareOut weight="bold" size={20} />
                         </Button>
@@ -369,15 +383,17 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         >
                             <Minus weight="bold" size={20} />
                         </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleToggleWindowed}
-                            className="text-muted-foreground hover:text-foreground hover:bg-white/10"
-                            title={isWindowed ? "Maximize" : "Windowed Mode"}
-                        >
-                            {isWindowed ? <CornersOut weight="bold" size={20} /> : <CornersIn weight="bold" size={20} />}
-                        </Button>
+                        {!inline && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleToggleWindowed}
+                                className="text-muted-foreground hover:text-foreground hover:bg-white/10"
+                                title={isWindowed ? "Maximize" : "Windowed Mode"}
+                            >
+                                {isWindowed ? <CornersOut weight="bold" size={20} /> : <CornersIn weight="bold" size={20} />}
+                            </Button>
+                        )}
                         <Button
                             variant="ghost"
                             size="icon"
@@ -390,7 +406,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         <Button  
                             variant="ghost" 
                             size="icon" 
-                            onClick={() => onOpenChange(false)} 
+                            onClick={() => {
+                                if (onRequestClose) {
+                                    onRequestClose();
+                                } else {
+                                    onOpenChange(false);
+                                }
+                            }} 
                             className="text-muted-foreground hover:text-foreground hover:bg-red-500/10 hover:text-red-500"
                         >
                             <X weight="bold" size={24} />
@@ -460,7 +482,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             ref={videoRef}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             src={(file as any).webkitRelativePath || (file as any).url || ""}
-                            className="w-full h-full object-fill focus:outline-none"
+                            className="max-w-full max-h-full object-contain focus:outline-none"
                             onPause={() => {
                                 setIsPlaying(false);
                                 removeAmbientMusicSuppression('highlight-player');
@@ -762,6 +784,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     );
 
     if (!highlight || !file) return null;
+
+    if (inline) {
+        return playerContent;
+    }
 
     if (isWindowed) {
         if (!open) return null;

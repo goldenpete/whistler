@@ -110,6 +110,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         updateFile, 
         activeCollectionId, 
         activeProjectId, 
+        activeHighlightId,
+        setActiveHighlight,
         setPipFile, 
         togglePip, 
         isPipOpen, 
@@ -159,11 +161,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     // Highlight Dialog State
     const [editHighlightOpen, setEditHighlightOpen] = useState(false);
-    const [highlightPlayerOpen, setHighlightPlayerOpen] = useState(false);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [colorPickerOpen, setColorPickerOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [returnToHighlightPlayer, setReturnToHighlightPlayer] = useState(false);
     const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
     // Seek Preview State
@@ -172,9 +172,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const progressRef = useRef<HTMLDivElement>(null);
 
     const selectedHighlight = highlights.find((t: Highlight) => t.id === selectedHighlightId) || null;
+    const activeHighlight = highlights.find((t: Highlight) => t.id === activeHighlightId) || null;
 
     const file = files.find((f: AppFile) => f.id === fileId);
     const fileHighlights = highlights.filter((t: Highlight) => t.fileId === fileId);
+    const activeHighlightForFile = activeHighlight && activeHighlight.fileId === fileId ? activeHighlight : null;
 
     const handleCreateHighlight = (time: number) => {
         if (!fileId) return;
@@ -219,10 +221,16 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     }, [removeAmbientMusicSuppression]);
 
     useEffect(() => {
-        if (highlightPlayerOpen && videoRef.current) {
+        if (activeHighlightId) {
+            setSelectedHighlightId(activeHighlightId);
+        }
+    }, [activeHighlightId]);
+
+    useEffect(() => {
+        if (activeHighlightForFile && videoRef.current) {
             videoRef.current.pause();
         }
-    }, [highlightPlayerOpen]);
+    }, [activeHighlightForFile]);
 
     useEffect(() => {
         if (videoRef.current) {
@@ -307,6 +315,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     };
 
     const handleClose = () => {
+        setActiveHighlight(null);
         if (onClose) {
             onClose();
             return;
@@ -525,14 +534,30 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             >
 
             {/* Player Container (Top Bar + Stage + Bottom Bar) */}
-            <motion.div
-                key={fileId}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.15, ease: "easeInOut" }}
-                className="flex-1 flex flex-col relative min-w-0 group"
-            >
+            {activeHighlightForFile ? (
+                <HighlightPlayerDialog
+                    open={true}
+                    onOpenChange={(open) => {
+                        if (!open) setActiveHighlight(null);
+                    }}
+                    highlight={activeHighlightForFile}
+                    file={file || null}
+                    collection={collections.find((c: Collection) => c.id === activeHighlightForFile?.collectionId)}
+                    collections={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted)}
+                    onUpdate={(updates) => updateHighlight(activeHighlightForFile.id, updates)}
+                    inline
+                    onRequestMinimize={handleMinimize}
+                    onRequestClose={() => setActiveHighlight(null)}
+                />
+            ) : (
+                <motion.div
+                    key={fileId}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.15, ease: "easeInOut" }}
+                    className="flex-1 flex flex-col relative min-w-0 group"
+                >
 
                 {/* Top Bar */}
                 <div className={cn(
@@ -974,7 +999,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                     onClick={(e: MouseEvent) => {
                                                         e.stopPropagation();
                                                         setSelectedHighlightId(h.id);
-                                                        setHighlightPlayerOpen(true);
+                                                        setActiveHighlight(h.id);
                                                     }}
                                                     title="Open Highlight"
                                                 >
@@ -1032,29 +1057,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 onSave={(updates) => updateFile(file.id, updates)}
             />
 
-            <HighlightPlayerDialog
-                open={highlightPlayerOpen}
-                onOpenChange={setHighlightPlayerOpen}
-                highlight={selectedHighlight}
-                file={file || null}
-                collection={collections.find((c: Collection) => c.id === selectedHighlight?.collectionId)}
-                collections={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted)}
-                onUpdate={(updates) => selectedHighlight && updateHighlight(selectedHighlight.id, updates)}
-                onEditHighlight={() => {
-                    setHighlightPlayerOpen(false);
-                    setReturnToHighlightPlayer(true);
-                    setEditHighlightOpen(true);
-                }}
-            />
-
             <EditHighlightDialog
                 open={editHighlightOpen}
                 onOpenChange={(open) => {
                     setEditHighlightOpen(open);
-                    if (!open && returnToHighlightPlayer) {
-                        setReturnToHighlightPlayer(false);
-                        setHighlightPlayerOpen(true);
-                    }
                 }}
                 highlight={selectedHighlight}
                 file={file}
