@@ -9,6 +9,7 @@ interface User {
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync';
+type SoundKey = 'cursor' | 'confirm' | 'error' | 'back' | 'search';
 
 export interface AppStore extends AppState {
     activeFileId: string | null;
@@ -70,7 +71,7 @@ export interface AppStore extends AppState {
     removeEdge: (id: string) => void;
 
     // Generic setters (initially for migration/bulk updates)
-    setState: (state: Partial<AppState>) => void;
+    setState: (state: Partial<AppStore> | ((state: AppStore) => Partial<AppStore>)) => void;
     getState: () => AppState;
 
     addVideoHighlight: (fileId: string, start: number, end: number, collectionId?: string) => void;
@@ -117,6 +118,7 @@ export interface AppStore extends AppState {
     removeAmbientMusicSuppression: (source: string) => void;
     setAmbientMusicStorageKey: (key: string | null) => void;
     setSfxEnabled: (enabled: boolean) => void;
+    toggleSound: (type: SoundKey) => void;
 
     setAutoSyncInterval: (interval: number) => void;
 
@@ -605,7 +607,7 @@ export const useStore = create<AppStore>()(
                     text: `Timestamp: ${start} - ${end}`,
                     note: '',
                     created: Date.now(),
-                    collectionId: collectionId || state.activeCollectionId || undefined,
+                    collectionId: collectionId ?? state.activeCollectionId ?? null,
                     color: state.defaultColors?.node
                 };
                 return {
@@ -630,10 +632,11 @@ export const useStore = create<AppStore>()(
                     // For images, start/end might not be relevant, but type requires them?
                     // Checking Highlight type definition would be good, but assuming optional or we can set 0
                     start: 0,
+                    end: 0,
                     text: 'Image Highlight',
                     note: '',
                     created: Date.now(),
-                    collectionId: collectionId || state.activeCollectionId || undefined,
+                    collectionId: collectionId ?? state.activeCollectionId ?? null,
                     color: state.defaultColors?.node
                 };
                 return {
@@ -1041,7 +1044,6 @@ export const useStore = create<AppStore>()(
                 const deletedFileIds = new Set(state.files.filter((f) => f.deleted).map((f) => f.id));
                 const deletedCollectionIds = new Set(state.collections.filter((c) => c.deleted).map((c) => c.id));
                 const deletedGraphIds = new Set(state.graphs.filter((g) => g.deleted).map((g) => g.id));
-                const deletedDocIds = new Set(state.docs.filter((d) => d.deleted).map((d) => d.id));
                 const deletedStorageIds = new Set(state.storages.filter((s) => s.deleted).map((s) => s.id));
                 const storageDeletedFileIds = new Set(
                     state.files
@@ -1101,7 +1103,7 @@ export const useStore = create<AppStore>()(
         {
             name: STORAGE_KEY,
             storage: createJSONStorage(() => localStorage),
-            partialize: (state) => {
+            partialize: (state: AppStore) => {
                 const { ambientMusicUrl, ambientMusicSuppressedBy, floatingPlayerWindows, ...rest } = state;
                 return rest;
             },

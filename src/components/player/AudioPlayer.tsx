@@ -1,24 +1,20 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { 
     Play, 
     Pause, 
     SpeakerHigh, 
-    SpeakerLow, 
     SpeakerX, 
     Repeat, 
-    FastForward, 
-    Rewind,
-    MusicNotesSimple,
-    Waveform
+    ArrowCounterClockwise,
+    ArrowsCounterClockwise,
+    MusicNotes
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
-import { formatTime } from '@/lib/utils'; // Assuming this helper exists, or I'll redefine it
-import { useNavigate } from 'react-router-dom';
 
-import type { Highlight } from "@/types";
+import type { Highlight, Collection } from "@/types";
 
 interface AudioPlayerProps {
     url: string;
@@ -81,9 +77,6 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
             }
 
             setCurrentTime(time);
-            if (onTimeUpdate) {
-                onTimeUpdate(time);
-            }
             // Debounce saving progress? Or just save every few seconds
             if (!highlight && Math.abs(time - (fileProgress[fileId] || 0)) > 5) {
                 setFileProgress(fileId, time);
@@ -188,7 +181,7 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                     ))}
                 </div>
                 
-                <MusicNotesSimple weight="fill" className="absolute text-zinc-800/50 w-full h-full p-12 opacity-20" />
+                <MusicNotes weight="fill" className="absolute text-zinc-800/50 w-full h-full p-12 opacity-20" />
             </div>
 
             {/* Controls Container */}
@@ -199,8 +192,8 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                         {/* Highlights Overlay - Only show when not in highlight mode */}
                         {!highlight && highlights.length > 0 && duration > 0 && (
                             <div className="absolute top-0 bottom-0 left-0 right-0 pointer-events-none z-10">
-                                {highlights.map(h => {
-                                    const collection = collections.find(c => c.id === h.collectionId);
+                                {highlights.map((h: Highlight) => {
+                                    const collection = collections.find((c: Collection) => c.id === h.collectionId);
                                     const color = collection?.color || 'var(--primary)';
                                     const startPct = (h.start / duration) * 100;
                                     // Simple marker for now
@@ -223,7 +216,7 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                             value={[relativeTime]}
                             max={segmentDuration || 100}
                             step={0.1}
-                            onValueChange={(val) => {
+                            onValueChange={(val: number[]) => {
                                 const newTime = highlight ? highlight.start + val[0] : val[0];
                                 handleSeek([newTime]);
                             }}
@@ -240,7 +233,7 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                         {/* Left: Volume */}
                         <div className="flex items-center gap-2 w-32">
                             <Button variant="ghost" size="icon" onClick={toggleMute} className="text-zinc-400 hover:text-white">
-                                {isMuted ? <SpeakerX size={20} /> : volume > 0.5 ? <SpeakerHigh size={20} /> : <SpeakerLow size={20} />}
+                                {isMuted ? <SpeakerX size={20} /> : <SpeakerHigh size={20} />}
                             </Button>
                             <Slider
                                 value={[isMuted ? 0 : volume]}
@@ -259,7 +252,7 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                                 onClick={() => { if (audioRef.current) audioRef.current.currentTime -= 10; }}
                                 className="text-zinc-400 hover:text-white"
                             >
-                                <Rewind size={24} weight="fill" />
+                                <ArrowCounterClockwise size={24} weight="fill" />
                             </Button>
 
                             <Button 
@@ -276,7 +269,7 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                                 onClick={() => { if (audioRef.current) audioRef.current.currentTime += 10; }}
                                 className="text-zinc-400 hover:text-white"
                             >
-                                <FastForward size={24} weight="fill" />
+                                <ArrowsCounterClockwise size={24} weight="fill" />
                             </Button>
                         </div>
 

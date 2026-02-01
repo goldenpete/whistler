@@ -195,9 +195,25 @@ declare module "react-router-dom" {
   export function useSearchParams(): [URLSearchParams, (newParams: any) => void];
 }
 
+declare module "radix-ui" {
+  export const Select: any;
+  export const Popover: any;
+  export const DropdownMenu: any;
+  export const ContextMenu: any;
+  export const AlertDialog: any;
+  export const Dialog: any;
+  export const Slot: any;
+}
+
+declare module "cmdk" {
+  export const Command: any;
+}
+
 declare module "@phosphor-icons/react" {
     export const CaretRight: any;
     export const CaretDown: any;
+    export const CaretUp: any;
+    export const DotsThree: any;
     export const House: any;
     export const Folder: any;
     export const FolderPlus: any;
@@ -370,6 +386,27 @@ declare module "@radix-ui/react-dialog" {
     export const Content: any;
     export const Title: any;
     export const Description: any;
+}
+
+declare module "zustand" {
+    export type StateCreator<T> = (
+        set: (partial: T | Partial<T> | ((state: T) => T | Partial<T>)) => void,
+        get: () => T,
+        api: any
+    ) => T;
+    export type UseBoundStore<T> = {
+        (): T;
+        <U>(selector: (state: T) => U): U;
+        setState: (partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: boolean) => void;
+        getState: () => T;
+    };
+    export function create<T>(): (initializer: StateCreator<T>) => UseBoundStore<T>;
+}
+
+declare module "zustand/middleware" {
+    import type { StateCreator } from "zustand";
+    export function persist<T>(initializer: StateCreator<T>, options: any): StateCreator<T>;
+    export function createJSONStorage<T>(getStorage: () => Storage): any;
 }
 
 declare module "react-dom/server" {

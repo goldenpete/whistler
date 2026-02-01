@@ -120,7 +120,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
 
     useEffect(() => {
         if (highlightId && imageDimensions) {
-            const h = fileHighlights.find(h => h.id === highlightId);
+            const h = fileHighlights.find((h: Highlight) => h.id === highlightId);
             if (h && h.rect) {
                 zoomToRect(h.rect);
             }

@@ -47,6 +47,7 @@ export interface Highlight {
     text?: string | null; // For PDF text selection
     pdfRange?: { start: number; end: number } | null; // Start and end character index on the page
     rect?: { x: number; y: number; width: number; height: number } | null; // For Image highlights (percentages 0-1)
+    color?: string;
     created: number;
 }
 

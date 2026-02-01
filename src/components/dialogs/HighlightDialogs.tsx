@@ -690,13 +690,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         animate={{ width: 320, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="h-full bg-background border-l border-border flex flex-col shrink-0 overflow-hidden w-80 shadow-2xl text-foreground z-40"
+                        className="h-full bg-background border-l border-border flex flex-col shrink-0 overflow-hidden w-80 shadow-2xl text-foreground z-40 min-h-0"
                     >
                         <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20 w-80">
                             <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlight Details</h3>
                         </div>
                         
-                        <div className="flex-1 p-4 overflow-y-auto">
+                        <div className="flex-1 p-4 overflow-y-auto min-h-0">
                             <div className="flex flex-col gap-6">
                                 {/* Collection */}
                                 <div className="flex flex-col gap-2">
