@@ -1,4 +1,4 @@
-import React, { useState, type ChangeEvent } from "react";
+import React, { useState, useRef, type ChangeEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -271,13 +271,7 @@ export default function CollectionView() {
                                                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                                     />
                                                 ) : (
-                                                    <video
-                                                        src={file.url}
-                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                                        preload="metadata"
-                                                        muted
-                                                        playsInline
-                                                    />
+                                                    <HighlightVideoPreview url={file.url} />
                                                 )
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -408,4 +402,39 @@ function FileIconByType({ type, size = 16 }: { type: string, size?: number }) {
         }
         default: return <Folder size={size} />;
     }
+}
+
+function HighlightVideoPreview({ url }: { url: string }) {
+    const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const updateTime = () => {
+            if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                video.currentTime = video.duration / 2;
+            } else {
+                video.currentTime = 0.1;
+            }
+        };
+
+        if (video.readyState >= 1) {
+            updateTime();
+        } else {
+            video.onloadedmetadata = updateTime;
+        }
+    }, [useMiddleFrameForPreviews]);
+
+    return (
+        <video
+            ref={videoRef}
+            src={url}
+            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+            preload="metadata"
+            muted
+            playsInline
+        />
+    );
 }

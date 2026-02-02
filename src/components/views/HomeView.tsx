@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useStore } from "@/store/useStore";
 import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
@@ -87,9 +87,71 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
     return 'file';
 }
 
-const CardPreview = ({ item }: { item: any }) => {
+const VideoCardPreview = ({ url, start = 0.1 }: { url: string, start?: number }) => {
     const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const updateTime = () => {
+            if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                video.currentTime = video.duration / 2;
+            } else {
+                video.currentTime = start;
+            }
+        };
+
+        if (video.readyState >= 1) {
+            updateTime();
+        } else {
+            // We can't easily remove this listener if we use onloadedmetadata prop, 
+            // but for a one-off set it's fine. 
+            // Better to rely on the prop for initial load and this effect for updates.
+            // But to be safe and consistent with StorageView:
+            const onLoadedMetadata = () => {
+                updateTime();
+                video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            };
+            video.addEventListener('loadedmetadata', onLoadedMetadata);
+        }
+    }, [useMiddleFrameForPreviews, start]);
+
+    return (
+        <div className="absolute inset-0 bg-black/20">
+            <video
+                ref={videoRef}
+                src={`${url}#t=${start}`}
+                className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                muted
+                loop
+                playsInline
+                onMouseOver={(e) => e.currentTarget.play()}
+                onMouseOut={(e) => {
+                    const video = e.currentTarget;
+                    video.pause();
+                    if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                        video.currentTime = video.duration / 2;
+                    } else {
+                        video.currentTime = start;
+                    }
+                }}
+                onContextMenu={(e) => e.preventDefault()}
+                onLoadedMetadata={(e) => {
+                    const video = e.currentTarget;
+                    if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                        video.currentTime = video.duration / 2;
+                    } else {
+                        video.currentTime = start;
+                    }
+                }}
+            />
+        </div>
+    );
+};
+
+const CardPreview = ({ item }: { item: any }) => {
     // Image File
     if (item.type === 'file' && item.subType === 'image' && item.data.url) {
         return (
@@ -106,36 +168,7 @@ const CardPreview = ({ item }: { item: any }) => {
     
     // Video File
     if (item.type === 'file' && item.subType === 'video' && item.data.url) {
-        return (
-            <div className="absolute inset-0 bg-black/20">
-                <video
-                    src={item.data.url + "#t=0.1"}
-                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
-                    muted
-                    loop
-                    playsInline
-                    onMouseOver={(e: any) => e.currentTarget.play()}
-                    onMouseOut={(e: any) => {
-                        const video = e.currentTarget;
-                        video.pause();
-                        if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
-                            video.currentTime = video.duration / 2;
-                        } else {
-                            video.currentTime = 0.1;
-                        }
-                    }}
-                    onContextMenu={(e: any) => e.preventDefault()}
-                    onLoadedMetadata={(e: any) => {
-                        const video = e.currentTarget;
-                        if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
-                            video.currentTime = video.duration / 2;
-                        } else {
-                            video.currentTime = 0.1;
-                        }
-                    }}
-                />
-            </div>
-        );
+        return <VideoCardPreview url={item.data.url} />;
     }
 
     // PDF File
@@ -245,20 +278,7 @@ const CardPreview = ({ item }: { item: any }) => {
             }
             
             if (file.type === 'video') {
-                return (
-                    <div className="absolute inset-0 bg-black/20">
-                        <video
-                            src={`${file.url}#t=${item.data.start || 0.1}`}
-                            className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
-                            muted
-                            loop
-                            playsInline
-                            onMouseOver={(e: any) => e.currentTarget.play()}
-                            onMouseOut={(e: any) => e.currentTarget.pause()}
-                            onContextMenu={(e: any) => e.preventDefault()}
-                        />
-                    </div>
-                );
+                return <VideoCardPreview url={file.url} start={item.data.start || 0.1} />;
             }
         }
 

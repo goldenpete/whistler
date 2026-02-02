@@ -44,7 +44,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from "@/lib/utils";
-import { ambientMusicStorage, useStore } from "@/store/useStore";
+import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
 import { getIcon } from "@/utils/iconMap";
@@ -69,7 +69,6 @@ import {
     ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -102,7 +101,6 @@ import { CreateCollectionDialog, EditCollectionDialog } from "@/components/dialo
 import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, EditDocDialog } from "@/components/dialogs/StorageDialogs";
 import { NewDocDialog, NewGraphDialog } from "@/components/dialogs/CreationDialogs";
 import { EditProjectDialog } from "@/components/dialogs/EditProjectDialog";
-import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
 import { SidebarTrash } from "@/components/layout/SidebarTrash";
 import { SidebarSync } from "@/components/layout/SidebarSync";
@@ -121,27 +119,7 @@ const LOGO_MAP: Record<AccentTheme, string> = {
     violet: whistlerLogoViolet,
 };
 
-const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
-    { id: "orange", label: "Orange", previewClass: "bg-orange-500" },
-    { id: "emerald", label: "Emerald", previewClass: "bg-emerald-500" },
-    { id: "violet", label: "Violet", previewClass: "bg-violet-500" },
-    { id: "sky", label: "Sky", previewClass: "bg-sky-500" },
-];
 
-const BASE_OPTIONS: { id: BaseTheme; label: string; previewClass: string }[] = [
-    { id: "neutral", label: "Neutral", previewClass: "bg-neutral-700" },
-    { id: "stone", label: "Stone", previewClass: "bg-stone-700" },
-    { id: "zinc", label: "Zinc", previewClass: "bg-zinc-700" },
-    { id: "gray", label: "Gray", previewClass: "bg-gray-700" },
-];
-
-const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph' | 'node'; label: string }[] = [
-    { key: 'file', label: 'Files' },
-    { key: 'collection', label: 'Collections' },
-    { key: 'storage', label: 'Storage' },
-    { key: 'graph', label: 'Graphs' },
-    { key: 'node', label: 'Nodes' },
-];
 
 function SortableCollectionItem({
     collection,
@@ -342,34 +320,10 @@ export default function ProjectSidebar() {
     const [newProjectOpen, setNewProjectOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-    const [accentDialogOpen, setAccentDialogOpen] = useState(false);
     const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
     const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
-    const [appearanceTab, setAppearanceTab] = useState<'appearance' | 'music' | 'reset'>('appearance');
-    const [disableRememberVolumeOpen, setDisableRememberVolumeOpen] = useState(false);
 
-    const handleResetForUpdates = async () => {
-        if ("caches" in window) {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map((name) => caches.delete(name)));
-        }
-        window.location.reload();
-    };
 
-    const handleResetAllData = async () => {
-        localStorage.clear();
-        sessionStorage.clear();
-        indexedDB.deleteDatabase("whistler_media");
-        window.location.reload();
-    };
-
-    const handleRememberVolumeToggle = () => {
-        if (rememberMediaVolume) {
-            setDisableRememberVolumeOpen(true);
-            return;
-        }
-        setRememberMediaVolume(true);
-    };
 
     const handleEditGraph = (e: ReactMouseEvent, graph: any) => {
         e.stopPropagation();
@@ -446,26 +400,7 @@ export default function ProjectSidebar() {
         deleteStorage(id);
     };
 
-    const handleAmbientMusicUpload = () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'audio/*';
-        input.onchange = async (e: Event) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (!file) return;
-            await ambientMusicStorage.save(file);
-            const url = URL.createObjectURL(file);
-            setAmbientMusicUrl(url);
-            setAmbientMusicStorageKey(ambientMusicStorage.key);
-        };
-        input.click();
-    };
 
-    const handleRemoveAmbientMusic = async () => {
-        await ambientMusicStorage.clear();
-        setAmbientMusicUrl(null);
-        setAmbientMusicStorageKey(null);
-    };
 
     const handleUpdateGraph = (name: string, color: string, icon: string) => {
         if (graphToEdit) {
@@ -959,19 +894,16 @@ export default function ProjectSidebar() {
                                 <TooltipContent side="right">Sync Status</TooltipContent>
                             </Tooltip>
 
-                            <Tooltip>
+                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
-                                        onClick={() => setAccentDialogOpen(true)}
+                                        onClick={() => { setSidebarView('trash'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
                                         className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
-                                         <span
-                                            className="h-2.5 w-2.5 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-                                            style={{ backgroundColor: "var(--primary)" }}
-                                        />
+                                        <Trash weight="bold" size={18} />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="right">Appearance</TooltipContent>
+                                <TooltipContent side="right">Trash</TooltipContent>
                             </Tooltip>
 
                              <Tooltip>
@@ -986,16 +918,19 @@ export default function ProjectSidebar() {
                                 <TooltipContent side="right">History</TooltipContent>
                             </Tooltip>
 
-                             <Tooltip>
+                            <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
-                                        onClick={() => { setSidebarView('trash'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        onClick={() => navigate('/settings')}
+                                        className={cn(
+                                            "h-8 w-8 flex items-center justify-center rounded-md transition-colors",
+                                            location.pathname === '/settings' ? "bg-primary/20 text-primary" : "text-primary"
+                                        )}
                                     >
-                                        <Trash weight="bold" size={18} />
+                                         <Gear weight="fill" size={18} />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="right">Trash</TooltipContent>
+                                <TooltipContent side="right">Settings</TooltipContent>
                             </Tooltip>
                         </div>
                     </div>
@@ -1734,18 +1669,13 @@ export default function ProjectSidebar() {
                                     </button>
                                 )}
 
-                                <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col")}>
+                                <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col-reverse space-y-1 space-y-reverse")}>
                                     <button
-                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                        title="Change accent theme"
-                                        onClick={() => setAccentDialogOpen(true)}
+                                        onClick={() => setSidebarView('trash')}
+                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
+                                        title="Trash"
                                     >
-                                        <span className="flex items-center justify-center">
-                                            <span
-                                                className="h-3 w-3 rounded-full border border-border/60 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-                                                style={{ backgroundColor: "var(--primary)" }}
-                                            />
-                                        </span>
+                                        <Trash weight="bold" size={18} />
                                     </button>
                                     <button
                                         onClick={() => setSidebarView('history')}
@@ -1755,11 +1685,14 @@ export default function ProjectSidebar() {
                                         <ClockCounterClockwise weight="bold" size={18} />
                                     </button>
                                     <button
-                                        onClick={() => setSidebarView('trash')}
-                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
-                                        title="Trash"
+                                        onClick={() => navigate('/settings')}
+                                        className={cn(
+                                            "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
+                                            location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
+                                        )}
+                                        title="Settings"
                                     >
-                                        <Trash weight="bold" size={18} />
+                                        <Gear weight="fill" size={18} />
                                     </button>
                                 </div>
                             </div>
@@ -1838,545 +1771,8 @@ export default function ProjectSidebar() {
                 }}
             />
 
-            <Dialog open={accentDialogOpen} onOpenChange={setAccentDialogOpen}>
-                <DialogContent className="sm:max-w-2xl bg-popover border-border text-popover-foreground">
-                    <DialogHeader>
-                        <DialogTitle>Appearance</DialogTitle>
-                        <DialogDescription className="text-muted-foreground text-xs">
-                            Configure colors and background image.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex items-center gap-2 border-b border-border/60 pb-2">
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant={appearanceTab === 'appearance' ? "default" : "ghost"}
-                            onClick={() => setAppearanceTab('appearance')}
-                        >
-                            Appearance
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant={appearanceTab === 'music' ? "default" : "ghost"}
-                            onClick={() => setAppearanceTab('music')}
-                        >
-                            Music
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant={appearanceTab === 'reset' ? "default" : "ghost"}
-                            onClick={() => setAppearanceTab('reset')}
-                        >
-                            Reset
-                        </Button>
-                    </div>
-                    {appearanceTab === 'appearance' ? (
-                        <div className="py-2 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-3">
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Accent</p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {ACCENT_OPTIONS.map((option) => (
-                                            <button
-                                                key={option.id}
-                                                type="button"
-                                                onClick={() => setAccentTheme(option.id)}
-                                                className={cn(
-                                                    "flex items-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                    accentTheme === option.id
-                                                        ? "bg-primary/10 text-primary border-primary/20"
-                                                        : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
-                                                )}
-                                            >
-                                                <span className={cn("h-4 w-4 rounded-full border border-border/60", option.previewClass)} />
-                                                <span className="flex-1 text-left">{option.label}</span>
-                                                {accentTheme === option.id && <CheckCircle weight="bold" className="text-primary" size={14} />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="pt-4 space-y-3 border-t border-border">
-                                        <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Base</p>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {BASE_OPTIONS.map((option) => (
-                                                <button
-                                                    key={option.id}
-                                                    type="button"
-                                                    onClick={() => setBaseTheme(option.id)}
-                                                    className={cn(
-                                                        "flex items-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                        baseTheme === option.id
-                                                            ? "bg-primary/10 text-primary border-primary/20"
-                                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
-                                                    )}
-                                                >
-                                                    <span className={cn("h-4 w-4 rounded-full border border-border/60", option.previewClass)} />
-                                                    <span className="flex-1 text-left">{option.label}</span>
-                                                    {baseTheme === option.id && <CheckCircle weight="bold" className="text-primary" size={14} />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <div className="pt-3 space-y-2 border-t border-border mt-3">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Sidebar Mode</p>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button
-                                                    onClick={() => setSidebarMode('full')}
-                                                    className={cn(
-                                                        "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                        sidebarMode === 'full'
-                                                            ? "bg-primary/10 text-primary border-primary/20"
-                                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
-                                                    )}
-                                                >
-                                                    <SidebarSimple weight="fill" className="text-lg" />
-                                                    <span>Full</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setSidebarMode('slim')}
-                                                    className={cn(
-                                                        "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs transition-colors border",
-                                                        sidebarMode === 'slim'
-                                                            ? "bg-primary/10 text-primary border-primary/20"
-                                                            : "bg-card border-border hover:bg-accent hover:text-accent-foreground"
-                                                    )}
-                                                >
-                                                    <SidebarSimple weight="regular" className="text-lg" />
-                                                    <span>Slim</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Background</p>
-                                    
-                                    <div className="rounded-lg border border-border bg-card p-3 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-medium">Color Overlay</span>
-                                            <div className="flex items-center gap-2">
-                                                <div className="relative w-6 h-6 rounded-full overflow-hidden border border-border/60 cursor-pointer shadow-sm">
-                                                    <input 
-                                                        type="color" 
-                                                        value={backgroundColor || '#000000'}
-                                                        onChange={(e: ReactChangeEvent<HTMLInputElement>) => setBackgroundColor(e.target.value)}
-                                                        className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 border-0 opacity-0 cursor-pointer"
-                                                    />
-                                                    <div 
-                                                        className="w-full h-full"
-                                                        style={{ backgroundColor: backgroundColor || '#000000' }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[11px] text-muted-foreground">Opacity</span>
-                                                <span className="text-[11px]">{Math.round((backgroundOverlayOpacity ?? 0.5) * 100)}%</span>
-                                            </div>
-                                            <Slider
-                                                value={[Math.round((backgroundOverlayOpacity ?? 0.5) * 100)]}
-                                                onValueChange={(vals: number[]) => setBackgroundOverlayOpacity((vals[0] ?? 50) / 100)}
-                                                max={100}
-                                                step={1}
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="rounded-lg border border-border bg-card overflow-hidden">
-                                        <div className="aspect-video relative">
-                                            {backgroundImageUrl ? (
-                                                <img src={backgroundImageUrl} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                    <span className="text-xs">No background image</span>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent, var(--background))', opacity: 0.6 }} />
-                                        </div>
-                                        <div className="p-3 space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                        const input = document.createElement('input');
-                                                        input.type = 'file';
-                                                        input.accept = 'image/*';
-                    input.onchange = async (e: Event) => {
-                                                            const file = (e.target as HTMLInputElement).files?.[0];
-                                                            if (!file) return;
-                                                            const reader = new FileReader();
-                                                            reader.onload = () => {
-                                                                const result = reader.result as string;
-                                                                setBackgroundImageUrl(result);
-                                                            if ((backgroundImageOpacity ?? 0) === 0) {
-                                                                setBackgroundImageOpacity(0.2);
-                                                            }
-                                                            };
-                                                            reader.readAsDataURL(file);
-                                                        };
-                                                        input.click();
-                                                    }}
-                                                >
-                                                    Upload Image
-                                                </Button>
-                                                {backgroundImageUrl && (
-                                                    <Button variant="ghost" onClick={() => setBackgroundImageUrl(null)}>
-                                                        Remove
-                                                    </Button>
-                                                )}
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[11px] text-muted-foreground">Opacity</span>
-                                                    <span className="text-[11px]">{Math.round((backgroundImageOpacity ?? 0) * 100)}%</span>
-                                                </div>
-                                                <Slider
-                                                    value={[Math.round((backgroundImageOpacity ?? 0.2) * 100)]}
-                                                    onValueChange={(vals: number[]) => setBackgroundImageOpacity((vals[0] ?? 20) / 100)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="pt-3 space-y-2 border-t border-border">
-                                <button
-                                    type="button"
-                                    onClick={() => setEnableDefaultColorControls(!enableDefaultColorControls)}
-                                    className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                >
-                                    <span className="text-[11px] font-medium">Advanced default colors</span>
-                                    <span
-                                        className={cn(
-                                            "w-8 h-4 rounded-full relative transition-colors",
-                                            enableDefaultColorControls ? "bg-primary" : "bg-zinc-700"
-                                        )}
-                                    >
-                                        <span
-                                            className={cn(
-                                                "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                                enableDefaultColorControls ? "right-0.5" : "left-0.5"
-                                            )}
-                                        />
-                                    </span>
-                                </button>
-                                {enableDefaultColorControls && (
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Default colors</p>
-                                        <div className="grid grid-cols-2 gap-1">
-                                            {DEFAULT_COLOR_ENTITIES.map((entity) => (
-                                                <button
-                                                    key={entity.key}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setActiveDefaultColorEntity(entity.key);
-                                                        setDefaultColorDialogOpen(true);
-                                                    }}
-                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                                >
-                                                    <span
-                                                        className="h-3.5 w-3.5 rounded-full border border-border/60"
-                                                        style={{ backgroundColor: (defaultColors && defaultColors[entity.key]) || "hsl(var(--primary))" }}
-                                                    />
-                                                    <span className="flex-1 text-left">{entity.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground px-1">Used when creating new items.</p>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="pt-3 space-y-2 border-t border-border">
-                                <button
-                                    type="button"
-                                    onClick={() => setWindowOutlineEnabled(!windowOutlineEnabled)}
-                                    className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                >
-                                    <span className="text-[11px] font-medium">Window outlines</span>
-                                    <span
-                                        className={cn(
-                                            "w-8 h-4 rounded-full relative transition-colors",
-                                            windowOutlineEnabled ? "bg-primary" : "bg-zinc-700"
-                                        )}
-                                    >
-                                        <span
-                                            className={cn(
-                                                "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                                windowOutlineEnabled ? "right-0.5" : "left-0.5"
-                                            )}
-                                        />
-                                    </span>
-                                </button>
-                                <p className="text-[10px] text-muted-foreground px-1">Uses the file color for window borders.</p>
-                            </div>
-                        </div>
-                    ) : appearanceTab === 'music' ? (
-                        <div className="py-2 space-y-6">
-                            <div className="space-y-3">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Ambient Music</p>
-                                <div className="rounded-lg border border-border bg-card p-3 space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="outline" onClick={handleAmbientMusicUpload}>
-                                            Upload Audio
-                                        </Button>
-                                        {ambientMusicUrl && (
-                                            <Button variant="ghost" onClick={handleRemoveAmbientMusic}>
-                                                Remove
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                        <span>Status</span>
-                                        <span>{ambientMusicUrl ? "Loaded" : "None"}</span>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] text-muted-foreground">Volume</span>
-                                            <span className="text-[11px]">{Math.round((ambientMusicVolume ?? 0.4) * 100)}%</span>
-                                        </div>
-                                        <Slider
-                                            value={[Math.round((ambientMusicVolume ?? 0.4) * 100)]}
-                                            onValueChange={(vals: number[]) => setAmbientMusicVolume((vals[0] ?? 40) / 100)}
-                                            max={100}
-                                            step={1}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="space-y-3 pt-3 border-t border-border">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Media Playback</p>
-                                <div className="rounded-lg border border-border bg-card p-3 space-y-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setMuteNewVideosUntilUnmuted(!muteNewVideosUntilUnmuted)}
-                                        className="w-full flex items-center justify-between"
-                                    >
-                                        <span className="text-sm">Mute new videos until unmuted</span>
-                                        <span
-                                            className={cn(
-                                                "w-8 h-4 rounded-full relative transition-colors",
-                                                muteNewVideosUntilUnmuted ? "bg-primary" : "bg-zinc-700"
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                                    muteNewVideosUntilUnmuted ? "right-0.5" : "left-0.5"
-                                                )}
-                                            />
-                                        </span>
-                                    </button>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        Requires clicking Unmute Video the first time a video opens.
-                                    </p>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleRememberVolumeToggle}
-                                        className="w-full flex items-center justify-between"
-                                    >
-                                        <span className="text-sm">Remember media volume</span>
-                                        <span
-                                            className={cn(
-                                                "w-8 h-4 rounded-full relative transition-colors",
-                                                rememberMediaVolume ? "bg-primary" : "bg-zinc-700"
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                                    rememberMediaVolume ? "right-0.5" : "left-0.5"
-                                                )}
-                                            />
-                                        </span>
-                                    </button>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        Stores volume per video and audio file.
-                                    </p>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setDisableMediaAutoplay(!disableMediaAutoplay)}
-                                        className="w-full flex items-center justify-between"
-                                    >
-                                        <span className="text-sm">Disable autoplay for new media</span>
-                                        <span
-                                            className={cn(
-                                                "w-8 h-4 rounded-full relative transition-colors",
-                                                disableMediaAutoplay ? "bg-primary" : "bg-zinc-700"
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                                    disableMediaAutoplay ? "right-0.5" : "left-0.5"
-                                                )}
-                                            />
-                                        </span>
-                                    </button>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        Applies to videos and audio files when they open.
-                                    </p>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setUseMiddleFrameForPreviews(!useMiddleFrameForPreviews)}
-                                        className="w-full flex items-center justify-between"
-                                    >
-                                        <span className="text-sm">Use middle frame for previews</span>
-                                        <span
-                                            className={cn(
-                                                "w-8 h-4 rounded-full relative transition-colors",
-                                                useMiddleFrameForPreviews ? "bg-primary" : "bg-zinc-700"
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                                    useMiddleFrameForPreviews ? "right-0.5" : "left-0.5"
-                                                )}
-                                            />
-                                        </span>
-                                    </button>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        Generates thumbnails from the middle of videos.
-                                    </p>
-                                </div>
-                                <AlertDialog open={disableRememberVolumeOpen} onOpenChange={setDisableRememberVolumeOpen}>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Disable volume memory?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                All saved media volumes will be erased.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={() => {
-                                                    setRememberMediaVolume(false);
-                                                    clearMediaVolumes();
-                                                    setDisableRememberVolumeOpen(false);
-                                                }}
-                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                            >
-                                                Disable
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                            
-                            <div className="space-y-3 pt-3 border-t border-border">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Sound Effects</p>
-                                <div className="rounded-lg border border-border bg-card p-3 space-y-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSfxEnabled(!sfxEnabled)}
-                                        className="w-full flex items-center justify-between"
-                                    >
-                                        <span className="text-sm">Enable website sounds</span>
-                                        <span
-                                            className={cn(
-                                                "w-8 h-4 rounded-full relative transition-colors",
-                                                sfxEnabled ? "bg-primary" : "bg-zinc-700"
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
-                                                    sfxEnabled ? "right-0.5" : "left-0.5"
-                                                )}
-                                            />
-                                        </span>
-                                    </button>
-
-                                    {sfxEnabled && (
-                                        <div className="space-y-2 pl-2 border-l-2 border-border/50">
-                                            {Object.entries(enabledSounds || { cursor: true, confirm: true, error: true, back: true, search: true }).map(([key, enabled]) => (
-                                                <button
-                                                    key={key}
-                                                    type="button"
-                                                    onClick={() => toggleSound(key as any)}
-                                                    className="w-full flex items-center justify-between group"
-                                                >
-                                                    <span className="text-xs text-muted-foreground group-hover:text-foreground capitalize">{key}</span>
-                                                    <span
-                                                        className={cn(
-                                                            "w-6 h-3 rounded-full relative transition-colors",
-                                                            enabled ? "bg-primary/70" : "bg-zinc-700"
-                                                        )}
-                                                    >
-                                                        <span
-                                                            className={cn(
-                                                                "absolute top-0.5 w-2 h-2 bg-white rounded-full transition-transform",
-                                                                enabled ? "right-0.5" : "left-0.5"
-                                                            )}
-                                                        />
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <p className="text-[10px] text-muted-foreground mt-2">
-                                        Plays sounds for clicks, confirmations, and errors.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="py-2 space-y-6">
-                            <div className="space-y-3">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Updates</p>
-                                <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-                                    <p className="text-xs text-muted-foreground">
-                                        Reload the app and refresh cached assets.
-                                    </p>
-                                    <Button variant="outline" onClick={handleResetForUpdates}>
-                                        Reload for updates
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="space-y-3 pt-3 border-t border-border">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Data</p>
-                                <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-                                    <p className="text-xs text-muted-foreground">
-                                        Clears all local data on this device.
-                                    </p>
-                                    <Button variant="destructive" onClick={handleResetAllData}>
-                                        Reset all data
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            {activeDefaultColorEntity && (
-                <ColorPickerDialog
-                    open={defaultColorDialogOpen}
-                    onOpenChange={(open) => {
-                        setDefaultColorDialogOpen(open);
-                        if (!open) {
-                            setActiveDefaultColorEntity(null);
-                        }
-                    }}
-                    title={`Default color for ${DEFAULT_COLOR_ENTITIES.find(e => e.key === activeDefaultColorEntity)?.label ?? ""}`}
-                    initialColor={
-                        (defaultColors && defaultColors[activeDefaultColorEntity]) ||
-                        "#f59e0b"
-                    }
-                    onColorSelect={(color) => {
-                        if (activeDefaultColorEntity) {
-                            setDefaultColor(activeDefaultColorEntity, color);
-                        }
-                    }}
-                />
-            )}
 
             <NewDocDialog
                 open={newDocOpen}

@@ -25,6 +25,8 @@ export interface AppStore extends AppState {
     backgroundColor: string;
     backgroundOverlayOpacity: number;
     ambientMusicUrl: string | null;
+    ambientMusicName: string | null;
+    ambientMusicPaused: boolean;
     ambientMusicVolume: number;
     ambientMusicSuppressedBy: string[];
     ambientMusicStorageKey: string | null;
@@ -122,7 +124,8 @@ export interface AppStore extends AppState {
     setBackgroundImageOpacity: (opacity: number) => void;
     setBackgroundColor: (color: string) => void;
     setBackgroundOverlayOpacity: (opacity: number) => void;
-    setAmbientMusicUrl: (url: string | null) => void;
+    setAmbientMusicUrl: (url: string | null, name?: string | null) => void;
+    setAmbientMusicPaused: (paused: boolean) => void;
     setAmbientMusicVolume: (volume: number) => void;
     addAmbientMusicSuppression: (source: string) => void;
     removeAmbientMusicSuppression: (source: string) => void;
@@ -389,7 +392,8 @@ export const useStore = create<AppStore>()(
             setBackgroundImageOpacity: (opacity) => set({ backgroundImageOpacity: Math.max(0, Math.min(1, opacity)) }),
             setBackgroundColor: (color) => set({ backgroundColor: color }),
             setBackgroundOverlayOpacity: (opacity) => set({ backgroundOverlayOpacity: opacity }),
-            setAmbientMusicUrl: (url) => set({ ambientMusicUrl: url }),
+            setAmbientMusicPaused: (paused) => set({ ambientMusicPaused: paused }),
+            setAmbientMusicUrl: (url, name = null) => set({ ambientMusicUrl: url, ambientMusicName: name, ambientMusicPaused: false }),
             setAmbientMusicVolume: (volume) => set({ ambientMusicVolume: Math.max(0, Math.min(1, volume)) }),
             addAmbientMusicSuppression: (source) =>
                 set((state) => ({

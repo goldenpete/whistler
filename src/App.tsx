@@ -7,6 +7,7 @@ import DocsView from "@/components/views/DocsView";
 import GraphView from "@/components/views/GraphView";
 import CollectionView from "@/components/views/CollectionView";
 import CollectionsView from "@/components/views/CollectionsView";
+import SettingsView from "@/components/views/SettingsView";
 import { Button } from "@/components/ui/button";
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
@@ -188,6 +189,7 @@ export default function App() {
           <Route path="/graphs" element={<GraphView />} />
           <Route path="/collections" element={<CollectionsView />} />
           <Route path="/collection/:id" element={<CollectionView />} />
+          <Route path="/settings" element={<SettingsView />} />
           <Route path="*" element={<NotFoundView />} />
         </Route>
       </Routes>

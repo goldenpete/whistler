@@ -98,20 +98,23 @@ export function MainLayout() {
             audio.load();
         }
         audio.loop = true;
-        if (isAmbientSuppressed) {
-            audio.pause();
-        } else {
+        
+        const shouldPlay = !isAmbientSuppressed && !ambientMusicPaused;
+        
+        if (shouldPlay) {
             const playPromise = audio.play();
             if (playPromise) {
                 playPromise.catch(() => {
                     setAmbientAutoplayBlocked(true);
                 });
             }
+        } else {
+            audio.pause();
         }
-    }, [ambientMusicUrl, isAmbientSuppressed]);
+    }, [ambientMusicUrl, isAmbientSuppressed, ambientMusicPaused]);
 
     useEffect(() => {
-        if (!ambientAutoplayBlocked || !ambientMusicUrl || isAmbientSuppressed) return;
+        if (!ambientAutoplayBlocked || !ambientMusicUrl || isAmbientSuppressed || ambientMusicPaused) return;
         const tryPlay = () => {
             const audio = audioRef.current;
             if (!audio) return;
@@ -130,7 +133,7 @@ export function MainLayout() {
             window.removeEventListener("pointerdown", tryPlay);
             window.removeEventListener("keydown", tryPlay);
         };
-    }, [ambientAutoplayBlocked, ambientMusicUrl, isAmbientSuppressed]);
+    }, [ambientAutoplayBlocked, ambientMusicUrl, isAmbientSuppressed, ambientMusicPaused]);
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground animate-in fade-in duration-300">

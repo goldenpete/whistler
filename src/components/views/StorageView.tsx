@@ -1020,6 +1020,28 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 }
 
 function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) {
+    const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const updateTime = () => {
+            if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                video.currentTime = video.duration / 2;
+            } else {
+                video.currentTime = 0.1;
+            }
+        };
+
+        if (video.readyState >= 1) {
+            updateTime();
+        } else {
+            video.onloadedmetadata = updateTime;
+        }
+    }, [useMiddleFrameForPreviews]);
+
     const Icon = (() => {
         let icon = getFileIcon(file.type);
         if (file.type === 'folder' && file.icon) {
@@ -1049,6 +1071,7 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
     if (file.type === 'video') {
         return (
             <video
+                ref={videoRef}
                 src={`${file.url}#t=0.1`}
                 className="w-full h-full object-cover"
                 preload="metadata"
