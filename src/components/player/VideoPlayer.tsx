@@ -320,37 +320,44 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const handleInitialUnmute = () => {
         const nextVolume = volume === 0 ? 1 : volume;
-        if (nextVolume !== volume) {
-            setVolume(nextVolume);
-            if (rememberMediaVolume && fileId) {
+        
+        // Update store first (Unmute THEN Volume) to prevent race conditions in effects
+        if (fileId) {
+            setVideoUnmutedForFile(fileId, true);
+            if (nextVolume !== volume && rememberMediaVolume) {
                 setVideoVolumeForFile(fileId, nextVolume);
             }
         }
-        setIsMuted(false);
-        if (fileId) {
-            setVideoUnmutedForFile(fileId, true);
+
+        if (nextVolume !== volume) {
+            setVolume(nextVolume);
         }
+        setIsMuted(false);
+        setShowInitialMuteOverlay(false);
+
         if (videoRef.current) {
             videoRef.current.volume = nextVolume;
             videoRef.current.muted = false;
         }
-        setShowInitialMuteOverlay(false);
     };
 
     const setQuickVolume = (nextVolume: number) => {
-        setVolume(nextVolume);
-        if (rememberMediaVolume && fileId) {
-            setVideoVolumeForFile(fileId, nextVolume);
-        }
-        setIsMuted(false);
+        // Update store first (Unmute THEN Volume) to prevent race conditions in effects
         if (fileId) {
             setVideoUnmutedForFile(fileId, true);
+            if (rememberMediaVolume) {
+                setVideoVolumeForFile(fileId, nextVolume);
+            }
         }
+
+        setVolume(nextVolume);
+        setIsMuted(false);
+        setShowInitialMuteOverlay(false);
+
         if (videoRef.current) {
             videoRef.current.volume = nextVolume;
             videoRef.current.muted = false;
         }
-        setShowInitialMuteOverlay(false);
     };
 
     const [isCollectionMode, setIsCollectionMode] = useState(false);
