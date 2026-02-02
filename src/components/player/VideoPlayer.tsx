@@ -330,6 +330,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         if (fileId) {
             setVideoUnmutedForFile(fileId, true);
         }
+        if (videoRef.current) {
+            videoRef.current.volume = nextVolume;
+            videoRef.current.muted = false;
+        }
         setShowInitialMuteOverlay(false);
     };
 
@@ -341,6 +345,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         setIsMuted(false);
         if (fileId) {
             setVideoUnmutedForFile(fileId, true);
+        }
+        if (videoRef.current) {
+            videoRef.current.volume = nextVolume;
+            videoRef.current.muted = false;
         }
         setShowInitialMuteOverlay(false);
     };
