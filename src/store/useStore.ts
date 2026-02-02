@@ -37,6 +37,7 @@ export interface AppStore extends AppState {
     videoVolumeByFile: Record<string, number>;
     audioVolumeByFile: Record<string, number>;
     videoUnmutedByFile: Record<string, boolean>;
+    useMiddleFrameForPreviews: boolean;
     sfxEnabled: boolean;
     enabledSounds: {
         cursor: boolean;
@@ -137,6 +138,7 @@ export interface AppStore extends AppState {
     setVideoVolumeForFile: (fileId: string, volume: number) => void;
     setAudioVolumeForFile: (fileId: string, volume: number) => void;
     setVideoUnmutedForFile: (fileId: string, unmuted: boolean) => void;
+    setUseMiddleFrameForPreviews: (enabled: boolean) => void;
     clearMediaVolumes: () => void;
 
     setAutoSyncInterval: (interval: number) => void;
@@ -271,6 +273,7 @@ export const useStore = create<AppStore>()(
             videoVolumeByFile: {},
             audioVolumeByFile: {},
             videoUnmutedByFile: {},
+            useMiddleFrameForPreviews: true,
             sfxEnabled: true,
             enabledSounds: {
                 cursor: true,
@@ -434,6 +437,7 @@ export const useStore = create<AppStore>()(
                     [fileId]: unmuted
                 }
             })),
+            setUseMiddleFrameForPreviews: (enabled) => set({ useMiddleFrameForPreviews: enabled }),
             clearMediaVolumes: () => set({ videoVolumeByFile: {}, audioVolumeByFile: {} }),
             toggleSound: (type) => set((state) => {
                 const currentSounds = state.enabledSounds || {

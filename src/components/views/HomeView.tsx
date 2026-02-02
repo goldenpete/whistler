@@ -88,6 +88,8 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 }
 
 const CardPreview = ({ item }: { item: any }) => {
+    const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
+
     // Image File
     if (item.type === 'file' && item.subType === 'image' && item.data.url) {
         return (
@@ -113,8 +115,24 @@ const CardPreview = ({ item }: { item: any }) => {
                     loop
                     playsInline
                     onMouseOver={(e: any) => e.currentTarget.play()}
-                    onMouseOut={(e: any) => e.currentTarget.pause()}
+                    onMouseOut={(e: any) => {
+                        const video = e.currentTarget;
+                        video.pause();
+                        if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                            video.currentTime = video.duration / 2;
+                        } else {
+                            video.currentTime = 0.1;
+                        }
+                    }}
                     onContextMenu={(e: any) => e.preventDefault()}
+                    onLoadedMetadata={(e: any) => {
+                        const video = e.currentTarget;
+                        if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                            video.currentTime = video.duration / 2;
+                        } else {
+                            video.currentTime = 0.1;
+                        }
+                    }}
                 />
             </div>
         );

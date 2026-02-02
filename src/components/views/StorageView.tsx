@@ -1056,7 +1056,12 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
                 playsInline
                 onError={() => setError(true)}
                 onLoadedMetadata={(e: SyntheticEvent<HTMLVideoElement>) => {
-                    e.currentTarget.currentTime = 0.1;
+                    const video = e.currentTarget;
+                    if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                        video.currentTime = video.duration / 2;
+                    } else {
+                        video.currentTime = 0.1;
+                    }
                 }}
             />
         );

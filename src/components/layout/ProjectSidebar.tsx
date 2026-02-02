@@ -314,6 +314,8 @@ export default function ProjectSidebar() {
         setRememberMediaVolume,
         setDisableMediaAutoplay,
         clearMediaVolumes,
+        useMiddleFrameForPreviews,
+        setUseMiddleFrameForPreviews,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -2216,6 +2218,30 @@ export default function ProjectSidebar() {
                                     </button>
                                     <p className="text-[10px] text-muted-foreground">
                                         Applies to videos and audio files when they open.
+                                    </p>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseMiddleFrameForPreviews(!useMiddleFrameForPreviews)}
+                                        className="w-full flex items-center justify-between"
+                                    >
+                                        <span className="text-sm">Use middle frame for previews</span>
+                                        <span
+                                            className={cn(
+                                                "w-8 h-4 rounded-full relative transition-colors",
+                                                useMiddleFrameForPreviews ? "bg-primary" : "bg-zinc-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                    useMiddleFrameForPreviews ? "right-0.5" : "left-0.5"
+                                                )}
+                                            />
+                                        </span>
+                                    </button>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Generates thumbnails from the middle of videos.
                                     </p>
                                 </div>
                                 <AlertDialog open={disableRememberVolumeOpen} onOpenChange={setDisableRememberVolumeOpen}>
