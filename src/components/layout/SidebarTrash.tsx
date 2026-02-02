@@ -135,8 +135,8 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
             <div className={cn("shrink-0", color ? "" : "text-muted-foreground")}>
                 <Icon weight="fill" size={16} style={{ color: color }} />
             </div>
-            <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate">{name}</div>
+            <div className="flex-1 min-w-0 pr-8">
+                <div className="text-xs font-medium truncate max-w-[200px]">{name}</div>
                 <div className="text-[10px] text-muted-foreground">
                     {formatRelativeTime(date)}
                 </div>

@@ -50,6 +50,33 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const removeTitles = (root: ParentNode) => {
+      if (root instanceof Element && root.hasAttribute('title')) {
+        root.removeAttribute('title');
+      }
+      root.querySelectorAll('[title]').forEach((el) => el.removeAttribute('title'));
+    };
+
+    removeTitles(document.body);
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "attributes" && mutation.target instanceof Element) {
+          if (mutation.target.hasAttribute('title')) {
+            mutation.target.removeAttribute('title');
+          }
+        }
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof Element) {
+            removeTitles(node);
+          }
+        });
+      });
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['title'], childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   if (shouldThrow) {
     throw new Error("Test error triggered manually via console");
   }

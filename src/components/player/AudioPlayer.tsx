@@ -27,7 +27,16 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({ url, fileId, className, highlights = [], highlight, showControls = true }: AudioPlayerProps) {
     const audioRef = useRef<HTMLAudioElement>(null);
-    const { addAmbientMusicSuppression, removeAmbientMusicSuppression, fileProgress, setFileProgress, collections } = useStore();
+    const { 
+        addAmbientMusicSuppression, 
+        removeAmbientMusicSuppression, 
+        fileProgress, 
+        setFileProgress, 
+        collections,
+        rememberMediaVolume,
+        audioVolumeByFile,
+        setAudioVolumeForFile
+    } = useStore();
     
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -53,6 +62,16 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
             }
         }
     }, [fileId, highlight]);
+
+    useEffect(() => {
+        if (!audioRef.current) return;
+        const initialVolume = rememberMediaVolume && audioVolumeByFile[fileId] !== undefined
+            ? audioVolumeByFile[fileId]
+            : 1;
+        setVolume(initialVolume);
+        setIsMuted(initialVolume === 0);
+        audioRef.current.volume = initialVolume;
+    }, [fileId, rememberMediaVolume, audioVolumeByFile]);
 
     const togglePlay = () => {
         if (!audioRef.current) return;
@@ -102,6 +121,9 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
         setVolume(newVolume);
         if (audioRef.current) {
             audioRef.current.volume = newVolume;
+        }
+        if (rememberMediaVolume) {
+            setAudioVolumeForFile(fileId, newVolume);
         }
         setIsMuted(newVolume === 0);
     };
@@ -206,7 +228,6 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
                                                 backgroundColor: color,
                                                 boxShadow: `0 0 4px ${color}`
                                             }}
-                                            title={h.note || "Highlight"}
                                         />
                                     );
                                 })}

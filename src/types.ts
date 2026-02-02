@@ -178,4 +178,10 @@ export interface AppState {
     windowOutlineEnabled?: boolean;
     videoZoomByFile?: Record<string, number>;
     videoZoomManualByFile?: Record<string, boolean>;
+    muteNewVideosUntilUnmuted?: boolean;
+    rememberMediaVolume?: boolean;
+    disableMediaAutoplay?: boolean;
+    videoVolumeByFile?: Record<string, number>;
+    audioVolumeByFile?: Record<string, number>;
+    videoUnmutedByFile?: Record<string, boolean>;
 }

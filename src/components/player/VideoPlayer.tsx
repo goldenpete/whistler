@@ -132,7 +132,14 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         videoZoomByFile,
         setVideoZoomForFile,
         videoZoomManualByFile,
-        setVideoZoomManualForFile
+        setVideoZoomManualForFile,
+        muteNewVideosUntilUnmuted,
+        rememberMediaVolume,
+        disableMediaAutoplay,
+        videoVolumeByFile,
+        videoUnmutedByFile,
+        setVideoVolumeForFile,
+        setVideoUnmutedForFile
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const pdfRef = useRef<PDFPlayerHandle>(null);
@@ -145,6 +152,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [duration, setDuration] = useState(0);
     const [volume, setVolume] = useState(1);
     const [isMuted, setIsMuted] = useState(false);
+    const [showInitialMuteOverlay, setShowInitialMuteOverlay] = useState(false);
     const [showControls, setShowControls] = useState(true);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -249,6 +257,23 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     }, [playbackRate]);
 
     useEffect(() => {
+        if (!file || file.type !== 'video' || !fileId) return;
+        const initialVolume = rememberMediaVolume && videoVolumeByFile[fileId] !== undefined
+            ? videoVolumeByFile[fileId]
+            : 1;
+        setVolume(initialVolume);
+        if (videoRef.current) {
+            videoRef.current.volume = initialVolume;
+        }
+        const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && !videoUnmutedByFile[fileId];
+        setIsMuted(shouldMuteForFirstOpen);
+        setShowInitialMuteOverlay(shouldMuteForFirstOpen);
+        if (videoRef.current) {
+            videoRef.current.muted = shouldMuteForFirstOpen;
+        }
+    }, [file, fileId, rememberMediaVolume, videoVolumeByFile, muteNewVideosUntilUnmuted, videoUnmutedByFile]);
+
+    useEffect(() => {
         if (videoRef.current) {
             videoRef.current.volume = volume;
             videoRef.current.muted = isMuted;
@@ -269,6 +294,42 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 videoRef.current.pause();
             }
         }
+    };
+
+    const handleVolumeChange = (val: number[]) => {
+        const newVolume = val[0];
+        setVolume(newVolume);
+        if (rememberMediaVolume && fileId) {
+            setVideoVolumeForFile(fileId, newVolume);
+        }
+        if (newVolume === 0) {
+            setIsMuted(true);
+        } else if (!showInitialMuteOverlay) {
+            setIsMuted(false);
+        }
+    };
+
+    const handleToggleMute = () => {
+        const nextMuted = !isMuted;
+        setIsMuted(nextMuted);
+        if (!nextMuted && fileId && muteNewVideosUntilUnmuted && !videoUnmutedByFile[fileId]) {
+            setVideoUnmutedForFile(fileId, true);
+            setShowInitialMuteOverlay(false);
+        }
+    };
+
+    const handleInitialUnmute = () => {
+        if (!fileId) return;
+        const nextVolume = volume === 0 ? 1 : volume;
+        if (nextVolume !== volume) {
+            setVolume(nextVolume);
+            if (rememberMediaVolume) {
+                setVideoVolumeForFile(fileId, nextVolume);
+            }
+        }
+        setIsMuted(false);
+        setVideoUnmutedForFile(fileId, true);
+        setShowInitialMuteOverlay(false);
     };
 
     const [isCollectionMode, setIsCollectionMode] = useState(false);
@@ -731,7 +792,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                         />
                     </div>
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                        <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
                             <div
                                 className="flex items-center justify-center"
                                 style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
@@ -740,7 +801,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     ref={videoRef}
                                     src={file.url || ""}
                                     className="max-w-full max-h-full object-contain focus:outline-none"
-                                    autoPlay
+                                    autoPlay={!disableMediaAutoplay}
                                     onWaiting={() => setIsLoading(true)}
                                     onCanPlay={() => setIsLoading(false)}
                                     onPlay={() => {
@@ -757,6 +818,13 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     loop={isLooping}
                                 />
                             </div>
+                            {showInitialMuteOverlay && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                    <Button size="lg" variant="outline" onClick={handleInitialUnmute} className="bg-black/60 text-white border-white/20 hover:bg-black/70">
+                                        Unmute Video
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -827,7 +895,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => setIsMuted(!isMuted)}
+                                        onClick={handleToggleMute}
                                         className="text-zinc-400 hover:text-white"
                                     >
                                         {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
@@ -838,7 +906,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 value={[isMuted ? 0 : volume]}
                                                 max={1}
                                                 step={0.05}
-                                                onValueChange={(val: number[]) => setVolume(val[0])}
+                                                onValueChange={handleVolumeChange}
                                                 thumbClassName="bg-white border-white shadow-sm"
                                             />
                                         </div>

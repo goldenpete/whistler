@@ -3,6 +3,7 @@
 declare module "react" {
   export type ReactNode = any;
   export type ReactElement = any;
+  export type CSSProperties = { [key: string]: string | number | null | undefined };
   export type ComponentType<P = any> = any;
   
   export type KeyboardEvent<T = any> = {

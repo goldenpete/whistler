@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect, type ReactElement } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import type { ReactElement, MouseEvent, ReactNode, CSSProperties, ChangeEvent, SyntheticEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
@@ -104,11 +105,11 @@ export default function StorageView() {
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-    const [fileToRename, setFileToRename] = useState<File | null>(null);
+    const [fileToRename, setFileToRename] = useState<AppFile | null>(null);
     const [colorPickerDialogOpen, setColorPickerDialogOpen] = useState(false);
-    const [fileToColor, setFileToColor] = useState<File | null>(null);
+    const [fileToColor, setFileToColor] = useState<AppFile | null>(null);
     const [editFolderOpen, setEditFolderOpen] = useState(false);
-    const [folderToEdit, setFolderToEdit] = useState<File | null>(null);
+    const [folderToEdit, setFolderToEdit] = useState<AppFile | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
     const currentFolderId = searchParams.get('folderId');
 
@@ -168,7 +169,7 @@ export default function StorageView() {
     );
     const orderedProjectFiles = [...projectFiles].sort((a, b) => a.order - b.order);
 
-    const handleRenameInit = (file: File) => {
+    const handleRenameInit = (file: AppFile) => {
         if (file.type === 'folder') {
             setFolderToEdit(file);
             setEditFolderOpen(true);
@@ -194,14 +195,14 @@ export default function StorageView() {
         }
     };
 
-    const handleMoveInit = (file: File) => {
+    const handleMoveInit = (file: AppFile) => {
         if (!selectedIds.has(file.id)) {
             setSelectedIds(new Set([file.id]));
         }
         setMoveDialogOpen(true);
     };
 
-    const handleColorInit = (file: File) => {
+    const handleColorInit = (file: AppFile) => {
         setFileToColor(file);
         setColorPickerDialogOpen(true);
     };
@@ -227,7 +228,7 @@ export default function StorageView() {
             }
         }
 
-        const newFolder: File = {
+        const newFolder: AppFile = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
             storageId: targetStorageId,
@@ -266,7 +267,7 @@ export default function StorageView() {
         }
 
         const type = getFileTypeFromUrl(url);
-        const newFile: File = {
+        const newFile: AppFile = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
             storageId: targetStorageId,
@@ -334,7 +335,7 @@ export default function StorageView() {
                 const reordered = arrayMove(siblings, oldIndex, newIndex);
                 useStore.setState(state => ({
                     files: state.files.map(f => {
-                        const idx = reordered.findIndex(r => r.id === f.id);
+                        const idx = reordered.findIndex((r: AppFile) => r.id === f.id);
                         if (idx === -1) return f;
                         return { ...f, order: idx, lastModified: Date.now() };
                     })
@@ -465,7 +466,7 @@ export default function StorageView() {
                                         placeholder="Search in this storage..."
                                         className="pl-8 h-8 text-xs"
                                         value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
                                 <Button
@@ -669,26 +670,26 @@ function EmptyState() {
 }
 
 interface FileCardProps {
-    file: File;
+    file: AppFile;
     onNavigate: (id: string) => void;
     selectionMode: boolean;
     isSelected: boolean;
     onToggleSelect: (id: string) => void;
-    onRename: (file: File) => void;
-    onMove: (file: File) => void;
-    onColor: (file: File) => void;
+    onRename: (file: AppFile) => void;
+    onMove: (file: AppFile) => void;
+    onColor: (file: AppFile) => void;
 }
 
 interface FileCardInnerProps {
-    file: File;
+    file: AppFile;
     isSelected: boolean;
     isOver: boolean;
     selectionMode: boolean;
-    onClick?: (e: React.MouseEvent) => void;
+    onClick?: (e: MouseEvent) => void;
     linkTo?: string;
     domRef?: (element: HTMLElement | null) => void;
-    children?: React.ReactNode;
-    style?: React.CSSProperties;
+    children?: ReactNode;
+    style?: CSSProperties;
     className?: string;
     showSelection?: boolean;
 }
@@ -722,7 +723,7 @@ function FileCardGridInner({ file, isSelected, isOver, selectionMode, onClick, l
             )}
 
             {!selectionMode && linkTo && (file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image') ? (
-                <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => { e.stopPropagation(); playSfx('cursor'); }} />
+                <Link to={linkTo} className="absolute inset-0 z-0" onClick={(e: MouseEvent) => { e.stopPropagation(); playSfx('cursor'); }} />
             ) : null}
 
             <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none">
@@ -766,7 +767,7 @@ function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, l
             )}
 
             {!selectionMode && linkTo && (file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image') ? (
-                <Link to={linkTo} className="absolute inset-0 z-0" onClick={e => { e.stopPropagation(); playSfx('cursor'); }} />
+                <Link to={linkTo} className="absolute inset-0 z-0" onClick={(e: MouseEvent) => { e.stopPropagation(); playSfx('cursor'); }} />
             ) : null}
 
             {/* Thumbnail */}
@@ -816,7 +817,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
         opacity: isDragging ? 0.5 : 1
     } : undefined;
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
         if (selectionMode) {
             e.preventDefault();
             onToggleSelect(file.id);
@@ -877,7 +878,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
         opacity: isDragging ? 0.5 : 1
     } : undefined;
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
         if (selectionMode) {
             e.preventDefault();
             onToggleSelect(file.id);
@@ -916,7 +917,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
 }
 
 export interface FileContextMenuProps {
-    file: File;
+    file: AppFile;
     onRename: () => void;
     onMove: () => void;
     onSelect: () => void;
@@ -1054,7 +1055,7 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
                 muted
                 playsInline
                 onError={() => setError(true)}
-                onLoadedMetadata={(e) => {
+                onLoadedMetadata={(e: SyntheticEvent<HTMLVideoElement>) => {
                     e.currentTarget.currentTime = 0.1;
                 }}
             />

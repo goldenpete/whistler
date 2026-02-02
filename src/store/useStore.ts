@@ -31,6 +31,12 @@ export interface AppStore extends AppState {
     windowOutlineEnabled: boolean;
     videoZoomByFile: Record<string, number>;
     videoZoomManualByFile: Record<string, boolean>;
+    muteNewVideosUntilUnmuted: boolean;
+    rememberMediaVolume: boolean;
+    disableMediaAutoplay: boolean;
+    videoVolumeByFile: Record<string, number>;
+    audioVolumeByFile: Record<string, number>;
+    videoUnmutedByFile: Record<string, boolean>;
     sfxEnabled: boolean;
     enabledSounds: {
         cursor: boolean;
@@ -125,6 +131,13 @@ export interface AppStore extends AppState {
     setWindowOutlineEnabled: (enabled: boolean) => void;
     setVideoZoomForFile: (fileId: string, zoom: number) => void;
     setVideoZoomManualForFile: (fileId: string, manual: boolean) => void;
+    setMuteNewVideosUntilUnmuted: (enabled: boolean) => void;
+    setRememberMediaVolume: (enabled: boolean) => void;
+    setDisableMediaAutoplay: (enabled: boolean) => void;
+    setVideoVolumeForFile: (fileId: string, volume: number) => void;
+    setAudioVolumeForFile: (fileId: string, volume: number) => void;
+    setVideoUnmutedForFile: (fileId: string, unmuted: boolean) => void;
+    clearMediaVolumes: () => void;
 
     setAutoSyncInterval: (interval: number) => void;
 
@@ -252,6 +265,12 @@ export const useStore = create<AppStore>()(
             windowOutlineEnabled: false,
             videoZoomByFile: {},
             videoZoomManualByFile: {},
+            muteNewVideosUntilUnmuted: true,
+            rememberMediaVolume: false,
+            disableMediaAutoplay: false,
+            videoVolumeByFile: {},
+            audioVolumeByFile: {},
+            videoUnmutedByFile: {},
             sfxEnabled: true,
             enabledSounds: {
                 cursor: true,
@@ -394,6 +413,28 @@ export const useStore = create<AppStore>()(
                     [fileId]: manual
                 }
             })),
+            setMuteNewVideosUntilUnmuted: (enabled) => set({ muteNewVideosUntilUnmuted: enabled }),
+            setRememberMediaVolume: (enabled) => set({ rememberMediaVolume: enabled }),
+            setDisableMediaAutoplay: (enabled) => set({ disableMediaAutoplay: enabled }),
+            setVideoVolumeForFile: (fileId, volume) => set((state) => ({
+                videoVolumeByFile: {
+                    ...(state.videoVolumeByFile || {}),
+                    [fileId]: volume
+                }
+            })),
+            setAudioVolumeForFile: (fileId, volume) => set((state) => ({
+                audioVolumeByFile: {
+                    ...(state.audioVolumeByFile || {}),
+                    [fileId]: volume
+                }
+            })),
+            setVideoUnmutedForFile: (fileId, unmuted) => set((state) => ({
+                videoUnmutedByFile: {
+                    ...(state.videoUnmutedByFile || {}),
+                    [fileId]: unmuted
+                }
+            })),
+            clearMediaVolumes: () => set({ videoVolumeByFile: {}, audioVolumeByFile: {} }),
             toggleSound: (type) => set((state) => {
                 const currentSounds = state.enabledSounds || {
                     cursor: true,

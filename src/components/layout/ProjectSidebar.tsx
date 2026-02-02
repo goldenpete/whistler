@@ -73,6 +73,16 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -297,6 +307,13 @@ export default function ProjectSidebar() {
         toggleSound,
         windowOutlineEnabled,
         setWindowOutlineEnabled,
+        muteNewVideosUntilUnmuted,
+        rememberMediaVolume,
+        disableMediaAutoplay,
+        setMuteNewVideosUntilUnmuted,
+        setRememberMediaVolume,
+        setDisableMediaAutoplay,
+        clearMediaVolumes,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -327,6 +344,7 @@ export default function ProjectSidebar() {
     const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
     const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
     const [appearanceTab, setAppearanceTab] = useState<'appearance' | 'music' | 'reset'>('appearance');
+    const [disableRememberVolumeOpen, setDisableRememberVolumeOpen] = useState(false);
 
     const handleResetForUpdates = async () => {
         if ("caches" in window) {
@@ -341,6 +359,14 @@ export default function ProjectSidebar() {
         sessionStorage.clear();
         indexedDB.deleteDatabase("whistler_media");
         window.location.reload();
+    };
+
+    const handleRememberVolumeToggle = () => {
+        if (rememberMediaVolume) {
+            setDisableRememberVolumeOpen(true);
+            return;
+        }
+        setRememberMediaVolume(true);
     };
 
     const handleEditGraph = (e: ReactMouseEvent, graph: any) => {
@@ -2115,6 +2141,106 @@ export default function ProjectSidebar() {
                                         />
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="space-y-3 pt-3 border-t border-border">
+                                <p className="text-[10px] uppercase font-bold text-muted-foreground px-1">Media Playback</p>
+                                <div className="rounded-lg border border-border bg-card p-3 space-y-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMuteNewVideosUntilUnmuted(!muteNewVideosUntilUnmuted)}
+                                        className="w-full flex items-center justify-between"
+                                    >
+                                        <span className="text-sm">Mute new videos until unmuted</span>
+                                        <span
+                                            className={cn(
+                                                "w-8 h-4 rounded-full relative transition-colors",
+                                                muteNewVideosUntilUnmuted ? "bg-primary" : "bg-zinc-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                    muteNewVideosUntilUnmuted ? "right-0.5" : "left-0.5"
+                                                )}
+                                            />
+                                        </span>
+                                    </button>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Requires clicking Unmute Video the first time a video opens.
+                                    </p>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleRememberVolumeToggle}
+                                        className="w-full flex items-center justify-between"
+                                    >
+                                        <span className="text-sm">Remember media volume</span>
+                                        <span
+                                            className={cn(
+                                                "w-8 h-4 rounded-full relative transition-colors",
+                                                rememberMediaVolume ? "bg-primary" : "bg-zinc-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                    rememberMediaVolume ? "right-0.5" : "left-0.5"
+                                                )}
+                                            />
+                                        </span>
+                                    </button>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Stores volume per video and audio file.
+                                    </p>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setDisableMediaAutoplay(!disableMediaAutoplay)}
+                                        className="w-full flex items-center justify-between"
+                                    >
+                                        <span className="text-sm">Disable autoplay for new media</span>
+                                        <span
+                                            className={cn(
+                                                "w-8 h-4 rounded-full relative transition-colors",
+                                                disableMediaAutoplay ? "bg-primary" : "bg-zinc-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform",
+                                                    disableMediaAutoplay ? "right-0.5" : "left-0.5"
+                                                )}
+                                            />
+                                        </span>
+                                    </button>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Applies to videos and audio files when they open.
+                                    </p>
+                                </div>
+                                <AlertDialog open={disableRememberVolumeOpen} onOpenChange={setDisableRememberVolumeOpen}>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Disable volume memory?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                All saved media volumes will be erased.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => {
+                                                    setRememberMediaVolume(false);
+                                                    clearMediaVolumes();
+                                                    setDisableRememberVolumeOpen(false);
+                                                }}
+                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                                Disable
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                             
                             <div className="space-y-3 pt-3 border-t border-border">
