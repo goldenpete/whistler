@@ -15,16 +15,12 @@ import {
     Trash,
     MagnifyingGlass,
     ArrowsClockwise,
-    WaveSine,
     PencilSimple,
     CaretDown,
     CaretLeft,
     CaretRight,
-    Cloud,
-    Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
-    Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Gear, Share,
-    CheckCircle, WarningCircle, CloudCheck, CloudWarning
+    Gear,
+    Share
 } from "@phosphor-icons/react";
 import {
     DndContext, 
@@ -45,7 +41,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
-import { useShallow } from "@/lib/zustand-shallow";
+
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
 import { getIcon } from "@/utils/iconMap";
 import {
@@ -71,16 +67,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
 import {
     Dialog,
     DialogContent,
@@ -259,41 +246,6 @@ export default function ProjectSidebar() {
         sidebarView,
         setSidebarView,
         accentTheme,
-        setAccentTheme,
-        baseTheme,
-        setBaseTheme,
-        enableDefaultColorControls,
-        defaultColors,
-        setEnableDefaultColorControls,
-        setDefaultColor,
-        backgroundImageUrl,
-        backgroundImageOpacity,
-        backgroundColor,
-        backgroundOverlayOpacity,
-        setBackgroundImageUrl,
-        setBackgroundImageOpacity,
-        setBackgroundColor,
-        setBackgroundOverlayOpacity,
-        ambientMusicUrl,
-        ambientMusicVolume,
-        setAmbientMusicUrl,
-        setAmbientMusicVolume,
-        setAmbientMusicStorageKey,
-        sfxEnabled,
-        setSfxEnabled,
-        enabledSounds,
-        toggleSound,
-        windowOutlineEnabled,
-        setWindowOutlineEnabled,
-        muteNewVideosUntilUnmuted,
-        rememberMediaVolume,
-        disableMediaAutoplay,
-        setMuteNewVideosUntilUnmuted,
-        setRememberMediaVolume,
-        setDisableMediaAutoplay,
-        clearMediaVolumes,
-        useMiddleFrameForPreviews,
-        setUseMiddleFrameForPreviews,
     } = useStore();
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
@@ -320,8 +272,6 @@ export default function ProjectSidebar() {
     const [newProjectOpen, setNewProjectOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-    const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
-    const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
 
 
 

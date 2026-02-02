@@ -59,38 +59,34 @@ export default function SettingsView() {
         setAccentTheme, 
         baseTheme, 
         setBaseTheme,
-        backgroundOpacity,
-        setBackgroundOpacity,
-        backgroundImage,
-        setBackgroundImage,
+        backgroundImageOpacity,
+        setBackgroundImageOpacity,
+        backgroundImageUrl,
+        setBackgroundImageUrl,
         backgroundOverlayOpacity,
         setBackgroundOverlayOpacity,
-        ambientMusic,
-        setAmbientMusic,
+        setAmbientMusicUrl,
+        ambientMusicUrl,
         setAmbientMusicVolume,
-        isAmbientMusicPlaying,
-        setIsAmbientMusicPlaying,
+        ambientMusicName,
+        ambientMusicPaused,
+        setAmbientMusicPaused,
         muteNewVideosUntilUnmuted,
         setMuteNewVideosUntilUnmuted,
         rememberMediaVolume,
         setRememberMediaVolume,
-        disableAutoplayForNewMedia,
-        setDisableAutoplayForNewMedia,
+        disableMediaAutoplay,
+        setDisableMediaAutoplay,
         useMiddleFrameForPreviews,
         setUseMiddleFrameForPreviews,
-        soundEnabled,
-        setSoundEnabled,
-        soundVolume,
-        setSoundVolume,
-        enableWebsiteSounds,
-        setEnableWebsiteSounds,
-        websiteSounds,
-        setWebsiteSounds,
+        sfxEnabled,
+        setSfxEnabled,
+        enabledSounds,
+        toggleSound,
         enableDefaultColorControls,
         setEnableDefaultColorControls,
         defaultColors,
         setDefaultColor,
-        resetStore,
         sidebarMode,
         setSidebarMode,
         windowOutlineEnabled,
@@ -107,7 +103,7 @@ export default function SettingsView() {
             const reader = new FileReader();
             reader.onload = (event) => {
                 if (event.target?.result) {
-                    setBackgroundImage(event.target.result as string);
+                    setBackgroundImageUrl(event.target.result as string);
                 }
             };
             reader.readAsDataURL(file);
@@ -122,8 +118,9 @@ export default function SettingsView() {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
                 const url = URL.createObjectURL(file);
-                setAmbientMusic({ url, name: file.name, volume: 0.5 });
-                setIsAmbientMusicPlaying(true);
+                setAmbientMusicUrl(url, file.name);
+                setAmbientMusicVolume(0.5);
+                setAmbientMusicPaused(false);
             }
         };
         input.click();
@@ -363,13 +360,15 @@ export default function SettingsView() {
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <label className="text-sm font-medium">Background Image Opacity</label>
-                                                <span className="text-xs font-mono text-muted-foreground">{(backgroundOpacity * 100).toFixed(0)}%</span>
+                                                <span className="text-xs font-mono text-muted-foreground">{(backgroundImageOpacity * 100).toFixed(0)}%</span>
                                             </div>
                                             <Slider
-                                                value={[backgroundOpacity]}
+                                                value={[backgroundImageOpacity]}
                                                 min={0}
                                                 max={1}
                                                 step={0.01}
+                                                onValueChange={([v]) => setBackgroundImageOpacity(v)}
+                                            />
                                                 onValueChange={([v]) => setBackgroundOpacity(v)}
                                             />
                                         </div>
@@ -509,8 +508,8 @@ export default function SettingsView() {
                                             <p className="text-xs text-muted-foreground">Applies to videos and audio files when they open.</p>
                                         </div>
                                         <Switch 
-                                            checked={disableAutoplayForNewMedia}
-                                            onCheckedChange={setDisableAutoplayForNewMedia}
+                                            checked={disableMediaAutoplay}
+                                            onCheckedChange={setDisableMediaAutoplay}
                                         />
                                     </div>
                                     <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
@@ -540,12 +539,12 @@ export default function SettingsView() {
                                             <p className="text-xs text-muted-foreground">Plays sounds for clicks, confirmations, and errors.</p>
                                         </div>
                                         <Switch 
-                                            checked={enableWebsiteSounds}
-                                            onCheckedChange={setEnableWebsiteSounds}
+                                            checked={sfxEnabled}
+                                            onCheckedChange={setSfxEnabled}
                                         />
                                     </div>
 
-                                    {enableWebsiteSounds && (
+                                    {sfxEnabled && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border/40">
                                             {[
                                                 { id: 'cursor', label: 'Cursor', icon: Cursor },
@@ -560,11 +559,8 @@ export default function SettingsView() {
                                                         <span className="text-sm">{sound.label}</span>
                                                     </div>
                                                     <Switch 
-                                                        checked={websiteSounds[sound.id as keyof typeof websiteSounds]}
-                                                        onCheckedChange={(checked) => setWebsiteSounds({
-                                                            ...websiteSounds,
-                                                            [sound.id]: checked
-                                                        })}
+                                                        checked={enabledSounds[sound.id as keyof typeof enabledSounds]}
+                                                        onCheckedChange={() => toggleSound(sound.id as any)}
                                                         className="scale-75"
                                                     />
                                                 </div>
