@@ -319,27 +319,29 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     };
 
     const handleInitialUnmute = () => {
-        if (!fileId) return;
         const nextVolume = volume === 0 ? 1 : volume;
         if (nextVolume !== volume) {
             setVolume(nextVolume);
-            if (rememberMediaVolume) {
+            if (rememberMediaVolume && fileId) {
                 setVideoVolumeForFile(fileId, nextVolume);
             }
         }
         setIsMuted(false);
-        setVideoUnmutedForFile(fileId, true);
+        if (fileId) {
+            setVideoUnmutedForFile(fileId, true);
+        }
         setShowInitialMuteOverlay(false);
     };
 
     const setQuickVolume = (nextVolume: number) => {
-        if (!fileId) return;
         setVolume(nextVolume);
-        if (rememberMediaVolume) {
+        if (rememberMediaVolume && fileId) {
             setVideoVolumeForFile(fileId, nextVolume);
         }
         setIsMuted(false);
-        setVideoUnmutedForFile(fileId, true);
+        if (fileId) {
+            setVideoUnmutedForFile(fileId, true);
+        }
         setShowInitialMuteOverlay(false);
     };
 
