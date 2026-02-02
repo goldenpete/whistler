@@ -26,7 +26,12 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { ColorPicker } from "@/components/ui/ColorPicker";
 import type { AccentTheme, BaseTheme } from "@/types";
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
@@ -94,8 +99,6 @@ export default function SettingsView() {
     } = useStore();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
-    const [defaultColorDialogOpen, setDefaultColorDialogOpen] = useState(false);
-    const [activeDefaultColorEntity, setActiveDefaultColorEntity] = useState<'file' | 'collection' | 'storage' | 'graph' | 'node' | null>(null);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -369,8 +372,6 @@ export default function SettingsView() {
                                                 step={0.01}
                                                 onValueChange={([v]) => setBackgroundImageOpacity(v)}
                                             />
-                                                onValueChange={([v]) => setBackgroundOpacity(v)}
-                                            />
                                         </div>
                                     </div>
 
@@ -614,28 +615,6 @@ export default function SettingsView() {
                     )}
                 </div>
             </div>
-
-            {activeDefaultColorEntity && (
-                <ColorPickerDialog
-                    open={defaultColorDialogOpen}
-                    onOpenChange={(open) => {
-                        setDefaultColorDialogOpen(open);
-                        if (!open) {
-                            setActiveDefaultColorEntity(null);
-                        }
-                    }}
-                    title={`Default color for ${DEFAULT_COLOR_ENTITIES.find(e => e.key === activeDefaultColorEntity)?.label ?? ""}`}
-                    initialColor={
-                        (defaultColors && defaultColors[activeDefaultColorEntity]) ||
-                        "#f59e0b"
-                    }
-                    onColorSelect={(color) => {
-                        if (activeDefaultColorEntity) {
-                            setDefaultColor(activeDefaultColorEntity, color);
-                        }
-                    }}
-                />
-            )}
         </div>
     );
 }

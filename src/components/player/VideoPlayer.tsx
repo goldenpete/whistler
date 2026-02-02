@@ -21,6 +21,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { ColorPicker } from "@/components/ui/ColorPicker";
 import {
     X,
     ArrowSquareOut,
@@ -62,7 +63,6 @@ import { SeekPreview } from './SeekPreview';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
-import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 
 const ExpandableNote = ({ text }: { text: string }) => {
@@ -1248,17 +1248,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 file={file}
                 collections={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted)}
                 onSave={(updates) => selectedHighlight && updateHighlight(selectedHighlight.id, updates)}
-            />
-
-            <ColorPickerDialog
-                open={colorPickerOpen}
-                onOpenChange={setColorPickerOpen}
-                title="File Color"
-                initialColor={file.color}
-                onColorSelect={(color) => {
-                    updateFile(file.id, { color });
-                    setColorPickerOpen(false);
-                }}
             />
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

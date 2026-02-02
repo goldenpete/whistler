@@ -1,4 +1,3 @@
-import { formatDistanceToNow } from "date-fns";
 import React, { useState, useEffect } from "react";
 import type { MouseEvent as ReactMouseEvent, ChangeEvent as ReactChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -1619,7 +1618,7 @@ export default function ProjectSidebar() {
                                     </button>
                                 )}
 
-                                <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col-reverse space-y-1 space-y-reverse")}>
+                                <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col space-y-1")}>
                                     <button
                                         onClick={() => setSidebarView('trash')}
                                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
