@@ -168,6 +168,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const dragActiveRef = useRef(false);
     const dragOffsetRef = useRef({ x: 0, y: 0 });
     const isMinimized = floating ? !!isMinimizedProp : false;
+    const lastFileIdRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
         // Enable sidebar animation after initial render
@@ -258,18 +259,25 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     useEffect(() => {
         if (!file || file.type !== 'video' || !fileId) return;
-        const initialVolume = rememberMediaVolume && videoVolumeByFile[fileId] !== undefined
-            ? videoVolumeByFile[fileId]
-            : 1;
-        setVolume(initialVolume);
-        if (videoRef.current) {
-            videoRef.current.volume = initialVolume;
-        }
-        const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && !videoUnmutedByFile[fileId];
-        setIsMuted(shouldMuteForFirstOpen);
-        setShowInitialMuteOverlay(shouldMuteForFirstOpen);
-        if (videoRef.current) {
-            videoRef.current.muted = shouldMuteForFirstOpen;
+
+        // Only run initialization when file changes to prevent overwriting
+        // manual volume changes when store updates (e.g. unmuting)
+        if (fileId !== lastFileIdRef.current) {
+            lastFileIdRef.current = fileId;
+
+            const initialVolume = rememberMediaVolume && videoVolumeByFile[fileId] !== undefined
+                ? videoVolumeByFile[fileId]
+                : 1;
+            setVolume(initialVolume);
+            if (videoRef.current) {
+                videoRef.current.volume = initialVolume;
+            }
+            const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && !videoUnmutedByFile[fileId];
+            setIsMuted(shouldMuteForFirstOpen);
+            setShowInitialMuteOverlay(shouldMuteForFirstOpen);
+            if (videoRef.current) {
+                videoRef.current.muted = shouldMuteForFirstOpen;
+            }
         }
     }, [file, fileId, rememberMediaVolume, videoVolumeByFile, muteNewVideosUntilUnmuted, videoUnmutedByFile]);
 
