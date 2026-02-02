@@ -570,7 +570,7 @@ export default function StorageView() {
                                         <FileCardList
                                             key={file.id}
                                             file={file}
-                                            onNavigate={handleNavigate}
+                                            onNavigate={handleNavigateFolder}
                                             selectionMode={selectionMode}
                                             isSelected={selectedIds.has(file.id)}
                                             onToggleSelect={toggleSelectItem}
