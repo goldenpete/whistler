@@ -135,7 +135,7 @@ export default function SettingsView() {
 
     const handleReset = () => {
         if (confirm("Are you sure you want to reset all data? This cannot be undone.")) {
-            resetStore();
+            localStorage.removeItem('whistler_v2_data');
             window.location.reload();
         }
     };
@@ -317,20 +317,25 @@ export default function SettingsView() {
                                         <label className="text-sm font-medium block mb-3">Default Item Colors</label>
                                         <div className="flex flex-wrap gap-3">
                                             {DEFAULT_COLOR_ENTITIES.map((entity) => (
-                                                <button
-                                                    key={entity.key}
-                                                    onClick={() => {
-                                                        setActiveDefaultColorEntity(entity.key);
-                                                        setDefaultColorDialogOpen(true);
-                                                    }}
-                                                    className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-                                                >
-                                                    <span
-                                                        className="h-3 w-3 rounded-full border border-border/60"
-                                                        style={{ backgroundColor: (defaultColors && defaultColors[entity.key]) || "hsl(var(--primary))" }}
-                                                    />
-                                                    <span className="text-xs font-medium">{entity.label}</span>
-                                                </button>
+                                                <Popover key={entity.key}>
+                                                    <PopoverTrigger asChild>
+                                                        <button
+                                                            className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                                                        >
+                                                            <span
+                                                                className="h-3 w-3 rounded-full border border-border/60"
+                                                                style={{ backgroundColor: (defaultColors && defaultColors[entity.key]) || "hsl(var(--primary))" }}
+                                                            />
+                                                            <span className="text-xs font-medium">{entity.label}</span>
+                                                        </button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-3">
+                                                        <ColorPicker
+                                                            color={(defaultColors && defaultColors[entity.key]) || "#000000"}
+                                                            onChange={(c) => setDefaultColor(entity.key, c)}
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
                                             ))}
                                         </div>
                                     </div>
@@ -376,13 +381,13 @@ export default function SettingsView() {
                                     </div>
 
                                     <div className="relative group rounded-lg border border-border bg-black/40 overflow-hidden aspect-video flex items-center justify-center">
-                                        {backgroundImage ? (
+                                        {backgroundImageUrl ? (
                                             <>
                                                 <img 
-                                                    src={backgroundImage} 
+                                                    src={backgroundImageUrl} 
                                                     alt="Background preview" 
                                                     className="absolute inset-0 w-full h-full object-cover"
-                                                    style={{ opacity: backgroundOpacity }}
+                                                    style={{ opacity: backgroundImageOpacity }}
                                                 />
                                                 <div 
                                                     className="absolute inset-0 bg-background"
@@ -392,7 +397,7 @@ export default function SettingsView() {
                                                     <Button variant="secondary" size="sm" onClick={() => document.getElementById('bg-upload')?.click()}>
                                                         Change
                                                     </Button>
-                                                    <Button variant="destructive" size="sm" onClick={() => setBackgroundImage(null)}>
+                                                    <Button variant="destructive" size="sm" onClick={() => setBackgroundImageUrl(null)}>
                                                         Remove
                                                     </Button>
                                                 </div>

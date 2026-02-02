@@ -19,7 +19,11 @@ import {
     CaretLeft,
     CaretRight,
     Gear,
-    Share
+    Share,
+    WarningCircle,
+    CheckCircle,
+    CloudCheck,
+    Cloud
 } from "@phosphor-icons/react";
 import {
     DndContext, 
@@ -39,6 +43,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import { useStore } from "@/store/useStore";
 
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
@@ -843,6 +848,18 @@ export default function ProjectSidebar() {
                                 <TooltipContent side="right">Sync Status</TooltipContent>
                             </Tooltip>
 
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => { setSidebarView('history'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
+                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    >
+                                        <ClockCounterClockwise weight="bold" size={18} />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">History</TooltipContent>
+                            </Tooltip>
+
                              <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
@@ -855,25 +872,13 @@ export default function ProjectSidebar() {
                                 <TooltipContent side="right">Trash</TooltipContent>
                             </Tooltip>
 
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => { setSidebarView('history'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    >
-                                        <ClockCounterClockwise weight="bold" size={18} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">History</TooltipContent>
-                            </Tooltip>
-
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => navigate('/settings')}
                                         className={cn(
                                             "h-8 w-8 flex items-center justify-center rounded-md transition-colors",
-                                            location.pathname === '/settings' ? "bg-primary/20 text-primary" : "text-primary"
+                                            location.pathname === '/settings' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                         )}
                                     >
                                          <Gear weight="fill" size={18} />
@@ -1620,11 +1625,14 @@ export default function ProjectSidebar() {
 
                                 <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col space-y-1")}>
                                     <button
-                                        onClick={() => setSidebarView('trash')}
-                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
-                                        title="Trash"
+                                        onClick={() => navigate('/settings')}
+                                        className={cn(
+                                            "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
+                                            location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
+                                        )}
+                                        title="Settings"
                                     >
-                                        <Trash weight="bold" size={18} />
+                                        <Gear weight="fill" size={18} />
                                     </button>
                                     <button
                                         onClick={() => setSidebarView('history')}
@@ -1634,14 +1642,11 @@ export default function ProjectSidebar() {
                                         <ClockCounterClockwise weight="bold" size={18} />
                                     </button>
                                     <button
-                                        onClick={() => navigate('/settings')}
-                                        className={cn(
-                                            "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
-                                            location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
-                                        )}
-                                        title="Settings"
+                                        onClick={() => setSidebarView('trash')}
+                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
+                                        title="Trash"
                                     >
-                                        <Gear weight="fill" size={18} />
+                                        <Trash weight="bold" size={18} />
                                     </button>
                                 </div>
                             </div>

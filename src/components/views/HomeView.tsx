@@ -51,7 +51,6 @@ import { AddFileDialog, RenameFileDialog, EditDocDialog, EditFolderDialog, EditG
 import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dialogs/CreationDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
-import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
 import { QuickAccessDialog } from "@/components/dialogs/QuickAccessDialog";
 import type { QuickAccessType } from "@/components/dialogs/QuickAccessDialog";
 import { FileContextMenu } from "@/components/views/StorageView";
@@ -373,18 +372,17 @@ export default function HomeView() {
 
     // Storage Dialog States
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-    const [colorPickerDialogOpen, setColorPickerDialogOpen] = useState(false);
     const [fileToMove, setFileToMove] = useState<AppFile | null>(null);
-    const [fileToColor, setFileToColor] = useState<AppFile | null>(null);
 
     const handleMoveInit = (file: AppFile) => {
         setFileToMove(file);
         setMoveDialogOpen(true);
     };
 
-    const handleColorInit = (file: AppFile) => {
-        setFileToColor(file);
-        setColorPickerDialogOpen(true);
+    const handleColorChange = (file: AppFile, color: string) => {
+        useStore.setState((state: any) => ({
+            files: state.files.map((f: AppFile) => f.id === file.id ? { ...f, color, lastModified: Date.now() } : f)
+        }));
     };
 
     const [popoverOpen, setPopoverOpen] = useState(false);
@@ -893,7 +891,7 @@ export default function HomeView() {
                                                 onRename={() => openRenameDialog(item)}
                                                 onMove={() => handleMoveInit(item.data)}
                                                 onSelect={() => {}} 
-                                                onColor={() => handleColorInit(item.data)}
+                                                onColorChange={(color) => handleColorChange(item.data, color)}
                                             />
                                         ) : (
                                             <ContextMenuContent>
@@ -1014,18 +1012,6 @@ export default function HomeView() {
                         open={moveDialogOpen}
                         onOpenChange={setMoveDialogOpen}
                         fileIds={fileToMove ? [fileToMove.id] : []}
-                    />
-                    <ColorPickerDialog
-                        open={colorPickerDialogOpen}
-                        onOpenChange={setColorPickerDialogOpen}
-                        initialColor={fileToColor?.color || "#ffffff"}
-                        onColorSelect={(color) => {
-                            if (fileToColor) {
-                                useStore.setState((state: any) => ({
-                                    files: state.files.map((f: AppFile) => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
-                                }));
-                            }
-                        }}
                     />
                 </>
             )}

@@ -19,7 +19,8 @@ export function MainLayout() {
         ambientMusicUrl, 
         ambientMusicVolume, 
         ambientMusicSuppressedBy, 
-        ambientMusicStorageKey, 
+        ambientMusicStorageKey,
+        ambientMusicPaused, 
         setAmbientMusicUrl, 
         setAmbientMusicStorageKey 
     } = useStore(useShallow((state: AppStore) => ({
@@ -31,6 +32,7 @@ export function MainLayout() {
         ambientMusicVolume: state.ambientMusicVolume,
         ambientMusicSuppressedBy: state.ambientMusicSuppressedBy,
         ambientMusicStorageKey: state.ambientMusicStorageKey,
+        ambientMusicPaused: state.ambientMusicPaused,
         setAmbientMusicUrl: state.setAmbientMusicUrl,
         setAmbientMusicStorageKey: state.setAmbientMusicStorageKey,
     })));

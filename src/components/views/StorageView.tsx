@@ -57,6 +57,9 @@ import {
     ContextMenuItem,
     ContextMenuLabel,
     ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubTrigger,
+    ContextMenuSubContent,
 } from "@/components/ui/context-menu";
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -71,7 +74,7 @@ import {
     EditFolderDialog
 } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
-import { ColorPickerDialog } from "@/components/dialogs/ColorPickerDialog";
+import { ColorPicker } from "@/components/ui/ColorPicker";
 
 const STORAGE_COLORS = [
     "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
@@ -106,8 +109,6 @@ export default function StorageView() {
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const [fileToRename, setFileToRename] = useState<AppFile | null>(null);
-    const [colorPickerDialogOpen, setColorPickerDialogOpen] = useState(false);
-    const [fileToColor, setFileToColor] = useState<AppFile | null>(null);
     const [editFolderOpen, setEditFolderOpen] = useState(false);
     const [folderToEdit, setFolderToEdit] = useState<AppFile | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -202,9 +203,10 @@ export default function StorageView() {
         setMoveDialogOpen(true);
     };
 
-    const handleColorInit = (file: AppFile) => {
-        setFileToColor(file);
-        setColorPickerDialogOpen(true);
+    const handleColorChange = (file: AppFile, color: string) => {
+        useStore.setState(state => ({
+            files: state.files.map(f => f.id === file.id ? { ...f, color, lastModified: Date.now() } : f)
+        }));
     };
 
     const handleNewFolder = (name: string, description: string, color: string, icon: string) => {
@@ -557,24 +559,24 @@ export default function StorageView() {
                                             onToggleSelect={toggleSelectItem}
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
-                                            onColor={handleColorInit}
+                                            onColorChange={handleColorChange}
                                         />
                                     ))}
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
                                 </div>
                             ) : (
-                                <div className="space-y-1 pb-20">
+                                <div className="flex flex-col gap-2 pb-10">
                                     {orderedProjectFiles.map(file => (
                                         <FileCardList
                                             key={file.id}
                                             file={file}
-                                            onNavigate={handleNavigateFolder}
+                                            onNavigate={handleNavigate}
                                             selectionMode={selectionMode}
                                             isSelected={selectedIds.has(file.id)}
                                             onToggleSelect={toggleSelectItem}
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
-                                            onColor={handleColorInit}
+                                            onColorChange={handleColorChange}
                                         />
                                     ))}
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
@@ -614,18 +616,6 @@ export default function StorageView() {
                 initialName={folderToEdit?.name || ""}
                 initialColor={folderToEdit?.color}
                 initialIcon={folderToEdit?.icon}
-            />
-            <ColorPickerDialog
-                open={colorPickerDialogOpen}
-                onOpenChange={setColorPickerDialogOpen}
-                initialColor={fileToColor?.color || "#ffffff"}
-                onColorSelect={(color) => {
-                    if (fileToColor) {
-                        useStore.setState(state => ({
-                            files: state.files.map(f => f.id === fileToColor.id ? { ...f, color, lastModified: Date.now() } : f)
-                        }));
-                    }
-                }}
             />
 
             <DragOverlay>
@@ -677,7 +667,7 @@ interface FileCardProps {
     onToggleSelect: (id: string) => void;
     onRename: (file: AppFile) => void;
     onMove: (file: AppFile) => void;
-    onColor: (file: AppFile) => void;
+    onColorChange: (file: AppFile, color: string) => void;
 }
 
 interface FileCardInnerProps {
@@ -795,7 +785,7 @@ function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, l
     );
 }
 
-function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColor }: FileCardProps) {
+function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
     const Icon = getFileIcon(file.type);
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
@@ -849,13 +839,13 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
                 onRename={() => onRename(file)}
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
-                onColor={() => onColor(file)}
+                onColorChange={(color) => onColorChange(file, color)}
             />
         </ContextMenu>
     );
 }
 
-function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColor }: FileCardProps) {
+function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
@@ -910,7 +900,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
                 onRename={() => onRename(file)}
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
-                onColor={() => onColor(file)}
+                onColorChange={(color) => onColorChange(file, color)}
             />
         </ContextMenu>
     );
@@ -921,10 +911,10 @@ export interface FileContextMenuProps {
     onRename: () => void;
     onMove: () => void;
     onSelect: () => void;
-    onColor: () => void;
+    onColorChange: (color: string) => void;
 }
 
-export function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: FileContextMenuProps) {
+export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChange }: FileContextMenuProps) {
     const handleDelete = () => {
         useStore.setState(state => ({
             files: state.files.map(f => f.id === file.id ? { ...f, deleted: true } : f)
@@ -970,9 +960,19 @@ export function FileContextMenu({ file, onRename, onMove, onSelect, onColor }: F
             <ContextMenuItem onClick={onMove} className="gap-2">
                 <ArrowSquareOut size={16} /> Move to Folder
             </ContextMenuItem>
-            <ContextMenuItem onClick={onColor} className="gap-2">
-                <Palette size={16} /> Change Color
-            </ContextMenuItem>
+            
+            <ContextMenuSub>
+                <ContextMenuSubTrigger className="gap-2">
+                    <Palette size={16} /> Change Color
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-64 p-2">
+                    <ColorPicker
+                        color={file.color || "#ffffff"}
+                        onChange={onColorChange}
+                    />
+                </ContextMenuSubContent>
+            </ContextMenuSub>
+
             <ContextMenuItem onClick={handleDelete} className="gap-2 text-destructive focus:text-destructive">
                 <Trash size={16} /> Trash
             </ContextMenuItem>
