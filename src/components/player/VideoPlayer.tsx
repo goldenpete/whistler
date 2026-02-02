@@ -332,6 +332,17 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         setShowInitialMuteOverlay(false);
     };
 
+    const setQuickVolume = (nextVolume: number) => {
+        if (!fileId) return;
+        setVolume(nextVolume);
+        if (rememberMediaVolume) {
+            setVideoVolumeForFile(fileId, nextVolume);
+        }
+        setIsMuted(false);
+        setVideoUnmutedForFile(fileId, true);
+        setShowInitialMuteOverlay(false);
+    };
+
     const [isCollectionMode, setIsCollectionMode] = useState(false);
 
     const handleTimeUpdate = () => {
@@ -819,10 +830,36 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 />
                             </div>
                             {showInitialMuteOverlay && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                                    <Button size="lg" variant="outline" onClick={handleInitialUnmute} className="bg-black/60 text-white border-white/20 hover:bg-black/70">
-                                        Unmute Video
-                                    </Button>
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]" onClick={(e: MouseEvent) => e.stopPropagation()}>
+                                    <div className="flex flex-col items-center gap-3">
+                                        <Button
+                                            size="lg"
+                                            variant="outline"
+                                            onClick={(e: MouseEvent) => {
+                                                e.stopPropagation();
+                                                handleInitialUnmute();
+                                            }}
+                                            className="bg-black/60 text-white border-white/20 hover:bg-black/70"
+                                        >
+                                            Unmute Video
+                                        </Button>
+                                        <div className="flex flex-wrap items-center justify-center gap-2">
+                                            {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((val) => (
+                                                <Button
+                                                    key={val}
+                                                    size="xs"
+                                                    variant="secondary"
+                                                    onClick={(e: MouseEvent) => {
+                                                        e.stopPropagation();
+                                                        setQuickVolume(val);
+                                                    }}
+                                                    className="bg-black/40 text-white hover:bg-black/60"
+                                                >
+                                                    {Math.round(val * 100)}%
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
