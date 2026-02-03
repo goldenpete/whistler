@@ -1623,21 +1623,30 @@ export default function ProjectSidebar() {
                                     </button>
                                 )}
 
-                                <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col space-y-1")}>
-                                    <button
-                                        onClick={() => setSidebarView('history')}
-                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                        title="History"
-                                    >
-                                        <ClockCounterClockwise weight="bold" size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => setSidebarView('trash')}
-                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
-                                        title="Trash"
-                                    >
-                                        <Trash weight="bold" size={18} />
-                                    </button>
+                                <div className={cn("flex gap-1 items-center", (isSidebarCollapsed || isSlim) && "flex-col space-y-1 items-stretch")}>
+                                    <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col space-y-1")}>
+                                        <button
+                                            onClick={() => setSidebarView('history')}
+                                            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                                            title="History"
+                                        >
+                                            <ClockCounterClockwise weight="bold" size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => setSidebarView('trash')}
+                                            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
+                                            title="Trash"
+                                        >
+                                            <Trash weight="bold" size={18} />
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Separator */}
+                                    <div className={cn(
+                                        "bg-border/40", 
+                                        (isSidebarCollapsed || isSlim) ? "h-px w-4 mx-auto my-1" : "w-px h-4 mx-1"
+                                    )} />
+
                                     <button
                                         onClick={() => navigate('/settings')}
                                         className={cn(

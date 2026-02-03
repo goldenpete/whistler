@@ -7,7 +7,7 @@ declare global {
     }
 }
 
-interface YouTubeEmbedProps {
+interface YouTubePlayerProps {
     url: string;
     className?: string;
     onTimeUpdate?: (currentTime: number) => void;
@@ -36,7 +36,7 @@ function getYouTubeId(url: string) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-export const YouTubeEmbed = forwardRef<YouTubePlayerHandle, YouTubeEmbedProps>(({ 
+export const YouTubePlayerComponent = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(({ 
     url, 
     className,
     onTimeUpdate,
@@ -83,6 +83,8 @@ export const YouTubeEmbed = forwardRef<YouTubePlayerHandle, YouTubeEmbedProps>((
         }
 
         const playerDiv = document.createElement('div');
+        playerDiv.style.width = '100%';
+        playerDiv.style.height = '100%';
         containerRef.current.appendChild(playerDiv);
 
         playerRef.current = new window.YT.Player(playerDiv, {

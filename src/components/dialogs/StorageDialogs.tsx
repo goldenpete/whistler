@@ -300,15 +300,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                                         rel="noreferrer noopener"
                                         className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
                                     >
-                                        litterbox.catbox.moe
-                                    </a>
-                                    <a
-                                        href="https://uguu.se/"
-                                        target="_blank"
-                                        rel="noreferrer noopener"
-                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
-                                    >
-                                        uguu.se
+                                        litterbox
                                     </a>
                                 </div>
                             </div>
@@ -317,9 +309,14 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                                     Other Options
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    <div className="text-[11px] text-muted-foreground py-1">
-                                        YouTube links are supported.
-                                    </div>
+                                    <a
+                                        href="https://youtube.com/"
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
+                                    >
+                                        YouTube
+                                    </a>
                                 </div>
                             </div>
                         </div>

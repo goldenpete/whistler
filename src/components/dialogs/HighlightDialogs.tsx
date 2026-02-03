@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
 import { ImagePlayer } from "@/components/player/ImagePlayer";
 import { AudioPlayer } from "@/components/player/AudioPlayer";
-import { YouTubeEmbed, type YouTubePlayerHandle } from "@/components/player/YouTubeEmbed";
+import { YouTubePlayerComponent, type YouTubePlayerHandle } from "@/components/player/YouTubePlayer";
 
 // --- Time Helper ---
 
@@ -532,22 +532,22 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
                             >
                                 {isYouTube ? (
-                                    <YouTubeEmbed
-                                        ref={youtubeRef}
-                                        url={file.url || ""}
-                                        className="w-full h-full"
-                                        onTimeUpdate={(t) => handleTimeUpdate(t)}
-                                        onPlay={() => {
-                                            setIsPlaying(true);
-                                            addAmbientMusicSuppression('highlight-player');
-                                        }}
-                                        onPause={() => {
-                                            setIsPlaying(false);
-                                            removeAmbientMusicSuppression('highlight-player');
-                                        }}
-                                        initialTime={start}
-                                    />
-                                ) : (
+                                        <YouTubePlayerComponent
+                                            ref={youtubeRef}
+                                            url={file.url || ""}
+                                            className="w-full h-full"
+                                            onTimeUpdate={(t) => handleTimeUpdate(t)}
+                                            onPlay={() => {
+                                                setIsPlaying(true);
+                                                addAmbientMusicSuppression('highlight-player');
+                                            }}
+                                            onPause={() => {
+                                                setIsPlaying(false);
+                                                removeAmbientMusicSuppression('highlight-player');
+                                            }}
+                                            initialTime={start}
+                                        />
+                                    ) : (
                                     <video
                                         ref={videoRef}
                                         // eslint-disable-next-line @typescript-eslint/no-explicit-any

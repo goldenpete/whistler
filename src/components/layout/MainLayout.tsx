@@ -68,28 +68,30 @@ export function MainLayout() {
             if (!ambientMusicUrl) {
                 needsRestore = true;
             } else if (ambientMusicUrl.startsWith('blob:')) {
-                try {
-                    // Check if the blob URL is valid
-                    const res = await fetch(ambientMusicUrl);
-                    if (!res.ok) needsRestore = true;
-                } catch {
-                    needsRestore = true;
-                }
+                // Always restore blob URLs on mount to ensure freshness
+                needsRestore = true;
             }
 
             if (needsRestore) {
                 try {
                     const blob = await ambientMusicStorage.load();
                     if (blob) {
+                        // Revoke old URL if it exists to prevent memory leaks
+                        if (ambientMusicUrl && ambientMusicUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(ambientMusicUrl);
+                        }
                         const url = URL.createObjectURL(blob);
                         // Restore with preserved name
                         setAmbientMusicUrl(url, ambientMusicName);
                     } else {
-                        // Data missing
+                        // Data missing - Clear state to prevent "ghost" music
                         setAmbientMusicStorageKey(null);
+                        setAmbientMusicUrl(null, null);
                     }
                 } catch (err) {
                     console.error("Failed to restore ambient music:", err);
+                    setAmbientMusicStorageKey(null);
+                    setAmbientMusicUrl(null, null);
                 }
             }
         };

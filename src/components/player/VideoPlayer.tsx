@@ -60,7 +60,7 @@ import type { ImagePlayerHandle } from './ImagePlayer';
 import type { Highlight, File as AppFile, Collection } from "@/types";
 import { AudioPlayer } from './AudioPlayer';
 import { SeekPreview } from './SeekPreview';
-import { YouTubeEmbed, type YouTubePlayerHandle } from './YouTubeEmbed';
+import { YouTubePlayerComponent, type YouTubePlayerHandle } from '@/components/player/YouTubePlayer';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
@@ -878,13 +878,13 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                         />
                     </div>
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
+                        <div className="w-full h-full flex items-center justify-center overflow-hidden">
                             <div
-                                    className="flex items-center justify-center w-full h-full"
+                                    className={cn(isYouTube ? "w-full h-full" : "flex items-center justify-center w-full h-full")}
                                     style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
                                 >
                                     {isYouTube ? (
-                                        <YouTubeEmbed
+                                        <YouTubePlayerComponent
                                             ref={youtubeRef}
                                             url={file.url || ""}
                                             className="w-full h-full"
