@@ -1,24 +1,23 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useStore } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { 
     SpeakerHigh, 
     Palette, 
-    Wrench, 
     CheckCircle, 
     ArrowCounterClockwise, 
     UploadSimple,
     Trash,
-    Desktop,
-    Browsers,
-    AppWindow,
+    Monitor,
+    Globe,
+    Sidebar,
     Layout,
     MusicNotes,
-    Cursor,
+    Mouse,
     Check,
     X,
     MagnifyingGlass,
-    ArrowLeft,
+    CaretLeft,
     SidebarSimple,
     FilmStrip,
     Cloud,
@@ -27,7 +26,8 @@ import {
     FileText,
     Graph,
     HardDrives,
-    PencilSimple
+    PencilSimple,
+    Gear
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -82,6 +82,7 @@ export default function SettingsView() {
         setAmbientMusicUrl,
         ambientMusicUrl,
         setAmbientMusicVolume,
+        ambientMusicVolume,
         ambientMusicName,
         ambientMusicPaused,
         setAmbientMusicPaused,
@@ -195,55 +196,66 @@ export default function SettingsView() {
                     <p className="text-sm text-muted-foreground mt-1">Manage your workspace preferences.</p>
                 </div>
                 
-                <nav className="flex-1 px-4 py-2 space-y-1">
-                    <button
-                        onClick={() => setActiveTab('appearance')}
-                        className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                            activeTab === 'appearance' 
-                                ? "bg-primary/10 text-primary" 
-                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                        )}
-                    >
-                        <Palette size={18} weight={activeTab === 'appearance' ? "fill" : "regular"} />
-                        Appearance
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('sync')}
-                        className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                            activeTab === 'sync' 
-                                ? "bg-primary/10 text-primary" 
-                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                        )}
-                    >
-                        <Cloud size={18} weight={activeTab === 'sync' ? "fill" : "regular"} />
-                        Sync & Backup
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('music')}
-                        className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                            activeTab === 'music' 
-                                ? "bg-primary/10 text-primary" 
-                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                        )}
-                    >
-                        <SpeakerHigh size={18} weight={activeTab === 'music' ? "fill" : "regular"} />
-                        Audio & Media
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('system')}
-                        className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                            activeTab === 'system' 
-                                ? "bg-primary/10 text-primary" 
-                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                        )}
-                    >
-                        <Wrench size={18} weight={activeTab === 'system' ? "fill" : "regular"} />
-                        System
-                    </button>
+                <nav className="flex-1 px-4 py-2 space-y-6">
+                    <div>
+                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Preferences</h3>
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => setActiveTab('appearance')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'appearance' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Palette size={18} weight={activeTab === 'appearance' ? "fill" : "regular"} />
+                                Appearance
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('music')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'music' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <SpeakerHigh size={18} weight={activeTab === 'music' ? "fill" : "regular"} />
+                                Audio & Media
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Data & Account</h3>
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => setActiveTab('sync')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'sync' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Cloud size={18} weight={activeTab === 'sync' ? "fill" : "regular"} />
+                                Sync & Backup
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('system')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'system' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Gear size={18} weight={activeTab === 'system' ? "fill" : "regular"} />
+                                System
+                            </button>
+                        </div>
+                    </div>
                 </nav>
             </div>
 
@@ -404,11 +416,11 @@ export default function SettingsView() {
 
                             <div>
                                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Desktop className="text-primary" size={24} />
+                                    <Monitor className="text-primary" size={24} />
                                     Background
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-6 p-5 rounded-lg border border-border bg-card/50">
+                                    <div className="space-y-6 p-5 rounded-lg border border-border bg-card/50 h-fit">
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <label className="text-sm font-medium">Color Overlay</label>
@@ -419,7 +431,7 @@ export default function SettingsView() {
                                                 min={0}
                                                 max={1}
                                                 step={0.01}
-                                                onValueChange={([v]) => setBackgroundOverlayOpacity(v)}
+                                                onValueChange={([v]: number[]) => setBackgroundOverlayOpacity(v)}
                                             />
                                         </div>
 
@@ -433,49 +445,76 @@ export default function SettingsView() {
                                                 min={0}
                                                 max={1}
                                                 step={0.01}
-                                                onValueChange={([v]) => setBackgroundImageOpacity(v)}
+                                                onValueChange={([v]: number[]) => setBackgroundImageOpacity(v)}
+                                            />
+                                        </div>
+
+                                        <div className="pt-4 border-t border-border/40">
+                                            {backgroundImageUrl ? (
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-sm text-muted-foreground">Image set</div>
+                                                    <div className="flex gap-2">
+                                                        <Button variant="outline" size="sm" onClick={() => document.getElementById('bg-upload')?.click()}>
+                                                            Change
+                                                        </Button>
+                                                        <Button variant="destructive" size="sm" onClick={() => setBackgroundImageUrl(null)}>
+                                                            Remove
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-muted-foreground">No background image set</span>
+                                                    <Button variant="outline" size="sm" onClick={() => document.getElementById('bg-upload')?.click()}>
+                                                        <UploadSimple className="mr-2" />
+                                                        Upload Image
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            <input
+                                                id="bg-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleImageUpload}
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="relative group rounded-lg border border-border bg-black/40 overflow-hidden aspect-video flex items-center justify-center">
-                                        {backgroundImageUrl ? (
-                                            <>
-                                                <img 
-                                                    src={backgroundImageUrl} 
-                                                    alt="Background preview" 
-                                                    className="absolute inset-0 w-full h-full object-cover"
-                                                    style={{ opacity: backgroundImageOpacity }}
-                                                />
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Preview</label>
+                                        <div className="relative rounded-lg border border-border overflow-hidden aspect-video shadow-lg bg-background">
+                                            {/* Preview Logic */}
+                                            {backgroundImageUrl && (
                                                 <div 
-                                                    className="absolute inset-0 bg-background"
-                                                    style={{ opacity: 1 - backgroundOverlayOpacity }}
+                                                    className="absolute inset-0 bg-cover bg-center"
+                                                    style={{ 
+                                                        backgroundImage: `url(${backgroundImageUrl})`,
+                                                        opacity: backgroundImageOpacity
+                                                    }}
                                                 />
-                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                    <Button variant="secondary" size="sm" onClick={() => document.getElementById('bg-upload')?.click()}>
-                                                        Change
-                                                    </Button>
-                                                    <Button variant="destructive" size="sm" onClick={() => setBackgroundImageUrl(null)}>
-                                                        Remove
-                                                    </Button>
+                                            )}
+                                            <div 
+                                                className="absolute inset-0 bg-background"
+                                                style={{ opacity: 1 - backgroundOverlayOpacity }}
+                                            />
+                                            
+                                            {/* Mock Content */}
+                                            <div className="absolute inset-0 flex items-center justify-center p-6">
+                                                <div className="w-3/4 h-3/4 rounded-lg border border-border bg-card/80 backdrop-blur-sm shadow-xl flex flex-col">
+                                                    <div className="h-8 border-b border-border flex items-center px-3 gap-2">
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                                                    </div>
+                                                    <div className="flex-1 p-4 space-y-3">
+                                                        <div className="h-2 w-1/3 bg-muted rounded" />
+                                                        <div className="h-2 w-2/3 bg-muted rounded" />
+                                                        <div className="h-2 w-1/2 bg-muted rounded" />
+                                                    </div>
                                                 </div>
-                                            </>
-                                        ) : (
-                                            <div className="text-center p-6">
-                                                <p className="text-sm text-muted-foreground mb-4">No background image set</p>
-                                                <Button variant="outline" onClick={() => document.getElementById('bg-upload')?.click()}>
-                                                    <UploadSimple className="mr-2" />
-                                                    Upload Image
-                                                </Button>
                                             </div>
-                                        )}
-                                        <input
-                                            id="bg-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleImageUpload}
-                                        />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -536,7 +575,7 @@ export default function SettingsView() {
                                                 min={0}
                                                 max={1}
                                                 step={0.01}
-                                                onValueChange={([v]) => setAmbientMusicVolume(v)}
+                                                onValueChange={([v]: number[]) => setAmbientMusicVolume(v)}
                                             />
                                         </div>
                                     )}

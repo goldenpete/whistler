@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import React, { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
@@ -386,7 +386,7 @@ export function SettingsSync() {
         setIsEditingName(true);
     };
 
-    const handleSaveName = () => {
+    const handleSaveName = async () => {
         if (!user) return;
         const newName = editName.trim();
         updateUser({ email: newName || user.id });
@@ -397,6 +397,26 @@ export function SettingsSync() {
             localStorage.removeItem("whistler_display_name");
         }
         setIsEditingName(false);
+
+        // Update on server
+        if (sessionToken) {
+            try {
+                const response = await fetch(`${SYNC_API_URL}/user/name`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${sessionToken}`,
+                    },
+                    body: JSON.stringify({ display_name: newName }),
+                });
+
+                if (response.status === 401) {
+                    handleLogout();
+                }
+            } catch (err) {
+                console.error("Failed to update name on server:", err);
+            }
+        }
     };
 
     // 2FA Setup Handlers
@@ -535,7 +555,7 @@ export function SettingsSync() {
                                     inputMode="numeric"
                                     maxLength={6}
                                     value={totpCode}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                     autoComplete="one-time-code"
                                     className="h-12 text-center tracking-[0.5em] text-xl font-mono"
                                     placeholder="000000"
@@ -580,7 +600,7 @@ export function SettingsSync() {
                                     <label className="text-xs font-medium uppercase text-muted-foreground">Sync ID</label>
                                     <Input 
                                         value={syncId}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                             const val = e.target.value.replace(/[^0-9]/g, "");
                                             if (val.length <= 16) setSyncId(formatAccountId(val));
                                         }}
@@ -640,7 +660,7 @@ export function SettingsSync() {
                                         <div className="flex items-center gap-2">
                                             <Input 
                                                 value={editName}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)}
+                                                onChange={(e: ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)}
                                                 className="h-7 w-48"
                                                 autoFocus
                                             />
@@ -736,7 +756,7 @@ export function SettingsSync() {
                                             <div className="flex gap-2">
                                                 <Input 
                                                     value={totpCode}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                                     placeholder="000000"
                                                     maxLength={6}
                                                     className="w-32 font-mono text-center tracking-widest"
@@ -761,7 +781,7 @@ export function SettingsSync() {
                              <div className="flex gap-2 items-center">
                                 <Input 
                                     value={totpCode}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                     placeholder="000000"
                                     maxLength={6}
                                     className="w-32 font-mono text-center tracking-widest"
@@ -797,14 +817,26 @@ export function SettingsSync() {
                             <div className="pt-2 space-y-3">
                                 <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>Interval</span>
-                                    <span>{autoSyncInterval / 1000}s</span>
+                                    <span>
+                                        {autoSyncInterval <= 60000 
+                                            ? `${Math.round(autoSyncInterval / 1000)}s` 
+                                            : `${Math.round(autoSyncInterval / 60000)}m`}
+                                    </span>
                                 </div>
                                 <Slider
-                                    value={[autoSyncInterval]}
-                                    onValueChange={(vals: number[]) => setAutoSyncInterval(vals[0])}
-                                    min={5000}
-                                    max={60000}
-                                    step={1000}
+                                    value={[
+                                        autoSyncInterval <= 60000 
+                                            ? autoSyncInterval / 1000 
+                                            : (autoSyncInterval / 60000) + 59
+                                    ]}
+                                    onValueChange={(vals: number[]) => {
+                                        const v = vals[0];
+                                        const ms = v <= 60 ? v * 1000 : (v - 59) * 60000;
+                                        setAutoSyncInterval(ms);
+                                    }}
+                                    min={1}
+                                    max={119}
+                                    step={1}
                                 />
                             </div>
                         )}

@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, type ChangeEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate } from "react-router-dom";
 import {
     MagnifyingGlass,
-    SortAscending,
-    SortDescending,
+    CaretUp,
+    CaretDown,
     CheckSquare,
     Square,
     Trash,
@@ -193,7 +193,7 @@ export default function CollectionsView() {
 
     const handleBulkDelete = () => {
         // Implement bulk delete
-        selectedIds.forEach(id => deleteCollection(id));
+        selectedIds.forEach(id => trashCollection(id));
         setSelectedIds(new Set());
         setSelectionMode(false);
     };
@@ -222,7 +222,7 @@ export default function CollectionsView() {
                         <Input 
                             placeholder="Search collections..." 
                             value={searchQuery}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                             className="pl-8 h-9"
                         />
                     </div>
@@ -230,7 +230,7 @@ export default function CollectionsView() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-9 gap-2">
-                                {sortDirection === "asc" ? <SortAscending /> : <SortDescending />}
+                                {sortDirection === "asc" ? <CaretUp /> : <CaretDown />}
                                 Sort
                             </Button>
                         </DropdownMenuTrigger>

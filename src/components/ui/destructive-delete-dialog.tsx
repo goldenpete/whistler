@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, type ChangeEvent, type SyntheticEvent } from "react";
 import {
     Dialog,
     DialogContent,
@@ -69,8 +69,8 @@ export function DestructiveDeleteDialog({
                         </label>
                         <Input
                             value={confirmText}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmText(e.target.value)}
-                            onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => e.preventDefault()}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setConfirmText(e.target.value)}
+                            onPaste={(e: SyntheticEvent<HTMLInputElement>) => e.preventDefault()}
                             placeholder="Type the confirmation phrase..."
                             className="font-mono text-xs"
                         />
