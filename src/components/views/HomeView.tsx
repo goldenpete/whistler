@@ -56,6 +56,7 @@ import type { QuickAccessType } from "@/components/dialogs/QuickAccessDialog";
 import { FileContextMenu } from "@/components/views/StorageView";
 import { Copy, Trash, ArrowSquareOut, PencilSimple, Lightning } from "@phosphor-icons/react";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
+import { getYouTubeId } from "@/components/player/YouTubePlayer";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
     orange: whistlerLogoOrange,
@@ -90,8 +91,11 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { url: string, start?: number, overrideMiddleFrame?: boolean }) => {
     const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const youtubeId = getYouTubeId(url);
 
     useEffect(() => {
+        if (youtubeId) return;
+
         const video = videoRef.current;
         if (!video) return;
 
@@ -116,7 +120,20 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
             };
             video.addEventListener('loadedmetadata', onLoadedMetadata);
         }
-    }, [useMiddleFrameForPreviews, start, overrideMiddleFrame]);
+    }, [useMiddleFrameForPreviews, start, overrideMiddleFrame, youtubeId]);
+
+    if (youtubeId) {
+        return (
+            <div className="absolute inset-0 bg-black/20">
+                <img
+                    src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
+                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    alt="YouTube Preview"
+                    onContextMenu={(e: any) => e.preventDefault()}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="absolute inset-0 bg-black/20">
