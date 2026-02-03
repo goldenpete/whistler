@@ -655,10 +655,10 @@ export default function SettingsView() {
                                     {sfxEnabled && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border/40">
                                             {[
-                                                { id: 'cursor', label: 'Cursor', icon: Cursor },
+                                                { id: 'cursor', label: 'Cursor', icon: Mouse },
                                                 { id: 'confirm', label: 'Confirm', icon: Check },
                                                 { id: 'error', label: 'Error', icon: X },
-                                                { id: 'back', label: 'Back', icon: ArrowLeft },
+                                                { id: 'back', label: 'Back', icon: CaretLeft },
                                                 { id: 'search', label: 'Search', icon: MagnifyingGlass },
                                             ].map((sound) => (
                                                 <div key={sound.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
