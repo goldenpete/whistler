@@ -67,6 +67,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const isPdf = file?.name.toLowerCase().endsWith('.pdf');
     const isImage = file?.type === 'image';
     const isAudio = file?.type === 'audio';
+    const isYouTube = file?.url?.includes('youtube.com') || file?.url?.includes('youtu.be');
     const isVideo = !isPdf && !isImage && !isAudio;
     
     // State
@@ -304,8 +305,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     };
 
     const togglePip = () => {
-        if (file && videoRef.current) {
-            setFileProgress(file.id, videoRef.current.currentTime);
+        if (file) {
+            const time = isYouTube ? youtubeRef.current?.currentTime : videoRef.current?.currentTime;
+            if (time !== undefined) {
+                setFileProgress(file.id, time);
+            }
             setPipFile(file.id);
             onOpenChange(false);
         }
@@ -491,25 +495,43 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     ) : (
                         <div className="w-full h-full flex items-center justify-center overflow-hidden">
                             <div
-                                className="flex items-center justify-center"
+                                className={cn("flex items-center justify-center", isYouTube ? "w-full h-full" : "")}
                                 style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
                             >
-                                <video
-                                    ref={videoRef}
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                    src={(file as any).webkitRelativePath || (file as any).url || ""}
-                                    className="max-w-full max-h-full object-contain focus:outline-none"
-                                    onPause={() => {
-                                        setIsPlaying(false);
-                                        removeAmbientMusicSuppression('highlight-player');
-                                    }}
-                                    onPlay={() => {
-                                        setIsPlaying(true);
-                                        addAmbientMusicSuppression('highlight-player');
-                                    }}
-                                    onTimeUpdate={handleTimeUpdate}
-                                    autoPlay
-                                />
+                                {isYouTube ? (
+                                    <YouTubeEmbed
+                                        ref={youtubeRef}
+                                        url={file.url || ""}
+                                        className="w-full h-full"
+                                        onTimeUpdate={(t) => handleTimeUpdate(t)}
+                                        onPlay={() => {
+                                            setIsPlaying(true);
+                                            addAmbientMusicSuppression('highlight-player');
+                                        }}
+                                        onPause={() => {
+                                            setIsPlaying(false);
+                                            removeAmbientMusicSuppression('highlight-player');
+                                        }}
+                                        initialTime={start}
+                                    />
+                                ) : (
+                                    <video
+                                        ref={videoRef}
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                        src={(file as any).webkitRelativePath || (file as any).url || ""}
+                                        className="max-w-full max-h-full object-contain focus:outline-none"
+                                        onPause={() => {
+                                            setIsPlaying(false);
+                                            removeAmbientMusicSuppression('highlight-player');
+                                        }}
+                                        onPlay={() => {
+                                            setIsPlaying(true);
+                                            addAmbientMusicSuppression('highlight-player');
+                                        }}
+                                        onTimeUpdate={() => handleTimeUpdate()}
+                                        autoPlay
+                                    />
+                                )}
                             </div>
                         </div>
                     )}

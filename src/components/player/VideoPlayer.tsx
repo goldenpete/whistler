@@ -60,6 +60,7 @@ import type { ImagePlayerHandle } from './ImagePlayer';
 import type { Highlight, File as AppFile, Collection } from "@/types";
 import { AudioPlayer } from './AudioPlayer';
 import { SeekPreview } from './SeekPreview';
+import { YouTubeEmbed, type YouTubePlayerHandle } from './YouTubeEmbed';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
@@ -142,6 +143,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         setVideoUnmutedForFile
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
+    const youtubeRef = useRef<YouTubePlayerHandle>(null);
+    const isYouTube = fileId ? (files.find(f => f.id === fileId)?.url?.includes('youtube.com') || files.find(f => f.id === fileId)?.url?.includes('youtu.be')) : false;
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const imageRef = useRef<ImagePlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -246,14 +249,18 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     }, [activeHighlightId]);
 
     useEffect(() => {
-        if (activeHighlightForFile && videoRef.current) {
-            videoRef.current.pause();
+        if (activeHighlightForFile) {
+            if (videoRef.current) videoRef.current.pause();
+            if (youtubeRef.current) youtubeRef.current.pause();
         }
     }, [activeHighlightForFile]);
 
     useEffect(() => {
         if (videoRef.current) {
             videoRef.current.playbackRate = playbackRate;
+        }
+        if (youtubeRef.current) {
+            youtubeRef.current.playbackRate = playbackRate;
         }
     }, [playbackRate]);
 
@@ -269,15 +276,14 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 ? videoVolumeByFile[fileId]
                 : 1;
             setVolume(initialVolume);
-            if (videoRef.current) {
-                videoRef.current.volume = initialVolume;
-            }
+            if (videoRef.current) videoRef.current.volume = initialVolume;
+            if (youtubeRef.current) youtubeRef.current.volume = initialVolume;
+            
             const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && !videoUnmutedByFile[fileId];
             setIsMuted(shouldMuteForFirstOpen);
             setShowInitialMuteOverlay(shouldMuteForFirstOpen);
-            if (videoRef.current) {
-                videoRef.current.muted = shouldMuteForFirstOpen;
-            }
+            if (videoRef.current) videoRef.current.muted = shouldMuteForFirstOpen;
+            if (youtubeRef.current) youtubeRef.current.muted = shouldMuteForFirstOpen;
         }
     }, [file, fileId, rememberMediaVolume, videoVolumeByFile, muteNewVideosUntilUnmuted, videoUnmutedByFile]);
 
@@ -285,6 +291,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         if (videoRef.current) {
             videoRef.current.volume = volume;
             videoRef.current.muted = isMuted;
+        }
+        if (youtubeRef.current) {
+            youtubeRef.current.volume = volume;
+            youtubeRef.current.muted = isMuted;
         }
     }, [volume, isMuted]);
 
@@ -294,6 +304,15 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const togglePlay = () => {
         if (!isMediaFile) return;
+
+        if (isYouTube && youtubeRef.current) {
+            if (youtubeRef.current.paused) {
+                youtubeRef.current.play();
+            } else {
+                youtubeRef.current.pause();
+            }
+            return;
+        }
 
         if (videoRef.current) {
             if (videoRef.current.paused) {
@@ -370,44 +389,62 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const [isCollectionMode, setIsCollectionMode] = useState(false);
 
-    const handleTimeUpdate = () => {
-        if (videoRef.current) {
-            const time = videoRef.current.currentTime;
-            setCurrentTime(time);
+    const handleTimeUpdate = (overrideTime?: number) => {
+        let time = 0;
+        if (typeof overrideTime === 'number') {
+            time = overrideTime;
+        } else if (videoRef.current) {
+            time = videoRef.current.currentTime;
+        } else {
+            return;
+        }
 
-            // Collection Mode Logic
-            if (isCollectionMode && isPlaying) {
-                const relevantHighlights = activeCollectionId
-                    ? fileHighlights.filter((t: Highlight) => t.collectionId === activeCollectionId)
-                    : fileHighlights;
+        setCurrentTime(time);
 
-                if (relevantHighlights.length > 0) {
-                    const sorted = [...relevantHighlights].sort((a: Highlight, b: Highlight) => a.start - b.start);
+        // Collection Mode Logic
+        if (isCollectionMode && isPlaying) {
+            const relevantHighlights = activeCollectionId
+                ? fileHighlights.filter((t: Highlight) => t.collectionId === activeCollectionId)
+                : fileHighlights;
 
-                    // Check if we are inside a segment
-                    const currentSegment = sorted.find((t: Highlight) => time >= t.start && time <= (t.end || t.start + 5));
+            if (relevantHighlights.length > 0) {
+                const sorted = [...relevantHighlights].sort((a: Highlight, b: Highlight) => a.start - b.start);
 
-                    if (!currentSegment) {
-                        // Not in a segment, find next one
-                        const nextSegment = sorted.find((t: Highlight) => t.start > time);
-                        if (nextSegment) {
+                // Check if we are inside a segment
+                const currentSegment = sorted.find((t: Highlight) => time >= t.start && time <= (t.end || t.start + 5));
+
+                if (!currentSegment) {
+                    // Not in a segment, find next one
+                    const nextSegment = sorted.find((t: Highlight) => t.start > time);
+                    if (nextSegment) {
+                        if (isYouTube && youtubeRef.current) {
+                            youtubeRef.current.currentTime = nextSegment.start;
+                        } else if (videoRef.current) {
                             videoRef.current.currentTime = nextSegment.start;
-                        } else {
-                            // End of all segments
-                            if (isLooping) {
+                        }
+                    } else {
+                        // End of all segments
+                        if (isLooping) {
+                            if (isYouTube && youtubeRef.current) {
+                                youtubeRef.current.currentTime = sorted[0].start;
+                            } else if (videoRef.current) {
                                 videoRef.current.currentTime = sorted[0].start;
-                            } else {
+                            }
+                        } else {
+                            if (isYouTube && youtubeRef.current) {
+                                youtubeRef.current.pause();
+                            } else if (videoRef.current) {
                                 videoRef.current.pause();
                             }
                         }
                     }
                 }
             }
+        }
 
-            // Save progress every 2 seconds roughly
-            if (file && Math.abs(time - (fileProgress[file.id] || 0)) > 2) {
-                setFileProgress(file.id, time);
-            }
+        // Save progress every 2 seconds roughly
+        if (file && Math.abs(time - (fileProgress[file.id] || 0)) > 2) {
+            setFileProgress(file.id, time);
         }
     };
 
@@ -521,6 +558,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const seekToHighlight = (highlight: Highlight) => {
         if (file?.type === 'pdf') {
             pdfRef.current?.jumpToPage(highlight.start);
+        } else if (isYouTube && youtubeRef.current) {
+            youtubeRef.current.currentTime = highlight.start;
+            youtubeRef.current.play();
         } else if (videoRef.current) {
             videoRef.current.currentTime = highlight.start;
             videoRef.current.play();
@@ -531,6 +571,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const handleSeek = (value: number[]) => {
         const time = value[0];
+        if (isYouTube && youtubeRef.current) {
+            youtubeRef.current.currentTime = time;
+            setCurrentTime(time);
+            return;
+        }
         if (videoRef.current) {
             videoRef.current.currentTime = time;
             // Immediate update to UI state to prevent jumping
@@ -540,8 +585,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const handleTogglePip = () => {
         if (file) {
-            if (videoRef.current) {
-                setFileProgress(file.id, videoRef.current.currentTime);
+            const currentTime = isYouTube ? youtubeRef.current?.currentTime : videoRef.current?.currentTime;
+            if (currentTime !== undefined) {
+                setFileProgress(file.id, currentTime);
             }
             setPipFile(file.id);
             navigate(-1);
@@ -837,6 +883,27 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 className="flex items-center justify-center"
                                 style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
                             >
+                                {isYouTube ? (
+                                    <YouTubeEmbed
+                                        ref={youtubeRef}
+                                        url={file.url || ""}
+                                        className="w-full h-full aspect-video"
+                                        onTimeUpdate={(t: number) => handleTimeUpdate(t)}
+                                        onDurationChange={(d: number) => setDuration(d)}
+                                        onEnded={() => setIsPlaying(false)}
+                                        onPlay={() => {
+                                            setIsPlaying(true);
+                                            setIsLoading(false);
+                                            addAmbientMusicSuppression('main-player');
+                                        }}
+                                        onPause={() => {
+                                            setIsPlaying(false);
+                                            removeAmbientMusicSuppression('main-player');
+                                        }}
+                                        onClick={togglePlay}
+                                        initialTime={fileProgress[file.id] || 0}
+                                    />
+                                ) : (
                                 <video
                                     ref={videoRef}
                                     src={file.url || ""}
@@ -857,6 +924,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     onLoadedMetadata={handleLoadedMetadata}
                                     loop={isLooping}
                                 />
+                                )}
                             </div>
                             {showInitialMuteOverlay && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]" onClick={(e: MouseEvent) => e.stopPropagation()}>

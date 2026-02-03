@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
 import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
@@ -77,6 +77,7 @@ function getGreeting(username: string) {
 
 function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image' {
     const lower = url.toLowerCase();
+    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'video';
     if (/\.(mp4|webm|mov|avi|mkv|m4v)(\?|$)/.test(lower)) return 'video';
     if (/\.(mp3|wav|ogg|flac|m4a)(\?|$)/.test(lower)) return 'audio';
     if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/.test(lower)) return 'image';
@@ -126,8 +127,8 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                 muted
                 loop
                 playsInline
-                onMouseOver={(e) => e.currentTarget.play()}
-                onMouseOut={(e) => {
+                onMouseOver={(e: MouseEvent<HTMLVideoElement>) => e.currentTarget.play()}
+                onMouseOut={(e: MouseEvent<HTMLVideoElement>) => {
                     const video = e.currentTarget;
                     video.pause();
                     if (!overrideMiddleFrame && useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
@@ -136,8 +137,8 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                         video.currentTime = start;
                     }
                 }}
-                onContextMenu={(e) => e.preventDefault()}
-                onLoadedMetadata={(e) => {
+                onContextMenu={(e: MouseEvent<HTMLVideoElement>) => e.preventDefault()}
+                onLoadedMetadata={(e: SyntheticEvent<HTMLVideoElement>) => {
                     const video = e.currentTarget;
                     if (!overrideMiddleFrame && useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
                         video.currentTime = video.duration / 2;

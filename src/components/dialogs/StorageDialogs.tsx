@@ -312,6 +312,16 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                                     </a>
                                 </div>
                             </div>
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Other Options
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <div className="text-[11px] text-muted-foreground py-1">
+                                        YouTube links are supported.
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <p className="text-[11px]">
                             Discord file links also work here. Any direct video, image, or PDF URL from the web can be imported.
