@@ -427,7 +427,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             onClose();
             return;
         }
-        navigate(-1);
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate("/");
+        }
     };
 
     const handleToggleWindowed = () => {
@@ -657,7 +661,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     onUpdate={(updates) => updateHighlight(activeHighlightForFile.id, updates)}
                     inline
                     onRequestMinimize={handleMinimize}
-                    onRequestClose={() => setActiveHighlight(null)}
+                    onRequestClose={handleClose}
                     onSelectHighlight={setActiveHighlight}
                     isDraggable={isWindowed}
                     onDragHandlePointerDown={handleDragStart}

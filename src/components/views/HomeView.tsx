@@ -635,6 +635,7 @@ export default function HomeView() {
                 break;
             case 'highlight':
                 if (item.data.file) {
+                    useStore.getState().setActiveHighlight(item.id);
                     useStore.getState().setActiveFile(item.data.file.id);
                     navigate(`/file/${item.data.file.id}`);
                 }
