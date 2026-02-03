@@ -23,13 +23,22 @@ import {
     ArrowsClockwise,
     File,
     Folder,
-    Highlighter,
     FileText,
     Graph,
     HardDrives,
-    Gear
+    Gear,
+    Trash
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose
+} from "@/components/ui/dialog";
 
 declare global {
     interface Window {
@@ -98,6 +107,60 @@ export function SettingsSync() {
 
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState("");
+
+    // Remote Deletion State
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<{id: string, label: string} | null>(null);
+    const [isDeletingRemote, setIsDeletingRemote] = useState(false);
+
+    const handleDeleteRemote = async () => {
+        if (!itemToDelete || !sessionToken) return;
+        setIsDeletingRemote(true);
+        try {
+            // 1. Fetch current data
+            const getResponse = await fetch(`${SYNC_API_URL}/data`, {
+                headers: { Authorization: `Bearer ${sessionToken}` }
+            });
+            
+            if (!getResponse.ok) throw new Error("Failed to fetch current sync data");
+            
+            const json = await getResponse.json();
+            const currentData = json.value || {};
+            
+            // 2. Remove the key
+            delete currentData[itemToDelete.id];
+            
+            // Handle dependent keys
+            if (itemToDelete.id === 'graphs') {
+                delete currentData.graphNodes;
+                delete currentData.graphEdges;
+            }
+
+            // 3. Put back
+            const payload = JSON.stringify({
+                key: "whistler_data",
+                value: currentData,
+            });
+
+            const putResponse = await fetch(`${SYNC_API_URL}/data`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+                body: payload,
+            });
+
+            if (!putResponse.ok) throw new Error("Failed to update sync data");
+
+            setDeleteDialogOpen(false);
+            setItemToDelete(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Delete failed");
+        } finally {
+            setIsDeletingRemote(false);
+        }
+    };
 
     // Turnstile Effect
     useEffect(() => {
@@ -470,7 +533,7 @@ export function SettingsSync() {
                                     inputMode="numeric"
                                     maxLength={6}
                                     value={totpCode}
-                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                     autoComplete="one-time-code"
                                     className="h-12 text-center tracking-[0.5em] text-xl font-mono"
                                     placeholder="000000"
@@ -515,7 +578,7 @@ export function SettingsSync() {
                                     <label className="text-xs font-medium uppercase text-muted-foreground">Sync ID</label>
                                     <Input 
                                         value={syncId}
-                                        onChange={(e) => {
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                             const val = e.target.value.replace(/[^0-9]/g, "");
                                             if (val.length <= 16) setSyncId(formatAccountId(val));
                                         }}
@@ -575,7 +638,7 @@ export function SettingsSync() {
                                         <div className="flex items-center gap-2">
                                             <Input 
                                                 value={editName}
-                                                onChange={(e) => setEditName(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)}
                                                 className="h-7 w-48"
                                                 autoFocus
                                             />
@@ -671,7 +734,7 @@ export function SettingsSync() {
                                             <div className="flex gap-2">
                                                 <Input 
                                                     value={totpCode}
-                                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                                     placeholder="000000"
                                                     maxLength={6}
                                                     className="w-32 font-mono text-center tracking-widest"
@@ -696,7 +759,7 @@ export function SettingsSync() {
                              <div className="flex gap-2 items-center">
                                 <Input 
                                     value={totpCode}
-                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                     placeholder="000000"
                                     maxLength={6}
                                     className="w-32 font-mono text-center tracking-widest"
@@ -736,7 +799,7 @@ export function SettingsSync() {
                                 </div>
                                 <Slider
                                     value={[autoSyncInterval]}
-                                    onValueChange={(vals) => setAutoSyncInterval(vals[0])}
+                                    onValueChange={(vals: number[]) => setAutoSyncInterval(vals[0])}
                                     min={5000}
                                     max={60000}
                                     step={1000}
@@ -792,7 +855,7 @@ export function SettingsSync() {
                             { id: 'projects', label: 'Projects', desc: 'Project structure and metadata', icon: Folder },
                             { id: 'files', label: 'Files', desc: 'Audio, video, and PDF file references', icon: File },
                             { id: 'collections', label: 'Collections', desc: 'Grouped collections of files', icon: Folder }, // Using Folder for collections too
-                            { id: 'highlights', label: 'Highlights', desc: 'Saved regions and timestamps', icon: Highlighter },
+                            { id: 'highlights', label: 'Highlights', desc: 'Saved regions and timestamps', icon: PencilSimple },
                             { id: 'docs', label: 'Documents', desc: 'Text documents and notes', icon: FileText },
                             { id: 'graphs', label: 'Graphs', desc: 'Node graphs and connections', icon: Graph },
                             { id: 'storages', label: 'Storage Locations', desc: 'Local directory mappings', icon: HardDrives },
@@ -808,19 +871,116 @@ export function SettingsSync() {
                                         <div className="text-xs text-muted-foreground">{item.desc}</div>
                                     </div>
                                 </div>
-                                <Switch 
-                                    checked={syncOptions[item.id as keyof typeof syncOptions]}
-                                    onCheckedChange={(checked) => setSyncOptions({ [item.id]: checked })}
-                                />
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-full"
+                                        onClick={() => {
+                                            setItemToDelete({ id: item.id, label: item.label });
+                                            setDeleteDialogOpen(true);
+                                        }}
+                                        title={`Delete remote ${item.label} data`}
+                                    >
+                                        <Trash size={18} />
+                                    </Button>
+                                    <Switch 
+                                        checked={syncOptions[item.id as keyof typeof syncOptions]}
+                                        onCheckedChange={(checked: boolean) => setSyncOptions({ [item.id]: checked })}
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+
+            <DeleteSyncDataDialog 
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                onConfirm={handleDeleteRemote}
+                dataTypeLabel={itemToDelete?.label || ""}
+                isDeleting={isDeletingRemote}
+            />
         </div>
     );
 }
 
+function DeleteSyncDataDialog({
+    open,
+    onOpenChange,
+    onConfirm,
+    dataTypeLabel,
+    isDeleting
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: () => void;
+    dataTypeLabel: string;
+    isDeleting: boolean;
+}) {
+    const [confirmText, setConfirmText] = useState("");
+    const [countdown, setCountdown] = useState(20);
+
+    useEffect(() => {
+        if (open) {
+            setCountdown(20);
+            setConfirmText("");
+        }
+    }, [open]);
+
+    useEffect(() => {
+        if (open && countdown > 0) {
+            const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [open, countdown]);
+
+    const isValid = confirmText === "I understand I cannot get this data back" && countdown === 0;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Delete {dataTypeLabel} from Sync?</DialogTitle>
+                    <DialogDescription>
+                        This will permanently delete all {dataTypeLabel.toLowerCase()} data from the sync server.
+                        Local data will remain safe.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-500 text-sm">
+                        Warning: This action cannot be undone.
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Type "I understand I cannot get this data back" to confirm:
+                        </label>
+                        <Input
+                            value={confirmText}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmText(e.target.value)}
+                            onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => e.preventDefault()}
+                            placeholder="Type the confirmation phrase..."
+                            className="font-mono text-xs"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        Cancel
+                    </Button>
+                    <Button 
+                        variant="destructive" 
+                        onClick={onConfirm} 
+                        disabled={!isValid || isDeleting}
+                    >
+                        {isDeleting ? "Deleting..." : countdown > 0 ? `Delete (${countdown}s)` : "Delete Forever"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 // Helper for QR Code (Simple SVG implementation or use a library if available. 
 // Since I don't see a QR library imported in SidebarSync, check if it was using one or if I missed it)
 // Checking SidebarSync imports:
