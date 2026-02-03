@@ -5,7 +5,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { globalWorker } from "@/pdf-worker";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
-export function PdfThumbnail({ url, onError, className, width = 160, page = 1 }: { url: string; onError: () => void, className?: string, width?: number, page?: number }) {
+export function PdfThumbnail({ url, onError, className, width = 160, page = 1, rect }: { url: string; onError: () => void, className?: string, width?: number, page?: number, rect?: { x: number; y: number; width: number; height: number } }) {
     const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
     const [safeUrl, setSafeUrl] = useState<string | null>(null);
 
@@ -72,7 +72,19 @@ export function PdfThumbnail({ url, onError, className, width = 160, page = 1 }:
                             onGetTextError={(e: Error) => { if (!e.message?.includes('terminated')) onError() }}
                             onGetAnnotationsError={(e: Error) => { if (!e.message?.includes('terminated')) onError() }}
                             onGetStructTreeError={(e: Error) => { if (!e.message?.includes('terminated')) onError() }}
-                        />
+                        >
+                            {rect && (
+                                <div 
+                                    className="absolute bg-yellow-400/40 mix-blend-multiply border border-yellow-500/50 z-10"
+                                    style={{
+                                        left: `${rect.x * 100}%`,
+                                        top: `${rect.y * 100}%`,
+                                        width: `${rect.width * 100}%`,
+                                        height: `${rect.height * 100}%`
+                                    }}
+                                />
+                            )}
+                        </Page>
                     )}
                 </Document>
             </ErrorBoundary>

@@ -69,6 +69,7 @@ function CollectionGridPreview({ collectionId, highlights, files }: { collection
                                     onError={() => {}}
                                     width={150}
                                     page={h.start || 1}
+                                    rect={h.rect}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -210,9 +211,9 @@ export default function CollectionsView() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background text-foreground">
+        <div className="flex flex-col h-full bg-transparent text-foreground">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between px-6 py-4">
                 <h1 className="text-2xl font-semibold tracking-tight">Collections</h1>
                 
                 <div className="flex items-center gap-2">

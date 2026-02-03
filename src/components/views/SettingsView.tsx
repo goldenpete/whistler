@@ -141,9 +141,9 @@ export default function SettingsView() {
     };
 
     return (
-        <div className="flex h-full w-full bg-background text-foreground overflow-hidden">
+        <div className="flex h-full w-full bg-transparent text-foreground overflow-hidden">
             {/* Sidebar */}
-            <div className="w-64 border-r border-border bg-card/30 flex flex-col shrink-0">
+            <div className="w-64 border-r border-border bg-card/30 flex flex-col shrink-0 backdrop-blur-sm">
                 <div className="p-6 pb-4">
                     <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
                     <p className="text-sm text-muted-foreground mt-1">Manage your workspace preferences.</p>
@@ -190,7 +190,7 @@ export default function SettingsView() {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto bg-background">
+            <div className="flex-1 overflow-y-auto bg-transparent">
                 <div className="max-w-4xl mx-auto p-8 pb-20">
                     
                     {/* Appearance Tab */}

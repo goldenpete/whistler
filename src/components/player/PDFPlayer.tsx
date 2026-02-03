@@ -306,10 +306,25 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         if (!selectedText || readonly) return;
 
         let pdfRange: { start: number, end: number } | null = null;
+        let visualRect: { x: number, y: number, width: number, height: number } | null = null;
         const sel = window.getSelection();
         
         if (sel && sel.rangeCount > 0 && pageWrapperRef.current) {
             const range = sel.getRangeAt(0);
+            
+            // Calculate visual rect
+            const boundingRect = range.getBoundingClientRect();
+            const pageRect = pageWrapperRef.current.getBoundingClientRect();
+            
+            if (boundingRect.width > 0 && boundingRect.height > 0 && pageRect.width > 0 && pageRect.height > 0) {
+                 visualRect = {
+                    x: (boundingRect.left - pageRect.left) / pageRect.width,
+                    y: (boundingRect.top - pageRect.top) / pageRect.height,
+                    width: boundingRect.width / pageRect.width,
+                    height: boundingRect.height / pageRect.height
+                };
+            }
+
             const textLayer = pageWrapperRef.current.querySelector('.react-pdf__Page__textContent');
             
             if (textLayer && textLayer.contains(range.commonAncestorContainer)) {
@@ -337,7 +352,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             }
         }
 
-        addHighlight(fileId, pageNumber, selectedText, activeCollectionId ?? null, pdfRange);
+        addHighlight(fileId, pageNumber, selectedText, activeCollectionId ?? null, pdfRange, visualRect);
         setSelectedText("");
         onSelectionChange?.(false);
         if (sel) sel.removeAllRanges();

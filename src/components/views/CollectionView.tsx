@@ -279,6 +279,7 @@ export default function CollectionView() {
                                                             onError={() => {}} 
                                                             width={300}
                                                             page={h.start || 1}
+                                                            rect={h.rect}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     </div>

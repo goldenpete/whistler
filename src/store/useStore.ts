@@ -88,7 +88,7 @@ export interface AppStore extends AppState {
 
     addVideoHighlight: (fileId: string, start: number, end: number, collectionId?: string) => void;
     addImageHighlight: (fileId: string, rect: { x: number; y: number; width: number; height: number }, collectionId?: string) => void;
-    addHighlight: (fileId: string, page: number, text: string, collectionId?: string | null, pdfRange?: { start: number; end: number } | null) => void;
+    addHighlight: (fileId: string, page: number, text: string, collectionId?: string | null, pdfRange?: { start: number; end: number } | null, rect?: { x: number; y: number; width: number; height: number } | null) => void;
     removeHighlight: (id: string) => void;
     updateHighlight: (id: string, updates: Partial<Highlight>) => void;
     updateFile: (id: string, updates: Partial<File>) => void;
@@ -264,6 +264,8 @@ export const useStore = create<AppStore>()(
             backgroundColor: '#000000',
             backgroundOverlayOpacity: 0.5,
             ambientMusicUrl: null,
+            ambientMusicName: null,
+            ambientMusicPaused: false,
             ambientMusicVolume: 0.4,
             ambientMusicSuppressedBy: [],
             ambientMusicStorageKey: null,
@@ -723,7 +725,7 @@ export const useStore = create<AppStore>()(
                     }, ...state.history]
                 };
             }),
-            addHighlight: (fileId, page, text, collectionIdOverride, pdfRange) => set((state) => {
+            addHighlight: (fileId, page, text, collectionIdOverride, pdfRange, rect) => set((state) => {
                 const collectionId = collectionIdOverride ?? state.activeCollectionId ?? null;
                 const newHighlight: Highlight = {
                     id: crypto.randomUUID(),
@@ -734,6 +736,7 @@ export const useStore = create<AppStore>()(
                     note: "",
                     text,
                     pdfRange,
+                    rect: rect ?? undefined,
                     created: Date.now()
                 };
                 return {

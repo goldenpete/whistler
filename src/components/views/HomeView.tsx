@@ -288,6 +288,7 @@ const CardPreview = ({ item }: { item: any }) => {
                             onError={() => {}}
                             width={400}
                             page={item.data.start || 1}
+                            rect={item.data.rect}
                             className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                         />
                     </div>
