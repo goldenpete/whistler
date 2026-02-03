@@ -1,12 +1,15 @@
 import { useState, type ChangeEvent } from "react";
-import { useStore } from "@/store/useStore";
+import { useStore, ambientMusicStorage } from "@/store/useStore";
 import { cn } from "@/lib/utils";
+import { SidebarHistory } from "@/components/layout/SidebarHistory";
+import { SidebarTrash } from "@/components/layout/SidebarTrash";
 import { 
     SpeakerHigh, 
     Palette, 
     ArrowCounterClockwise, 
     UploadSimple,
     Trash,
+    ClockCounterClockwise,
     Desktop,
     Layout,
     MusicNotes,
@@ -62,7 +65,7 @@ const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph'
     { key: 'node', label: 'Nodes' },
 ];
 
-type SettingsTab = 'appearance' | 'music' | 'system' | 'sync';
+type SettingsTab = 'appearance' | 'music' | 'system' | 'sync' | 'history' | 'trash';
 
 export default function SettingsView() {
     const {  
@@ -181,6 +184,11 @@ export default function SettingsView() {
         setAmbientMusicPaused(false);
     };
 
+    const handleRemoveAmbient = async () => {
+        await ambientMusicStorage.clear();
+        setAmbientMusicUrl(null, null);
+    };
+
     const handleReload = () => {
         window.location.reload();
     };
@@ -228,6 +236,36 @@ export default function SettingsView() {
                             >
                                 <SpeakerHigh size={18} weight={activeTab === 'music' ? "fill" : "regular"} />
                                 Audio & Media
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Activity</h3>
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'history' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <ClockCounterClockwise size={18} weight={activeTab === 'history' ? "fill" : "regular"} />
+                                History
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('trash')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'trash' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Trash size={18} weight={activeTab === 'trash' ? "fill" : "regular"} />
+                                Trash
                             </button>
                         </div>
                     </div>
@@ -597,13 +635,24 @@ export default function SettingsView() {
                                                 Upload
                                             </Button>
                                             {ambientMusicUrl && (
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon"
-                                                    onClick={() => setAmbientMusicPaused(!ambientMusicPaused)}
-                                                >
-                                                    {!ambientMusicPaused ? <SpeakerHigh size={18} /> : <SpeakerHigh size={18} className="text-muted-foreground" />}
-                                                </Button>
+                                                <>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={handleRemoveAmbient}
+                                                        className="text-destructive hover:text-destructive border-destructive/50 hover:border-destructive hover:bg-destructive/10"
+                                                    >
+                                                        <Trash className="mr-2" size={14} />
+                                                        Remove
+                                                    </Button>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon"
+                                                        onClick={() => setAmbientMusicPaused(!ambientMusicPaused)}
+                                                    >
+                                                        {!ambientMusicPaused ? <SpeakerHigh size={18} /> : <SpeakerHigh size={18} className="text-muted-foreground" />}
+                                                    </Button>
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -721,6 +770,20 @@ export default function SettingsView() {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* History Tab */}
+                    {activeTab === 'history' && (
+                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden">
+                            <SidebarHistory onBack={() => {}} />
+                        </div>
+                    )}
+
+                    {/* Trash Tab */}
+                    {activeTab === 'trash' && (
+                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden">
+                            <SidebarTrash onBack={() => {}} />
                         </div>
                     )}
 
