@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
 import { ImagePlayer } from "@/components/player/ImagePlayer";
 import { AudioPlayer } from "@/components/player/AudioPlayer";
+import { YouTubeEmbed, type YouTubePlayerHandle } from "@/components/player/YouTubeEmbed";
 
 // --- Time Helper ---
 
@@ -60,6 +61,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile } = useStore();
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
+    const youtubeRef = useRef<YouTubePlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -255,17 +257,30 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     }, [removeAmbientMusicSuppression]);
 
     // Time Update & Loop Logic
-    const handleTimeUpdate = () => {
-        if (!videoRef.current) return;
-        const video = videoRef.current;
-        const now = video.currentTime;
+    const handleTimeUpdate = (overrideTime?: number) => {
+        let now = 0;
+        if (typeof overrideTime === 'number') {
+            now = overrideTime;
+        } else if (videoRef.current) {
+            now = videoRef.current.currentTime;
+        } else {
+            return;
+        }
 
         // Loop Logic
         if (now < start - 0.5 || now > end) {
             if (isLooping || now < start - 0.5) {
-                video.currentTime = start;
+                if (isYouTube && youtubeRef.current) {
+                    youtubeRef.current.currentTime = start;
+                } else if (videoRef.current) {
+                    videoRef.current.currentTime = start;
+                }
             } else {
-                video.pause();
+                if (isYouTube && youtubeRef.current) {
+                    youtubeRef.current.pause();
+                } else if (videoRef.current) {
+                    videoRef.current.pause();
+                }
                 setIsPlaying(false);
             }
         }
@@ -274,6 +289,17 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     };
 
     const togglePlay = () => {
+        if (isYouTube && youtubeRef.current) {
+            if (youtubeRef.current.paused) {
+                youtubeRef.current.play();
+                setIsPlaying(true);
+            } else {
+                youtubeRef.current.pause();
+                setIsPlaying(false);
+            }
+            return;
+        }
+
         if (videoRef.current) {
             if (videoRef.current.paused) {
                 videoRef.current.play();
@@ -288,6 +314,13 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const handleSeek = (vals: number[]) => {
         const pct = vals[0];
         const newTime = start + ((pct / 100) * segmentDuration);
+        
+        if (isYouTube && youtubeRef.current) {
+            youtubeRef.current.currentTime = newTime;
+            setCurrentTime(newTime);
+            return;
+        }
+
         if (videoRef.current) {
             videoRef.current.currentTime = newTime;
             setCurrentTime(newTime);

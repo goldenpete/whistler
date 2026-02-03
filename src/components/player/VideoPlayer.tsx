@@ -880,15 +880,15 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     ) : (
                         <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
                             <div
-                                className="flex items-center justify-center"
-                                style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
-                            >
-                                {isYouTube ? (
-                                    <YouTubeEmbed
-                                        ref={youtubeRef}
-                                        url={file.url || ""}
-                                        className="w-full h-full aspect-video"
-                                        onTimeUpdate={(t: number) => handleTimeUpdate(t)}
+                                    className="flex items-center justify-center w-full h-full"
+                                    style={{ transform: `scale(${zoomForFile})`, transformOrigin: "center" }}
+                                >
+                                    {isYouTube ? (
+                                        <YouTubeEmbed
+                                            ref={youtubeRef}
+                                            url={file.url || ""}
+                                            className="w-full h-full"
+                                            onTimeUpdate={(t: number) => handleTimeUpdate(t)}
                                         onDurationChange={(d: number) => setDuration(d)}
                                         onEnded={() => setIsPlaying(false)}
                                         onPlay={() => {

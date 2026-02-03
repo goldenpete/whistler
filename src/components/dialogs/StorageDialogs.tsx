@@ -451,6 +451,9 @@ export function EditStorageDialog({ open, onOpenChange, onSubmit, initialName, i
 
 function extractFilename(url: string): string {
     try {
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            return 'YouTube Video';
+        }
         const parsedUrl = new URL(url);
         const pathname = parsedUrl.pathname;
         const filename = pathname.split('/').pop() || '';
