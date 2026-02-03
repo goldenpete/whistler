@@ -1625,16 +1625,6 @@ export default function ProjectSidebar() {
 
                                 <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col space-y-1")}>
                                     <button
-                                        onClick={() => navigate('/settings')}
-                                        className={cn(
-                                            "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
-                                            location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
-                                        )}
-                                        title="Settings"
-                                    >
-                                        <Gear weight="fill" size={18} />
-                                    </button>
-                                    <button
                                         onClick={() => setSidebarView('history')}
                                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
                                         title="History"
@@ -1647,6 +1637,16 @@ export default function ProjectSidebar() {
                                         title="Trash"
                                     >
                                         <Trash weight="bold" size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/settings')}
+                                        className={cn(
+                                            "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
+                                            location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
+                                        )}
+                                        title="Settings"
+                                    >
+                                        <Gear weight="fill" size={18} />
                                     </button>
                                 </div>
                             </div>
