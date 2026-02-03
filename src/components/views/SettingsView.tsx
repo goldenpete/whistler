@@ -78,6 +78,7 @@ export default function SettingsView() {
         backgroundImageUrl,
         setBackgroundImageUrl,
         backgroundColor,
+        setBackgroundColor,
         backgroundOverlayOpacity,
         setBackgroundOverlayOpacity,
         setAmbientMusicUrl,
