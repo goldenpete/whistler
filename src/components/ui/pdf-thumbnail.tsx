@@ -5,7 +5,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { globalWorker } from "@/pdf-worker";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
-export function PdfThumbnail({ url, onError, className, width = 160 }: { url: string; onError: () => void, className?: string, width?: number }) {
+export function PdfThumbnail({ url, onError, className, width = 160, page = 1 }: { url: string; onError: () => void, className?: string, width?: number, page?: number }) {
     const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
     const [safeUrl, setSafeUrl] = useState<string | null>(null);
 
@@ -64,7 +64,7 @@ export function PdfThumbnail({ url, onError, className, width = 160 }: { url: st
                 >
                     {loadedUrl === safeUrl && (
                         <Page
-                            pageNumber={1}
+                            pageNumber={page}
                             width={width}
                             renderTextLayer={false}
                             renderAnnotationLayer={false}

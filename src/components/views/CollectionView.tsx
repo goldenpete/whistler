@@ -45,6 +45,8 @@ import { getIcon } from "@/utils/iconMap";
 
 
 
+import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
+
 export default function CollectionView() {
     const {
         projects,
@@ -264,14 +266,24 @@ export default function CollectionView() {
                                         {/* Preview Area */}
                                         <div className="aspect-video bg-muted relative overflow-hidden">
                                             {/* Media Preview */}
-                                            {file.url && (file.type === 'video' || file.type === 'image') ? (
+                                            {file.url && (file.type === 'video' || file.type === 'image' || file.type === 'pdf') ? (
                                                 file.type === 'image' ? (
                                                     <img
                                                         src={file.url}
                                                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                                     />
+                                                ) : file.type === 'pdf' ? (
+                                                    <div className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity">
+                                                        <PdfThumbnail 
+                                                            url={file.url} 
+                                                            onError={() => {}} 
+                                                            width={300}
+                                                            page={h.start || 1}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
                                                 ) : (
-                                                    <HighlightVideoPreview url={file.url} />
+                                                    <HighlightVideoPreview url={file.url} start={h.start} />
                                                 )
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -404,8 +416,7 @@ function FileIconByType({ type, size = 16 }: { type: string, size?: number }) {
     }
 }
 
-function HighlightVideoPreview({ url }: { url: string }) {
-    const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
+function HighlightVideoPreview({ url, start = 0.1 }: { url: string, start?: number }) {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -413,11 +424,7 @@ function HighlightVideoPreview({ url }: { url: string }) {
         if (!video) return;
 
         const updateTime = () => {
-            if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
-                video.currentTime = video.duration / 2;
-            } else {
-                video.currentTime = 0.1;
-            }
+            video.currentTime = start;
         };
 
         if (video.readyState >= 1) {
@@ -425,12 +432,12 @@ function HighlightVideoPreview({ url }: { url: string }) {
         } else {
             video.onloadedmetadata = updateTime;
         }
-    }, [useMiddleFrameForPreviews]);
+    }, [start]);
 
     return (
         <video
             ref={videoRef}
-            src={url}
+            src={`${url}#t=${start}`}
             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
             preload="metadata"
             muted

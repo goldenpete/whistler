@@ -27,9 +27,60 @@ import { cn } from "@/lib/utils";
 import { getIcon } from "@/utils/iconMap";
 import { type Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
+import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 
 type SortOption = "name" | "date" | "items";
 type SortDirection = "asc" | "desc";
+
+// Helper for grid previews
+function CollectionGridPreview({ collectionId, highlights, files }: { collectionId: string, highlights: any[], files: any[] }) {
+    // Get first 4 highlights for this collection
+    const items = highlights
+        .filter(h => h.collectionId === collectionId)
+        .slice(0, 4);
+
+    if (items.length === 0) return null;
+
+    return (
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 opacity-20 pointer-events-none">
+            {items.map((h, i) => {
+                const file = files.find(f => f.id === h.fileId);
+                if (!file || !file.url) return <div key={h.id} className="bg-muted/50" />;
+                
+                return (
+                    <div key={h.id} className="relative overflow-hidden border-[0.5px] border-white/10">
+                        {file.type === 'video' ? (
+                            <video
+                                src={`${file.url}#t=${h.start}`}
+                                className="w-full h-full object-cover"
+                                muted
+                                playsInline
+                            />
+                        ) : file.type === 'image' ? (
+                            <img
+                                src={file.url}
+                                className="w-full h-full object-cover"
+                                alt=""
+                            />
+                        ) : file.type === 'pdf' ? (
+                            <div className="w-full h-full overflow-hidden">
+                                <PdfThumbnail
+                                    url={file.url}
+                                    onError={() => {}}
+                                    width={150}
+                                    page={h.start || 1}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-full h-full bg-muted/50" />
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
 export default function CollectionsView() {
     const { 
@@ -38,14 +89,18 @@ export default function CollectionsView() {
         trashCollection,
         updateCollection,
         setActiveCollection,
-        setSidebarView
+        setSidebarView,
+        highlights,
+        files
     } = useStore(useShallow((state) => ({
         collections: state.collections,
         activeProjectId: state.activeProjectId,
         trashCollection: state.trashCollection,
         updateCollection: state.updateCollection,
         setActiveCollection: state.setActiveCollection,
-        setSidebarView: state.setSidebarView
+        setSidebarView: state.setSidebarView,
+        highlights: state.highlights,
+        files: state.files
     })));
     const navigate = useNavigate();
 
@@ -241,38 +296,49 @@ export default function CollectionsView() {
                         const isSelected = selectedIds.has(collection.id);
                         
                         return (
-                            <div 
+                            <div
                                 key={collection.id}
                                 onClick={() => handleCollectionClick(collection.id)}
                                 className={cn(
-                                    "group relative flex flex-col p-4 rounded-lg border bg-card hover:bg-accent/50 transition-all cursor-pointer",
+                                    "group relative aspect-video rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-all cursor-pointer overflow-hidden p-4 flex flex-col justify-end",
                                     isSelected && "ring-2 ring-primary border-primary bg-accent/50"
                                 )}
                             >
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className={cn("p-2 rounded-md bg-secondary", isSelected && "bg-background")}>
-                                        <Icon 
-                                            weight="fill" 
-                                            className="w-6 h-6" 
-                                            style={{ color: collection.color }} 
-                                        />
+                                <CollectionGridPreview 
+                                    collectionId={collection.id} 
+                                    highlights={highlights} 
+                                    files={files} 
+                                />
+
+                                {/* Gradient Overlay for Text Readability */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/40 to-transparent pointer-events-none" />
+
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className={cn("p-2 rounded-md bg-secondary", isSelected && "bg-background")}>
+                                            <Icon 
+                                                weight="fill" 
+                                                className="w-6 h-6" 
+                                                style={{ color: collection.color }} 
+                                            />
+                                        </div>
+                                        
+                                        {selectionMode && (
+                                            <div className="absolute top-4 right-4">
+                                                {isSelected ? (
+                                                    <CheckSquare weight="fill" className="w-5 h-5 text-primary" />
+                                                ) : (
+                                                    <Square className="w-5 h-5 text-muted-foreground" />
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     
-                                    {selectionMode && (
-                                        <div className="absolute top-4 right-4">
-                                            {isSelected ? (
-                                                <CheckSquare weight="fill" className="w-5 h-5 text-primary" />
-                                            ) : (
-                                                <Square className="w-5 h-5 text-muted-foreground" />
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                <h3 className="font-semibold truncate mb-1">{collection.name}</h3>
-                                
-                                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{collection.lastModified ? formatDistanceToNow(collection.lastModified, { addSuffix: true }) : "Unknown date"}</span>
+                                    <h3 className="font-semibold truncate mb-1">{collection.name}</h3>
+                                    
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <span>{collection.lastModified ? formatDistanceToNow(collection.lastModified, { addSuffix: true }) : "Unknown date"}</span>
+                                    </div>
                                 </div>
                             </div>
                         );

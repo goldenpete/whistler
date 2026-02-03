@@ -86,7 +86,7 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
     return 'file';
 }
 
-const VideoCardPreview = ({ url, start = 0.1 }: { url: string, start?: number }) => {
+const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { url: string, start?: number, overrideMiddleFrame?: boolean }) => {
     const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
     const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -95,7 +95,7 @@ const VideoCardPreview = ({ url, start = 0.1 }: { url: string, start?: number })
         if (!video) return;
 
         const updateTime = () => {
-            if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+            if (!overrideMiddleFrame && useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
                 video.currentTime = video.duration / 2;
             } else {
                 video.currentTime = start;
@@ -115,7 +115,7 @@ const VideoCardPreview = ({ url, start = 0.1 }: { url: string, start?: number })
             };
             video.addEventListener('loadedmetadata', onLoadedMetadata);
         }
-    }, [useMiddleFrameForPreviews, start]);
+    }, [useMiddleFrameForPreviews, start, overrideMiddleFrame]);
 
     return (
         <div className="absolute inset-0 bg-black/20">
@@ -130,7 +130,7 @@ const VideoCardPreview = ({ url, start = 0.1 }: { url: string, start?: number })
                 onMouseOut={(e) => {
                     const video = e.currentTarget;
                     video.pause();
-                    if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                    if (!overrideMiddleFrame && useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
                         video.currentTime = video.duration / 2;
                     } else {
                         video.currentTime = start;
@@ -139,7 +139,7 @@ const VideoCardPreview = ({ url, start = 0.1 }: { url: string, start?: number })
                 onContextMenu={(e) => e.preventDefault()}
                 onLoadedMetadata={(e) => {
                     const video = e.currentTarget;
-                    if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
+                    if (!overrideMiddleFrame && useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
                         video.currentTime = video.duration / 2;
                     } else {
                         video.currentTime = start;
@@ -262,7 +262,7 @@ const CardPreview = ({ item }: { item: any }) => {
     if (item.type === 'highlight') {
         const file = item.data.file;
         
-        if (file?.url && (file.type === 'video' || file.type === 'image')) {
+        if (file?.url && (file.type === 'video' || file.type === 'image' || file.type === 'pdf')) {
             if (file.type === 'image') {
                 return (
                     <div className="absolute inset-0 bg-black/20">
@@ -277,7 +277,21 @@ const CardPreview = ({ item }: { item: any }) => {
             }
             
             if (file.type === 'video') {
-                return <VideoCardPreview url={file.url} start={item.data.start || 0.1} />;
+                return <VideoCardPreview url={file.url} start={item.data.start || 0.1} overrideMiddleFrame={true} />;
+            }
+
+            if (file.type === 'pdf') {
+                return (
+                    <div className="absolute inset-0">
+                        <PdfThumbnail 
+                            url={file.url} 
+                            onError={() => {}}
+                            width={400}
+                            page={item.data.start || 1}
+                            className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                        />
+                    </div>
+                );
             }
         }
 
