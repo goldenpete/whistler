@@ -50,6 +50,17 @@ export function MainLayout() {
 
     useEffect(() => {
         const restoreAmbientMusic = async () => {
+            // Handle Default Music (Static Path)
+            if (ambientMusicStorageKey === 'default' || (!ambientMusicStorageKey && ambientMusicName === 'Default: Evolve (Idle)')) {
+                if (ambientMusicUrl !== '/sounds/default_ambient.mp3') {
+                    setAmbientMusicUrl('/sounds/default_ambient.mp3', ambientMusicName || 'Default: Evolve (Idle)');
+                    if (ambientMusicStorageKey !== 'default') {
+                        setAmbientMusicStorageKey('default');
+                    }
+                }
+                return;
+            }
+
             if (!ambientMusicStorageKey) return;
 
             let needsRestore = false;

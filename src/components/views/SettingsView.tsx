@@ -108,7 +108,8 @@ export default function SettingsView() {
         setSidebarMode,
         windowOutlineEnabled,
         setWindowOutlineEnabled,
-        setState
+        setState,
+        setAmbientMusicStorageKey
     } = useStore();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
@@ -166,13 +167,22 @@ export default function SettingsView() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'audio/*';
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                const url = URL.createObjectURL(file);
-                setAmbientMusicUrl(url, file.name);
-                setAmbientMusicVolume(0.5);
-                setAmbientMusicPaused(false);
+                try {
+                    // Save to IndexedDB first
+                    await ambientMusicStorage.save(file);
+                    setAmbientMusicStorageKey('current');
+                    
+                    // Create URL and update state
+                    const url = URL.createObjectURL(file);
+                    setAmbientMusicUrl(url, file.name);
+                    setAmbientMusicVolume(0.5);
+                    setAmbientMusicPaused(false);
+                } catch (err) {
+                    console.error("Failed to save ambient music:", err);
+                }
             }
         };
         input.click();
@@ -182,11 +192,13 @@ export default function SettingsView() {
         setAmbientMusicUrl('/sounds/default_ambient.mp3', 'Default: Evolve (Idle)');
         setAmbientMusicVolume(0.5);
         setAmbientMusicPaused(false);
+        setAmbientMusicStorageKey('default');
     };
 
     const handleRemoveAmbient = async () => {
         await ambientMusicStorage.clear();
         setAmbientMusicUrl(null, null);
+        setAmbientMusicStorageKey(null);
     };
 
     const handleReload = () => {
