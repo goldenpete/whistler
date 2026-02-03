@@ -77,6 +77,7 @@ export default function SettingsView() {
         setBackgroundImageOpacity,
         backgroundImageUrl,
         setBackgroundImageUrl,
+        backgroundColor,
         backgroundOverlayOpacity,
         setBackgroundOverlayOpacity,
         setAmbientMusicUrl,
@@ -423,7 +424,37 @@ export default function SettingsView() {
                                     <div className="space-y-6 p-5 rounded-lg border border-border bg-card/50 h-fit">
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <label className="text-sm font-medium">Color Overlay</label>
+                                                <label className="text-sm font-medium">Background Color</label>
+                                                <div className="flex items-center gap-2">
+                                                    <div 
+                                                        className="w-4 h-4 rounded-full border border-border" 
+                                                        style={{ backgroundColor: backgroundColor || '#000000' }}
+                                                    />
+                                                    <span className="text-xs font-mono text-muted-foreground">{backgroundColor || '#000000'}</span>
+                                                </div>
+                                            </div>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                                        <div 
+                                                            className="w-4 h-4 rounded-full mr-2 border border-border" 
+                                                            style={{ backgroundColor: backgroundColor || '#000000' }}
+                                                        />
+                                                        Pick a color
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-3">
+                                                    <ColorPicker
+                                                        color={backgroundColor || '#000000'}
+                                                        onChange={setBackgroundColor}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm font-medium">Color Overlay Opacity</label>
                                                 <span className="text-xs font-mono text-muted-foreground">{(backgroundOverlayOpacity * 100).toFixed(0)}%</span>
                                             </div>
                                             <Slider
@@ -437,7 +468,7 @@ export default function SettingsView() {
 
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <label className="text-sm font-medium">Background Image Opacity</label>
+                                                <label className="text-sm font-medium">Image Opacity</label>
                                                 <span className="text-xs font-mono text-muted-foreground">{(backgroundImageOpacity * 100).toFixed(0)}%</span>
                                             </div>
                                             <Slider
@@ -483,21 +514,27 @@ export default function SettingsView() {
 
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Preview</label>
-                                        <div className="relative rounded-lg border border-border overflow-hidden aspect-video shadow-lg bg-background">
-                                            {/* Preview Logic */}
+                                        <div className="relative rounded-lg border border-border overflow-hidden aspect-video shadow-lg bg-black">
+                                            {/* Preview Logic - Matches MainLayout.tsx */}
+                                            {/* 1. Color Layer (Bottom) */}
+                                            <div 
+                                                className="absolute inset-0 z-0 pointer-events-none"
+                                                style={{ 
+                                                    backgroundColor: backgroundColor || '#000000',
+                                                    opacity: backgroundOverlayOpacity
+                                                }}
+                                            />
+                                            
+                                            {/* 2. Image Layer (Top) */}
                                             {backgroundImageUrl && (
                                                 <div 
-                                                    className="absolute inset-0 bg-cover bg-center"
+                                                    className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none"
                                                     style={{ 
                                                         backgroundImage: `url(${backgroundImageUrl})`,
                                                         opacity: backgroundImageOpacity
                                                     }}
                                                 />
                                             )}
-                                            <div 
-                                                className="absolute inset-0 bg-background"
-                                                style={{ opacity: 1 - backgroundOverlayOpacity }}
-                                            />
                                             
                                             {/* Mock Content */}
                                             <div className="absolute inset-0 flex items-center justify-center p-6">

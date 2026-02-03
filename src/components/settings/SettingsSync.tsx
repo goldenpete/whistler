@@ -834,7 +834,7 @@ export function SettingsSync() {
                                         const ms = v <= 60 ? v * 1000 : (v - 59) * 60000;
                                         setAutoSyncInterval(ms);
                                     }}
-                                    min={1}
+                                    min={0}
                                     max={119}
                                     step={1}
                                 />
