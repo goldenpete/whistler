@@ -325,6 +325,8 @@ declare module "@phosphor-icons/react" {
     export const ShieldCheck: any;
     export const Warning: any;
     export const QrCode: any;
+    export const Desktop: any;
+    export const Cursor: any;
 }
 
 declare module "framer-motion" {

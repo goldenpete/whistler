@@ -5,7 +5,7 @@ import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/components/ui/toggle-switch";
 import {
     CloudArrowUp,
     CloudArrowDown,

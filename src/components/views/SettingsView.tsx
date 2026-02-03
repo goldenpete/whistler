@@ -1,19 +1,16 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { 
     SpeakerHigh, 
     Palette, 
-    CheckCircle, 
     ArrowCounterClockwise, 
     UploadSimple,
     Trash,
-    Monitor,
-    Globe,
-    Sidebar,
+    Desktop,
     Layout,
     MusicNotes,
-    Mouse,
+    Cursor,
     Check,
     X,
     MagnifyingGlass,
@@ -32,7 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/components/ui/toggle-switch";
 import {
     Popover,
     PopoverContent,
@@ -149,7 +146,7 @@ export default function SettingsView() {
         setLocalItemToDelete(null);
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
@@ -176,6 +173,12 @@ export default function SettingsView() {
             }
         };
         input.click();
+    };
+
+    const handleUseDefaultAmbient = () => {
+        setAmbientMusicUrl('/sounds/default_ambient.mp3', 'Default: Evolve (Idle)');
+        setAmbientMusicVolume(0.5);
+        setAmbientMusicPaused(false);
     };
 
     const handleReload = () => {
@@ -418,11 +421,11 @@ export default function SettingsView() {
 
                             <div>
                                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Monitor className="text-primary" size={24} />
+                                    <Desktop className="text-primary" size={24} />
                                     Background
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-6 p-5 rounded-lg border border-border bg-card/50 h-fit">
+                                    <div className="space-y-6 p-5 rounded-lg border border-border bg-card/50 h-full">
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <label className="text-sm font-medium">Background Color</label>
@@ -513,9 +516,10 @@ export default function SettingsView() {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Preview</label>
-                                        <div className="relative rounded-lg border border-border overflow-hidden aspect-video shadow-lg bg-black">
+                                    <div className="relative rounded-lg border border-border overflow-hidden shadow-lg bg-black h-full min-h-[300px]">
+                                        <div className="absolute top-3 left-3 z-50 px-2 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-medium text-white/90 uppercase tracking-wider shadow-sm">
+                                            Preview
+                                        </div>
                                             {/* Preview Logic - Matches MainLayout.tsx */}
                                             {/* 1. Color Layer (Bottom) */}
                                             <div 
@@ -553,7 +557,6 @@ export default function SettingsView() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -586,6 +589,9 @@ export default function SettingsView() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm" onClick={handleUseDefaultAmbient}>
+                                                Use Default
+                                            </Button>
                                             <Button variant="outline" size="sm" onClick={handleAmbientMusicUpload}>
                                                 <UploadSimple className="mr-2" size={14} />
                                                 Upload
@@ -627,7 +633,7 @@ export default function SettingsView() {
                                     <FilmStrip className="text-primary" size={24} />
                                     Media Playback
                                 </h2>
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Mute new videos until unmuted</label>
@@ -693,7 +699,7 @@ export default function SettingsView() {
                                     {sfxEnabled && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border/40">
                                             {[
-                                                { id: 'cursor', label: 'Cursor', icon: Mouse },
+                                                { id: 'cursor', label: 'Cursor', icon: Cursor },
                                                 { id: 'confirm', label: 'Confirm', icon: Check },
                                                 { id: 'error', label: 'Error', icon: X },
                                                 { id: 'back', label: 'Back', icon: CaretLeft },
