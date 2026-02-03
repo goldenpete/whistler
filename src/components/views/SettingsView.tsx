@@ -114,6 +114,7 @@ export default function SettingsView() {
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
     const [deleteLocalOpen, setDeleteLocalOpen] = useState(false);
+    const [resetAllOpen, setResetAllOpen] = useState(false);
     const [localItemToDelete, setLocalItemToDelete] = useState<{id: string, label: string} | null>(null);
     const [isDeletingLocal, setIsDeletingLocal] = useState(false);
 
@@ -206,10 +207,12 @@ export default function SettingsView() {
     };
 
     const handleReset = () => {
-        if (confirm("Are you sure you want to reset all data? This cannot be undone.")) {
-            localStorage.removeItem('whistler_v2_data');
-            window.location.reload();
-        }
+        setResetAllOpen(true);
+    };
+
+    const handleConfirmReset = () => {
+        localStorage.removeItem('whistler_v2_data');
+        window.location.reload();
     };
 
     return (
@@ -787,14 +790,14 @@ export default function SettingsView() {
 
                     {/* History Tab */}
                     {activeTab === 'history' && (
-                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden">
+                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <SidebarHistory onBack={() => {}} variant="settings" />
                         </div>
                     )}
 
                     {/* Trash Tab */}
                     {activeTab === 'trash' && (
-                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden">
+                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <SidebarTrash onBack={() => {}} variant="settings" />
                         </div>
                     )}
@@ -895,6 +898,15 @@ export default function SettingsView() {
                 title={`Clear Local ${localItemToDelete?.label || ""}?`}
                 description={`This will permanently delete all local ${localItemToDelete?.label.toLowerCase() || ""} data from this device. Sync data will not be affected.`}
                 isDeleting={isDeletingLocal}
+            />
+
+            <DestructiveDeleteDialog 
+                open={resetAllOpen}
+                onOpenChange={setResetAllOpen}
+                onConfirm={handleConfirmReset}
+                title="Reset All Data?"
+                description="This will permanently remove ALL local data, settings, and files from this device. This action cannot be undone."
+                isDeleting={false}
             />
         </div>
     );
