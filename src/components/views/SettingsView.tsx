@@ -776,14 +776,14 @@ export default function SettingsView() {
                     {/* History Tab */}
                     {activeTab === 'history' && (
                         <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden">
-                            <SidebarHistory onBack={() => {}} />
+                            <SidebarHistory onBack={() => {}} variant="settings" />
                         </div>
                     )}
 
                     {/* Trash Tab */}
                     {activeTab === 'trash' && (
                         <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden">
-                            <SidebarTrash onBack={() => {}} />
+                            <SidebarTrash onBack={() => {}} variant="settings" />
                         </div>
                     )}
 

@@ -30,9 +30,10 @@ import { cn } from "@/lib/utils";
 
 interface SidebarTrashProps {
     onBack: () => void;
+    variant?: 'sidebar' | 'settings';
 }
 
-export function SidebarTrash({ onBack }: SidebarTrashProps) {
+export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps) {
     const {
         files,
         collections,
@@ -131,7 +132,12 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
         onDelete: () => void,
         color?: string
     }) => (
-        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group relative">
+        <div className={cn(
+            "flex items-center gap-2 p-2 rounded-md transition-colors group relative",
+            variant === 'sidebar' 
+                ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" 
+                : "hover:bg-muted"
+        )}>
             <div className={cn("shrink-0", color ? "" : "text-muted-foreground")}>
                 <Icon weight="fill" size={16} style={{ color: color }} />
             </div>
@@ -141,7 +147,10 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
                     {formatRelativeTime(date)}
                 </div>
             </div>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-sidebar-accent pl-2">
+            <div className={cn(
+                "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 pl-2",
+                variant === 'sidebar' ? "bg-sidebar-accent" : "bg-muted"
+            )}>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -189,44 +198,85 @@ export function SidebarTrash({ onBack }: SidebarTrashProps) {
     );
 
     return (
-        <div className="flex flex-col h-full min-h-0 bg-sidebar-background">
-            <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack} data-sound-back>
-                        <CaretLeft className="text-muted-foreground" />
-                    </Button>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-                        <Trash weight="fill" className="text-red-400" />
-                        Trash
+        <div className={cn(
+            "flex flex-col h-full min-h-0",
+            variant === 'sidebar' ? "bg-sidebar-background" : "bg-transparent"
+        )}>
+            {variant === 'sidebar' ? (
+                <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack} data-sound-back>
+                            <CaretLeft className="text-muted-foreground" />
+                        </Button>
+                        <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
+                            <Trash weight="fill" className="text-red-400" />
+                            Trash
+                        </div>
                     </div>
+                    {hasTrash && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-400/10 uppercase tracking-wider font-bold px-2">
+                                    Empty
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete all items in the trash. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={emptyTrash}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Delete All
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
-                {hasTrash && (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-400/10 uppercase tracking-wider font-bold px-2">
-                                Empty
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete all items in the trash. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={emptyTrash}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            ) : (
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold flex items-center gap-2">
+                            <Trash className="text-primary" size={24} />
+                            Trash
+                        </h2>
+                    </div>
+                    {hasTrash && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="h-8 text-xs"
                                 >
-                                    Delete All
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                )}
-            </div>
+                                    Empty Trash
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete all items in the trash. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={emptyTrash} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                        Empty Trash
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </div>
+            )}
 
             <ScrollArea className="flex-1 p-2 overflow-y-auto">
                 {!hasTrash ? (

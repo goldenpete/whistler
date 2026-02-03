@@ -137,23 +137,31 @@ export function MainLayout() {
 
     useEffect(() => {
         if (!ambientAutoplayBlocked || !ambientMusicUrl || isAmbientSuppressed || ambientMusicPaused) return;
+        
         const tryPlay = () => {
             const audio = audioRef.current;
             if (!audio) return;
+            
             const playPromise = audio.play();
             if (playPromise) {
                 playPromise
                     .then(() => {
+                        console.log("Ambient music resumed after interaction");
                         setAmbientAutoplayBlocked(false);
                     })
-                    .catch(() => {});
+                    .catch((err) => {
+                        console.warn("Ambient music retry failed:", err);
+                    });
             }
         };
-        window.addEventListener("pointerdown", tryPlay, { once: true });
-        window.addEventListener("keydown", tryPlay, { once: true });
+
+        const opts = { capture: true };
+        window.addEventListener("pointerdown", tryPlay, opts);
+        window.addEventListener("keydown", tryPlay, opts);
+        
         return () => {
-            window.removeEventListener("pointerdown", tryPlay);
-            window.removeEventListener("keydown", tryPlay);
+            window.removeEventListener("pointerdown", tryPlay, opts);
+            window.removeEventListener("keydown", tryPlay, opts);
         };
     }, [ambientAutoplayBlocked, ambientMusicUrl, isAmbientSuppressed, ambientMusicPaused]);
 
