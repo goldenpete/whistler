@@ -21,7 +21,13 @@ import {
     ArrowLeft,
     SidebarSimple,
     FilmStrip,
-    Cloud
+    Cloud,
+    File,
+    Folder,
+    FileText,
+    Graph,
+    HardDrives,
+    PencilSimple
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -34,6 +40,7 @@ import {
 } from "@/components/ui/popover";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { SettingsSync } from "@/components/settings/SettingsSync";
+import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
 import type { AccentTheme, BaseTheme } from "@/types";
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
@@ -97,10 +104,47 @@ export default function SettingsView() {
         sidebarMode,
         setSidebarMode,
         windowOutlineEnabled,
-        setWindowOutlineEnabled
+        setWindowOutlineEnabled,
+        setState
     } = useStore();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
+    const [deleteLocalOpen, setDeleteLocalOpen] = useState(false);
+    const [localItemToDelete, setLocalItemToDelete] = useState<{id: string, label: string} | null>(null);
+    const [isDeletingLocal, setIsDeletingLocal] = useState(false);
+
+    const handleDeleteLocal = async () => {
+        if (!localItemToDelete) return;
+        setIsDeletingLocal(true);
+        
+        // Small delay to simulate processing and allow UI to update if needed
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        switch (localItemToDelete.id) {
+            case 'files':
+                setState({ files: [], activeFileId: null });
+                break;
+            case 'collections':
+                setState({ collections: [], activeCollectionId: null });
+                break;
+            case 'highlights':
+                setState({ highlights: [], activeHighlightId: null });
+                break;
+            case 'docs':
+                setState({ docs: [], activeDocId: null });
+                break;
+            case 'graphs':
+                setState({ graphs: [], graphNodes: [], graphEdges: [], activeGraphId: null });
+                break;
+            case 'storages':
+                setState({ storages: [], activeStorageId: null });
+                break;
+        }
+
+        setIsDeletingLocal(false);
+        setDeleteLocalOpen(false);
+        setLocalItemToDelete(null);
+    };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -621,6 +665,52 @@ export default function SettingsView() {
                             <Separator />
 
                             <div>
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <HardDrives className="text-primary" size={24} />
+                                    Data Management
+                                </h2>
+                                <div className="p-5 rounded-lg border border-border bg-card/50 space-y-4">
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-medium">Local Data</label>
+                                        <p className="text-xs text-muted-foreground">Manage and clear local data by category.</p>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[
+                                            { id: 'files', label: 'Files', icon: File },
+                                            { id: 'collections', label: 'Collections', icon: Folder },
+                                            { id: 'highlights', label: 'Highlights', icon: PencilSimple },
+                                            { id: 'docs', label: 'Documents', icon: FileText },
+                                            { id: 'graphs', label: 'Graphs', icon: Graph },
+                                            { id: 'storages', label: 'Storage', icon: HardDrives },
+                                        ].map((item) => (
+                                            <div key={item.id} className="flex items-center justify-between p-3 rounded-md border border-border bg-background/50">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                                        <item.icon size={16} weight="fill" />
+                                                    </div>
+                                                    <span className="text-sm font-medium">{item.label}</span>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={() => {
+                                                        setLocalItemToDelete({ id: item.id, label: item.label });
+                                                        setDeleteLocalOpen(true);
+                                                    }}
+                                                >
+                                                    <Trash size={16} />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div>
                                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-red-500">
                                     <Trash size={24} weight="fill" />
                                     Danger Zone
@@ -639,6 +729,15 @@ export default function SettingsView() {
                     )}
                 </div>
             </div>
+
+            <DestructiveDeleteDialog 
+                open={deleteLocalOpen}
+                onOpenChange={setDeleteLocalOpen}
+                onConfirm={handleDeleteLocal}
+                title={`Clear Local ${localItemToDelete?.label || ""}?`}
+                description={`This will permanently delete all local ${localItemToDelete?.label.toLowerCase() || ""} data from this device. Sync data will not be affected.`}
+                isDeleting={isDeletingLocal}
+            />
         </div>
     );
 }

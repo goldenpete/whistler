@@ -53,6 +53,8 @@ declare global {
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
+import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
+
 export function SettingsSync() {
     const { 
         user, 
@@ -895,92 +897,18 @@ export function SettingsSync() {
                 </div>
             </div>
 
-            <DeleteSyncDataDialog 
+            <DestructiveDeleteDialog 
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
                 onConfirm={handleDeleteRemote}
-                dataTypeLabel={itemToDelete?.label || ""}
+                title={`Delete ${itemToDelete?.label || ""} from Sync?`}
+                description={`This will permanently delete all ${(itemToDelete?.label || "").toLowerCase()} data from the sync server. Local data will remain safe.`}
                 isDeleting={isDeletingRemote}
             />
         </div>
     );
 }
 
-function DeleteSyncDataDialog({
-    open,
-    onOpenChange,
-    onConfirm,
-    dataTypeLabel,
-    isDeleting
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onConfirm: () => void;
-    dataTypeLabel: string;
-    isDeleting: boolean;
-}) {
-    const [confirmText, setConfirmText] = useState("");
-    const [countdown, setCountdown] = useState(20);
-
-    useEffect(() => {
-        if (open) {
-            setCountdown(20);
-            setConfirmText("");
-        }
-    }, [open]);
-
-    useEffect(() => {
-        if (open && countdown > 0) {
-            const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [open, countdown]);
-
-    const isValid = confirmText === "I understand I cannot get this data back" && countdown === 0;
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Delete {dataTypeLabel} from Sync?</DialogTitle>
-                    <DialogDescription>
-                        This will permanently delete all {dataTypeLabel.toLowerCase()} data from the sync server.
-                        Local data will remain safe.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-500 text-sm">
-                        Warning: This action cannot be undone.
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Type "I understand I cannot get this data back" to confirm:
-                        </label>
-                        <Input
-                            value={confirmText}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmText(e.target.value)}
-                            onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => e.preventDefault()}
-                            placeholder="Type the confirmation phrase..."
-                            className="font-mono text-xs"
-                        />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button 
-                        variant="destructive" 
-                        onClick={onConfirm} 
-                        disabled={!isValid || isDeleting}
-                    >
-                        {isDeleting ? "Deleting..." : countdown > 0 ? `Delete (${countdown}s)` : "Delete Forever"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
 // Helper for QR Code (Simple SVG implementation or use a library if available. 
 // Since I don't see a QR library imported in SidebarSync, check if it was using one or if I missed it)
 // Checking SidebarSync imports:
