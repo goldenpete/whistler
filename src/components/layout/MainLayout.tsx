@@ -17,6 +17,7 @@ export function MainLayout() {
         backgroundColor, 
         backgroundOverlayOpacity, 
         ambientMusicUrl, 
+        ambientMusicName,
         ambientMusicVolume, 
         ambientMusicSuppressedBy, 
         ambientMusicStorageKey,
@@ -29,6 +30,7 @@ export function MainLayout() {
         backgroundColor: state.backgroundColor,
         backgroundOverlayOpacity: state.backgroundOverlayOpacity,
         ambientMusicUrl: state.ambientMusicUrl,
+        ambientMusicName: state.ambientMusicName,
         ambientMusicVolume: state.ambientMusicVolume,
         ambientMusicSuppressedBy: state.ambientMusicSuppressedBy,
         ambientMusicStorageKey: state.ambientMusicStorageKey,
@@ -47,24 +49,42 @@ export function MainLayout() {
     const isAmbientSuppressed = (ambientMusicSuppressedBy || []).length > 0;
 
     useEffect(() => {
-        let active = true;
-        if (ambientMusicUrl || !ambientMusicStorageKey) return;
-        ambientMusicStorage
-            .load()
-            .then((blob) => {
-                if (!active) return;
-                if (blob) {
-                    const url = URL.createObjectURL(blob);
-                    setAmbientMusicUrl(url);
-                } else {
-                    setAmbientMusicStorageKey(null);
+        const restoreAmbientMusic = async () => {
+            if (!ambientMusicStorageKey) return;
+
+            let needsRestore = false;
+
+            if (!ambientMusicUrl) {
+                needsRestore = true;
+            } else if (ambientMusicUrl.startsWith('blob:')) {
+                try {
+                    // Check if the blob URL is valid
+                    const res = await fetch(ambientMusicUrl);
+                    if (!res.ok) needsRestore = true;
+                } catch {
+                    needsRestore = true;
                 }
-            })
-            .catch(() => {});
-        return () => {
-            active = false;
+            }
+
+            if (needsRestore) {
+                try {
+                    const blob = await ambientMusicStorage.load();
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        // Restore with preserved name
+                        setAmbientMusicUrl(url, ambientMusicName);
+                    } else {
+                        // Data missing
+                        setAmbientMusicStorageKey(null);
+                    }
+                } catch (err) {
+                    console.error("Failed to restore ambient music:", err);
+                }
+            }
         };
-    }, [ambientMusicUrl, ambientMusicStorageKey, setAmbientMusicUrl, setAmbientMusicStorageKey]);
+
+        restoreAmbientMusic();
+    }, []);
 
     useEffect(() => {
         const previousUrl = ambientUrlRef.current;
