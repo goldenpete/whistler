@@ -451,14 +451,12 @@ function HighlightVideoPreview({ url, start = 0.1 }: { url: string, start?: numb
     );
 }
 
-function HighlightYouTubePreview({ videoId, start = 0 }: { videoId: string, start?: number }) {
-    const startSeconds = Math.floor(start);
+function HighlightYouTubePreview({ videoId }: { videoId: string, start?: number }) {
     return (
-        <iframe
-            src={`https://www.youtube.com/embed/${videoId}?start=${startSeconds}&controls=0&showinfo=0&rel=0&autoplay=0&mute=1&disablekb=1&modestbranding=1&iv_load_policy=3`}
-            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none"
-            loading="lazy"
-            title="YouTube Preview"
+        <img
+            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+            alt="YouTube Preview"
         />
     );
 }

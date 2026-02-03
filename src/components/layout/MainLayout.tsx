@@ -51,6 +51,11 @@ export function MainLayout() {
     const isAmbientSuppressed = (ambientMusicSuppressedBy || []).length > 0;
 
     useEffect(() => {
+        // Clear any stuck suppression on mount
+        if (ambientMusicSuppressedBy.length > 0) {
+             useStore.setState({ ambientMusicSuppressedBy: [] });
+        }
+
         const restoreAmbientMusic = async () => {
             // Handle Default Music (Static Path)
             if (ambientMusicStorageKey === 'default' || (!ambientMusicStorageKey && ambientMusicName === 'Default: Evolve (Idle)')) {
@@ -63,7 +68,19 @@ export function MainLayout() {
                 return;
             }
 
-            if (!ambientMusicStorageKey) return;
+            // If we have a name but no key/url, it's likely a custom track that needs restoration
+            // This handles the case where storageKey might have been lost or not set in previous versions
+            let shouldAttemptRestore = false;
+            
+            if (ambientMusicStorageKey === 'current') {
+                shouldAttemptRestore = true;
+            } else if (!ambientMusicStorageKey && ambientMusicName) {
+                // Legacy/Fallback: We have a name but no key, assume it's a custom track
+                shouldAttemptRestore = true;
+                setAmbientMusicStorageKey('current');
+            }
+
+            if (!shouldAttemptRestore) return;
 
             let needsRestore = false;
 
