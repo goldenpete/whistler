@@ -32,29 +32,35 @@ export function useSync() {
         try {
             if (type === "push") {
                 const state = useStore.getState();
-                const data = {
-                    projects: state.projects,
-                    files: state.files,
-                    collections: state.collections,
-                    highlights: state.highlights,
-                    graphs: state.graphs,
-                    graphNodes: state.graphNodes,
-                    graphEdges: state.graphEdges,
-                    docs: state.docs,
-                    storages: state.storages,
-                    // Theme Settings
-                    accentTheme: state.accentTheme,
-                    baseTheme: state.baseTheme,
-                    enableDefaultColorControls: state.enableDefaultColorControls,
-                    defaultColors: state.defaultColors,
-                    // Background Settings
-                    backgroundImageUrl: state.backgroundImageUrl,
-                    backgroundImageOpacity: state.backgroundImageOpacity,
-                    backgroundColor: state.backgroundColor,
-                    backgroundOverlayOpacity: state.backgroundOverlayOpacity,
-                    
+                const { syncOptions } = state;
+                const data: any = {
                     lastModified: Date.now(),
                 };
+
+                if (syncOptions.projects) data.projects = state.projects;
+                if (syncOptions.files) data.files = state.files;
+                if (syncOptions.collections) data.collections = state.collections;
+                if (syncOptions.highlights) data.highlights = state.highlights;
+                if (syncOptions.graphs) {
+                    data.graphs = state.graphs;
+                    data.graphNodes = state.graphNodes;
+                    data.graphEdges = state.graphEdges;
+                }
+                if (syncOptions.docs) data.docs = state.docs;
+                if (syncOptions.storages) data.storages = state.storages;
+                
+                if (syncOptions.settings) {
+                    // Theme Settings
+                    data.accentTheme = state.accentTheme;
+                    data.baseTheme = state.baseTheme;
+                    data.enableDefaultColorControls = state.enableDefaultColorControls;
+                    data.defaultColors = state.defaultColors;
+                    // Background Settings
+                    data.backgroundImageUrl = state.backgroundImageUrl;
+                    data.backgroundImageOpacity = state.backgroundImageOpacity;
+                    data.backgroundColor = state.backgroundColor;
+                    data.backgroundOverlayOpacity = state.backgroundOverlayOpacity;
+                }
                 
                 const payload = JSON.stringify({
                     key: "whistler_data",
@@ -119,89 +125,70 @@ export function useSync() {
                     return;
                 }
 
-                const result = await response.json();
-                
-                const dataRow = Array.isArray(result.data)
-                    ? result.data.find((d: any) => d.key === "whistler_data")
-                    : null;
-
-                if (dataRow && dataRow.value) {
-                    const cloudData = typeof dataRow.value === "string" ? JSON.parse(dataRow.value) : dataRow.value;
-                    if (!silent) console.log(`Restoring Cloud Data...`);
+                const json = await response.json();
+                if (json && json.value) {
+                    const serverData = json.value;
+                    const state = useStore.getState();
+                    const { syncOptions } = state;
+                    const updates: any = {};
                     
-                    setState({
-                        projects: cloudData.projects || [],
-                        files: cloudData.files || [],
-                        collections: cloudData.collections || [],
-                        highlights: cloudData.highlights || [],
-                        graphs: cloudData.graphs || [],
-                        graphNodes: cloudData.graphNodes || [],
-                        graphEdges: cloudData.graphEdges || [],
-                        docs: cloudData.docs || [],
-                        storages: cloudData.storages || [],
-                        history: cloudData.history || [],
-                        // Theme Settings
-                        accentTheme: cloudData.accentTheme || 'orange',
-                        baseTheme: cloudData.baseTheme || 'zinc',
-                        enableDefaultColorControls: cloudData.enableDefaultColorControls || false,
-                        defaultColors: cloudData.defaultColors || {
-                            file: '#f59e0b',
-                            collection: '#f59e0b',
-                            storage: '#f59e0b',
-                            graph: '#f59e0b',
-                            node: '#f59e0b',
-                        },
-                        // Background Settings
-                        backgroundImageUrl: cloudData.backgroundImageUrl ?? null,
-                        backgroundImageOpacity: cloudData.backgroundImageOpacity ?? 0.2,
-                        backgroundColor: cloudData.backgroundColor ?? '#000000',
-                        backgroundOverlayOpacity: cloudData.backgroundOverlayOpacity ?? 0.5,
-                    });
-                } else {
-                    if (!silent) console.log("No matching data row found in pull result.");
-                }
-            }
+                    if (syncOptions.projects && serverData.projects) updates.projects = serverData.projects;
+                    if (syncOptions.files && serverData.files) updates.files = serverData.files;
+                    if (syncOptions.collections && serverData.collections) updates.collections = serverData.collections;
+                    if (syncOptions.highlights && serverData.highlights) updates.highlights = serverData.highlights;
+                    if (syncOptions.graphs) {
+                        if (serverData.graphs) updates.graphs = serverData.graphs;
+                        if (serverData.graphNodes) updates.graphNodes = serverData.graphNodes;
+                        if (serverData.graphEdges) updates.graphEdges = serverData.graphEdges;
+                    }
+                    if (syncOptions.docs && serverData.docs) updates.docs = serverData.docs;
+                    if (syncOptions.storages && serverData.storages) updates.storages = serverData.storages;
+                    
+                    if (syncOptions.settings) {
+                        if (serverData.accentTheme) updates.accentTheme = serverData.accentTheme;
+                        if (serverData.baseTheme) updates.baseTheme = serverData.baseTheme;
+                        if (serverData.enableDefaultColorControls !== undefined) updates.enableDefaultColorControls = serverData.enableDefaultColorControls;
+                        if (serverData.defaultColors) updates.defaultColors = serverData.defaultColors;
+                        if (serverData.backgroundImageUrl !== undefined) updates.backgroundImageUrl = serverData.backgroundImageUrl;
+                        if (serverData.backgroundImageOpacity !== undefined) updates.backgroundImageOpacity = serverData.backgroundImageOpacity;
+                        if (serverData.backgroundColor !== undefined) updates.backgroundColor = serverData.backgroundColor;
+                        if (serverData.backgroundOverlayOpacity !== undefined) updates.backgroundOverlayOpacity = serverData.backgroundOverlayOpacity;
+                    }
 
-            const now = Date.now();
-            setLastSyncTime(now);
-            localStorage.setItem("whistler_last_sync", String(now));
-            
-            if (!silent) {
-                setSyncStatus("success");
-                setTimeout(() => setSyncStatus("idle"), 2000);
-            } else {
-                setSyncStatus("idle");
+                    if (Object.keys(updates).length > 0) {
+                        setState(updates);
+                    }
+                }
+                if (!silent) console.log("Pull Successful");
             }
+            
+            setLastSyncTime(Date.now());
+            setSyncStatus("success");
         } catch (err) {
-            console.error("Sync error:", err);
-            setError(err instanceof Error ? err.message : "Sync error");
+            console.error("Sync Error:", err);
+            setError("Network error");
             setSyncStatus("error");
         }
-    }, [logout, setLastSyncTime, setState, setSyncStatus]);
+    }, [setLastSyncTime, setState, setSyncStatus, logout]);
 
-    // Auto-sync Logic
     useEffect(() => {
-        if (syncIntervalRef.current) {
-            clearInterval(syncIntervalRef.current);
-            syncIntervalRef.current = null;
-        }
-
         if (autoSyncEnabled && user) {
-            // Initial sync on load? Maybe not, too aggressive.
-            // Just set interval.
+            if (syncIntervalRef.current) window.clearInterval(syncIntervalRef.current);
             syncIntervalRef.current = window.setInterval(() => {
-                if (syncStatus === 'idle') {
+                if (useStore.getState().syncStatus !== 'syncing') {
                     handleSync('push', true);
                 }
             }, autoSyncInterval);
-        }
-
-        return () => {
+        } else {
             if (syncIntervalRef.current) {
-                clearInterval(syncIntervalRef.current);
+                window.clearInterval(syncIntervalRef.current);
+                syncIntervalRef.current = null;
             }
+        }
+        return () => {
+            if (syncIntervalRef.current) window.clearInterval(syncIntervalRef.current);
         };
-    }, [autoSyncEnabled, user, autoSyncInterval, handleSync, syncStatus]);
+    }, [autoSyncEnabled, user, autoSyncInterval, handleSync]);
 
-    return { handleSync, error };
+    return { handleSync, error, syncStatus };
 }

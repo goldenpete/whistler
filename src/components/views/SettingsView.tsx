@@ -20,7 +20,8 @@ import {
     MagnifyingGlass,
     ArrowLeft,
     SidebarSimple,
-    FilmStrip
+    FilmStrip,
+    Cloud
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -32,6 +33,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { ColorPicker } from "@/components/ui/ColorPicker";
+import { SettingsSync } from "@/components/settings/SettingsSync";
 import type { AccentTheme, BaseTheme } from "@/types";
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
@@ -56,10 +58,10 @@ const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph'
     { key: 'node', label: 'Nodes' },
 ];
 
-type SettingsTab = 'appearance' | 'music' | 'system';
+type SettingsTab = 'appearance' | 'music' | 'system' | 'sync';
 
 export default function SettingsView() {
-    const { 
+    const {  
         accentTheme, 
         setAccentTheme, 
         baseTheme, 
@@ -161,6 +163,18 @@ export default function SettingsView() {
                     >
                         <Palette size={18} weight={activeTab === 'appearance' ? "fill" : "regular"} />
                         Appearance
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('sync')}
+                        className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                            activeTab === 'sync' 
+                                ? "bg-primary/10 text-primary" 
+                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        )}
+                    >
+                        <Cloud size={18} weight={activeTab === 'sync' ? "fill" : "regular"} />
+                        Sync & Backup
                     </button>
                     <button
                         onClick={() => setActiveTab('music')}
@@ -422,6 +436,11 @@ export default function SettingsView() {
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {/* Sync Tab */}
+                    {activeTab === 'sync' && (
+                        <SettingsSync />
                     )}
 
                     {/* Music Tab */}

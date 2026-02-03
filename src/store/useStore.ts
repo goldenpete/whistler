@@ -20,6 +20,16 @@ export interface AppStore extends AppState {
     autoSyncEnabled: boolean;
     autoSyncInterval: number; // in milliseconds
     syncStatus: SyncStatus;
+    syncOptions: {
+        projects: boolean;
+        files: boolean;
+        collections: boolean;
+        highlights: boolean;
+        docs: boolean;
+        graphs: boolean;
+        storages: boolean;
+        settings: boolean;
+    };
     backgroundImageUrl: string | null;
     backgroundImageOpacity: number;
     backgroundColor: string;
@@ -175,6 +185,7 @@ export interface AppStore extends AppState {
     setLastSyncTime: (time: number) => void;
     setAutoSyncEnabled: (enabled: boolean) => void;
     setSyncStatus: (status: SyncStatus) => void;
+    setSyncOptions: (options: Partial<AppStore['syncOptions']>) => void;
 }
 
 const STORAGE_KEY = 'whistler_v2_data';
@@ -259,6 +270,16 @@ export const useStore = create<AppStore>()(
             autoSyncEnabled: true,
             autoSyncInterval: 60000, // 1 minute default
             syncStatus: 'idle',
+            syncOptions: {
+                projects: true,
+                files: true,
+                collections: true,
+                highlights: true,
+                docs: true,
+                graphs: true,
+                storages: true,
+                settings: true,
+            },
             backgroundImageUrl: null,
             backgroundImageOpacity: 0.2,
             backgroundColor: '#000000',
@@ -469,6 +490,9 @@ export const useStore = create<AppStore>()(
             setLastSyncTime: (time) => set({ lastSyncTime: time }),
             setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
             setSyncStatus: (status) => set({ syncStatus: status }),
+            setSyncOptions: (options) => set((state) => ({
+                syncOptions: { ...state.syncOptions, ...options }
+            })),
 
             addProject: (name) => {
                 const newProject: Project = {
@@ -1150,6 +1174,10 @@ export const useStore = create<AppStore>()(
                 };
             }),
 
+            // Auth Actions
+            // (Moved to earlier in the file to avoid duplicates)
+            
+            // History Actions
             logAction: (entry) => set((state) => ({
                 history: [{
                     id: crypto.randomUUID(),
