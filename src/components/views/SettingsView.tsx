@@ -117,6 +117,7 @@ export default function SettingsView() {
     const [resetAllOpen, setResetAllOpen] = useState(false);
     const [localItemToDelete, setLocalItemToDelete] = useState<{id: string, label: string} | null>(null);
     const [isDeletingLocal, setIsDeletingLocal] = useState(false);
+    const [isDeletingReset, setIsDeletingReset] = useState(false);
 
     const handleDeleteLocal = async () => {
         if (!localItemToDelete) return;
@@ -178,7 +179,7 @@ export default function SettingsView() {
                     
                     // Create URL and update state
                     const url = URL.createObjectURL(file);
-                    setAmbientMusicUrl(url, file.name);
+                    setAmbientMusicUrl(url, file.name, file.type);
                     setAmbientMusicVolume(0.5);
                     setAmbientMusicPaused(false);
                 } catch (err) {
@@ -210,9 +211,18 @@ export default function SettingsView() {
         setResetAllOpen(true);
     };
 
-    const handleConfirmReset = () => {
-        localStorage.removeItem('whistler_v2_data');
-        window.location.reload();
+    const handleConfirmReset = async () => {
+        setIsDeletingReset(true);
+        try {
+            await ambientMusicStorage.clear();
+            localStorage.removeItem('whistler_v2_data');
+            // Small delay to ensure UI updates
+            await new Promise(resolve => setTimeout(resolve, 500));
+            window.location.reload();
+        } catch (error) {
+            console.error("Failed to reset:", error);
+            setIsDeletingReset(false);
+        }
     };
 
     return (
@@ -906,7 +916,7 @@ export default function SettingsView() {
                 onConfirm={handleConfirmReset}
                 title="Reset All Data?"
                 description="This will permanently remove ALL local data, settings, and files from this device. This action cannot be undone."
-                isDeleting={false}
+                isDeleting={isDeletingReset}
             />
         </div>
     );

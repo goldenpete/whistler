@@ -36,6 +36,7 @@ export interface AppStore extends AppState {
     backgroundOverlayOpacity: number;
     ambientMusicUrl: string | null;
     ambientMusicName: string | null;
+    ambientMusicType: string | null;
     ambientMusicPaused: boolean;
     ambientMusicVolume: number;
     ambientMusicSuppressedBy: string[];
@@ -134,7 +135,7 @@ export interface AppStore extends AppState {
     setBackgroundImageOpacity: (opacity: number) => void;
     setBackgroundColor: (color: string) => void;
     setBackgroundOverlayOpacity: (opacity: number) => void;
-    setAmbientMusicUrl: (url: string | null, name?: string | null) => void;
+    setAmbientMusicUrl: (url: string | null, name?: string | null, type?: string | null) => void;
     setAmbientMusicPaused: (paused: boolean) => void;
     setAmbientMusicVolume: (volume: number) => void;
     addAmbientMusicSuppression: (source: string) => void;
@@ -286,6 +287,7 @@ export const useStore = create<AppStore>()(
             backgroundOverlayOpacity: 0.5,
             ambientMusicUrl: null,
             ambientMusicName: null,
+            ambientMusicType: null,
             ambientMusicPaused: false,
             ambientMusicVolume: 0.4,
             ambientMusicSuppressedBy: [],
@@ -416,7 +418,7 @@ export const useStore = create<AppStore>()(
             setBackgroundColor: (color) => set({ backgroundColor: color }),
             setBackgroundOverlayOpacity: (opacity) => set({ backgroundOverlayOpacity: opacity }),
             setAmbientMusicPaused: (paused) => set({ ambientMusicPaused: paused }),
-            setAmbientMusicUrl: (url, name = null) => set({ ambientMusicUrl: url, ambientMusicName: name, ambientMusicPaused: false }),
+            setAmbientMusicUrl: (url, name = null, type = null) => set({ ambientMusicUrl: url, ambientMusicName: name, ambientMusicType: type, ambientMusicPaused: false }),
             setAmbientMusicVolume: (volume) => set({ ambientMusicVolume: Math.max(0, Math.min(1, volume)) }),
             addAmbientMusicSuppression: (source) =>
                 set((state) => ({

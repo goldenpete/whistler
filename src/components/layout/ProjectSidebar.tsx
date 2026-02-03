@@ -1609,21 +1609,21 @@ export default function ProjectSidebar() {
                     ) : (
                         <>
                             <div className={cn("flex items-center gap-1", isSidebarCollapsed || isSlim ? "flex-col justify-center" : "justify-between w-full")}>
-                                {!isSidebarCollapsed && !isSlim ? (
-                                    <div className="flex-1 min-w-0">
-                                        <SyncStatusFooter />
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => setSidebarView('sync')}
-                                        className="w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                        title="Sync Status"
-                                    >
-                                        <ArrowsClockwise weight="bold" size={18} className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} />
-                                    </button>
-                                )}
+                                <div className={cn("flex items-center gap-1", isSidebarCollapsed || isSlim ? "flex-col w-full" : "min-w-0 mr-2")}>
+                                    {!isSidebarCollapsed && !isSlim ? (
+                                        <div className="flex-1 min-w-0 max-w-[160px]">
+                                            <SyncStatusFooter />
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setSidebarView('sync')}
+                                            className="w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                                            title="Sync Status"
+                                        >
+                                            <ArrowsClockwise weight="bold" size={18} className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} />
+                                        </button>
+                                    )}
 
-                                <div className={cn("flex gap-1 items-center", (isSidebarCollapsed || isSlim) && "flex-col space-y-1 items-stretch")}>
                                     <div className={cn("flex gap-1", (isSidebarCollapsed || isSlim) && "flex-col space-y-1")}>
                                         <button
                                             onClick={() => setSidebarView('history')}
@@ -1640,24 +1640,24 @@ export default function ProjectSidebar() {
                                             <Trash weight="bold" size={18} />
                                         </button>
                                     </div>
-                                    
-                                    {/* Separator */}
-                                    <div className={cn(
-                                        "bg-border/40", 
-                                        (isSidebarCollapsed || isSlim) ? "h-px w-4 mx-auto my-1" : "w-px h-4 mx-1"
-                                    )} />
-
-                                    <button
-                                        onClick={() => navigate('/settings')}
-                                        className={cn(
-                                            "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
-                                            location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
-                                        )}
-                                        title="Settings"
-                                    >
-                                        <Gear weight="fill" size={18} />
-                                    </button>
                                 </div>
+                                    
+                                {/* Separator */}
+                                <div className={cn(
+                                    "bg-border/40", 
+                                    (isSidebarCollapsed || isSlim) ? "h-px w-4 mx-auto my-1" : "hidden"
+                                )} />
+
+                                <button
+                                    onClick={() => navigate('/settings')}
+                                    className={cn(
+                                        "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
+                                        location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
+                                    )}
+                                    title="Settings"
+                                >
+                                    <Gear weight="fill" size={18} />
+                                </button>
                             </div>
                         </>
                     )}

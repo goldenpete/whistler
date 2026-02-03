@@ -18,6 +18,7 @@ export function MainLayout() {
         backgroundOverlayOpacity, 
         ambientMusicUrl, 
         ambientMusicName,
+        ambientMusicType,
         ambientMusicVolume, 
         ambientMusicSuppressedBy, 
         ambientMusicStorageKey,
@@ -31,6 +32,7 @@ export function MainLayout() {
         backgroundOverlayOpacity: state.backgroundOverlayOpacity,
         ambientMusicUrl: state.ambientMusicUrl,
         ambientMusicName: state.ambientMusicName,
+        ambientMusicType: state.ambientMusicType,
         ambientMusicVolume: state.ambientMusicVolume,
         ambientMusicSuppressedBy: state.ambientMusicSuppressedBy,
         ambientMusicStorageKey: state.ambientMusicStorageKey,
@@ -82,7 +84,7 @@ export function MainLayout() {
                         }
                         const url = URL.createObjectURL(blob);
                         // Restore with preserved name
-                        setAmbientMusicUrl(url, ambientMusicName);
+                        setAmbientMusicUrl(url, ambientMusicName, ambientMusicType);
                     } else {
                         // Data missing - Clear state to prevent "ghost" music
                         setAmbientMusicStorageKey(null);

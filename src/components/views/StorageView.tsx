@@ -75,6 +75,7 @@ import {
 } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { ColorPicker } from "@/components/ui/ColorPicker";
+import { getYouTubeId } from "@/components/player/YouTubePlayer";
 
 const STORAGE_COLORS = [
     "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
@@ -1010,6 +1011,7 @@ function getFileIcon(type: string) {
 
 function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image' {
     const lower = url.toLowerCase();
+    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'video';
     if (/\.(mp4|webm|mov|avi|mkv|m4v)(\?|$)/.test(lower)) return 'video';
     if (/\.(mp3|wav|ogg|flac|m4a)(\?|$)/.test(lower)) return 'audio';
     if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/.test(lower)) return 'image';
@@ -1064,11 +1066,25 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
         });
     }
 
+    // Check for YouTube first, regardless of file type (handles legacy 'file' type imports)
+    const youtubeId = getYouTubeId(file.url);
+    if (youtubeId) {
+        return (
+            <img 
+                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`} 
+                alt={file.name} 
+                className="w-full h-full object-cover" 
+                onError={() => setError(true)} 
+            />
+        );
+    }
+
     if (file.type === 'image') {
         return <img src={file.url} alt={file.name} className="w-full h-full object-cover" onError={() => setError(true)} />;
     }
 
     if (file.type === 'video') {
+
         return (
             <video
                 ref={videoRef}
