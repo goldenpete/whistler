@@ -29,68 +29,14 @@ import { type Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
+import { thumbnailStorage } from "@/lib/thumbnailDb";
+import { useEffect } from "react";
+import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
+
+
 
 type SortOption = "name" | "date" | "items";
 type SortDirection = "asc" | "desc";
-
-// Helper for grid previews
-function CollectionGridPreview({ collectionId, highlights, files }: { collectionId: string, highlights: any[], files: any[] }) {
-    // Get first 4 highlights for this collection
-    const items = highlights
-        .filter(h => h.collectionId === collectionId)
-        .slice(0, 4);
-
-    if (items.length === 0) return null;
-
-    return (
-        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 opacity-20 pointer-events-none">
-            {items.map((h, i) => {
-                const file = files.find(f => f.id === h.fileId);
-                if (!file || !file.url) return <div key={h.id} className="bg-muted/50" />;
-                
-                const youtubeId = getYouTubeId(file.url);
-
-                return (
-                    <div key={h.id} className="relative overflow-hidden border-[0.5px] border-white/10">
-                        {youtubeId ? (
-                             <img
-                                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
-                                className="w-full h-full object-cover"
-                                alt=""
-                            />
-                        ) : file.type === 'video' ? (
-                            <video
-                                src={`${file.url}#t=${h.start}`}
-                                className="w-full h-full object-cover"
-                                muted
-                                playsInline
-                            />
-                        ) : file.type === 'image' ? (
-                            <img
-                                src={file.url}
-                                className="w-full h-full object-cover"
-                                alt=""
-                            />
-                        ) : file.type === 'pdf' ? (
-                            <div className="w-full h-full overflow-hidden">
-                                <PdfThumbnail
-                                    url={file.url}
-                                    onError={() => {}}
-                                    width={150}
-                                    page={h.start || 1}
-                                    rect={h.rect}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                        ) : (
-                            <div className="w-full h-full bg-muted/50" />
-                        )}
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
 
 export default function CollectionsView() {
     const { 

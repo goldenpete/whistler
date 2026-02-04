@@ -96,6 +96,12 @@ export default function SettingsView() {
         setDisableMediaAutoplay,
         useMiddleFrameForPreviews,
         setUseMiddleFrameForPreviews,
+        cacheFiles,
+        setCacheFiles,
+        cacheCollections,
+        setCacheCollections,
+        cacheHighlights,
+        setCacheHighlights,
         sfxEnabled,
         setSfxEnabled,
         enabledSounds,
@@ -620,6 +626,58 @@ export default function SettingsView() {
                                                 </div>
                                             </div>
                                         </div>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div>
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <FilmStrip className="text-primary" size={24} />
+                                    Preview Image Cache
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between gap-4">
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <File size={16} className="text-muted-foreground" />
+                                                <label className="text-sm font-medium">Files</label>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">Cache preview frames for video files</p>
+                                        </div>
+                                        <Switch 
+                                            checked={cacheFiles}
+                                            onCheckedChange={setCacheFiles}
+                                        />
+                                    </div>
+
+                                    <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between gap-4">
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Folder size={16} className="text-muted-foreground" />
+                                                <label className="text-sm font-medium">Collections</label>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">Cache 2x2 grid previews for collections</p>
+                                        </div>
+                                        <Switch 
+                                            checked={cacheCollections}
+                                            onCheckedChange={setCacheCollections}
+                                        />
+                                    </div>
+
+                                    <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between gap-4">
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <FilmStrip size={16} className="text-muted-foreground" />
+                                                <label className="text-sm font-medium">Highlights</label>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">Cache preview frames for highlights</p>
+                                        </div>
+                                        <Switch 
+                                            checked={cacheHighlights}
+                                            onCheckedChange={setCacheHighlights}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

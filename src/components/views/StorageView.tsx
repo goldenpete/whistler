@@ -76,6 +76,7 @@ import {
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
+import { thumbnailStorage } from "@/lib/thumbnailDb";
 
 const STORAGE_COLORS = [
     "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
@@ -1024,25 +1025,35 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) {
     const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
 
+    // Load cached thumbnail
     useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
+        if (file.type !== 'video' || !file.url || getYouTubeId(file.url)) return;
 
-        const updateTime = () => {
-            if (useMiddleFrameForPreviews && video.duration && isFinite(video.duration)) {
-                video.currentTime = video.duration / 2;
-            } else {
-                video.currentTime = 0.1;
+        const loadThumbnail = async () => {
+            const key = `${file.url}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
+            try {
+                const blob = await thumbnailStorage.load(key);
+                if (blob) {
+                    const objectUrl = URL.createObjectURL(blob);
+                    setCachedThumbnail(objectUrl);
+                }
+            } catch (e) {
+                console.error("Failed to load thumbnail", e);
             }
         };
+        loadThumbnail();
+    }, [file.url, file.type, useMiddleFrameForPreviews]);
 
-        if (video.readyState >= 1) {
-            updateTime();
-        } else {
-            video.onloadedmetadata = updateTime;
-        }
-    }, [useMiddleFrameForPreviews]);
+    // Cleanup object URL
+    useEffect(() => {
+        return () => {
+            if (cachedThumbnail) {
+                URL.revokeObjectURL(cachedThumbnail);
+            }
+        };
+    }, [cachedThumbnail]);
 
     const Icon = (() => {
         let icon = getFileIcon(file.type);
@@ -1084,6 +1095,16 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
     }
 
     if (file.type === 'video') {
+        if (cachedThumbnail) {
+             return (
+                <img 
+                    src={cachedThumbnail} 
+                    alt={file.name} 
+                    className="w-full h-full object-cover" 
+                    onError={() => setCachedThumbnail(null)} 
+                />
+            );
+        }
 
         return (
             <video
@@ -1093,6 +1114,7 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
                 preload="metadata"
                 muted
                 playsInline
+                crossOrigin="anonymous"
                 onError={() => setError(true)}
                 onLoadedMetadata={(e: SyntheticEvent<HTMLVideoElement>) => {
                     const video = e.currentTarget;
@@ -1101,6 +1123,27 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
                     } else {
                         video.currentTime = 0.1;
                     }
+                }}
+                onSeeked={async (e: SyntheticEvent<HTMLVideoElement>) => {
+                     const video = e.currentTarget;
+                     const key = `${file.url}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
+                     
+                     try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            ctx.drawImage(video, 0, 0);
+                            canvas.toBlob(async (blob) => {
+                                if (blob) {
+                                    await thumbnailStorage.save(key, blob);
+                                }
+                            }, 'image/jpeg', 0.7);
+                        }
+                     } catch (err) {
+                         console.error("Failed to capture thumbnail", err);
+                     }
                 }}
             />
         );

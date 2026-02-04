@@ -57,6 +57,8 @@ import { FileContextMenu } from "@/components/views/StorageView";
 import { Copy, Trash, ArrowSquareOut, PencilSimple, Lightning } from "@phosphor-icons/react";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
+import { thumbnailStorage } from "@/lib/thumbnailDb";
+import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 
 const LOGO_MAP: Record<AccentTheme, string> = {
     orange: whistlerLogoOrange,
@@ -89,12 +91,44 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 }
 
 const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { url: string, start?: number, overrideMiddleFrame?: boolean }) => {
-    const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
+    const { useMiddleFrameForPreviews, cacheFiles } = useStore(state => ({
+        useMiddleFrameForPreviews: state.useMiddleFrameForPreviews,
+        cacheFiles: state.cacheFiles
+    }));
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeId = getYouTubeId(url);
+    const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
 
+    // Load cached thumbnail
     useEffect(() => {
         if (youtubeId) return;
+        
+        const loadThumbnail = async () => {
+            const key = `${url}-${start}-${overrideMiddleFrame ? 'mid' : 'start'}`;
+            try {
+                const blob = await thumbnailStorage.load(key);
+                if (blob) {
+                    const objectUrl = URL.createObjectURL(blob);
+                    setCachedThumbnail(objectUrl);
+                }
+            } catch (e) {
+                console.error("Failed to load thumbnail", e);
+            }
+        };
+        loadThumbnail();
+    }, [url, start, overrideMiddleFrame, youtubeId]);
+
+    // Cleanup object URL
+    useEffect(() => {
+        return () => {
+            if (cachedThumbnail) {
+                URL.revokeObjectURL(cachedThumbnail);
+            }
+        };
+    }, [cachedThumbnail]);
+
+    useEffect(() => {
+        if (youtubeId || cachedThumbnail) return;
 
         const video = videoRef.current;
         if (!video) return;
@@ -110,17 +144,13 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
         if (video.readyState >= 1) {
             updateTime();
         } else {
-            // We can't easily remove this listener if we use onloadedmetadata prop, 
-            // but for a one-off set it's fine. 
-            // Better to rely on the prop for initial load and this effect for updates.
-            // But to be safe and consistent with StorageView:
             const onLoadedMetadata = () => {
                 updateTime();
                 video.removeEventListener('loadedmetadata', onLoadedMetadata);
             };
             video.addEventListener('loadedmetadata', onLoadedMetadata);
         }
-    }, [useMiddleFrameForPreviews, start, overrideMiddleFrame, youtubeId]);
+    }, [useMiddleFrameForPreviews, start, overrideMiddleFrame, youtubeId, cachedThumbnail]);
 
     if (youtubeId) {
         return (
@@ -129,6 +159,19 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                     src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                     alt="YouTube Preview"
+                    onContextMenu={(e: any) => e.preventDefault()}
+                />
+            </div>
+        );
+    }
+
+    if (cachedThumbnail) {
+        return (
+             <div className="absolute inset-0 bg-black/20">
+                <img
+                    src={cachedThumbnail}
+                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    alt="Video Preview"
                     onContextMenu={(e: any) => e.preventDefault()}
                 />
             </div>
@@ -144,6 +187,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                 muted
                 loop
                 playsInline
+                crossOrigin="anonymous"
                 onMouseOver={(e: MouseEvent<HTMLVideoElement>) => e.currentTarget.play()}
                 onMouseOut={(e: MouseEvent<HTMLVideoElement>) => {
                     const video = e.currentTarget;
@@ -161,6 +205,35 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                         video.currentTime = video.duration / 2;
                     } else {
                         video.currentTime = start;
+                    }
+                }}
+                onSeeked={async (e: SyntheticEvent<HTMLVideoElement>) => {
+                    const video = e.currentTarget;
+                    if (video.readyState >= 2) {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                canvas.toBlob(async (blob) => {
+                                    if (blob) {
+                                        const key = `${url}-${start}-${overrideMiddleFrame ? 'mid' : 'start'}`;
+                                        if (cacheFiles) {
+                                            await thumbnailStorage.save(key, blob);
+                                        }
+                                        // Optional: Immediately switch to cached version? 
+                                        // Maybe better to wait for next mount or set state here.
+                                        // setCachedThumbnail(URL.createObjectURL(blob)); 
+                                        // If we set state here, it might flash. 
+                                        // Let's just save it for next time.
+                                    }
+                                }, 'image/jpeg', 0.7);
+                            }
+                        } catch (err) {
+                            console.warn("Failed to capture thumbnail", err);
+                        }
                     }
                 }}
             />
@@ -240,18 +313,35 @@ const CardPreview = ({ item }: { item: any }) => {
 
     // Collection
     if (item.type === 'collection') {
+        const { highlights, files } = useStore.getState();
         return (
             <>
+                <CollectionGridPreview 
+                    collectionId={item.data.id} 
+                    highlights={highlights} 
+                    files={files} 
+                />
                 <div 
                     className="absolute inset-0 opacity-[0.08]"
                     style={{ backgroundColor: item.data.color }}
                 />
-                <div 
-                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                    style={{ color: item.data.color }}
-                >
-                    <Tag size={180} weight="fill" />
-                </div>
+                {/* Only show icon if no grid preview (handled by checking if highlights exist for this collection? 
+                    Actually CollectionGridPreview returns null if empty.
+                    But we are inside the CardPreview. 
+                    If CollectionGridPreview renders, it covers the background?
+                    The user said: "if there is nothing to put in the grid because there are no highlights yet, just show the regular one we currently have."
+                    
+                    CollectionGridPreview uses absolute positioning.
+                    We can check if it has items.
+                */}
+                {(!highlights.some((h: any) => h.collectionId === item.data.id)) && (
+                    <div 
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                        style={{ color: item.data.color }}
+                    >
+                        <Tag size={180} weight="fill" />
+                    </div>
+                )}
             </>
         );
     }

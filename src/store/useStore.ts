@@ -51,6 +51,9 @@ export interface AppStore extends AppState {
     audioVolumeByFile: Record<string, number>;
     videoUnmutedByFile: Record<string, boolean>;
     useMiddleFrameForPreviews: boolean;
+    cacheFiles: boolean;
+    cacheCollections: boolean;
+    cacheHighlights: boolean;
     sfxEnabled: boolean;
     enabledSounds: {
         cursor: boolean;
@@ -153,6 +156,9 @@ export interface AppStore extends AppState {
     setAudioVolumeForFile: (fileId: string, volume: number) => void;
     setVideoUnmutedForFile: (fileId: string, unmuted: boolean) => void;
     setUseMiddleFrameForPreviews: (enabled: boolean) => void;
+    setCacheFiles: (enabled: boolean) => void;
+    setCacheCollections: (enabled: boolean) => void;
+    setCacheHighlights: (enabled: boolean) => void;
     clearMediaVolumes: () => void;
 
     setAutoSyncInterval: (interval: number) => void;
@@ -302,6 +308,9 @@ export const useStore = create<AppStore>()(
             audioVolumeByFile: {},
             videoUnmutedByFile: {},
             useMiddleFrameForPreviews: true,
+            cacheFiles: true,
+            cacheCollections: true,
+            cacheHighlights: true,
             sfxEnabled: true,
             enabledSounds: {
                 cursor: true,
@@ -467,6 +476,9 @@ export const useStore = create<AppStore>()(
                 }
             })),
             setUseMiddleFrameForPreviews: (enabled) => set({ useMiddleFrameForPreviews: enabled }),
+            setCacheFiles: (enabled) => set({ cacheFiles: enabled }),
+            setCacheCollections: (enabled) => set({ cacheCollections: enabled }),
+            setCacheHighlights: (enabled) => set({ cacheHighlights: enabled }),
             clearMediaVolumes: () => set({ videoVolumeByFile: {}, audioVolumeByFile: {} }),
             toggleSound: (type) => set((state) => {
                 const currentSounds = state.enabledSounds || {
