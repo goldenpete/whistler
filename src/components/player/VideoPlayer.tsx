@@ -50,9 +50,10 @@ import {
     MusicNotes,
     MagnifyingGlassMinus,
     MagnifyingGlassPlus,
-    ArrowsClockwise,
-    VideoCamera
-} from "@phosphor-icons/react";
+     ArrowsClockwise,
+     VideoCamera,
+     Desktop
+ } from "@phosphor-icons/react";
 import { ScreenshotDialog } from "@/components/dialogs/ScreenshotDialog";
 import { motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
@@ -956,7 +957,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     src={file.url || ""}
                                     className="max-w-full max-h-full object-contain focus:outline-none"
                                     autoPlay={!disableMediaAutoplay}
-                                    crossOrigin="anonymous"
                                     onWaiting={() => setIsLoading(true)}
                                     onCanPlay={() => setIsLoading(false)}
                                     onPlay={() => {
@@ -1206,7 +1206,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 </Popover>
 
                                 <Button variant="ghost" size="icon" onClick={handleTogglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
-                                    <ArrowSquareOut weight="bold" size={20} />
+                                    <Desktop weight="bold" size={20} />
                                 </Button>
 
                                 <div className="w-px h-5 bg-border mx-1" />

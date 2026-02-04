@@ -1640,11 +1640,10 @@ export default function ProjectSidebar() {
                                         <Trash weight="bold" size={18} />
                                     </button>
                                     
-                                    {/* Separator */}
-                                    <div className={cn(
-                                        "bg-border/40", 
-                                        (isSidebarCollapsed || isSlim) ? "h-px w-4 mx-auto" : "h-4 w-px"
-                                    )} />
+                                    {/* Separator - Only in vertical mode */}
+                                    {(isSidebarCollapsed || isSlim) && (
+                                        <div className="bg-border/40 h-px w-4 mx-auto" />
+                                    )}
 
                                     <button
                                         onClick={() => navigate('/settings')}
