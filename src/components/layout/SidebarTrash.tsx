@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type MouseEvent, type ReactNode } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
@@ -151,7 +151,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                            onClick={(e: React.MouseEvent) => {
+                            onClick={(e: MouseEvent) => {
                                 e.stopPropagation();
                                 onRestore();
                             }}
@@ -165,7 +165,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                    onClick={(e: MouseEvent) => e.stopPropagation()}
                                     title="Delete Permanently"
                                 >
                                     <XCircle className="h-4 w-4" />
@@ -218,7 +218,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
-                        onClick={(e: React.MouseEvent) => {
+                        onClick={(e: MouseEvent) => {
                             e.stopPropagation();
                             onRestore();
                         }}
@@ -232,7 +232,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                onClick={(e: MouseEvent) => e.stopPropagation()}
                                 title="Delete Permanently"
                             >
                                 <XCircle className="h-3 w-3" />
@@ -387,7 +387,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
         variant === 'sidebar' ? "bg-sidebar-background" : "bg-transparent"
     );
 
-    const TrashSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
+    const TrashSection = ({ title, children }: { title: string, children: ReactNode }) => (
         <div className={isSettingsPage ? "p-5 rounded-lg border border-border bg-card/50" : ""}>
             <h3 className={cn(
                 "text-muted-foreground uppercase tracking-wider mb-2 px-2",

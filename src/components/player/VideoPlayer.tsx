@@ -209,6 +209,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     setIsScreenshotDialogOpen(true);
                 } catch (e) {
                     console.error("Failed to capture video frame", e);
+                    alert("Cannot capture screenshot due to browser security restrictions (CORS). The video server must allow cross-origin access.");
                 }
             }
         }
@@ -955,6 +956,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     src={file.url || ""}
                                     className="max-w-full max-h-full object-contain focus:outline-none"
                                     autoPlay={!disableMediaAutoplay}
+                                    crossOrigin="anonymous"
                                     onWaiting={() => setIsLoading(true)}
                                     onCanPlay={() => setIsLoading(false)}
                                     onPlay={() => {
@@ -1129,26 +1131,28 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 >
                                     <ArrowsClockwise weight="bold" size={18} />
                                 </Button>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile - 0.1))}
-                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                    title="Zoom Out"
-                                    disabled={!isManualZoom}
-                                >
-                                    <MagnifyingGlassMinus weight="bold" size={18} />
-                                </Button>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile + 0.1))}
-                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                    title="Zoom In"
-                                    disabled={!isManualZoom}
-                                >
-                                    <MagnifyingGlassPlus weight="bold" size={18} />
-                                </Button>
+                                {isManualZoom && (
+                                    <>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile - 0.1))}
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                            title="Zoom Out"
+                                        >
+                                            <MagnifyingGlassMinus weight="bold" size={18} />
+                                        </Button>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile + 0.1))}
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                            title="Zoom In"
+                                        >
+                                            <MagnifyingGlassPlus weight="bold" size={18} />
+                                        </Button>
+                                    </>
+                                )}
 
                                 <Popover>
                                     <PopoverTrigger asChild>
@@ -1202,7 +1206,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 </Popover>
 
                                 <Button variant="ghost" size="icon" onClick={handleTogglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
-                                    <CornersOut weight="bold" size={20} />
+                                    <ArrowSquareOut weight="bold" size={20} />
                                 </Button>
 
                                 <div className="w-px h-5 bg-border mx-1" />
