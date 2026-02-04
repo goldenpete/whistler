@@ -188,7 +188,6 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                 muted
                 loop
                 playsInline
-                crossOrigin="anonymous"
                 onMouseOver={(e: MouseEvent<HTMLVideoElement>) => e.currentTarget.play()}
                 onMouseOut={(e: MouseEvent<HTMLVideoElement>) => {
                     const video = e.currentTarget;

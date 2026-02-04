@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type SyntheticEvent } from "react";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { useStore } from "@/store/useStore";
+import type { Highlight, File as AppFile } from "@/types";
 
 interface CachedVideoPreviewProps {
     url: string;
@@ -46,8 +47,7 @@ export function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
             className="w-full h-full object-cover"
             muted
             playsInline
-            crossOrigin="anonymous"
-            onSeeked={async (e) => {
+            onSeeked={async (e: SyntheticEvent<HTMLVideoElement>) => {
                 if (!cacheHighlights) return;
                 
                 const video = e.currentTarget;
@@ -71,8 +71,8 @@ export function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
 
 interface CollectionGridPreviewProps {
     collectionId: string;
-    highlights: any[];
-    files: any[];
+    highlights: Highlight[];
+    files: AppFile[];
 }
 
 export function CollectionGridPreview({ collectionId, highlights, files }: CollectionGridPreviewProps) {
@@ -114,7 +114,7 @@ export function CollectionGridPreview({ collectionId, highlights, files }: Colle
                                     onError={() => {}}
                                     width={150}
                                     page={h.start || 1}
-                                    rect={h.rect}
+                                    rect={h.rect ?? undefined}
                                     className="w-full h-full object-cover"
                                 />
                             </div>

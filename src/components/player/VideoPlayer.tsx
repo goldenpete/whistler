@@ -172,6 +172,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
     const [isScreenshotDialogOpen, setIsScreenshotDialogOpen] = useState(false);
     const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+    const [useCors, setUseCors] = useState(false);
 
     const handleCaptureFrame = async () => {
         if (isYouTube && file && file.url) {
@@ -210,7 +211,18 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     setIsScreenshotDialogOpen(true);
                 } catch (e) {
                     console.error("Failed to capture video frame", e);
-                    alert("Cannot capture screenshot due to browser security restrictions (CORS). The video server must allow cross-origin access.");
+                    if (!useCors) {
+                        const retry = window.confirm(
+                            "Cannot capture screenshot due to browser security restrictions (CORS).\n\n" +
+                            "Do you want to try reloading the video with CORS enabled?\n" +
+                            "Note: If the video server doesn't support CORS, playback may stop working."
+                        );
+                        if (retry) {
+                            setUseCors(true);
+                        }
+                    } else {
+                        alert("Cannot capture screenshot even with CORS enabled. The video server blocks cross-origin access.");
+                    }
                 }
             }
         }
@@ -319,6 +331,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         // manual volume changes when store updates (e.g. unmuting)
         if (fileId !== lastFileIdRef.current) {
             lastFileIdRef.current = fileId;
+            setUseCors(false);
 
             const initialVolume = rememberMediaVolume && videoVolumeByFile[fileId] !== undefined
                 ? videoVolumeByFile[fileId]
@@ -954,10 +967,19 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 ) : (
                                 <video
                                     ref={videoRef}
+                                    key={useCors ? "cors" : "no-cors"}
                                     src={file.url || ""}
+                                    crossOrigin={useCors ? "anonymous" : undefined}
                                     className="max-w-full max-h-full object-contain focus:outline-none"
                                     autoPlay={!disableMediaAutoplay}
                                     onWaiting={() => setIsLoading(true)}
+                                    onError={() => {
+                                        if (useCors) {
+                                            const revert = window.confirm("Video failed to load with CORS enabled. The server likely blocks cross-origin access.\n\nRevert to standard mode?");
+                                            if (revert) setUseCors(false);
+                                        }
+                                        setIsLoading(false); 
+                                    }}
                                     onCanPlay={() => setIsLoading(false)}
                                     onPlay={() => {
                                         setIsPlaying(true);
