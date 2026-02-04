@@ -28,6 +28,7 @@ import { getIcon } from "@/utils/iconMap";
 import { type Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
+import { getYouTubeId } from "@/components/player/YouTubePlayer";
 
 type SortOption = "name" | "date" | "items";
 type SortDirection = "asc" | "desc";
@@ -47,9 +48,17 @@ function CollectionGridPreview({ collectionId, highlights, files }: { collection
                 const file = files.find(f => f.id === h.fileId);
                 if (!file || !file.url) return <div key={h.id} className="bg-muted/50" />;
                 
+                const youtubeId = getYouTubeId(file.url);
+
                 return (
                     <div key={h.id} className="relative overflow-hidden border-[0.5px] border-white/10">
-                        {file.type === 'video' ? (
+                        {youtubeId ? (
+                             <img
+                                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                                className="w-full h-full object-cover"
+                                alt=""
+                            />
+                        ) : file.type === 'video' ? (
                             <video
                                 src={`${file.url}#t=${h.start}`}
                                 className="w-full h-full object-cover"
