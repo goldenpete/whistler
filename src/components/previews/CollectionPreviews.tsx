@@ -14,6 +14,8 @@ export function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
     const cacheHighlights = useStore(state => state.cacheHighlights);
 
     useEffect(() => {
+        if (Number.isNaN(time)) return;
+
         const loadThumbnail = async () => {
             const key = `${url}-${time}-grid`;
             try {

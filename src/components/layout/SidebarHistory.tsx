@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 
 interface SidebarHistoryProps {
     onBack: () => void;
-    variant?: 'sidebar' | 'settings';
+    variant?: 'sidebar' | 'settings' | 'settings-page';
 }
 
 // History sidebar component
@@ -20,6 +20,8 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
         history: state.history,
         clearHistory: state.clearHistory
     })));
+
+    const isSettingsPage = variant === 'settings-page';
 
     // Group history by date
     const groupedHistory = history.reduce((groups: Record<string, HistoryEntry[]>, entry: HistoryEntry) => {
@@ -57,12 +59,9 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
         }
     };
 
-    return (
-        <div className={cn(
-            "flex flex-col h-full min-h-0", 
-            variant === 'sidebar' ? "bg-sidebar-background" : "bg-transparent"
-        )}>
-            {variant === 'sidebar' ? (
+    const Header = () => {
+        if (variant === 'sidebar') {
+            return (
                 <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack} data-sound-back>
@@ -82,7 +81,10 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
                         </button>
                     )}
                 </div>
-            ) : (
+            );
+        }
+        if (variant === 'settings') {
+            return (
                 <div className="p-4 border-b border-border flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -101,11 +103,37 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
                         </Button>
                     )}
                 </div>
-            )}
+            );
+        }
+        return (
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <ClockCounterClockwise className="text-primary" size={24} />
+                    History Log
+                </h2>
+                {history.length > 0 && (
+                    <Button variant="destructive" size="sm" onClick={clearHistory}>
+                        Clear History
+                    </Button>
+                )}
+            </div>
+        );
+    };
 
-            <ScrollArea className="flex-1 p-2 overflow-y-auto">
+    const Wrapper = isSettingsPage ? 'div' : ScrollArea;
+    const wrapperClass = isSettingsPage ? '' : 'flex-1 p-2 overflow-y-auto';
+    const containerClass = cn(
+        isSettingsPage ? "space-y-6" : "flex flex-col h-full min-h-0",
+        variant === 'sidebar' ? "bg-sidebar-background" : "bg-transparent"
+    );
+
+    return (
+        <div className={containerClass}>
+            <Header />
+
+            <Wrapper className={wrapperClass}>
                 {history.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-12">
+                    <div className={cn("text-center text-muted-foreground", isSettingsPage ? "p-8 border border-dashed border-border rounded-lg bg-card/30" : "py-12")}>
                         <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-4">
                             <ClockCounterClockwise size={24} className="opacity-50" />
                         </div>
@@ -116,16 +144,52 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
                     (Object.entries(groupedHistory) as [string, HistoryEntry[]][])
                         .sort((a, b) => b[0].localeCompare(a[0]))
                         .map(([date, entries]) => (
-                        <div key={date} className="mb-6 last:mb-0">
-                            <h3 className={cn(
-                                "text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 sticky top-0 backdrop-blur py-2 z-10 px-2",
-                                variant === 'sidebar' ? "bg-sidebar-background/95" : "bg-background/95"
-                            )}>
-                                {format(new Date(date), 'MMMM d, yyyy')}
-                            </h3>
-                            <div className="space-y-1">
+                        <div key={date} className={isSettingsPage ? "p-5 rounded-lg border border-border bg-card/50" : "mb-6 last:mb-0"}>
+                            {isSettingsPage ? (
+                                <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
+                                    <ClockCounterClockwise className="text-muted-foreground" size={16} />
+                                    {format(new Date(date), 'MMMM d, yyyy')}
+                                </h3>
+                            ) : (
+                                <h3 className={cn(
+                                    "text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 sticky top-0 backdrop-blur py-2 z-10 px-2",
+                                    variant === 'sidebar' ? "bg-sidebar-background/95" : "bg-background/95"
+                                )}>
+                                    {format(new Date(date), 'MMMM d, yyyy')}
+                                </h3>
+                            )}
+                            
+                            <div className={isSettingsPage ? "space-y-2" : "space-y-1"}>
                                 {entries.map((entry: HistoryEntry) => {
                                     const Icon = getIcon(entry.entityType);
+                                    
+                                    if (isSettingsPage) {
+                                        return (
+                                            <div key={entry.id} className="flex items-center justify-between p-3 rounded-md border border-border bg-background/50">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", getActionColor(entry.action))}>
+                                                        <Icon size={16} weight="fill" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-sm font-medium truncate">{entry.entityName || "Unknown Entity"}</p>
+                                                            <span className={cn(
+                                                                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-muted",
+                                                                getActionColor(entry.action).replace('bg-', 'text-').split(' ')[0]
+                                                            )}>
+                                                                {entry.action}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                                            <span className="font-mono">{format(entry.timestamp, 'HH:mm')}</span>
+                                                            {entry.details && <>• {entry.details}</>}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
                                     return (
                                         <div key={entry.id} className={cn(
                                             "flex items-start gap-3 p-3 rounded-lg transition-colors group border border-transparent",
@@ -172,7 +236,7 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
                         </div>
                     ))
                 )}
-            </ScrollArea>
+            </Wrapper>
         </div>
     );
 }

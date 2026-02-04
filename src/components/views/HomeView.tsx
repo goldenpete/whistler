@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
 import whistlerLogoSky from "../../../whistlerlogo-sky.png";
@@ -91,17 +92,17 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 }
 
 const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { url: string, start?: number, overrideMiddleFrame?: boolean }) => {
-    const { useMiddleFrameForPreviews, cacheFiles } = useStore(state => ({
+    const { useMiddleFrameForPreviews, cacheFiles } = useStore(useShallow(state => ({
         useMiddleFrameForPreviews: state.useMiddleFrameForPreviews,
         cacheFiles: state.cacheFiles
-    }));
+    })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeId = getYouTubeId(url);
     const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
 
     // Load cached thumbnail
     useEffect(() => {
-        if (youtubeId) return;
+        if (youtubeId || Number.isNaN(start)) return;
         
         const loadThumbnail = async () => {
             const key = `${url}-${start}-${overrideMiddleFrame ? 'mid' : 'start'}`;

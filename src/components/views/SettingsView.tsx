@@ -858,15 +858,15 @@ export default function SettingsView() {
 
                     {/* History Tab */}
                     {activeTab === 'history' && (
-                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <SidebarHistory onBack={() => {}} variant="settings" />
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <SidebarHistory onBack={() => {}} variant="settings-page" />
                         </div>
                     )}
 
                     {/* Trash Tab */}
                     {activeTab === 'trash' && (
-                        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg border border-border bg-card/50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <SidebarTrash onBack={() => {}} variant="settings" />
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <SidebarTrash onBack={() => {}} variant="settings-page" />
                         </div>
                     )}
 

@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 
 interface SidebarTrashProps {
     onBack: () => void;
-    variant?: 'sidebar' | 'settings';
+    variant?: 'sidebar' | 'settings' | 'settings-page';
 }
 
 export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps) {
@@ -71,6 +71,8 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
         permanentDeleteStorage: state.permanentDeleteStorage,
         emptyTrash: state.emptyTrash,
     })));
+
+    const isSettingsPage = variant === 'settings-page';
 
     const trashedFiles = useMemo(
         () => files.filter((f) => f.projectId === activeProjectId && f.deleted),
@@ -131,78 +133,137 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
         onRestore: () => void, 
         onDelete: () => void,
         color?: string
-    }) => (
-        <div className={cn(
-            "flex items-center gap-2 p-2 rounded-md transition-colors group relative",
-            variant === 'sidebar' 
-                ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" 
-                : "hover:bg-muted"
-        )}>
-            <div className={cn("shrink-0", color ? "" : "text-muted-foreground")}>
-                <Icon weight="fill" size={16} style={{ color: color }} />
-            </div>
-            <div className="flex-1 min-w-0 pr-8">
-                <div className="text-xs font-medium truncate max-w-[200px]">{name}</div>
-                <div className="text-[10px] text-muted-foreground">
-                    {formatRelativeTime(date)}
-                </div>
-            </div>
-            <div className={cn(
-                "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 pl-2",
-                variant === 'sidebar' ? "bg-sidebar-accent" : "bg-muted"
-            )}>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
-                    onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        onRestore();
-                    }}
-                    title="Restore"
-                >
-                    <ArrowsCounterClockwise className="h-3 w-3" />
-                </Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button
+    }) => {
+        if (isSettingsPage) {
+            return (
+                <div className="flex items-center justify-between p-3 rounded-md border border-border bg-background/50 group">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className={cn("h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0")}>
+                            <Icon size={16} weight="fill" style={color ? { color } : undefined} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{formatRelativeTime(date)}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                            title="Delete Permanently"
+                            className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                onRestore();
+                            }}
+                            title="Restore"
                         >
-                            <XCircle className="h-3 w-3" />
+                            <ArrowsCounterClockwise className="h-4 w-4" />
                         </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                "{name}" will be permanently deleted. This cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={onDelete}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                                Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
-        </div>
-    );
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                    title="Delete Permanently"
+                                >
+                                    <XCircle className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        "{name}" will be permanently deleted. This cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={onDelete}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </div>
+            );
+        }
 
-    return (
-        <div className={cn(
-            "flex flex-col h-full min-h-0",
-            variant === 'sidebar' ? "bg-sidebar-background" : "bg-transparent"
-        )}>
-            {variant === 'sidebar' ? (
+        return (
+            <div className={cn(
+                "flex items-center gap-2 p-2 rounded-md transition-colors group relative",
+                variant === 'sidebar' 
+                    ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" 
+                    : "hover:bg-muted"
+            )}>
+                <div className={cn("shrink-0", color ? "" : "text-muted-foreground")}>
+                    <Icon weight="fill" size={16} style={{ color: color }} />
+                </div>
+                <div className="flex-1 min-w-0 pr-8">
+                    <div className="text-xs font-medium truncate max-w-[200px]">{name}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                        {formatRelativeTime(date)}
+                    </div>
+                </div>
+                <div className={cn(
+                    "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 pl-2",
+                    variant === 'sidebar' ? "bg-sidebar-accent" : "bg-muted"
+                )}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
+                        onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            onRestore();
+                        }}
+                        title="Restore"
+                    >
+                        <ArrowsCounterClockwise className="h-3 w-3" />
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                title="Delete Permanently"
+                            >
+                                <XCircle className="h-3 w-3" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    "{name}" will be permanently deleted. This cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={onDelete}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </div>
+        );
+    };
+
+    const Header = () => {
+        if (variant === 'sidebar') {
+            return (
                 <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack} data-sound-back>
@@ -240,7 +301,10 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                         </AlertDialog>
                     )}
                 </div>
-            ) : (
+            );
+        }
+        if (variant === 'settings') {
+             return (
                 <div className="p-4 border-b border-border flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -276,111 +340,164 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                         </AlertDialog>
                     )}
                 </div>
-            )}
+            );
+        }
+        // settings-page
+        return (
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Trash className="text-primary" size={24} />
+                    Trash
+                </h2>
+                {hasTrash && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="h-8 text-xs"
+                            >
+                                Empty Trash
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete all items in the trash. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={emptyTrash} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Empty Trash
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+            </div>
+        );
+    }
 
-            <ScrollArea className="flex-1 p-2 overflow-y-auto">
+    const Wrapper = isSettingsPage ? 'div' : ScrollArea;
+    const wrapperClass = isSettingsPage ? '' : 'flex-1 p-2 overflow-y-auto';
+    const containerClass = cn(
+        isSettingsPage ? "space-y-6" : "flex flex-col h-full min-h-0",
+        variant === 'sidebar' ? "bg-sidebar-background" : "bg-transparent"
+    );
+
+    const TrashSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
+        <div className={isSettingsPage ? "p-5 rounded-lg border border-border bg-card/50" : ""}>
+            <h3 className={cn(
+                "text-muted-foreground uppercase tracking-wider mb-2 px-2",
+                isSettingsPage ? "text-sm font-semibold normal-case px-0 tracking-normal text-foreground mb-3" : "text-[10px] font-bold"
+            )}>{title}</h3>
+            <div className={isSettingsPage ? "space-y-2" : "space-y-0.5"}>
+                {children}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={containerClass}>
+            <Header />
+
+            <Wrapper className={wrapperClass}>
                 {!hasTrash ? (
-                    <div className="text-center text-muted-foreground py-8 text-xs italic">
-                        Trash is empty.
+                    <div className={cn("text-center text-muted-foreground", isSettingsPage ? "p-8 border border-dashed border-border rounded-lg bg-card/30" : "py-8")}>
+                         {isSettingsPage && (
+                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-4">
+                                <Trash size={24} className="opacity-50" />
+                            </div>
+                         )}
+                        <p className={cn("italic", isSettingsPage ? "not-italic text-sm font-medium" : "text-xs")}>
+                            {isSettingsPage ? "Trash is empty" : "Trash is empty."}
+                        </p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className={isSettingsPage ? "space-y-6" : "space-y-4"}>
                         {trashedStorages.length > 0 && (
-                            <div>
-                                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 px-2">Storages</h3>
-                                <div className="space-y-0.5">
-                                    {trashedStorages.map(s => (
-                                        <TrashItem
-                                            key={s.id}
-                                            icon={HardDrives}
-                                            name={s.name}
-                                            date={s.lastModified || s.created}
-                                            color={s.color}
-                                            onRestore={() => restoreStorage(s.id)}
-                                            onDelete={() => permanentDeleteStorage(s.id)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+                            <TrashSection title="Storages">
+                                {trashedStorages.map(s => (
+                                    <TrashItem
+                                        key={s.id}
+                                        icon={HardDrives}
+                                        name={s.name}
+                                        date={s.lastModified || s.created}
+                                        color={s.color}
+                                        onRestore={() => restoreStorage(s.id)}
+                                        onDelete={() => permanentDeleteStorage(s.id)}
+                                    />
+                                ))}
+                            </TrashSection>
                         )}
 
                         {trashedCollections.length > 0 && (
-                            <div>
-                                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 px-2">Collections</h3>
-                                <div className="space-y-0.5">
-                                    {trashedCollections.map(c => (
-                                        <TrashItem
-                                            key={c.id}
-                                            icon={Folder}
-                                            name={c.name}
-                                            date={c.lastModified || c.created}
-                                            color={c.color}
-                                            onRestore={() => restoreCollection(c.id)}
-                                            onDelete={() => permanentDeleteCollection(c.id)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+                            <TrashSection title="Collections">
+                                {trashedCollections.map(c => (
+                                    <TrashItem
+                                        key={c.id}
+                                        icon={Folder}
+                                        name={c.name}
+                                        date={c.lastModified || c.created}
+                                        color={c.color}
+                                        onRestore={() => restoreCollection(c.id)}
+                                        onDelete={() => permanentDeleteCollection(c.id)}
+                                    />
+                                ))}
+                            </TrashSection>
                         )}
 
                         {trashedFiles.length > 0 && (
-                            <div>
-                                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 px-2">Files</h3>
-                                <div className="space-y-0.5">
-                                    {trashedFiles.map(f => (
-                                        <TrashItem
-                                            key={f.id}
-                                            icon={FileText}
-                                            name={f.name}
-                                            date={f.lastModified}
-                                            onRestore={() => restoreFile(f.id)}
-                                            onDelete={() => permanentDeleteFile(f.id)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+                            <TrashSection title="Files">
+                                {trashedFiles.map(f => (
+                                    <TrashItem
+                                        key={f.id}
+                                        icon={FileText}
+                                        name={f.name}
+                                        date={f.lastModified}
+                                        onRestore={() => restoreFile(f.id)}
+                                        onDelete={() => permanentDeleteFile(f.id)}
+                                    />
+                                ))}
+                            </TrashSection>
                         )}
 
                         {trashedDocs.length > 0 && (
-                            <div>
-                                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 px-2">Docs</h3>
-                                <div className="space-y-0.5">
-                                    {trashedDocs.map(d => (
-                                        <TrashItem
-                                            key={d.id}
-                                            icon={getIcon(d.icon)}
-                                            name={d.name}
-                                            date={d.lastModified || d.created}
-                                            color={d.color}
-                                            onRestore={() => restoreDoc(d.id)}
-                                            onDelete={() => permanentDeleteDoc(d.id)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+                            <TrashSection title="Docs">
+                                {trashedDocs.map(d => (
+                                    <TrashItem
+                                        key={d.id}
+                                        icon={getIcon(d.icon)}
+                                        name={d.name}
+                                        date={d.lastModified || d.created}
+                                        color={d.color}
+                                        onRestore={() => restoreDoc(d.id)}
+                                        onDelete={() => permanentDeleteDoc(d.id)}
+                                    />
+                                ))}
+                            </TrashSection>
                         )}
 
                         {trashedGraphs.length > 0 && (
-                            <div>
-                                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 px-2">Graphs</h3>
-                                <div className="space-y-0.5">
-                                    {trashedGraphs.map(g => (
-                                        <TrashItem
-                                            key={g.id}
-                                            icon={getIcon(g.icon)}
-                                            name={g.name}
-                                            date={g.lastModified || g.created}
-                                            color={g.color}
-                                            onRestore={() => restoreGraph(g.id)}
-                                            onDelete={() => permanentDeleteGraph(g.id)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+                            <TrashSection title="Graphs">
+                                {trashedGraphs.map(g => (
+                                    <TrashItem
+                                        key={g.id}
+                                        icon={getIcon(g.icon)}
+                                        name={g.name}
+                                        date={g.lastModified || g.created}
+                                        color={g.color}
+                                        onRestore={() => restoreGraph(g.id)}
+                                        onDelete={() => permanentDeleteGraph(g.id)}
+                                    />
+                                ))}
+                            </TrashSection>
                         )}
                     </div>
                 )}
-            </ScrollArea>
+            </Wrapper>
         </div>
     );
 }
