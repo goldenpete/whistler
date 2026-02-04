@@ -42,6 +42,7 @@ import { ColorPicker } from "@/components/ui/ColorPicker";
 import { SettingsSync } from "@/components/settings/SettingsSync";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
 import type { AccentTheme, BaseTheme } from "@/types";
+import { thumbnailStorage } from "@/lib/thumbnailDb";
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
     { id: "orange", label: "Orange", previewClass: "bg-orange-500" },
@@ -124,6 +125,24 @@ export default function SettingsView() {
     const [localItemToDelete, setLocalItemToDelete] = useState<{id: string, label: string} | null>(null);
     const [isDeletingLocal, setIsDeletingLocal] = useState(false);
     const [isDeletingReset, setIsDeletingReset] = useState(false);
+    const [clearingCache, setClearingCache] = useState<string | null>(null);
+
+    const handleClearCache = async (type: 'files' | 'collections' | 'highlights') => {
+        setClearingCache(type);
+        try {
+            if (type === 'files') {
+                await thumbnailStorage.deleteByFilter(key => key.endsWith('-start') || key.endsWith('-mid'));
+            } else if (type === 'collections') {
+                await thumbnailStorage.deleteByFilter(key => key.endsWith('-grid'));
+            } else if (type === 'highlights') {
+                await thumbnailStorage.deleteByFilter(key => key.endsWith('-grid'));
+            }
+        } catch (e) {
+            console.error("Failed to clear cache", e);
+        } finally {
+            setClearingCache(null);
+        }
+    };
 
     const handleDeleteLocal = async () => {
         if (!localItemToDelete) return;
@@ -645,10 +664,26 @@ export default function SettingsView() {
                                             </div>
                                             <p className="text-xs text-muted-foreground">Cache preview frames for video files</p>
                                         </div>
-                                        <Switch 
-                                            checked={cacheFiles}
-                                            onCheckedChange={setCacheFiles}
-                                        />
+                                        <div className="flex items-center justify-between">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleClearCache('files')}
+                                                disabled={clearingCache === 'files'}
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                title="Clear Files Cache"
+                                            >
+                                                {clearingCache === 'files' ? (
+                                                    <ArrowCounterClockwise className="animate-spin" size={16} />
+                                                ) : (
+                                                    <Trash size={16} />
+                                                )}
+                                            </Button>
+                                            <Switch 
+                                                checked={cacheFiles}
+                                                onCheckedChange={setCacheFiles}
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between gap-4">
@@ -659,10 +694,26 @@ export default function SettingsView() {
                                             </div>
                                             <p className="text-xs text-muted-foreground">Cache 2x2 grid previews for collections</p>
                                         </div>
-                                        <Switch 
-                                            checked={cacheCollections}
-                                            onCheckedChange={setCacheCollections}
-                                        />
+                                        <div className="flex items-center justify-between">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleClearCache('collections')}
+                                                disabled={clearingCache === 'collections'}
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                title="Clear Collections Cache"
+                                            >
+                                                {clearingCache === 'collections' ? (
+                                                    <ArrowCounterClockwise className="animate-spin" size={16} />
+                                                ) : (
+                                                    <Trash size={16} />
+                                                )}
+                                            </Button>
+                                            <Switch 
+                                                checked={cacheCollections}
+                                                onCheckedChange={setCacheCollections}
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between gap-4">
@@ -673,10 +724,26 @@ export default function SettingsView() {
                                             </div>
                                             <p className="text-xs text-muted-foreground">Cache preview frames for highlights</p>
                                         </div>
-                                        <Switch 
-                                            checked={cacheHighlights}
-                                            onCheckedChange={setCacheHighlights}
-                                        />
+                                        <div className="flex items-center justify-between">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleClearCache('highlights')}
+                                                disabled={clearingCache === 'highlights'}
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                title="Clear Highlights Cache"
+                                            >
+                                                {clearingCache === 'highlights' ? (
+                                                    <ArrowCounterClockwise className="animate-spin" size={16} />
+                                                ) : (
+                                                    <Trash size={16} />
+                                                )}
+                                            </Button>
+                                            <Switch 
+                                                checked={cacheHighlights}
+                                                onCheckedChange={setCacheHighlights}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

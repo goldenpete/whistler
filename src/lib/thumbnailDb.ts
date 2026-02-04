@@ -43,6 +43,37 @@ export const thumbnailStorage = {
             tx.onerror = () => reject(tx.error);
         });
     },
+    deleteByFilter: async (filter: (key: string) => boolean) => {
+        const db = await openThumbnailDb();
+        return new Promise<void>((resolve, reject) => {
+            const tx = db.transaction(THUMBNAIL_STORE, 'readwrite');
+            const store = tx.objectStore(THUMBNAIL_STORE);
+            const request = store.getAllKeys();
+
+            request.onsuccess = () => {
+                const keys = request.result as string[];
+                const keysToDelete = keys.filter(filter);
+                
+                if (keysToDelete.length === 0) {
+                    resolve();
+                    return;
+                }
+
+                let completed = 0;
+                keysToDelete.forEach(key => {
+                    store.delete(key).onsuccess = () => {
+                        completed++;
+                        if (completed === keysToDelete.length) {
+                            resolve(); // Transaction will complete automatically
+                        }
+                    };
+                });
+            };
+            
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    },
     clear: async () => {
         const db = await openThumbnailDb();
         return new Promise<void>((resolve, reject) => {
