@@ -165,7 +165,10 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             if (storedLastSync) {
                 const asNumber = Number(storedLastSync);
                 if (!Number.isNaN(asNumber)) {
-                    setLastSyncTime(asNumber);
+                    const current = useStore.getState().lastSyncTime;
+                    if (!current || asNumber > current) {
+                        setLastSyncTime(asNumber);
+                    }
                 }
             }
         } else {

@@ -162,7 +162,9 @@ export function useSync() {
                 if (!silent) console.log("Pull Successful");
             }
             
-            setLastSyncTime(Date.now());
+            const now = Date.now();
+            setLastSyncTime(now);
+            localStorage.setItem("whistler_last_sync", now.toString());
             setSyncStatus("success");
         } catch (err) {
             console.error("Sync Error:", err);
