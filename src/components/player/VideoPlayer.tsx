@@ -172,7 +172,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
     const [isScreenshotDialogOpen, setIsScreenshotDialogOpen] = useState(false);
     const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-    const [useCors, setUseCors] = useState(false);
 
     const handleCaptureFrame = async () => {
         if (isYouTube && file && file.url) {
@@ -199,32 +198,72 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             }
         } else if (videoRef.current) {
             const video = videoRef.current;
-            const canvas = document.createElement("canvas");
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-                try {
+            
+            // Try capturing from the main video first (fastest)
+            // If the video already has CORS headers (e.g. some CDNs), this will work immediately.
+            try {
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const dataUrl = canvas.toDataURL("image/png");
                     setScreenshotUrl(dataUrl);
                     setIsScreenshotDialogOpen(true);
-                } catch (e) {
-                    console.error("Failed to capture video frame", e);
-                    if (!useCors) {
-                        const retry = window.confirm(
-                            "Cannot capture screenshot due to browser security restrictions (CORS).\n\n" +
-                            "Do you want to try reloading the video with CORS enabled?\n" +
-                            "Note: If the video server doesn't support CORS, playback may stop working."
-                        );
-                        if (retry) {
-                            setUseCors(true);
-                        }
-                    } else {
-                        alert("Cannot capture screenshot even with CORS enabled. The video server blocks cross-origin access.");
-                    }
+                    return;
                 }
+            } catch (e) {
+                // Canvas is tainted. We need to fetch the frame using a separate CORS-enabled request.
+                console.log("Main video tainted, attempting CORS capture...");
             }
+
+            // Fallback: Create a temporary hidden video element with crossOrigin="anonymous"
+            // This allows us to capture the frame without disrupting the main playback or requiring the user to reload.
+            setIsLoading(true);
+            const tempVideo = document.createElement("video");
+            tempVideo.crossOrigin = "anonymous";
+            tempVideo.src = video.src;
+            tempVideo.currentTime = video.currentTime;
+            tempVideo.muted = true;
+            tempVideo.style.display = 'none';
+            document.body.appendChild(tempVideo);
+
+            const cleanup = () => {
+                document.body.removeChild(tempVideo);
+                setIsLoading(false);
+            };
+
+            const onSeeked = () => {
+                try {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = tempVideo.videoWidth;
+                    canvas.height = tempVideo.videoHeight;
+                    const ctx = canvas.getContext("2d");
+                    if (ctx) {
+                        ctx.drawImage(tempVideo, 0, 0);
+                        const dataUrl = canvas.toDataURL("image/png");
+                        setScreenshotUrl(dataUrl);
+                        setIsScreenshotDialogOpen(true);
+                    }
+                } catch (e) {
+                    console.error("CORS capture failed", e);
+                    alert("Cannot capture screenshot. The video server does not support CORS requests, which prevents browser-based screenshots for security reasons.");
+                } finally {
+                    cleanup();
+                }
+            };
+
+            const onError = () => {
+                console.error("CORS video load failed");
+                alert("Cannot capture screenshot. The video server blocked the cross-origin request needed to capture the frame.");
+                cleanup();
+            };
+
+            tempVideo.addEventListener('seeked', onSeeked, { once: true });
+            tempVideo.addEventListener('error', onError, { once: true });
+            
+            // Trigger load if needed (setting src usually triggers it)
         }
     };
     const windowRectInitialized = useRef(false);
@@ -331,7 +370,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         // manual volume changes when store updates (e.g. unmuting)
         if (fileId !== lastFileIdRef.current) {
             lastFileIdRef.current = fileId;
-            setUseCors(false);
 
             const initialVolume = rememberMediaVolume && videoVolumeByFile[fileId] !== undefined
                 ? videoVolumeByFile[fileId]
@@ -967,19 +1005,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 ) : (
                                 <video
                                     ref={videoRef}
-                                    key={useCors ? "cors" : "no-cors"}
                                     src={file.url || ""}
-                                    crossOrigin={useCors ? "anonymous" : undefined}
                                     className="max-w-full max-h-full object-contain focus:outline-none"
                                     autoPlay={!disableMediaAutoplay}
                                     onWaiting={() => setIsLoading(true)}
-                                    onError={() => {
-                                        if (useCors) {
-                                            const revert = window.confirm("Video failed to load with CORS enabled. The server likely blocks cross-origin access.\n\nRevert to standard mode?");
-                                            if (revert) setUseCors(false);
-                                        }
-                                        setIsLoading(false); 
-                                    }}
                                     onCanPlay={() => setIsLoading(false)}
                                     onPlay={() => {
                                         setIsPlaying(true);
