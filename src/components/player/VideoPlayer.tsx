@@ -256,14 +256,55 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
             const onError = () => {
                 console.error("CORS video load failed");
-                alert("Cannot capture screenshot. The video server blocked the cross-origin request needed to capture the frame.");
                 cleanup();
+                
+                // Final Fallback: Screen Capture API
+                // If the server blocks CORS, the only way to get pixels is to ask the user to capture their screen/tab.
+                const tryScreenCapture = window.confirm(
+                    "Cannot capture screenshot directly because the video server blocks access.\n\n" +
+                    "Do you want to use Screen Capture instead?\n" +
+                    "(You will need to select this tab/window and then crop the image)"
+                );
+
+                if (tryScreenCapture) {
+                    handleScreenCapture();
+                }
             };
 
             tempVideo.addEventListener('seeked', onSeeked, { once: true });
             tempVideo.addEventListener('error', onError, { once: true });
             
             // Trigger load if needed (setting src usually triggers it)
+        }
+    };
+
+    const handleScreenCapture = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                video: { displaySurface: "browser" } 
+            });
+            
+            const track = stream.getVideoTracks()[0];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const imageCapture = new (window as any).ImageCapture(track);
+            const bitmap = await imageCapture.grabFrame();
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            const ctx = canvas.getContext('2d');
+            
+            if (ctx) {
+                ctx.drawImage(bitmap, 0, 0);
+                const dataUrl = canvas.toDataURL('image/png');
+                setScreenshotUrl(dataUrl);
+                setIsScreenshotDialogOpen(true);
+            }
+            
+            // Stop sharing immediately
+            track.stop();
+        } catch (e) {
+            console.error("Screen capture failed", e);
         }
     };
     const windowRectInitialized = useRef(false);
