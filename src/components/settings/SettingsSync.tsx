@@ -27,7 +27,9 @@ import {
     Graph,
     HardDrives,
     Gear,
-    Trash
+    Trash,
+    Eye,
+    EyeSlash
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -114,6 +116,7 @@ export function SettingsSync() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<{id: string, label: string} | null>(null);
     const [isDeletingRemote, setIsDeletingRemote] = useState(false);
+    const [isSyncIdRevealed, setIsSyncIdRevealed] = useState(false);
 
     const handleDeleteRemote = async () => {
         if (!itemToDelete || !sessionToken) return;
@@ -684,13 +687,22 @@ export function SettingsSync() {
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                    <span className="font-mono">{formatAccountId(user.id)}</span>
+                                    <span className="font-mono">
+                                        {isSyncIdRevealed ? formatAccountId(user.id) : "••••-••••-••••-••••"}
+                                    </span>
                                     <button 
                                         onClick={() => navigator.clipboard.writeText(user.id)}
                                         className="hover:text-foreground transition-colors"
                                         title="Copy ID"
                                     >
                                         <Copy size={12} />
+                                    </button>
+                                    <button
+                                        onClick={() => setIsSyncIdRevealed(!isSyncIdRevealed)}
+                                        className="hover:text-foreground transition-colors"
+                                        title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
+                                    >
+                                        {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
                                     </button>
                                 </div>
                             </div>
