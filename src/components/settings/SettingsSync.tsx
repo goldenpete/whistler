@@ -691,6 +691,13 @@ export function SettingsSync() {
                                         {isSyncIdRevealed ? formatAccountId(user.id) : "••••-••••-••••-••••"}
                                     </span>
                                     <button 
+                                        onClick={() => setIsSyncIdRevealed(!isSyncIdRevealed)}
+                                        className="hover:text-foreground transition-colors"
+                                        title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
+                                    >
+                                        {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
+                                    </button>
+                                    <button 
                                         onClick={() => navigator.clipboard.writeText(user.id)}
                                         className="hover:text-foreground transition-colors"
                                         title="Copy ID"

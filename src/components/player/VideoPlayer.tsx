@@ -50,8 +50,10 @@ import {
     MusicNotes,
     MagnifyingGlassMinus,
     MagnifyingGlassPlus,
-    ArrowsClockwise
+    ArrowsClockwise,
+    VideoCamera
 } from "@phosphor-icons/react";
+import { ScreenshotDialog } from "@/components/dialogs/ScreenshotDialog";
 import { motion } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
 import type { PDFPlayerHandle } from './PDFPlayer';
@@ -60,7 +62,7 @@ import type { ImagePlayerHandle } from './ImagePlayer';
 import type { Highlight, File as AppFile, Collection } from "@/types";
 import { AudioPlayer } from './AudioPlayer';
 import { SeekPreview } from './SeekPreview';
-import { YouTubePlayerComponent, type YouTubePlayerHandle } from '@/components/player/YouTubePlayer';
+import { YouTubePlayerComponent, type YouTubePlayerHandle, getYouTubeId } from '@/components/player/YouTubePlayer';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
@@ -167,6 +169,50 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [hasPdfSelection, setHasPdfSelection] = useState(false);
     const [isWindowed, setIsWindowed] = useState(floating);
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
+    const [isScreenshotDialogOpen, setIsScreenshotDialogOpen] = useState(false);
+    const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+
+    const handleCaptureFrame = async () => {
+        if (isYouTube && file && file.url) {
+            const videoId = getYouTubeId(file.url);
+            if (videoId) {
+                const maxResUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                const hqUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                
+                try {
+                    const response = await fetch(maxResUrl);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        setScreenshotUrl(URL.createObjectURL(blob));
+                        setIsScreenshotDialogOpen(true);
+                        return;
+                    }
+                } catch (e) {
+                    // Ignore fetch error, try fallback
+                }
+                
+                // Fallback to direct URL (cropping might be limited if CORS fails)
+                setScreenshotUrl(hqUrl);
+                setIsScreenshotDialogOpen(true);
+            }
+        } else if (videoRef.current) {
+            const video = videoRef.current;
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                try {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL("image/png");
+                    setScreenshotUrl(dataUrl);
+                    setIsScreenshotDialogOpen(true);
+                } catch (e) {
+                    console.error("Failed to capture video frame", e);
+                }
+            }
+        }
+    };
     const windowRectInitialized = useRef(false);
     const dragActiveRef = useRef(false);
     const dragOffsetRef = useRef({ x: 0, y: 0 });
@@ -1068,6 +1114,15 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <Button
                                     size="icon"
                                     variant="ghost"
+                                    onClick={handleCaptureFrame}
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    title="Take Screenshot"
+                                >
+                                    <VideoCamera weight="bold" size={18} />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
                                     onClick={() => fileId && setVideoZoomManualForFile(fileId, !isManualZoom)}
                                     className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isManualZoom && "text-primary hover:text-primary/80")}
                                     title={isManualZoom ? "Manual Zoom On" : "Auto Zoom On"}
@@ -1341,6 +1396,12 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <ScreenshotDialog
+                open={isScreenshotDialogOpen}
+                onOpenChange={setIsScreenshotDialogOpen}
+                imageUrl={screenshotUrl}
+            />
         </div>
         </>
     );
