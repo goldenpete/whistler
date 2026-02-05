@@ -17,6 +17,12 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
     const [startPos, setStartPos] = useState<{ x: number, y: number } | null>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const cropRectRef = useRef<{ x: number, y: number, width: number, height: number } | null>(null);
+
+    // Sync ref with state
+    useEffect(() => {
+        cropRectRef.current = cropRect;
+    }, [cropRect]);
 
     // Reset state when dialog opens/closes or image changes
     useEffect(() => {
@@ -29,6 +35,9 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
 
     const handleMouseDown = (e: MouseEvent) => {
         if (!containerRef.current) return;
+        // Prevent default drag behavior
+        e.preventDefault();
+        
         const rect = containerRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -38,28 +47,43 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
         setCropRect({ x, y, width: 0, height: 0 });
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging || !startPos || !containerRef.current) return;
-        
-        const rect = containerRef.current.getBoundingClientRect();
-        const currentX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-        const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
-        
-        const width = Math.abs(currentX - startPos.x);
-        const height = Math.abs(currentY - startPos.y);
-        const x = Math.min(currentX, startPos.x);
-        const y = Math.min(currentY, startPos.y);
-        
-        setCropRect({ x, y, width, height });
-    };
+    useEffect(() => {
+        if (!isDragging) return;
 
-    const handleMouseUp = () => {
-        setIsDragging(false);
-        // Clear tiny selections
-        if (cropRect && (cropRect.width < 5 || cropRect.height < 5)) {
-            setCropRect(null);
-        }
-    };
+        const handleGlobalMouseMove = (e: globalThis.MouseEvent) => {
+            if (!startPos || !containerRef.current) return;
+            
+            const rect = containerRef.current.getBoundingClientRect();
+            // Calculate relative to the container, but allow mouse to be anywhere
+            // We clamp the coordinates to the container bounds to ensure we don't select outside
+            const currentX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+            
+            const width = Math.abs(currentX - startPos.x);
+            const height = Math.abs(currentY - startPos.y);
+            const x = Math.min(currentX, startPos.x);
+            const y = Math.min(currentY, startPos.y);
+            
+            setCropRect({ x, y, width, height });
+        };
+
+        const handleGlobalMouseUp = () => {
+            setIsDragging(false);
+            // Clear tiny selections using the ref to get latest state
+            const currentRect = cropRectRef.current;
+            if (currentRect && (currentRect.width < 5 || currentRect.height < 5)) {
+                setCropRect(null);
+            }
+        };
+
+        window.addEventListener('mousemove', handleGlobalMouseMove);
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleGlobalMouseMove);
+            window.removeEventListener('mouseup', handleGlobalMouseUp);
+        };
+    }, [isDragging, startPos]);
 
     const downloadImage = async (crop: boolean) => {
         if (!imageUrl) return;
@@ -114,7 +138,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[98vw] h-[95vh] max-w-none p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800 flex flex-col" portalContainer={container}>
+            <DialogContent className="w-screen h-screen max-w-none p-0 gap-0 rounded-none border-none overflow-hidden bg-zinc-950 flex flex-col" portalContainer={container}>
                 <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                         <CornersIn className="text-primary" size={20} />
@@ -125,15 +149,12 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="relative bg-black/50 overflow-hidden flex items-center justify-center flex-1 min-h-0 w-full h-full">
+                <div className="relative bg-black overflow-hidden flex items-center justify-center flex-1 min-h-0 w-full h-full">
                     {imageUrl && (
                         <div 
                             ref={containerRef}
                             className="relative cursor-crosshair select-none"
                             onMouseDown={handleMouseDown}
-                            onMouseMove={handleMouseMove}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseUp}
                         >
                             <img 
                                 ref={imageRef}

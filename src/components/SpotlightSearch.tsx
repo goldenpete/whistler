@@ -95,8 +95,8 @@ export function SpotlightSearch() {
         playSfx("search");
         setSpotlightOpen(false);
         if (file.type === "folder") {
-            // Navigate to storage with folder open (future: add folder navigation state)
-            navigate("/storage");
+            // Navigate to storage with folder open
+            navigate(`/storage?folderId=${file.id}`);
         } else {
             navigate(`/file/${file.id}`);
         }
