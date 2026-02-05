@@ -34,17 +34,30 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
     }, [open, imageUrl]);
 
     const handleMouseDown = (e: MouseEvent) => {
-        if (!containerRef.current) return;
+        if (!containerRef.current || !imageRef.current) return;
         // Prevent default drag behavior
         e.preventDefault();
         
-        const rect = containerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const imageRect = imageRef.current.getBoundingClientRect();
+
+        // Mouse X relative to container
+        const mouseXInContainer = e.clientX - containerRect.left;
+        const mouseYInContainer = e.clientY - containerRect.top;
+
+        // Image bounds relative to container
+        const imageLeftInContainer = imageRect.left - containerRect.left;
+        const imageTopInContainer = imageRect.top - containerRect.top;
+        const imageRightInContainer = imageLeftInContainer + imageRect.width;
+        const imageBottomInContainer = imageTopInContainer + imageRect.height;
+
+        // Clamp start position to image bounds
+        const startX = Math.max(imageLeftInContainer, Math.min(mouseXInContainer, imageRightInContainer));
+        const startY = Math.max(imageTopInContainer, Math.min(mouseYInContainer, imageBottomInContainer));
         
         setIsDragging(true);
-        setStartPos({ x, y });
-        setCropRect({ x, y, width: 0, height: 0 });
+        setStartPos({ x: startX, y: startY });
+        setCropRect({ x: startX, y: startY, width: 0, height: 0 });
     };
 
     useEffect(() => {
