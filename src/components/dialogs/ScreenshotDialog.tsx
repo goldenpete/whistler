@@ -114,8 +114,8 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[95vw] w-fit p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800" portalContainer={container}>
-                <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50">
+            <DialogContent className="w-[98vw] h-[95vh] max-w-none p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800 flex flex-col" portalContainer={container}>
+                <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                         <CornersIn className="text-primary" size={20} />
                         Save Screenshot
@@ -125,7 +125,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="relative bg-black/50 overflow-hidden flex items-center justify-center min-h-[300px] max-h-[85vh]">
+                <div className="relative bg-black/50 overflow-hidden flex items-center justify-center flex-1 min-h-0 w-full h-full">
                     {imageUrl && (
                         <div 
                             ref={containerRef}
@@ -139,7 +139,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
                                 ref={imageRef}
                                 src={imageUrl} 
                                 alt="Screenshot" 
-                                className="max-w-full max-h-[85vh] object-contain block"
+                                className="max-w-full max-h-full object-contain block"
                                 draggable={false}
                                 crossOrigin="anonymous"
                             />
@@ -172,7 +172,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
                     )}
                 </div>
 
-                <DialogFooter className="p-4 border-t border-zinc-800 bg-zinc-900/50 gap-2">
+                <DialogFooter className="p-4 border-t border-zinc-800 bg-zinc-900/50 gap-2 shrink-0">
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
