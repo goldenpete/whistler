@@ -138,15 +138,21 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-screen h-screen max-w-none p-0 gap-0 rounded-none border-none overflow-hidden bg-zinc-950 flex flex-col" portalContainer={container}>
-                <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0">
-                    <DialogTitle className="flex items-center gap-2">
-                        <CornersIn className="text-primary" size={20} />
-                        Save Screenshot
-                    </DialogTitle>
-                    <DialogDescription>
-                        Drag to select a crop region, or save the full frame.
-                    </DialogDescription>
+            <DialogContent 
+                className="!fixed !top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-none !p-0 !gap-0 !rounded-none !border-none overflow-hidden bg-zinc-950 flex flex-col z-[100]" 
+                portalContainer={container}
+                showCloseButton={true}
+            >
+                <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0 flex flex-row items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                        <DialogTitle className="flex items-center gap-2">
+                            <CornersIn className="text-primary" size={20} />
+                            Save Screenshot
+                        </DialogTitle>
+                        <DialogDescription>
+                            Drag to select a crop region, or save the full frame.
+                        </DialogDescription>
+                    </div>
                 </DialogHeader>
 
                 <div className="relative bg-black overflow-hidden flex items-center justify-center flex-1 min-h-0 w-full h-full">
