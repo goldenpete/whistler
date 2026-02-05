@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn, formatTime } from "@/lib/utils";
@@ -747,6 +747,16 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             videoRef.current.currentTime += 5;
         }
     }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("arrowup", () => {
+        const newVolume = Math.min(1, volume + 0.1);
+        handleVolumeChange([newVolume]);
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("arrowdown", () => {
+        const newVolume = Math.max(0, volume - 0.1);
+        handleVolumeChange([newVolume]);
+    }, { preventDefault: true, disableInInput: true });
     // --- End Shortcuts ---
 
     const handleCopyUrl = () => {
@@ -1109,6 +1119,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     autoPlay={!disableMediaAutoplay}
                                     onWaiting={() => setIsLoading(true)}
                                     onCanPlay={() => setIsLoading(false)}
+                                    onLoadedData={() => setIsLoading(false)}
+                                    onError={(e: SyntheticEvent<HTMLVideoElement>) => {
+                                        console.error("Video error:", e);
+                                        setIsLoading(false);
+                                    }}
                                     onPlay={() => {
                                         setIsPlaying(true);
                                         setIsLoading(false);

@@ -72,9 +72,15 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Storage" icon={HardDrives} keys={[<Key>1</Key>]} />
                             <ShortcutRow label="Docs" icon={FileText} keys={[<Key>2</Key>]} />
                             <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>3</Key>]} />
+                            
+                            <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Document List</div>
+                            <ShortcutRow label="Previous Doc" icon={ArrowLeft} keys={[<Key>Alt</Key>, <Key>↑</Key>]} />
+                            <ShortcutRow label="Next Doc" icon={ArrowRight} keys={[<Key>Alt</Key>, <Key>↓</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="storage" className="mt-0 space-y-1">
+                            <ShortcutRow label="Navigate Items" icon={ArrowRight} keys={[<Key>↑</Key>, <Key>↓</Key>, <Key>←</Key>, <Key>→</Key>]} />
+                            <ShortcutRow label="Open Item" icon={ArrowRight} keys={[<Key>Enter</Key>]} />
                             <ShortcutRow label="Select All" icon={SelectionAll} keys={[<Key>Ctrl</Key>, <Key>A</Key>]} />
                             <ShortcutRow label="Delete Selection" icon={Trash} keys={[<Key>Delete</Key>]} />
                             <ShortcutRow label="Rename File" icon={PencilSimple} keys={[<Key>F2</Key>]} />
@@ -86,6 +92,8 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Play / Pause" icon={FilmStrip} keys={[<Key>Space</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>K</Key>]} />
                             <ShortcutRow label="Fullscreen" icon={CornersOut} keys={[<Key>F</Key>]} />
                             <ShortcutRow label="Mute / Unmute" icon={SpeakerHigh} keys={[<Key>M</Key>]} />
+                            <ShortcutRow label="Volume Up" icon={SpeakerHigh} keys={[<Key>↑</Key>]} />
+                            <ShortcutRow label="Volume Down" icon={SpeakerHigh} keys={[<Key>↓</Key>]} />
                             <ShortcutRow label="Seek Backward 10s" icon={ArrowLeft} keys={[<Key>J</Key>]} />
                             <ShortcutRow label="Seek Forward 10s" icon={ArrowRight} keys={[<Key>L</Key>]} />
                             <ShortcutRow label="Seek Backward 5s" icon={ArrowLeft} keys={[<Key>←</Key>]} />

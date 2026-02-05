@@ -114,6 +114,7 @@ export default function StorageView() {
     const [fileToRename, setFileToRename] = useState<AppFile | null>(null);
     const [editFolderOpen, setEditFolderOpen] = useState(false);
     const [folderToEdit, setFolderToEdit] = useState<AppFile | null>(null);
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const currentFolderId = searchParams.get('folderId');
 
@@ -122,6 +123,7 @@ export default function StorageView() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState("");
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [focusedId, setFocusedId] = useState<string | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const projectStorages = storages.filter(s => s.projectId === activeProjectId && !s.deleted);
@@ -172,6 +174,72 @@ export default function StorageView() {
         (normalizedQuery === "" || f.name.toLowerCase().includes(normalizedQuery))
     );
     const orderedProjectFiles = [...projectFiles].sort((a, b) => a.order - b.order);
+
+    // Keyboard Navigation
+    const getColumns = () => {
+        if (viewMode === 'list') return 1;
+        const width = window.innerWidth;
+        if (width >= 1280) return 8; // xl
+        if (width >= 1024) return 6; // lg
+        if (width >= 768) return 4; // md
+        return 2; // default
+    };
+
+    const handleMoveFocus = (direction: number) => {
+        if (orderedProjectFiles.length === 0) return;
+        
+        let newIndex = 0;
+        if (!focusedId) {
+            newIndex = 0;
+        } else {
+            const currentIndex = orderedProjectFiles.findIndex(f => f.id === focusedId);
+            if (currentIndex === -1) {
+                newIndex = 0;
+            } else {
+                newIndex = Math.min(Math.max(currentIndex + direction, 0), orderedProjectFiles.length - 1);
+            }
+        }
+        setFocusedId(orderedProjectFiles[newIndex].id);
+    };
+
+    const handleEnter = () => {
+        if (!focusedId) return;
+        const file = orderedProjectFiles.find(f => f.id === focusedId);
+        if (!file) return;
+
+        if (selectionMode) {
+            toggleSelectItem(file.id);
+        } else if (file.type === 'folder') {
+            handleNavigateFolder(file.id);
+        } else {
+             // Open file
+            const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : null;
+            if (linkTo) {
+                 navigate(linkTo);
+            }
+        }
+    };
+
+    useKeybind("arrowright", () => handleMoveFocus(1), { preventDefault: true });
+    useKeybind("arrowleft", () => handleMoveFocus(-1), { preventDefault: true });
+    useKeybind("arrowup", () => handleMoveFocus(viewMode === 'grid' ? -getColumns() : -1), { preventDefault: true });
+    useKeybind("arrowdown", () => handleMoveFocus(viewMode === 'grid' ? getColumns() : 1), { preventDefault: true });
+    useKeybind("enter", handleEnter, { preventDefault: true });
+
+    // Scroll focused item into view
+    useEffect(() => {
+        if (focusedId) {
+            const el = document.getElementById(`file-card-${focusedId}`);
+            if (el) {
+                el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }, [focusedId]);
+
+    // Reset focus when navigating folders
+    useEffect(() => {
+        setFocusedId(null);
+    }, [currentFolderId, activeStorageId]);
 
     const handleRenameInit = (file: AppFile) => {
         if (file.type === 'folder') {
@@ -600,6 +668,7 @@ export default function StorageView() {
                                             onNavigate={handleNavigateFolder}
                                             selectionMode={selectionMode}
                                             isSelected={selectedIds.has(file.id)}
+                                            isFocused={focusedId === file.id}
                                             onToggleSelect={toggleSelectItem}
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
@@ -617,6 +686,7 @@ export default function StorageView() {
                                             onNavigate={handleNavigateFolder}
                                             selectionMode={selectionMode}
                                             isSelected={selectedIds.has(file.id)}
+                                            isFocused={focusedId === file.id}
                                             onToggleSelect={toggleSelectItem}
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
@@ -708,6 +778,7 @@ interface FileCardProps {
     onNavigate: (id: string) => void;
     selectionMode: boolean;
     isSelected: boolean;
+    isFocused?: boolean;
     onToggleSelect: (id: string) => void;
     onRename: (file: AppFile) => void;
     onMove: (file: AppFile) => void;
@@ -717,6 +788,7 @@ interface FileCardProps {
 interface FileCardInnerProps {
     file: AppFile;
     isSelected: boolean;
+    isFocused?: boolean;
     isOver: boolean;
     selectionMode: boolean;
     onClick?: (e: MouseEvent) => void;
@@ -728,16 +800,18 @@ interface FileCardInnerProps {
     showSelection?: boolean;
 }
 
-function FileCardGridInner({ file, isSelected, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
+function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     return (
         <div
             ref={domRef}
+            id={`file-card-${file.id}`}
             onClick={onClick}
             data-sound-cursor
             className={cn(
                 "flex flex-col gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/50 transition-all duration-200 aspect-[4/3] relative group hover:shadow-lg hover:shadow-primary/5 cursor-pointer select-none",
                 isOver && "ring-2 ring-primary bg-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.3)] scale-[1.02]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
+                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
             )}
             style={{ 
@@ -769,19 +843,21 @@ function FileCardGridInner({ file, isSelected, isOver, selectionMode, onClick, l
     );
 }
 
-function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
+function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
     
     return (
         <div
             ref={domRef}
+            id={`file-card-${file.id}`}
             onClick={onClick}
             data-sound-cursor
             className={cn(
                 "flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-md cursor-pointer select-none relative",
                 isOver && "ring-2 ring-primary bg-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.3)] scale-[1.01]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
+                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
             )}
             style={{ 
@@ -829,7 +905,7 @@ function FileCardListInner({ file, isSelected, isOver, selectionMode, onClick, l
     );
 }
 
-function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
+function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
     const Icon = getFileIcon(file.type);
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
@@ -871,6 +947,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
                         file={file}
                         domRef={setDroppableRef}
                         isSelected={isSelected}
+                        isFocused={isFocused}
                         isOver={isOver}
                         selectionMode={selectionMode}
                         onClick={handleClick}
@@ -889,7 +966,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, onToggleSel
     );
 }
 
-function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
+function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
@@ -932,6 +1009,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, onToggleSel
                         file={file}
                         domRef={setDroppableRef}
                         isSelected={isSelected}
+                        isFocused={isFocused}
                         isOver={isOver}
                         selectionMode={selectionMode}
                         onClick={handleClick}

@@ -45,6 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useStore } from "@/store/useStore";
+import { useKeybind } from "@/hooks/use-keybind";
 
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
 import { getIcon } from "@/utils/iconMap";
@@ -304,6 +305,22 @@ export default function ProjectSidebar() {
     const projectStorages = storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted);
     const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
     const projectGraphs = graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted);
+
+    // Doc Navigation
+    useKeybind("alt+arrowdown", () => {
+        if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
+        const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectDocs.length;
+        handleSelectDoc(projectDocs[nextIndex].id);
+    }, { preventDefault: true });
+
+    useKeybind("alt+arrowup", () => {
+        if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
+        const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
+        const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectDocs.length) % projectDocs.length;
+        handleSelectDoc(projectDocs[prevIndex].id);
+    }, { preventDefault: true });
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
