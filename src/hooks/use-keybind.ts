@@ -28,7 +28,8 @@ export function useKeybind(
 
       // Parse key string (e.g., "Ctrl+S", "Shift+ArrowUp")
       const keys = key.split('+').map((k) => k.trim().toLowerCase());
-      const mainKey = keys[keys.length - 1];
+      let mainKey = keys[keys.length - 1];
+      if (mainKey === 'space') mainKey = ' ';
       
       const modifiers = {
         ctrl: keys.includes('ctrl') || keys.includes('control'),
