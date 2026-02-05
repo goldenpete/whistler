@@ -678,6 +678,7 @@ export default function StorageView() {
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
                                             onColorChange={handleColorChange}
+                                            onMouseEnter={() => setFocusedId(file.id)}
                                         />
                                     ))}
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
@@ -696,6 +697,7 @@ export default function StorageView() {
                                             onRename={handleRenameInit}
                                             onMove={handleMoveInit}
                                             onColorChange={handleColorChange}
+                                            onMouseEnter={() => setFocusedId(file.id)}
                                         />
                                     ))}
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
@@ -788,6 +790,7 @@ interface FileCardProps {
     onRename: (file: AppFile) => void;
     onMove: (file: AppFile) => void;
     onColorChange: (file: AppFile, color: string) => void;
+    onMouseEnter?: () => void;
 }
 
 interface FileCardInnerProps {
@@ -910,7 +913,7 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
     );
 }
 
-function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
+function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter }: FileCardProps) {
     const Icon = getFileIcon(file.type);
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
@@ -947,7 +950,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)}>
+                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)} onMouseEnter={onMouseEnter}>
                     <FileCardGridInner
                         file={file}
                         domRef={setDroppableRef}
@@ -971,7 +974,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
     );
 }
 
-function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange }: FileCardProps) {
+function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
@@ -1009,7 +1012,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, 
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)}>
+                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)} onMouseEnter={onMouseEnter}>
                     <FileCardListInner
                         file={file}
                         domRef={setDroppableRef}

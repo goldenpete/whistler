@@ -1,5 +1,6 @@
+import React, { type ReactNode } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Keyboard, Command, ArrowRight, ArrowLeft, CornersOut, SpeakerHigh, Image, FilmStrip, Files, House, Folder, FileText, Graph, MagnifyingGlass, Gear, HardDrives, Trash, PencilSimple, SelectionAll, ArrowUUpLeft, CheckSquare, X } from "@phosphor-icons/react";
+import { CaretRight, CaretLeft, CornersOut, CornersIn, SpeakerHigh, Image, FilmStrip, FileText, House, Folder, Graph, MagnifyingGlass, Gear, HardDrives, Trash, PencilSimple, CaretUp, CheckSquare, X } from "@phosphor-icons/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -8,13 +9,13 @@ interface ShortcutGuideDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
-const Key = ({ children }: { children: React.ReactNode }) => (
+const Key = ({ children }: { children: ReactNode }) => (
     <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold font-mono text-zinc-400 bg-zinc-800 border border-zinc-700 rounded shadow-[0_1px_0_rgba(0,0,0,0.2)] select-none uppercase">
         {children}
     </span>
 );
 
-const ShortcutRow = ({ label, keys, icon: Icon }: { label: string, keys: React.ReactNode[], icon?: any }) => (
+const ShortcutRow = ({ label, keys, icon: Icon }: { label: string, keys: ReactNode[], icon?: any }) => (
     <div className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0">
         <div className="flex items-center gap-3">
             {Icon && <Icon className="text-zinc-400" size={16} />}
@@ -37,7 +38,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
             <DialogContent className="max-w-2xl bg-zinc-950 border-zinc-800">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Keyboard className="text-primary" size={24} />
+                        <CornersOut className="text-primary" size={24} />
                         Keyboard Shortcuts
                     </DialogTitle>
                     <DialogDescription>
@@ -50,12 +51,15 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                         <TabsTrigger value="global" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Global</TabsTrigger>
                         <TabsTrigger value="navigation" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Navigation</TabsTrigger>
                         <TabsTrigger value="storage" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Storage</TabsTrigger>
-                        <TabsTrigger value="player" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Media Player</TabsTrigger>
+                        <TabsTrigger value="video" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Video</TabsTrigger>
+                        <TabsTrigger value="audio" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Audio</TabsTrigger>
+                        <TabsTrigger value="pdf" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">PDF</TabsTrigger>
+                        <TabsTrigger value="image" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Image</TabsTrigger>
                     </TabsList>
 
                     <ScrollArea className="h-[60vh] p-4">
                         <TabsContent value="global" className="mt-0 space-y-1">
-                            <ShortcutRow label="Show Shortcuts" icon={Keyboard} keys={[<Key>Shift</Key>, <Key>?</Key>]} />
+                            <ShortcutRow label="Show Shortcuts" icon={CornersOut} keys={[<Key>Shift</Key>, <Key>?</Key>]} />
                             <ShortcutRow label="Spotlight Search" icon={MagnifyingGlass} keys={[<Key>Ctrl</Key>, <Key>K</Key>]} />
                             <ShortcutRow label="Settings" icon={Gear} keys={[<Key>Ctrl</Key>, <Key>,</Key>]} />
                         </TabsContent>
@@ -64,7 +68,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <div className="text-xs font-medium text-zinc-500 mb-2 mt-1 uppercase tracking-wider">Go To...</div>
                             <ShortcutRow label="Home" icon={House} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>H</Key>]} />
                             <ShortcutRow label="Storage" icon={HardDrives} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>S</Key>]} />
-                            <ShortcutRow label="Collections" icon={Files} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>C</Key>]} />
+                            <ShortcutRow label="Collections" icon={FileText} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>C</Key>]} />
                             <ShortcutRow label="Docs" icon={FileText} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>D</Key>]} />
                             <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>G</Key>]} />
                             
@@ -74,33 +78,59 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>3</Key>]} />
                             
                             <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Document List</div>
-                            <ShortcutRow label="Previous Doc" icon={ArrowLeft} keys={[<Key>Alt</Key>, <Key>↑</Key>]} />
-                            <ShortcutRow label="Next Doc" icon={ArrowRight} keys={[<Key>Alt</Key>, <Key>↓</Key>]} />
+                            <ShortcutRow label="Navigate Docs" icon={CaretRight} keys={[<Key>↑</Key>, <Key>↓</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="storage" className="mt-0 space-y-1">
-                            <ShortcutRow label="Navigate Items" icon={ArrowRight} keys={[<Key>↑</Key>, <Key>↓</Key>, <Key>←</Key>, <Key>→</Key>]} />
-                            <ShortcutRow label="Open Item" icon={ArrowRight} keys={[<Key>Enter</Key>]} />
+                            <ShortcutRow label="Navigate Items" icon={CaretRight} keys={[<Key>↑</Key>, <Key>↓</Key>, <Key>←</Key>, <Key>→</Key>]} />
+                            <ShortcutRow label="Open Item" icon={CaretRight} keys={[<Key>Enter</Key>]} />
                             <ShortcutRow label="Select Item" icon={CheckSquare} keys={[<Key>Space</Key>]} />
-                            <ShortcutRow label="Select All" icon={SelectionAll} keys={[<Key>Ctrl</Key>, <Key>A</Key>]} />
+                            <ShortcutRow label="Select All" icon={CheckSquare} keys={[<Key>Ctrl</Key>, <Key>A</Key>]} />
                             <ShortcutRow label="Delete Selection" icon={Trash} keys={[<Key>Delete</Key>]} />
                             <ShortcutRow label="Rename File" icon={PencilSimple} keys={[<Key>F2</Key>]} />
-                            <ShortcutRow label="Go Up Directory" icon={ArrowUUpLeft} keys={[<Key>Backspace</Key>]} />
+                            <ShortcutRow label="Go Up Directory" icon={CaretUp} keys={[<Key>Backspace</Key>]} />
                             <ShortcutRow label="Clear Selection" icon={CornersOut} keys={[<Key>Esc</Key>]} />
                         </TabsContent>
 
-                        <TabsContent value="player" className="mt-0 space-y-1">
+                        <TabsContent value="video" className="mt-0 space-y-1">
                             <ShortcutRow label="Play / Pause" icon={FilmStrip} keys={[<Key>Space</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>K</Key>]} />
                             <ShortcutRow label="Fullscreen" icon={CornersOut} keys={[<Key>F</Key>]} />
                             <ShortcutRow label="Close Player" icon={X} keys={[<Key>Esc</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>Backspace</Key>]} />
                             <ShortcutRow label="Mute / Unmute" icon={SpeakerHigh} keys={[<Key>M</Key>]} />
                             <ShortcutRow label="Volume Up" icon={SpeakerHigh} keys={[<Key>↑</Key>]} />
                             <ShortcutRow label="Volume Down" icon={SpeakerHigh} keys={[<Key>↓</Key>]} />
-                            <ShortcutRow label="Seek Backward 10s" icon={ArrowLeft} keys={[<Key>J</Key>]} />
-                            <ShortcutRow label="Seek Forward 10s" icon={ArrowRight} keys={[<Key>L</Key>]} />
-                            <ShortcutRow label="Seek Backward 5s" icon={ArrowLeft} keys={[<Key>←</Key>]} />
-                            <ShortcutRow label="Seek Forward 5s" icon={ArrowRight} keys={[<Key>→</Key>]} />
+                            <ShortcutRow label="Seek Backward 10s" icon={CaretLeft} keys={[<Key>J</Key>]} />
+                            <ShortcutRow label="Seek Forward 10s" icon={CaretRight} keys={[<Key>L</Key>]} />
+                            <ShortcutRow label="Seek Backward 5s" icon={CaretLeft} keys={[<Key>←</Key>]} />
+                            <ShortcutRow label="Seek Forward 5s" icon={CaretRight} keys={[<Key>→</Key>]} />
                             <ShortcutRow label="Take Screenshot" icon={Image} keys={[<Key>S</Key>]} />
+                        </TabsContent>
+
+                        <TabsContent value="audio" className="mt-0 space-y-1">
+                            <ShortcutRow label="Play / Pause" icon={FilmStrip} keys={[<Key>Space</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>K</Key>]} />
+                            <ShortcutRow label="Close Player" icon={X} keys={[<Key>Esc</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>Backspace</Key>]} />
+                            <ShortcutRow label="Mute / Unmute" icon={SpeakerHigh} keys={[<Key>M</Key>]} />
+                            <ShortcutRow label="Volume Up" icon={SpeakerHigh} keys={[<Key>↑</Key>]} />
+                            <ShortcutRow label="Volume Down" icon={SpeakerHigh} keys={[<Key>↓</Key>]} />
+                            <ShortcutRow label="Seek Backward 10s" icon={CaretLeft} keys={[<Key>J</Key>]} />
+                            <ShortcutRow label="Seek Forward 10s" icon={CaretRight} keys={[<Key>L</Key>]} />
+                            <ShortcutRow label="Seek Backward 5s" icon={CaretLeft} keys={[<Key>←</Key>]} />
+                            <ShortcutRow label="Seek Forward 5s" icon={CaretRight} keys={[<Key>→</Key>]} />
+                        </TabsContent>
+
+                        <TabsContent value="pdf" className="mt-0 space-y-1">
+                            <ShortcutRow label="Previous Page" icon={CaretLeft} keys={[<Key>←</Key>]} />
+                            <ShortcutRow label="Next Page" icon={CaretRight} keys={[<Key>→</Key>]} />
+                            <ShortcutRow label="Zoom In" icon={MagnifyingGlass} keys={[<Key>+</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>=</Key>]} />
+                            <ShortcutRow label="Zoom Out" icon={MagnifyingGlass} keys={[<Key>-</Key>]} />
+                            <ShortcutRow label="Close Viewer" icon={X} keys={[<Key>Esc</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>Backspace</Key>]} />
+                        </TabsContent>
+
+                        <TabsContent value="image" className="mt-0 space-y-1">
+                            <ShortcutRow label="Zoom In" icon={MagnifyingGlass} keys={[<Key>+</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>=</Key>]} />
+                            <ShortcutRow label="Zoom Out" icon={MagnifyingGlass} keys={[<Key>-</Key>]} />
+                            <ShortcutRow label="Reset Zoom" icon={CornersIn} keys={[<Key>0</Key>]} />
+                            <ShortcutRow label="Close Viewer" icon={X} keys={[<Key>Esc</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>Backspace</Key>]} />
                         </TabsContent>
                     </ScrollArea>
                 </Tabs>

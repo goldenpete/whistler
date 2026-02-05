@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { 
@@ -25,7 +25,17 @@ interface AudioPlayerProps {
     highlight?: Highlight; // If provided, loops this segment
 }
 
-export function AudioPlayer({ url, fileId, className, highlights = [], highlight, showControls = true }: AudioPlayerProps) {
+export interface AudioPlayerHandle {
+    play: () => void;
+    pause: () => void;
+    togglePlay: () => void;
+    seek: (time: number) => void;
+    seekRelative: (seconds: number) => void;
+    setVolume: (volume: number) => void;
+    toggleMute: () => void;
+}
+
+export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ url, fileId, className, highlights = [], highlight, showControls = true }, ref) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const { 
         addAmbientMusicSuppression, 
@@ -45,6 +55,26 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
     const [isMuted, setIsMuted] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isLooping, setIsLooping] = useState(false);
+
+    useImperativeHandle(ref, () => ({
+        play: () => audioRef.current?.play(),
+        pause: () => audioRef.current?.pause(),
+        togglePlay: () => togglePlay(),
+        seek: (time: number) => {
+            if (audioRef.current) {
+                audioRef.current.currentTime = time;
+                setCurrentTime(time);
+            }
+        },
+        seekRelative: (seconds: number) => {
+            if (audioRef.current) {
+                audioRef.current.currentTime += seconds;
+                setCurrentTime(audioRef.current.currentTime);
+            }
+        },
+        setVolume: (vol: number) => handleVolumeChange([vol]),
+        toggleMute: () => toggleMute()
+    }));
 
     // Initial load progress or highlight start
     useEffect(() => {
@@ -332,4 +362,4 @@ export function AudioPlayer({ url, fileId, className, highlights = [], highlight
             `}</style>
         </div>
     );
-}
+});

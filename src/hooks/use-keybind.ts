@@ -17,12 +17,21 @@ export function useKeybind(
     const handleKeyDown = (e: KeyboardEvent) => {
       if (options.disableInInput) {
         const target = e.target as HTMLElement;
-        if (
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable
-        ) {
-          return;
+        const isInput = target.tagName === 'INPUT';
+        const isTextArea = target.tagName === 'TEXTAREA';
+        const isContentEditable = target.isContentEditable;
+        
+        // Allow some inputs like ranges (sliders), checkboxes, radios, buttons
+        if (isInput) {
+            const inputType = (target as HTMLInputElement).type;
+            const allowedTypes = ['range', 'checkbox', 'radio', 'button', 'submit', 'reset', 'file'];
+            if (allowedTypes.includes(inputType)) {
+                // Do not block
+            } else {
+                return;
+            }
+        } else if (isTextArea || isContentEditable) {
+            return;
         }
       }
 

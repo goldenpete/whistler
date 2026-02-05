@@ -314,11 +314,45 @@ export default function ProjectSidebar() {
         handleSelectDoc(projectDocs[nextIndex].id);
     }, { preventDefault: true });
 
-    useKeybind("alt+arrowup", () => {
+    // Doc Navigation in Sidebar
+    useKeybind("arrowdown", () => {
         if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
+        
+        // Only if sidebar is focused
+        const inSidebar = document.activeElement?.closest('[data-component="project-sidebar"]');
+        if (!inSidebar) return;
+
+        const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectDocs.length;
+        handleSelectDoc(projectDocs[nextIndex].id);
+        
+        // Try to focus the new item after a short delay to ensure render
+        setTimeout(() => {
+             const selector = `[data-doc-id="${projectDocs[nextIndex].id}"]`;
+             const el = document.querySelector(selector) as HTMLElement;
+             if (el) el.focus();
+        }, 50);
+
+    }, { preventDefault: true });
+
+    useKeybind("arrowup", () => {
+        if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
+
+        // Only if sidebar is focused
+        const inSidebar = document.activeElement?.closest('[data-component="project-sidebar"]');
+        if (!inSidebar) return;
+
         const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
         const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectDocs.length) % projectDocs.length;
         handleSelectDoc(projectDocs[prevIndex].id);
+
+        // Try to focus the new item
+        setTimeout(() => {
+             const selector = `[data-doc-id="${projectDocs[prevIndex].id}"]`;
+             const el = document.querySelector(selector) as HTMLElement;
+             if (el) el.focus();
+        }, 50);
+
     }, { preventDefault: true });
 
     const sensors = useSensors(
@@ -647,6 +681,7 @@ export default function ProjectSidebar() {
     return (
         <>
             <motion.aside
+                data-component="project-sidebar"
                 initial={{ width: isSidebarCollapsed ? (sidebarMode === 'slim' ? 60 : 0) : 280 }}
                 animate={{ width: isSidebarCollapsed ? (sidebarMode === 'slim' ? 60 : 0) : 280 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -1362,6 +1397,7 @@ export default function ProjectSidebar() {
                                         return (
                                         <div
                                             key={doc.id}
+                                            data-doc-id={doc.id}
                                             onClick={() => handleSelectDoc(doc.id)}
                                             role="button"
                                             tabIndex={0}

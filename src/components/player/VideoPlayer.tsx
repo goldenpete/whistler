@@ -61,7 +61,7 @@ import type { PDFPlayerHandle } from './PDFPlayer';
 import { ImagePlayer } from './ImagePlayer';
 import type { ImagePlayerHandle } from './ImagePlayer';
 import type { Highlight, File as AppFile, Collection } from "@/types";
-import { AudioPlayer } from './AudioPlayer';
+import { AudioPlayer, type AudioPlayerHandle } from './AudioPlayer';
 import { SeekPreview } from './SeekPreview';
 import { YouTubePlayerComponent, type YouTubePlayerHandle, getYouTubeId } from '@/components/player/YouTubePlayer';
 
@@ -151,6 +151,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const isYouTube = fileId ? (files.find(f => f.id === fileId)?.url?.includes('youtube.com') || files.find(f => f.id === fileId)?.url?.includes('youtu.be')) : false;
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const imageRef = useRef<ImagePlayerHandle>(null);
+    const audioRef = useRef<AudioPlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // State
@@ -463,6 +464,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const togglePlay = () => {
         if (!isMediaFile) return;
 
+        if (file?.type === 'audio') {
+            audioRef.current?.togglePlay();
+            return;
+        }
+
         if (isYouTube && youtubeRef.current) {
             if (youtubeRef.current.paused) {
                 youtubeRef.current.play();
@@ -487,6 +493,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         if (rememberMediaVolume && fileId) {
             setVideoVolumeForFile(fileId, newVolume);
         }
+        if (file?.type === 'audio') {
+            audioRef.current?.setVolume(newVolume);
+        }
         if (newVolume === 0) {
             setIsMuted(true);
         } else if (!showInitialMuteOverlay) {
@@ -497,6 +506,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const handleToggleMute = () => {
         const nextMuted = !isMuted;
         setIsMuted(nextMuted);
+        if (file?.type === 'audio') {
+            audioRef.current?.toggleMute();
+        }
         if (!nextMuted && fileId && muteNewVideosUntilUnmuted && !videoUnmutedByFile[fileId]) {
             setVideoUnmutedForFile(fileId, true);
             setShowInitialMuteOverlay(false);
@@ -717,7 +729,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     useKeybind("s", handleCaptureFrame, { preventDefault: true, disableInInput: true });
     
     useKeybind("j", () => {
-        if (isYouTube && youtubeRef.current) {
+        if (file?.type === 'audio') {
+            audioRef.current?.seekRelative(-10);
+        } else if (isYouTube && youtubeRef.current) {
             youtubeRef.current.currentTime -= 10;
         } else if (videoRef.current) {
             videoRef.current.currentTime -= 10;
@@ -725,7 +739,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     }, { preventDefault: true, disableInInput: true });
 
     useKeybind("l", () => {
-        if (isYouTube && youtubeRef.current) {
+        if (file?.type === 'audio') {
+            audioRef.current?.seekRelative(10);
+        } else if (isYouTube && youtubeRef.current) {
             youtubeRef.current.currentTime += 10;
         } else if (videoRef.current) {
             videoRef.current.currentTime += 10;
@@ -733,7 +749,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     }, { preventDefault: true, disableInInput: true });
 
     useKeybind("arrowleft", () => {
-        if (isYouTube && youtubeRef.current) {
+        if (file?.type === 'pdf') {
+            pdfRef.current?.prevPage();
+        } else if (file?.type === 'audio') {
+            audioRef.current?.seekRelative(-5);
+        } else if (isYouTube && youtubeRef.current) {
             youtubeRef.current.currentTime -= 5;
         } else if (videoRef.current) {
             videoRef.current.currentTime -= 5;
@@ -741,11 +761,29 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     }, { preventDefault: true, disableInInput: true });
 
     useKeybind("arrowright", () => {
-        if (isYouTube && youtubeRef.current) {
+        if (file?.type === 'pdf') {
+            pdfRef.current?.nextPage();
+        } else if (file?.type === 'audio') {
+            audioRef.current?.seekRelative(5);
+        } else if (isYouTube && youtubeRef.current) {
             youtubeRef.current.currentTime += 5;
         } else if (videoRef.current) {
             videoRef.current.currentTime += 5;
         }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("=", () => {
+        if (file?.type === 'pdf') pdfRef.current?.zoomIn();
+        if (file?.type === 'image') imageRef.current?.zoomIn();
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("-", () => {
+        if (file?.type === 'pdf') pdfRef.current?.zoomOut();
+        if (file?.type === 'image') imageRef.current?.zoomOut();
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("0", () => {
+        if (file?.type === 'image') imageRef.current?.resetZoom();
     }, { preventDefault: true, disableInInput: true });
 
     useKeybind("arrowup", () => {

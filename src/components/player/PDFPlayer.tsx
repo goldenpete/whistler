@@ -27,6 +27,8 @@ import { playSfx } from '@/utils/sound';
 
 export interface PDFPlayerHandle {
     jumpToPage: (page: number) => void;
+    prevPage: () => void;
+    nextPage: () => void;
     addHighlightFromSelection: () => void;
     zoomIn: () => void;
     zoomOut: () => void;
@@ -374,6 +376,8 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                 setPageNumber(page);
             }
         },
+        prevPage: () => changePage(-1),
+        nextPage: () => changePage(1),
         addHighlightFromSelection: handleAddHighlight,
         zoomIn: () => setScale((s: number) => Math.min(s + 0.2, 3.0)),
         zoomOut: () => setScale((s: number) => Math.max(s - 0.2, 0.5))
