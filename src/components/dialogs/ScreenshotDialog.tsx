@@ -51,18 +51,35 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
         if (!isDragging) return;
 
         const handleGlobalMouseMove = (e: globalThis.MouseEvent) => {
-            if (!startPos || !containerRef.current) return;
+            if (!startPos || !containerRef.current || !imageRef.current) return;
             
-            const rect = containerRef.current.getBoundingClientRect();
-            // Calculate relative to the container, but allow mouse to be anywhere
-            // We clamp the coordinates to the container bounds to ensure we don't select outside
-            const currentX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-            const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+            // Use the image rect for boundaries, not the container
+            // This ensures we can't select the black bars
+            const imageRect = imageRef.current.getBoundingClientRect();
+            const containerRect = containerRef.current.getBoundingClientRect();
+
+            // Calculate mouse position relative to the container (for the cropRect state)
+            // But clamped to the image bounds
             
-            const width = Math.abs(currentX - startPos.x);
-            const height = Math.abs(currentY - startPos.y);
-            const x = Math.min(currentX, startPos.x);
-            const y = Math.min(currentY, startPos.y);
+            // Mouse X relative to container
+            const mouseXInContainer = e.clientX - containerRect.left;
+            const mouseYInContainer = e.clientY - containerRect.top;
+
+            // Image bounds relative to container
+            const imageLeftInContainer = imageRect.left - containerRect.left;
+            const imageTopInContainer = imageRect.top - containerRect.top;
+            const imageRightInContainer = imageLeftInContainer + imageRect.width;
+            const imageBottomInContainer = imageTopInContainer + imageRect.height;
+
+            // Clamp mouse position to image bounds
+            const clampedX = Math.max(imageLeftInContainer, Math.min(mouseXInContainer, imageRightInContainer));
+            const clampedY = Math.max(imageTopInContainer, Math.min(mouseYInContainer, imageBottomInContainer));
+
+            // Calculate dimensions
+            const width = Math.abs(clampedX - startPos.x);
+            const height = Math.abs(clampedY - startPos.y);
+            const x = Math.min(clampedX, startPos.x);
+            const y = Math.min(clampedY, startPos.y);
             
             setCropRect({ x, y, width, height });
         };
@@ -94,9 +111,20 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
             const img = imageRef.current;
             const container = containerRef.current;
             
-            // Calculate scale between displayed image and actual image natural size
-            const scaleX = img.naturalWidth / container.clientWidth;
-            const scaleY = img.naturalHeight / container.clientHeight;
+            // We need to calculate the crop rect relative to the image itself, not the container
+            // Since cropRect is relative to container, we adjust it
+            const imageRect = img.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            const imageLeftInContainer = imageRect.left - containerRect.left;
+            const imageTopInContainer = imageRect.top - containerRect.top;
+
+            // Adjust crop coordinates to be relative to the image
+            const cropXOnImage = cropRect.x - imageLeftInContainer;
+            const cropYOnImage = cropRect.y - imageTopInContainer;
+
+            const scaleX = img.naturalWidth / imageRect.width;
+            const scaleY = img.naturalHeight / imageRect.height;
 
             canvas.width = cropRect.width * scaleX;
             canvas.height = cropRect.height * scaleY;
@@ -106,8 +134,8 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
 
             ctx.drawImage(
                 img,
-                cropRect.x * scaleX,
-                cropRect.y * scaleY,
+                cropXOnImage * scaleX,
+                cropYOnImage * scaleY,
                 cropRect.width * scaleX,
                 cropRect.height * scaleY,
                 0,
@@ -141,17 +169,33 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
             <DialogContent 
                 className="!fixed !top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-none !p-0 !gap-0 !rounded-none !border-none overflow-hidden bg-zinc-950 flex flex-col z-[100]" 
                 portalContainer={container}
-                showCloseButton={true}
+                showCloseButton={false}
             >
-                <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0 flex flex-row items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                        <DialogTitle className="flex items-center gap-2">
+                <DialogHeader className="p-3 border-b border-zinc-800 bg-zinc-900 shrink-0 flex flex-row items-center gap-4 h-14">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <DialogTitle className="flex items-center gap-2 shrink-0">
                             <CornersIn className="text-primary" size={20} />
                             Save Screenshot
                         </DialogTitle>
-                        <DialogDescription>
-                            Drag to select a crop region, or save the full frame.
+                        <DialogDescription className="m-0 truncate pt-0.5">
+                            Drag to crop, or save full frame.
                         </DialogDescription>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 shrink-0">
+                        {cropRect && (
+                            <Button variant="secondary" size="sm" onClick={() => downloadImage(true)} className="h-8">
+                                <CornersIn className="mr-2 h-4 w-4" />
+                                Save Crop
+                            </Button>
+                        )}
+                        <Button size="sm" onClick={() => downloadImage(false)} className="h-8">
+                            <DownloadSimple className="mr-2" size={16} />
+                            Save Full
+                        </Button>
+                        <Button variant="ghost" size="icon-sm" onClick={() => onOpenChange(false)} className="h-8 w-8 ml-2">
+                            <X size={18} />
+                        </Button>
                     </div>
                 </DialogHeader>
 
@@ -198,23 +242,6 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
                         </div>
                     )}
                 </div>
-
-                <DialogFooter className="p-4 border-t border-zinc-800 bg-zinc-900/50 gap-2 shrink-0">
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <div className="flex-1" />
-                    {cropRect && (
-                        <Button variant="secondary" onClick={() => downloadImage(true)}>
-                            <CornersIn className="mr-2 h-4 w-4" />
-                            Save Crop
-                        </Button>
-                    )}
-                    <Button onClick={() => downloadImage(false)}>
-                        <DownloadSimple className="mr-2" size={16} />
-                        Save Full Frame
-                    </Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
