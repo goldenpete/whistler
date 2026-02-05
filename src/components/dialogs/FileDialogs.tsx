@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { type File } from "@/types";
 
 interface EditFileDialogProps {
@@ -11,9 +11,10 @@ interface EditFileDialogProps {
     onOpenChange: (open: boolean) => void;
     file: File;
     onSave: (updates: Partial<File>) => void;
+    container?: HTMLElement | null;
 }
 
-export function EditFileDialog({ open, onOpenChange, file, onSave }: EditFileDialogProps) {
+export function EditFileDialog({ open, onOpenChange, file, onSave, container }: EditFileDialogProps) {
     const [name, setName] = useState(file.name);
     const [description, setDescription] = useState(file.description || "");
 
@@ -31,7 +32,7 @@ export function EditFileDialog({ open, onOpenChange, file, onSave }: EditFileDia
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-white">
+            <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-white" portalContainer={container}>
                 <DialogHeader>
                     <DialogTitle>Edit File Details</DialogTitle>
                     <DialogDescription>
@@ -44,7 +45,7 @@ export function EditFileDialog({ open, onOpenChange, file, onSave }: EditFileDia
                         <Input
                             id="name"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
                         />
                     </div>
@@ -53,7 +54,7 @@ export function EditFileDialog({ open, onOpenChange, file, onSave }: EditFileDia
                         <Textarea
                             id="description"
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                             className="bg-zinc-900 border-zinc-800 min-h-[150px] focus:border-primary/50 resize-y"
                             placeholder="Add a description..."
                         />

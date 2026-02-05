@@ -967,9 +967,10 @@ interface EditHighlightDialogProps {
     file: File | null;
     collections?: Collection[];
     onSave: (updates: Partial<Highlight>) => void;
+    container?: HTMLElement | null;
 }
 
-export function EditHighlightDialog({ open, onOpenChange, highlight, file, collections, onSave }: EditHighlightDialogProps) {
+export function EditHighlightDialog({ open, onOpenChange, highlight, file, collections, onSave, container }: EditHighlightDialogProps) {
     const [note, setNote] = useState("");
     const [collectionId, setCollectionId] = useState("");
     const [startTime, setStartTime] = useState("");
@@ -1017,7 +1018,7 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, file, colle
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px]" portalContainer={container}>
                 <DialogHeader>
                     <DialogTitle>Edit Highlight</DialogTitle>
                     <DialogDescription>

@@ -1113,6 +1113,17 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 </Button>
                                             ))}
                                         </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={(e: MouseEvent) => {
+                                                e.stopPropagation();
+                                                setShowInitialMuteOverlay(false);
+                                            }}
+                                            className="bg-black/60 text-white border-white/20 hover:bg-black/70 mt-1"
+                                        >
+                                            Keep Muted
+                                        </Button>
                                     </div>
                                 </div>
                             )}
@@ -1273,7 +1284,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                             {playbackRate}x
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-64 bg-popover border-border p-4" side="top">
+                                    <PopoverContent className="w-64 bg-popover border-border p-4" side="top" portalContainer={containerRef.current}>
                                         <div className="flex flex-col gap-4">
                                             <div className="flex items-center justify-between text-foreground font-mono text-xl font-medium border-b border-border pb-2">
                                                 <span>{playbackRate.toFixed(2)}x</span>
@@ -1470,6 +1481,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 open={moveDialogOpen}
                 onOpenChange={setMoveDialogOpen}
                 fileIds={fileId ? [fileId] : []}
+                container={containerRef.current}
             />
 
             <EditFileDialog
@@ -1477,6 +1489,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 onOpenChange={setEditOpen}
                 file={file}
                 onSave={(updates) => updateFile(file.id, updates)}
+                container={containerRef.current}
             />
 
             <EditHighlightDialog
@@ -1488,10 +1501,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 file={file}
                 collections={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted)}
                 onSave={(updates) => selectedHighlight && updateHighlight(selectedHighlight.id, updates)}
+                container={containerRef.current}
             />
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent portalContainer={containerRef.current}>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -1514,6 +1528,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 open={isScreenshotDialogOpen}
                 onOpenChange={setIsScreenshotDialogOpen}
                 imageUrl={screenshotUrl}
+                container={containerRef.current}
             />
         </div>
         </>

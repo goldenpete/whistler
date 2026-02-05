@@ -10,9 +10,10 @@ interface MoveFileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     fileIds: string[];
+    container?: HTMLElement | null;
 }
 
-export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogProps) {
+export function MoveFileDialog({ open, onOpenChange, fileIds, container }: MoveFileDialogProps) {
     const { 
         files, 
         storages, 
@@ -87,7 +88,7 @@ export function MoveFileDialog({ open, onOpenChange, fileIds }: MoveFileDialogPr
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px]" portalContainer={container}>
                 <DialogHeader>
                     <DialogTitle>Move to...</DialogTitle>
                     <DialogDescription className="sr-only">

@@ -8,9 +8,10 @@ interface ScreenshotDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     imageUrl: string | null;
+    container?: HTMLElement | null;
 }
 
-export function ScreenshotDialog({ open, onOpenChange, imageUrl }: ScreenshotDialogProps) {
+export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: ScreenshotDialogProps) {
     const [cropRect, setCropRect] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [startPos, setStartPos] = useState<{ x: number, y: number } | null>(null);
@@ -113,7 +114,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl }: ScreenshotDia
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[90vw] w-fit p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800">
+            <DialogContent className="max-w-[90vw] w-fit p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800" portalContainer={container}>
                 <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50">
                     <DialogTitle className="flex items-center gap-2">
                         <CornersIn className="text-primary" size={20} />
