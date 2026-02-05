@@ -114,7 +114,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[90vw] w-fit p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800" portalContainer={container}>
+            <DialogContent className="max-w-[95vw] w-fit p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800" portalContainer={container}>
                 <DialogHeader className="p-4 border-b border-zinc-800 bg-zinc-900/50">
                     <DialogTitle className="flex items-center gap-2">
                         <CornersIn className="text-primary" size={20} />
@@ -125,7 +125,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="relative bg-black/50 overflow-hidden flex items-center justify-center min-h-[300px] max-h-[70vh]">
+                <div className="relative bg-black/50 overflow-hidden flex items-center justify-center min-h-[300px] max-h-[85vh]">
                     {imageUrl && (
                         <div 
                             ref={containerRef}
@@ -139,7 +139,7 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
                                 ref={imageRef}
                                 src={imageUrl} 
                                 alt="Screenshot" 
-                                className="max-w-full max-h-[70vh] object-contain block"
+                                className="max-w-full max-h-[85vh] object-contain block"
                                 draggable={false}
                                 crossOrigin="anonymous"
                             />
