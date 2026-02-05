@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, useRef, type KeyboardEvent, type MouseEvent, type ChangeEvent, type FormEvent } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
@@ -96,12 +96,14 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
 
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState("");
+    
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         let widgetId: string | null = null;
         const interval = setInterval(() => {
             if (window.turnstile && !widgetId) {
-                const container = document.getElementById("turnstile-container");
+                const container = containerRef.current;
                 if (container) {
                     // Check if container already has content to avoid double render
                     if (container.hasChildNodes()) {
@@ -570,12 +572,8 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         </div>
                         <div className="flex justify-center">
                             <div
-                                id="turnstile-container"
-                                className="cf-turnstile min-h-[65px]"
-                                data-sitekey={TURNSTILE_SITE_KEY}
-                                data-theme="dark"
-                                data-callback="onTurnstileSuccess"
-                                data-expired-callback="onTurnstileExpired"
+                                ref={containerRef}
+                                className="min-h-[65px]"
                             />
                         </div>
                         {error && (

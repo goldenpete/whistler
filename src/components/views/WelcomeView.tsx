@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +49,8 @@ export function WelcomeView() {
     const [newProjectOpen, setNewProjectOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const [importError, setImportError] = useState<string | null>(null);
+    
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!signInOpen) return;
@@ -56,7 +58,7 @@ export function WelcomeView() {
         let widgetId: string | null = null;
         const interval = setInterval(() => {
             if (window.turnstile && !widgetId) {
-                const container = document.getElementById("welcome-turnstile-container");
+                const container = containerRef.current;
                 if (container) {
                     // Check if container already has content
                     if (container.hasChildNodes()) {
@@ -456,12 +458,8 @@ export function WelcomeView() {
                             </div>
                             <div className="flex justify-center">
                                 <div
-                                    id="welcome-turnstile-container"
-                                    className="cf-turnstile min-h-[65px]"
-                                    data-sitekey={TURNSTILE_SITE_KEY}
-                                    data-theme="dark"
-                                    data-callback="onTurnstileSuccess"
-                                    data-expired-callback="onTurnstileExpired"
+                                    ref={containerRef}
+                                    className="min-h-[65px]"
                                 />
                             </div>
                             {error && (

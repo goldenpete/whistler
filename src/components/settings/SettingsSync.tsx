@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import React, { useEffect, useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
@@ -117,6 +117,8 @@ export function SettingsSync() {
     const [itemToDelete, setItemToDelete] = useState<{id: string, label: string} | null>(null);
     const [isDeletingRemote, setIsDeletingRemote] = useState(false);
     const [isSyncIdRevealed, setIsSyncIdRevealed] = useState(false);
+    
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const handleDeleteRemote = async () => {
         if (!itemToDelete || !sessionToken) return;
@@ -172,7 +174,7 @@ export function SettingsSync() {
         let widgetId: string | null = null;
         const interval = setInterval(() => {
             if (window.turnstile && !widgetId && !user) {
-                const container = document.getElementById("turnstile-container-settings");
+                const container = containerRef.current;
                 if (container) {
                     if (container.hasChildNodes()) {
                         clearInterval(interval);
@@ -615,7 +617,12 @@ export function SettingsSync() {
                                     />
                                 </div>
                                 
-                                <div id="turnstile-container-settings" className="min-h-[65px]" />
+                                <div className="flex justify-center">
+                                    <div
+                                        ref={containerRef}
+                                        className="min-h-[65px]"
+                                    />
+                                </div>
                                 
                                 {error && <div className="text-sm text-red-400">{error}</div>}
                                 
