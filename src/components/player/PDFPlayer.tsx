@@ -273,10 +273,10 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                     const clientRects = range.getClientRects();
                     for (const rect of clientRects) {
                         newRects.push({
-                            x: rect.left - wrapperRect.left,
-                            y: rect.top - wrapperRect.top,
-                            width: rect.width,
-                            height: rect.height
+                            x: (rect.left - wrapperRect.left) / scale,
+                            y: (rect.top - wrapperRect.top) / scale,
+                            width: rect.width / scale,
+                            height: rect.height / scale
                         });
                     }
                 }
@@ -302,7 +302,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         });
 
         setHighlightRects(newRects);
-    }, [pageHighlights]);
+    }, [pageHighlights, scale]);
 
     const handleAddHighlight = () => {
         if (!selectedText || readonly) return;
