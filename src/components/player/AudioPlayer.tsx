@@ -1,6 +1,11 @@
 import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { 
     Play, 
     Pause, 
@@ -9,10 +14,13 @@ import {
     Repeat, 
     ArrowCounterClockwise,
     ArrowsCounterClockwise,
-    MusicNotes
+    MusicNotes,
+    Minus,
+    Plus
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
+import { playSfx } from '@/utils/sound';
 
 import type { Highlight, Collection } from "@/types";
 
@@ -55,6 +63,8 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
     const [isMuted, setIsMuted] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isLooping, setIsLooping] = useState(false);
+
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => ({
         play: () => audioRef.current?.play(),
@@ -172,10 +182,9 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
         }
     };
 
-    const changeSpeed = () => {
-        const speeds = [0.5, 1, 1.25, 1.5, 2];
-        const nextIndex = (speeds.indexOf(playbackRate) + 1) % speeds.length;
-        const newRate = speeds[nextIndex];
+    // Use refined playback rate setter
+    const handlePlaybackRateChange = (rate: number) => {
+        const newRate = Math.max(0.25, Math.min(8, rate));
         setPlaybackRate(newRate);
         if (audioRef.current) {
             audioRef.current.playbackRate = newRate;
@@ -192,7 +201,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
     const relativeTime = highlight ? Math.max(0, currentTime - highlight.start) : currentTime;
 
     return (
-        <div className={cn("flex flex-col items-center justify-center h-full w-full bg-zinc-950 p-8", className)}>
+        <div ref={containerRef} className={cn("flex flex-col items-center justify-center h-full w-full bg-zinc-950 p-8", className)}>
             <audio
                 ref={audioRef}
                 src={url}
@@ -300,7 +309,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={() => { if (audioRef.current) audioRef.current.currentTime -= 10; }}
+                                onClick={() => { 
+                                    playSfx('cursor');
+                                    if (audioRef.current) audioRef.current.currentTime -= 10; 
+                                }}
                                 className="text-zinc-400 hover:text-white"
                             >
                                 <ArrowCounterClockwise size={24} weight="fill" />
@@ -308,7 +320,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
 
                             <Button 
                                 size="icon" 
-                                onClick={togglePlay}
+                                onClick={() => {
+                                    playSfx('cursor');
+                                    togglePlay();
+                                }}
                                 className="h-14 w-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg scale-100 hover:scale-105 transition-transform"
                             >
                                 {isPlaying ? <Pause size={28} weight="fill" /> : <Play size={28} weight="fill" className="ml-1" />}
@@ -317,7 +332,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={() => { if (audioRef.current) audioRef.current.currentTime += 10; }}
+                                onClick={() => { 
+                                    playSfx('cursor');
+                                    if (audioRef.current) audioRef.current.currentTime += 10; 
+                                }}
                                 className="text-zinc-400 hover:text-white"
                             >
                                 <ArrowsCounterClockwise size={24} weight="fill" />
@@ -326,18 +344,61 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
 
                         {/* Right: Options */}
                         <div className="flex items-center gap-2 w-32 justify-end">
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={changeSpeed}
-                                className="text-xs font-bold text-zinc-400 hover:text-white w-12"
-                            >
-                                {playbackRate}x
-                            </Button>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-xs font-bold text-zinc-400 hover:text-white w-12"
+                                    >
+                                        {playbackRate}x
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 bg-popover border-border p-4" side="top" portalContainer={containerRef.current}>
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-center justify-between text-foreground font-mono text-xl font-medium border-b border-border pb-2">
+                                            <span>{playbackRate.toFixed(2)}x</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { playSfx('cursor'); handlePlaybackRateChange(playbackRate - 0.05); }}>
+                                                <Minus weight="bold" />
+                                            </Button>
+                                            <Slider
+                                                value={[playbackRate]}
+                                                min={0.25}
+                                                max={8}
+                                                step={0.05}
+                                                onValueChange={(val: number[]) => handlePlaybackRateChange(val[0])}
+                                                className="flex-1"
+                                            />
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { playSfx('cursor'); handlePlaybackRateChange(playbackRate + 0.05); }}>
+                                                <Plus weight="bold" />
+                                            </Button>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {[0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 8.0].map((rate) => (
+                                                <button
+                                                    key={rate}
+                                                    onClick={() => { playSfx('cursor'); handlePlaybackRateChange(rate); }}
+                                                    className={cn(
+                                                        "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
+                                                        playbackRate === rate
+                                                            ? "bg-primary/10 text-primary border-primary/50"
+                                                            : "bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground"
+                                                    )}
+                                                >
+                                                    {rate}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={toggleLoop}
+                                onClick={() => { playSfx('cursor'); toggleLoop(); }}
                                 className={cn(
                                     "transition-colors",
                                     isLooping ? "text-primary bg-primary/10" : "text-zinc-400 hover:text-white"

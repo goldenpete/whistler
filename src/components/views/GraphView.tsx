@@ -589,46 +589,38 @@ export default function GraphView() {
     };
 
     // --- Keybinds ---
-    useKeybind("space", (e) => {
-        // Only fit if not in an input/dialog
-        if (!nodeDialog.open && !addNodeDialog.open) {
-            handleFitToView();
-        }
-    }, { preventDefault: true, disableInInput: true });
-
     useKeybind("n", () => {
-        if (!nodeDialog.open && !addNodeDialog.open) {
+        if (!nodeDialog.open) {
             handleAddNode('note');
         }
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("+", () => {
-        setScale(s => Math.min(3, s * 1.2));
-    }, { preventDefault: true });
+    useKeybind("space", () => {
+        if (!nodeDialog.open) {
+            handleFitToView();
+        }
+    }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("=", () => { // Catch both + and =
-        setScale(s => Math.min(3, s * 1.2));
-    }, { preventDefault: true });
+    useKeybind("=", () => setScale(s => Math.min(3, s * 1.2)), { preventDefault: true });
+    useKeybind("+", () => setScale(s => Math.min(3, s * 1.2)), { preventDefault: true });
+    useKeybind("-", () => setScale(s => Math.max(0.2, s / 1.2)), { preventDefault: true });
 
-    useKeybind("-", () => {
-        setScale(s => Math.max(0.2, s / 1.2));
-    }, { preventDefault: true });
+    // Panning
+    const PAN_STEP = 40;
+    const FAST_PAN_STEP = 200;
 
-    useKeybind("arrowup", () => setPan(p => ({ ...p, y: p.y + 20 })), { preventDefault: true });
-    useKeybind("arrowdown", () => setPan(p => ({ ...p, y: p.y - 20 })), { preventDefault: true });
-    useKeybind("arrowleft", () => setPan(p => ({ ...p, x: p.x + 20 })), { preventDefault: true });
-    useKeybind("arrowright", () => setPan(p => ({ ...p, x: p.x - 20 })), { preventDefault: true });
+    useKeybind("arrowup", () => setPan(p => ({ ...p, y: p.y + 40 })), { preventDefault: true });
+    useKeybind("arrowdown", () => setPan(p => ({ ...p, y: p.y - 40 })), { preventDefault: true });
+    useKeybind("arrowleft", () => setPan(p => ({ ...p, x: p.x + 40 })), { preventDefault: true });
+    useKeybind("arrowright", () => setPan(p => ({ ...p, x: p.x - 40 })), { preventDefault: true });
     
-    useKeybind("shift+arrowup", () => setPan(p => ({ ...p, y: p.y + 100 })), { preventDefault: true });
-    useKeybind("shift+arrowdown", () => setPan(p => ({ ...p, y: p.y - 100 })), { preventDefault: true });
-    useKeybind("shift+arrowleft", () => setPan(p => ({ ...p, x: p.x + 100 })), { preventDefault: true });
-    useKeybind("shift+arrowright", () => setPan(p => ({ ...p, x: p.x - 100 })), { preventDefault: true });
+    useKeybind("shift+arrowup", () => setPan(p => ({ ...p, y: p.y + 200 })), { preventDefault: true });
+    useKeybind("shift+arrowdown", () => setPan(p => ({ ...p, y: p.y - 200 })), { preventDefault: true });
+    useKeybind("shift+arrowleft", () => setPan(p => ({ ...p, x: p.x + 200 })), { preventDefault: true });
+    useKeybind("shift+arrowright", () => setPan(p => ({ ...p, x: p.x - 200 })), { preventDefault: true });
 
     useKeybind("delete", () => {
         if (previewNodeId) {
-            handleAction('delete'); // Need to ensure handleAction handles this or call logic directly
-            // handleAction relies on contextMenu state. We should use direct store call or refactor handleAction.
-            // Let's call store directly for safety.
             useStore.setState((state: AppStore) => ({
                 graphNodes: state.graphNodes.filter(n => n.id !== previewNodeId),
                 graphEdges: state.graphEdges.filter(e => e.fromId !== previewNodeId && e.toId !== previewNodeId)
@@ -646,7 +638,6 @@ export default function GraphView() {
             setPreviewNodeId(null);
         }
     }, { preventDefault: true });
-
 
     const handleContextMenu = (e: MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect();

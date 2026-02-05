@@ -227,6 +227,10 @@ function DocEditor({ doc }: DocEditorProps) {
     useKeybind("ctrl+shift+8", () => execCommand('insertUnorderedList'), { preventDefault: true }); // Standard bullet shortcut
     useKeybind("ctrl+shift+u", () => execCommand('insertUnorderedList'), { preventDefault: true }); // Alternate
 
+    useKeybind("ctrl+b", () => execCommand('bold'), { preventDefault: true });
+    useKeybind("ctrl+i", () => execCommand('italic'), { preventDefault: true });
+    useKeybind("ctrl+u", () => execCommand('underline'), { preventDefault: true });
+
     const projectFiles = files.filter(
         (f: AppFile) => f.projectId === doc.projectId && !f.deleted
     );

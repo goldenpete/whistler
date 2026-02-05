@@ -14,6 +14,7 @@ import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useNavigate } from 'react-router-dom';
 import type { Highlight, Collection } from "@/types";
+import { playSfx } from '@/utils/sound';
 
 export interface ImagePlayerHandle {
     zoomIn: () => void;
@@ -282,6 +283,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                     className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                     onClick={(e: MouseEvent) => {
                         e.stopPropagation();
+                        playSfx('cursor');
                         zoomOut();
                     }}
                     title="Zoom Out"
@@ -299,6 +301,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                     className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                     onClick={(e: MouseEvent) => {
                         e.stopPropagation();
+                        playSfx('cursor');
                         zoomIn();
                     }}
                     title="Zoom In"
@@ -317,7 +320,10 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                                 "h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full",
                                 isSidebarOpen && "text-primary hover:text-primary"
                             )}
-                            onClick={onToggleSidebar}
+                            onClick={() => {
+                                playSfx('cursor');
+                                onToggleSidebar?.();
+                            }}
                         >
                             <SidebarSimple size={14} weight="bold" />
                         </Button>
@@ -333,6 +339,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                             onClick={(e: MouseEvent) => {
                         e.stopPropagation();
+                        playSfx('cursor');
                         onToggleFullscreen();
                     }}
                             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
@@ -351,6 +358,7 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                             onClick={(e: MouseEvent) => {
                                 e.stopPropagation();
+                                playSfx('cursor');
                                 onHideControls();
                             }}
                             title="Hide Controls"

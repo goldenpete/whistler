@@ -148,6 +148,10 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Zoom In" icon={MagnifyingGlass} keys={[<Key>+</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>=</Key>]} />
                             <ShortcutRow label="Zoom Out" icon={MagnifyingGlass} keys={[<Key>-</Key>]} />
                             <ShortcutRow label="Close Viewer" icon={X} keys={[<Key>Esc</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>Backspace</Key>]} />
+                            
+                            <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Trackpad Gestures</div>
+                            <ShortcutRow label="Zoom View" icon={MagnifyingGlass} keys={[<Key>Shift</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>Scroll</Key>]} />
+                            <ShortcutRow label="Pan View" icon={CaretRight} keys={[<Key>Ctrl</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>Scroll</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="image" className="mt-0 space-y-1">

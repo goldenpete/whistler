@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/useStore";
 import { type Highlight, type File, type Collection } from "@/types";
+import { playSfx } from "@/utils/sound";
 import { 
     Play, Pause, X, SpeakerHigh, SpeakerX, Repeat, 
     CornersOut, CornersIn, Minus, Plus, ArrowSquareOut, 
@@ -412,6 +413,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             variant="ghost"
                             size="icon"
                             onClick={() => {
+                                playSfx('cursor');
                                 onOpenChange(false);
                                 if (!inline) {
                                     navigate(`/file/${file.id}`);
@@ -425,7 +427,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={handleMinimize}
+                            onClick={() => {
+                                playSfx('cursor');
+                                handleMinimize();
+                            }}
                             className="text-muted-foreground hover:text-foreground hover:bg-white/10"
                             title="Minimize to Dock"
                         >
@@ -435,7 +440,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={handleToggleWindowed}
+                                onClick={() => {
+                                    playSfx('cursor');
+                                    handleToggleWindowed();
+                                }}
                                 className="text-muted-foreground hover:text-foreground hover:bg-white/10"
                                 title={isWindowed ? "Maximize" : "Windowed Mode"}
                             >
@@ -445,7 +453,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setShowControls(false)}
+                            onClick={() => {
+                                playSfx('cursor');
+                                setShowControls(false);
+                            }}
                             className="text-muted-foreground hover:text-foreground hover:bg-white/10"
                             title="Hide Top Bar"
                         >
@@ -455,6 +466,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             variant="ghost" 
                             size="icon" 
                             onClick={() => {
+                                playSfx('cursor');
                                 if (onRequestClose) {
                                     onRequestClose();
                                 } else {
@@ -536,7 +548,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             ref={youtubeRef}
                                             url={file.url || ""}
                                             className="w-full h-full"
-                                            onTimeUpdate={(t) => handleTimeUpdate(t)}
+                                            onTimeUpdate={(t: number) => handleTimeUpdate(t)}
                                             onPlay={() => {
                                                 setIsPlaying(true);
                                                 addAmbientMusicSuppression('highlight-player');
@@ -604,7 +616,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={(e: MouseEvent) => { e.stopPropagation(); togglePlay(); }}
+                                    onClick={(e: MouseEvent) => { 
+                                        playSfx('cursor');
+                                        e.stopPropagation(); 
+                                        togglePlay(); 
+                                    }}
                                     className="h-8 w-8 rounded-md bg-white/10 hover:bg-white/20 text-white"
                                 >
                                     {isPlaying ? <Pause weight="fill" size={18} /> : <Play weight="fill" size={18} />}
@@ -614,7 +630,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={(e: MouseEvent) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                        onClick={(e: MouseEvent) => { 
+                                            playSfx('cursor');
+                                            e.stopPropagation(); 
+                                            setIsMuted(!isMuted); 
+                                        }}
                                         className="text-zinc-400 hover:text-white"
                                     >
                                         {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
@@ -646,7 +666,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     <Button
                                         size="icon"
                                         variant="ghost"
-                                        onClick={(e: MouseEvent) => { e.stopPropagation(); setIsLooping(!isLooping); }}
+                                        onClick={(e: MouseEvent) => { 
+                                            playSfx('cursor');
+                                            e.stopPropagation(); 
+                                            setIsLooping(!isLooping); 
+                                        }}
                                         className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
                                         title={isLooping ? "Loop On" : "Loop Off"}
                                     >
@@ -657,7 +681,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={(e: MouseEvent) => { e.stopPropagation(); if (file?.id) setVideoZoomManualForFile(file.id, !isManualZoom); }}
+                                                onClick={(e: MouseEvent) => { 
+                                                    playSfx('cursor');
+                                                    e.stopPropagation(); 
+                                                    if (file?.id) setVideoZoomManualForFile(file.id, !isManualZoom); 
+                                                }}
                                                 className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isManualZoom && "text-primary hover:text-primary/80")}
                                                 title={isManualZoom ? "Manual Zoom On" : "Auto Zoom On"}
                                             >
@@ -666,7 +694,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={(e: MouseEvent) => { e.stopPropagation(); if (file?.id && isManualZoom) setVideoZoomForFile(file.id, clampZoom(zoomForFile - 0.1)); }}
+                                                onClick={(e: MouseEvent) => { 
+                                                    playSfx('cursor');
+                                                    e.stopPropagation(); 
+                                                    if (file?.id && isManualZoom) setVideoZoomForFile(file.id, clampZoom(zoomForFile - 0.1)); 
+                                                }}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 title="Zoom Out"
                                                 disabled={!isManualZoom}
@@ -676,7 +708,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={(e: MouseEvent) => { e.stopPropagation(); if (file?.id && isManualZoom) setVideoZoomForFile(file.id, clampZoom(zoomForFile + 0.1)); }}
+                                                onClick={(e: MouseEvent) => { 
+                                                    playSfx('cursor');
+                                                    e.stopPropagation(); 
+                                                    if (file?.id && isManualZoom) setVideoZoomForFile(file.id, clampZoom(zoomForFile + 0.1)); 
+                                                }}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 title="Zoom In"
                                                 disabled={!isManualZoom}
@@ -691,7 +727,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={(e: MouseEvent) => e.stopPropagation()}
+                                                onClick={(e: MouseEvent) => {
+                                                    playSfx('cursor');
+                                                    e.stopPropagation();
+                                                }}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground text-xs"
                                             >
                                                 {playbackSpeed}x
@@ -703,7 +742,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                     <span>{playbackSpeed.toFixed(2)}x</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackSpeed(Math.max(0.25, playbackSpeed - 0.05))}>
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { playSfx('cursor'); setPlaybackSpeed(Math.max(0.25, playbackSpeed - 0.05)); }}>
                                                         <Minus weight="bold" />
                                                     </Button>
                                                     <Slider
@@ -714,7 +753,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                         onValueChange={(val: number[]) => setPlaybackSpeed(val[0])}
                                                         className="flex-1"
                                                     />
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackSpeed(Math.min(8, playbackSpeed + 0.05))}>
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { playSfx('cursor'); setPlaybackSpeed(Math.min(8, playbackSpeed + 0.05)); }}>
                                                         <Plus weight="bold" />
                                                     </Button>
                                                 </div>
@@ -722,7 +761,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                     {[0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 8.0].map((rate) => (
                                                         <button
                                                             key={rate}
-                                                            onClick={() => setPlaybackSpeed(rate)}
+                                                            onClick={() => { playSfx('cursor'); setPlaybackSpeed(rate); }}
                                                             className={cn(
                                                                 "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
                                                                 playbackSpeed === rate
@@ -738,7 +777,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         </PopoverContent>
                                     </Popover>
 
-                                    <Button variant="ghost" size="icon" onClick={togglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
+                                    <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); togglePip(); }} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
                                         <CornersOut weight="bold" size={20} />
                                     </Button>
 
@@ -749,7 +788,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={(e: MouseEvent) => { e.stopPropagation(); setShowControls(false); }}
+                                onClick={(e: MouseEvent) => { 
+                                    playSfx('cursor');
+                                    e.stopPropagation(); 
+                                    setShowControls(false); 
+                                }}
                                 className="text-muted-foreground hover:text-foreground"
                                 title="Hide Controls"
                             >
@@ -759,7 +802,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={(e: MouseEvent) => { e.stopPropagation(); setIsSidebarOpen(!isSidebarOpen); }}
+                                onClick={(e: MouseEvent) => { 
+                                    playSfx('cursor');
+                                    e.stopPropagation(); 
+                                    setIsSidebarOpen(!isSidebarOpen); 
+                                }}
                                 className={cn(
                                     "text-muted-foreground hover:text-foreground",
                                     isSidebarOpen && "text-primary hover:text-primary"
@@ -771,7 +818,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={(e: MouseEvent) => { e.stopPropagation(); toggleFullscreen(); }} 
+                                onClick={(e: MouseEvent) => { 
+                                    playSfx('cursor');
+                                    e.stopPropagation(); 
+                                    toggleFullscreen(); 
+                                }} 
                                 className="text-muted-foreground hover:text-foreground"
                             >
                                 {isFullscreen ? <CornersIn weight="bold" size={20} /> : <CornersOut weight="bold" size={20} />}
@@ -893,7 +944,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                 return (
                                                     <button
                                                         key={h.id}
-                                                        onClick={() => onSelectHighlight?.(h.id)}
+                                                        onClick={() => {
+                                                            playSfx('cursor');
+                                                            onSelectHighlight?.(h.id);
+                                                        }}
                                                         className={cn(
                                                             "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors border border-transparent w-full",
                                                             isActive
@@ -1084,8 +1138,14 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, file, colle
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave}>Save Changes</Button>
+                    <Button variant="outline" onClick={() => {
+                        playSfx('cursor');
+                        onOpenChange(false);
+                    }}>Cancel</Button>
+                    <Button onClick={() => {
+                        playSfx('cursor');
+                        handleSave();
+                    }}>Save Changes</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

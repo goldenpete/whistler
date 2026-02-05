@@ -99,6 +99,7 @@ import { SidebarSync } from "@/components/layout/SidebarSync";
 import { PiPPlayer } from "@/components/player/PiPPlayer";
 import { exportProject, importProject, type ProjectExportData } from "@/utils/projectData";
 import { UploadSimple, DownloadSimple, ClockCounterClockwise } from "@phosphor-icons/react";
+import { playSfx } from "@/utils/sound";
 import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
 import whistlerLogoSky from "../../../whistlerlogo-sky.png";
@@ -150,7 +151,10 @@ function SortableCollectionItem({
                 <ContextMenuTrigger className="block w-full">
                     <Link
                         to={`/collection/${collection.id}`}
-                        onClick={() => handleSelectCollection(collection.id)}
+                        onClick={() => {
+                            playSfx('cursor');
+                            handleSelectCollection(collection.id);
+                        }}
                         className="block w-full group/item"
                         title={isSlim ? collection.name : undefined}
                     >
@@ -171,13 +175,19 @@ function SortableCollectionItem({
                             {!isSlim && (
                                 <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                                     <button
-                                        onClick={(e: ReactMouseEvent) => handleEditCollectionClick(e, collection)}
+                                        onClick={(e: ReactMouseEvent) => {
+                                            playSfx('cursor');
+                                            handleEditCollectionClick(e, collection);
+                                        }}
                                         className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                                     >
                                         <PencilSimple weight="bold" />
                                     </button>
                                     <button
-                                        onClick={(e: ReactMouseEvent) => handleDeleteCollection(e, collection.id)}
+                                        onClick={(e: ReactMouseEvent) => {
+                                            playSfx('cursor');
+                                            handleDeleteCollection(e, collection.id);
+                                        }}
                                         className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
                                     >
                                         <Trash weight="bold" />
@@ -696,7 +706,10 @@ export default function ProjectSidebar() {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
-                                    onClick={toggleSidebarCollapse}
+                                    onClick={() => {
+                                        playSfx('cursor');
+                                        toggleSidebarCollapse();
+                                    }}
                                     className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                     <SidebarSimple weight="bold" size={18} />
@@ -709,6 +722,7 @@ export default function ProjectSidebar() {
                             <TooltipTrigger asChild>
                                 <button
                                     onClick={() => {
+                                        playSfx('cursor');
                                         navigate('/');
                                         setSidebarView('main');
                                     }}
@@ -727,7 +741,10 @@ export default function ProjectSidebar() {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
-                                    onClick={() => useStore.getState().setSpotlightOpen(true)}
+                                    onClick={() => {
+                                        playSfx('cursor');
+                                        useStore.getState().setSpotlightOpen(true);
+                                    }}
                                     className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                     <MagnifyingGlass weight="bold" size={18} />
@@ -743,6 +760,7 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => {
+                                            playSfx('cursor');
                                             if (location.pathname === '/storage') {
                                                 toggleSidebarCollapse && toggleSidebarCollapse();
                                                 setSidebarView('storage');
@@ -767,6 +785,7 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => {
+                                            playSfx('cursor');
                                             if (location.pathname.startsWith('/docs')) {
                                                 toggleSidebarCollapse && toggleSidebarCollapse();
                                                 setSidebarView('docs');
@@ -791,6 +810,7 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => {
+                                            playSfx('cursor');
                                             if (location.pathname.startsWith('/graphs')) {
                                                 toggleSidebarCollapse && toggleSidebarCollapse();
                                                 setSidebarView('graphs');
@@ -819,7 +839,10 @@ export default function ProjectSidebar() {
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <button
-                                            onClick={() => navigate('/collections')}
+                                            onClick={() => {
+                                                playSfx('cursor');
+                                                navigate('/collections');
+                                            }}
                                             className={cn(
                                                 "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
                                                 location.pathname.startsWith('/collections')
@@ -840,7 +863,10 @@ export default function ProjectSidebar() {
                                             <ContextMenuTrigger className="flex justify-center w-full">
                                                 <Link
                                                     to={`/collection/${collection.id}`}
-                                                    onClick={() => handleSelectCollection(collection.id)}
+                                                    onClick={() => {
+                                                        playSfx('cursor');
+                                                        handleSelectCollection(collection.id);
+                                                    }}
                                                     className={cn(
                                                         "flex items-center justify-center w-9 h-9 rounded-md transition-colors relative",
                                                         (location.pathname === `/collection/${collection.id}`)
@@ -945,7 +971,10 @@ export default function ProjectSidebar() {
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 h-12 border-b border-border/40 shrink-0 relative">
                     <button
-                        onClick={toggleSidebarCollapse}
+                        onClick={() => {
+                            playSfx('cursor');
+                            toggleSidebarCollapse();
+                        }}
                         className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors z-10"
                         title="Collapse sidebar"
                     >
@@ -957,6 +986,7 @@ export default function ProjectSidebar() {
                             {!isSlim && (
                                 <motion.button
                                     onClick={() => {
+                                        playSfx('cursor');
                                         navigate('/');
                                         setSidebarView('main');
                                     }}
@@ -977,7 +1007,10 @@ export default function ProjectSidebar() {
 
                             <div className={cn("flex items-center gap-2 z-10", isSlim && "flex-col")}>
                                 <button
-                                    onClick={() => useStore.getState().setSpotlightOpen(true)}
+                                    onClick={() => {
+                                        playSfx('cursor');
+                                        useStore.getState().setSpotlightOpen(true);
+                                    }}
                                     className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     title="Search"
                                 >
@@ -1002,7 +1035,10 @@ export default function ProjectSidebar() {
                             {!isSidebarCollapsed && (
                                 <div className="p-3 pb-2 animate-in fade-in duration-300 shrink-0 space-y-1">
                                     <button
-                                        onClick={() => setProjectsOpen(!projectsOpen)}
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            setProjectsOpen(!projectsOpen);
+                                        }}
                                         className={cn("flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 hover:text-foreground transition-colors w-full text-left", isSlim && "justify-center")}
                                     >
                                         <CaretDown weight="bold" className={cn("transition-transform text-xs", !projectsOpen && "-rotate-90")} />
@@ -1035,7 +1071,10 @@ export default function ProjectSidebar() {
                                             variant="outline" 
                                             size="icon" 
                                             className="h-8 w-8 shrink-0 bg-card border-border/60"
-                                            onClick={handleEditProjectName}
+                                            onClick={() => {
+                                                playSfx('cursor');
+                                                handleEditProjectName();
+                                            }}
                                             title="Edit Project Name"
                                         >
                                             <PencilSimple className="text-muted-foreground" />
@@ -1070,7 +1109,10 @@ export default function ProjectSidebar() {
                                             <div className="flex items-center justify-between gap-2">
                                                 <span className="truncate">{importStatus.message}</span>
                                                 <button
-                                                    onClick={() => setImportStatus(null)}
+                                                    onClick={() => {
+                                                        playSfx('cursor');
+                                                        setImportStatus(null);
+                                                    }}
                                                     className="text-xs text-zinc-400 hover:text-zinc-200"
                                                 >
                                                     ×
@@ -1091,7 +1133,10 @@ export default function ProjectSidebar() {
                                     {!isSidebarCollapsed && (
                                         <div className="flex items-center justify-between mb-2 px-1">
                                             <button
-                                                onClick={() => setAssetsOpen(!assetsOpen)}
+                                                onClick={() => {
+                                                    playSfx('cursor');
+                                                    setAssetsOpen(!assetsOpen);
+                                                }}
                                                 className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full text-left"
                                             >
                                                 <CaretDown weight="bold" className={cn("transition-transform text-xs", !assetsOpen && "-rotate-90")} />
@@ -1112,6 +1157,7 @@ export default function ProjectSidebar() {
                                                     <ContextMenuTrigger className={cn("flex-1", (isSidebarCollapsed || isSlim) && "w-full flex justify-center")}>
                                                         <button
                                                             onClick={() => {
+                                                                playSfx('cursor');
                                                                 if (isSidebarCollapsed) {
                                                                     toggleSidebarCollapse && toggleSidebarCollapse();
                                                                     return;
@@ -1155,6 +1201,7 @@ export default function ProjectSidebar() {
                                                     <ContextMenuTrigger className={cn("flex-1", (isSidebarCollapsed || isSlim) && "w-full flex justify-center")}>
                                                         <button
                                                             onClick={() => {
+                                                                playSfx('cursor');
                                                                 if (isSidebarCollapsed) {
                                                                     toggleSidebarCollapse && toggleSidebarCollapse();
                                                                     return;
@@ -1198,6 +1245,7 @@ export default function ProjectSidebar() {
                                                     <ContextMenuTrigger className={cn("flex-1", (isSidebarCollapsed || isSlim) && "w-full flex justify-center")}>
                                                         <button
                                                             onClick={() => {
+                                                                playSfx('cursor');
                                                                 if (isSidebarCollapsed) {
                                                                     toggleSidebarCollapse && toggleSidebarCollapse();
                                                                     return;
@@ -1258,7 +1306,10 @@ export default function ProjectSidebar() {
                                             <ContextMenu>
                                                 <ContextMenuTrigger className="flex-1">
                                                     <button
-                                                        onClick={() => navigate('/collections')}
+                                                        onClick={() => {
+                                                            playSfx('cursor');
+                                                            navigate('/collections');
+                                                        }}
                                                         className={cn(
                                                             "flex items-center justify-center rounded-l-md rounded-r-none transition-all duration-200 group relative cursor-pointer px-2 w-full h-9 border border-transparent",
                                                             location.pathname.startsWith('/collections')
@@ -1282,6 +1333,7 @@ export default function ProjectSidebar() {
                                             </ContextMenu>
                                             <button
                                                 onClick={(e: ReactMouseEvent) => {
+                                                    playSfx('cursor');
                                                     e.stopPropagation();
                                                     setCreateCollectionOpen(true);
                                                 }}
@@ -1297,7 +1349,10 @@ export default function ProjectSidebar() {
                                             <ContextMenu>
                                                 <ContextMenuTrigger className="flex justify-center">
                                                     <button
-                                                        onClick={() => navigate('/collections')}
+                                                        onClick={() => {
+                                                            playSfx('cursor');
+                                                            navigate('/collections');
+                                                        }}
                                                         className={cn(
                                                             "text-muted-foreground hover:text-primary transition-colors",
                                                             location.pathname === '/collections' && "text-primary"
@@ -1375,7 +1430,10 @@ export default function ProjectSidebar() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6"
-                                        onClick={() => setSidebarView('main')}
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            setSidebarView('main');
+                                        }}
                                     >
                                         <CaretLeft className="text-muted-foreground" />
                                     </Button>
@@ -1384,7 +1442,15 @@ export default function ProjectSidebar() {
                                         Documents
                                     </div>
                                     <div className="flex-1" />
-                                    <Button variant="ghost" size="icon" onClick={handleCreateDoc} className="size-6">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            handleCreateDoc();
+                                        }} 
+                                        className="size-6"
+                                    >
                                         <Plus weight="bold" className="size-3.5" />
                                     </Button>
                                 </div>
@@ -1571,66 +1637,76 @@ export default function ProjectSidebar() {
                         >
                             <div className="p-3 pb-2 border-b border-border/40 shrink-0">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
-                                        onClick={() => {
-                                            setSidebarView('main');
-                                            // Optional: Navigate back to home or stay on storage page?
-                                            // Usually back button implies going up a level, so maybe back to main view but stay on page?
-                                            // But if we are on storage page, main view doesn't make much sense unless we navigate away.
-                                            // Let's just switch view for now.
-                                        }}
-                                        data-sound-back
-                                    >
-                                        <CaretLeft className="text-muted-foreground" />
-                                    </Button>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                        <HardDrives weight="bold" />
-                                        Storages
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => {
+                                                playSfx('cursor');
+                                                setSidebarView('main');
+                                                // Optional: Navigate back to home or stay on storage page?
+                                                // Usually back button implies going up a level, so maybe back to main view but stay on page?
+                                                // But if we are on storage page, main view doesn't make much sense unless we navigate away.
+                                                // Let's just switch view for now.
+                                            }}
+                                            data-sound-back
+                                        >
+                                            <CaretLeft className="text-muted-foreground" />
+                                        </Button>
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                            <HardDrives weight="bold" />
+                                            Storages
+                                        </div>
+                                        <div className="flex-1" />
+                                        <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); handleCreateStorage(); }} className="size-6">
+                                            <Plus weight="bold" className="size-3.5" />
+                                        </Button>
                                     </div>
-                                    <div className="flex-1" />
-                                    <Button variant="ghost" size="icon" onClick={handleCreateStorage} className="size-6">
-                                        <Plus weight="bold" className="size-3.5" />
-                                    </Button>
                                 </div>
-                            </div>
-                            
-                            <ScrollArea className="flex-1 px-3 py-2">
-                                <div className="space-y-1">
-                                    {projectStorages.map((storage: Storage) => {
-                                        const Icon = storage.icon ? getIcon(storage.icon) : Folder;
-                                        const isActive = activeStorageId === storage.id;
-                                        return (
-                                            <button
-                                                key={storage.id}
-                                                onClick={() => handleSelectStorage(storage.id)}
-                                                className={cn(
-                                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
-                                                    isActive
-                                                        ? "bg-primary/20 text-primary font-medium"
-                                                        : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground",
-                                                    isSlim && "justify-center px-0 py-3"
-                                                )}
-                                                title={isSlim ? storage.name : undefined}
-                                            >
-                                                <Icon 
-                                                    weight={isActive ? "fill" : "regular"} 
-                                                    className={cn("text-lg shrink-0 transition-colors", !storage.color && "text-primary")}
-                                                    style={{ color: isActive ? undefined : storage.color }}
-                                                />
-                                                {!isSlim && <span className="truncate flex-1">{storage.name}</span>}
-                                                {!isSlim && (
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button
-                                                            onClick={(e: ReactMouseEvent) => handleEditStorageClick(e, storage)}
-                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                        >
-                                                            <PencilSimple weight="bold" />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e: ReactMouseEvent) => handleDeleteStorage(e, storage.id)}
+                                
+                                <ScrollArea className="flex-1 px-3 py-2">
+                                    <div className="space-y-1">
+                                        {projectStorages.map((storage: Storage) => {
+                                            const Icon = storage.icon ? getIcon(storage.icon) : Folder;
+                                            const isActive = activeStorageId === storage.id;
+                                            return (
+                                                <button
+                                                    key={storage.id}
+                                                    onClick={() => {
+                                                        playSfx('cursor');
+                                                        handleSelectStorage(storage.id);
+                                                    }}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
+                                                        isActive
+                                                            ? "bg-primary/20 text-primary font-medium"
+                                                            : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground",
+                                                        isSlim && "justify-center px-0 py-3"
+                                                    )}
+                                                    title={isSlim ? storage.name : undefined}
+                                                >
+                                                    <Icon 
+                                                        weight={isActive ? "fill" : "regular"} 
+                                                        className={cn("text-lg shrink-0 transition-colors", !storage.color && "text-primary")}
+                                                        style={{ color: isActive ? undefined : storage.color }}
+                                                    />
+                                                    {!isSlim && <span className="truncate flex-1">{storage.name}</span>}
+                                                    {!isSlim && (
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={(e: ReactMouseEvent) => {
+                                                                    playSfx('cursor');
+                                                                    handleEditStorageClick(e, storage);
+                                                                }}
+                                                                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                                            >
+                                                                <PencilSimple weight="bold" />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e: ReactMouseEvent) => {
+                                                                    playSfx('cursor');
+                                                                    handleDeleteStorage(e, storage.id);
+                                                                }}
                                                             className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
                                                         >
                                                             <Trash weight="bold" />
@@ -1668,7 +1744,10 @@ export default function ProjectSidebar() {
                                     </div>
                                 ) : (
                                     <button
-                                        onClick={() => setSidebarView('sync')}
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            setSidebarView('sync');
+                                        }}
                                         className="w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
                                         title="Sync Status"
                                     >
@@ -1678,7 +1757,10 @@ export default function ProjectSidebar() {
 
                                 <div className={cn("flex items-center gap-1", (isSidebarCollapsed || isSlim) ? "flex-col w-full" : "shrink-0")}>
                                     <button
-                                        onClick={() => setSidebarView('history')}
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            setSidebarView('history');
+                                        }}
                                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
                                         title="History"
                                     >
@@ -1686,7 +1768,10 @@ export default function ProjectSidebar() {
                                     </button>
 
                                     <button
-                                        onClick={() => setSidebarView('trash')}
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            setSidebarView('trash');
+                                        }}
                                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
                                         title="Trash"
                                     >
@@ -1699,7 +1784,10 @@ export default function ProjectSidebar() {
                                     )}
 
                                     <button
-                                        onClick={() => navigate('/settings')}
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            navigate('/settings');
+                                        }}
                                         className={cn(
                                             "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
                                             location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
@@ -1719,7 +1807,10 @@ export default function ProjectSidebar() {
 
             {isSidebarCollapsed && !isSlim && (
                 <button
-                    onClick={toggleSidebarCollapse}
+                    onClick={() => {
+                        playSfx('cursor');
+                        toggleSidebarCollapse();
+                    }}
                     className="fixed top-1/2 -translate-y-1/2 left-4 z-30 h-10 w-8 rounded-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center justify-center"
                     title="Show sidebar"
                 >

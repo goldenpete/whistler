@@ -658,6 +658,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={(e: MouseEvent) => { 
                             e.stopPropagation(); 
+                            playSfx('cursor');
                             setScale((s: number) => Math.max(s - 0.1, 0.5)); 
                         }}
                         disabled={!loadedUrl}
@@ -675,6 +676,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                         onClick={(e: MouseEvent) => { 
                             e.stopPropagation(); 
+                            playSfx('cursor');
                             setScale((s: number) => Math.min(s + 0.1, 3.0)); 
                         }}
                         disabled={!loadedUrl}
@@ -693,7 +695,10 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                 "h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full",
                                 isSidebarOpen && "text-primary hover:text-primary"
                             )}
-                            onClick={onToggleSidebar}
+                            onClick={() => {
+                                playSfx('cursor');
+                                onToggleSidebar();
+                            }}
                         >
                             <SidebarSimple size={14} weight="bold" />
                         </Button>
@@ -709,6 +714,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                             onClick={(e: MouseEvent) => {
                                 e.stopPropagation();
+                                playSfx('cursor');
                                 onToggleFullscreen();
                             }}
                             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
@@ -727,6 +733,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                             className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
                             onClick={(e: MouseEvent) => {
                                 e.stopPropagation();
+                                playSfx('cursor');
                                 onHideControls();
                             }}
                             title="Hide Controls"

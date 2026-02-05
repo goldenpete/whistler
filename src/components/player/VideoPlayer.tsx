@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn, formatTime } from "@/lib/utils";
@@ -69,6 +69,7 @@ import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { useKeybind } from "@/hooks/use-keybind";
+import { playSfx } from "@/utils/sound";
 
 const ExpandableNote = ({ text }: { text: string }) => {
     const [expanded, setExpanded] = useState(false);
@@ -174,6 +175,19 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
     const [isScreenshotDialogOpen, setIsScreenshotDialogOpen] = useState(false);
     const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+
+    const file = files.find(f => f.id === fileId);
+    const [localUrl, setLocalUrl] = useState(file?.url || "");
+
+    useEffect(() => {
+        setLocalUrl(file?.url || "");
+    }, [file?.url]);
+
+    const handleUrlUpdate = () => {
+        if (file && localUrl !== file.url) {
+            updateFile(file.id, { url: localUrl });
+        }
+    };
 
     const handleCaptureFrame = async () => {
         if (isYouTube && file && file.url) {
@@ -353,7 +367,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const selectedHighlight = highlights.find((t: Highlight) => t.id === selectedHighlightId) || null;
     const activeHighlight = highlights.find((t: Highlight) => t.id === activeHighlightId) || null;
 
-    const file = files.find((f: AppFile) => f.id === fileId);
     const fileHighlights = highlights.filter((t: Highlight) => t.fileId === fileId);
     const activeHighlightForFile = activeHighlight && activeHighlight.fileId === fileId ? activeHighlight : null;
 
@@ -1001,6 +1014,21 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <h1 className="text-white font-medium text-base truncate">{file.name}</h1>
                                 <PencilSimple className="text-muted-foreground opacity-0 group-hover/edit:opacity-100 transition-opacity" size={14} weight="bold" />
                             </div>
+                            <div className="flex items-center gap-2 mb-0.5 group/url w-full max-w-[400px]">
+                                <input
+                                    className="bg-transparent border-none p-0 h-auto text-xs text-blue-400 focus:text-blue-300 focus:outline-none w-full truncate hover:underline cursor-text placeholder:text-muted-foreground/50 font-mono"
+                                    value={localUrl}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setLocalUrl(e.target.value)}
+                                    onBlur={handleUrlUpdate}
+                                    onKeyDown={(e: ReactKeyboardEvent<HTMLInputElement>) => {
+                                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                        e.stopPropagation();
+                                    }}
+                                    placeholder="Paste URL here..."
+                                    onClick={(e: MouseEvent) => e.stopPropagation()}
+                                />
+                                <PencilSimple className="text-muted-foreground opacity-0 group-hover/url:opacity-100 transition-opacity shrink-0" size={12} weight="bold" />
+                            </div>
                             <div className="flex items-center gap-2 group/desc cursor-pointer" onClick={() => setEditOpen(true)}>
                                 <span className="text-muted-foreground text-xs truncate">{file.description || "Click to add description..."}</span>
                                 <PencilSimple className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" size={12} weight="bold" />
@@ -1015,13 +1043,13 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             !isHeaderVisible && "w-0 opacity-0 overflow-hidden"
                         )}>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Open Link" onClick={handleOpenLink}>
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Open Link" onClick={() => { playSfx('cursor'); handleOpenLink(); }}>
                                     <ArrowSquareOut size={20} weight="bold" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Copy URL" onClick={handleCopyUrl}>
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Copy URL" onClick={() => { playSfx('cursor'); handleCopyUrl(); }}>
                                     <Copy size={20} weight="bold" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Share" onClick={handleShare}>
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Share" onClick={() => { playSfx('cursor'); handleShare(); }}>
                                     <ShareNetwork size={20} weight="bold" />
                                 </Button>
                             </div>
@@ -1029,7 +1057,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             <div className="w-px h-6 bg-white/20 mx-1" /> {/* Divider */}
 
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => setMoveDialogOpen(true)}>
+                                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10" title="Move to Folder" onClick={() => { playSfx('cursor'); setMoveDialogOpen(true); }}>
                                     <FolderPlus size={20} weight="bold" />
                                 </Button>
                                 
@@ -1038,7 +1066,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     size="icon" 
                                     className="text-zinc-400 hover:text-white hover:bg-white/10" 
                                     title="Change Color"
-                                    onClick={() => setColorPickerOpen(true)}
+                                    onClick={() => { playSfx('cursor'); setColorPickerOpen(true); }}
                                     style={{ color: file.color || undefined }}
                                 >
                                     <Palette size={20} weight={file.color ? "fill" : "bold"} />
@@ -1049,7 +1077,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     size="icon" 
                                     className="text-zinc-400 hover:text-red-400 hover:bg-red-400/10" 
                                     title="Delete"
-                                    onClick={() => setDeleteDialogOpen(true)}
+                                    onClick={() => { playSfx('cursor'); setDeleteDialogOpen(true); }}
                                 >
                                     <Trash size={20} weight="bold" />
                                 </Button>
@@ -1058,17 +1086,17 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             <div className="w-px h-6 bg-border mx-1" /> {/* Divider */}
                         </div>
 
-                        <Button variant="ghost" size="icon" onClick={() => setIsHeaderVisible(!isHeaderVisible)} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title={isHeaderVisible ? "Hide Top Bar" : "Show Top Bar"}>
+                        <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); setIsHeaderVisible(!isHeaderVisible); }} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title={isHeaderVisible ? "Hide Top Bar" : "Show Top Bar"}>
                             {isHeaderVisible ? <EyeSlash weight="bold" size={24} /> : <Eye weight="bold" size={24} />}
                         </Button>
 
-                        <Button variant="ghost" size="icon" onClick={handleToggleWindowed} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title={isWindowed ? "Exit Window" : "Resize Window"}>
+                        <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); handleToggleWindowed(); }} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title={isWindowed ? "Exit Window" : "Resize Window"}>
                             {isWindowed ? <CornersIn weight="bold" size={24} /> : <CornersOut weight="bold" size={24} />}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={handleMinimize} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Minimize">
+                        <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); handleMinimize(); }} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Minimize">
                             <Minus weight="bold" size={24} />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close" data-sound-back>
+                        <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); handleClose(); }} className="text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground" title="Close" data-sound-back>
                             <X weight="bold" size={24} />
                         </Button>
                     </div>
@@ -1285,7 +1313,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={togglePlay}
+                                    onClick={() => { playSfx('cursor'); togglePlay(); }}
                                     className="h-8 w-8 rounded-md bg-white/10 hover:bg-white/20 text-white"
                                 >
                                     {isPlaying ? <Pause weight="fill" size={18} /> : <Play weight="fill" size={18} />}
@@ -1295,7 +1323,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={handleToggleMute}
+                                        onClick={() => { playSfx('cursor'); handleToggleMute(); }}
                                         className="text-zinc-400 hover:text-white"
                                     >
                                         {isMuted ? <SpeakerX weight="bold" size={20} /> : <SpeakerHigh weight="bold" size={20} />}
@@ -1325,7 +1353,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    onClick={() => setIsLooping(!isLooping)}
+                                    onClick={() => { playSfx('cursor'); setIsLooping(!isLooping); }}
                                     className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isLooping && "text-primary hover:text-primary/80")}
                                     title={isLooping ? "Loop On" : "Loop Off"}
                                 >
@@ -1334,7 +1362,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    onClick={handleCaptureFrame}
+                                    onClick={() => { playSfx('cursor'); handleCaptureFrame(); }}
                                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                     title="Take Screenshot"
                                 >
@@ -1343,7 +1371,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    onClick={() => fileId && setVideoZoomManualForFile(fileId, !isManualZoom)}
+                                    onClick={() => { playSfx('cursor'); if (fileId) setVideoZoomManualForFile(fileId, !isManualZoom); }}
                                     className={cn("h-8 w-8 text-muted-foreground hover:text-foreground", isManualZoom && "text-primary hover:text-primary/80")}
                                     title={isManualZoom ? "Manual Zoom On" : "Auto Zoom On"}
                                 >
@@ -1354,7 +1382,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                         <Button
                                             size="icon"
                                             variant="ghost"
-                                            onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile - 0.1))}
+                                            onClick={() => { playSfx('cursor'); if (fileId && isManualZoom) setVideoZoomForFile(fileId, clampZoom(zoomForFile - 0.1)); }}
                                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                             title="Zoom Out"
                                         >
@@ -1363,7 +1391,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                         <Button
                                             size="icon"
                                             variant="ghost"
-                                            onClick={() => fileId && isManualZoom && setVideoZoomForFile(fileId, clampZoom(zoomForFile + 0.1))}
+                                            onClick={() => { playSfx('cursor'); if (fileId && isManualZoom) setVideoZoomForFile(fileId, clampZoom(zoomForFile + 0.1)); }}
                                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                             title="Zoom In"
                                         >
@@ -1388,7 +1416,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 <span>{playbackRate.toFixed(2)}x</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackRate(Math.max(0.25, playbackRate - 0.05))}>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { playSfx('cursor'); setPlaybackRate(Math.max(0.25, playbackRate - 0.05)); }}>
                                                     <Minus weight="bold" />
                                                 </Button>
                                                 <Slider
@@ -1399,7 +1427,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                     onValueChange={(val: number[]) => setPlaybackRate(val[0])}
                                                     className="flex-1"
                                                 />
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setPlaybackRate(Math.min(8, playbackRate + 0.05))}>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { playSfx('cursor'); setPlaybackRate(Math.min(8, playbackRate + 0.05)); }}>
                                                     <Plus weight="bold" />
                                                 </Button>
                                             </div>
@@ -1407,7 +1435,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 {[0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 8.0].map((rate) => (
                                                     <button
                                                         key={rate}
-                                                        onClick={() => setPlaybackRate(rate)}
+                                                        onClick={() => { playSfx('cursor'); setPlaybackRate(rate); }}
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
                                                             playbackRate === rate
@@ -1423,7 +1451,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     </PopoverContent>
                                 </Popover>
 
-                                <Button variant="ghost" size="icon" onClick={handleTogglePip} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
+                                <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); handleTogglePip(); }} className="text-muted-foreground hover:text-foreground" title="Picture in Picture">
                                     <Desktop weight="bold" size={20} />
                                 </Button>
 
@@ -1433,6 +1461,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     variant="ghost"
                                     size="icon"
                                     onClick={(e: MouseEvent) => {
+                                        playSfx('cursor');
                                         e.stopPropagation();
                                         setShowControls(false);
                                     }}
@@ -1445,7 +1474,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                                    onClick={() => { playSfx('cursor'); setSidebarOpen(!sidebarOpen); }}
                                     className={cn(
                                         "text-muted-foreground hover:text-foreground",
                                         sidebarOpen && "text-primary hover:text-primary"
@@ -1453,7 +1482,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 >
                                     <SidebarSimple weight="bold" size={20} />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-muted-foreground hover:text-foreground">
+                                <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); toggleFullscreen(); }} className="text-muted-foreground hover:text-foreground">
                                     {isFullscreen ? <CornersIn weight="bold" size={20} /> : <CornersOut weight="bold" size={20} />}
                                 </Button>
                             </div>
@@ -1477,7 +1506,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:hover:text-muted-foreground"
-                            onClick={handleAddHighlight}
+                            onClick={() => {
+                                playSfx('cursor');
+                                handleAddHighlight();
+                            }}
                             title="Add Highlight"
                             disabled={file.type === 'pdf' && !hasPdfSelection}
                         >
@@ -1507,7 +1539,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <button
                                                     className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
-                                                    onClick={() => seekToHighlight(h)}
+                                                    onClick={() => {
+                                                        playSfx('cursor');
+                                                        seekToHighlight(h);
+                                                    }}
                                                 >
                                                     {file.type === 'pdf'
                                                         ? (h.end && h.end !== h.start
@@ -1528,6 +1563,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 <button
                                                     className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
                                                     onClick={(e: MouseEvent) => {
+                                                        playSfx('cursor');
                                                         e.stopPropagation();
                                                         setSelectedHighlightId(h.id);
                                                         setActiveHighlight(h.id);
@@ -1539,6 +1575,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 <button
                                                     className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded"
                                                     onClick={(e: MouseEvent) => {
+                                                        playSfx('cursor');
                                                         e.stopPropagation();
                                                         setSelectedHighlightId(h.id);
                                                         setEditHighlightOpen(true);
@@ -1550,6 +1587,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 <button
                                                     className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded"
                                                     onClick={(e: MouseEvent) => {
+                                                        playSfx('cursor');
                                                         e.stopPropagation();
                                                         removeHighlight(h.id);
                                                     }}
