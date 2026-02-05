@@ -199,6 +199,18 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         } else if (videoRef.current) {
             const video = videoRef.current;
             
+            const promptForScreenCapture = () => {
+                 const tryScreenCapture = window.confirm(
+                    "Cannot capture screenshot directly because the video server blocks access.\n\n" +
+                    "Do you want to use Screen Capture instead?\n" +
+                    "(You will need to select this tab/window and then crop the image)"
+                );
+
+                if (tryScreenCapture) {
+                    handleScreenCapture();
+                }
+            };
+
             // Try capturing from the main video first (fastest)
             // If the video already has CORS headers (e.g. some CDNs), this will work immediately.
             try {
@@ -220,6 +232,19 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
             // Fallback: Create a temporary hidden video element with crossOrigin="anonymous"
             // This allows us to capture the frame without disrupting the main playback or requiring the user to reload.
+            
+            // SECURITY CHECK:
+            // If the page is HTTPS and the video is HTTP, creating a crossOrigin element will trigger "Mixed Active Content"
+            // and block the request, causing the site to be flagged as "Not Secure".
+            // In this case, we MUST skip the CORS attempt and go straight to Screen Capture.
+            const isMixedContent = window.location.protocol === 'https:' && video.src.startsWith('http:');
+            
+            if (isMixedContent) {
+                console.warn("Skipping CORS capture due to Mixed Content (HTTPS page, HTTP video).");
+                promptForScreenCapture();
+                return;
+            }
+
             setIsLoading(true);
             const tempVideo = document.createElement("video");
             tempVideo.crossOrigin = "anonymous";
@@ -260,15 +285,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 
                 // Final Fallback: Screen Capture API
                 // If the server blocks CORS, the only way to get pixels is to ask the user to capture their screen/tab.
-                const tryScreenCapture = window.confirm(
-                    "Cannot capture screenshot directly because the video server blocks access.\n\n" +
-                    "Do you want to use Screen Capture instead?\n" +
-                    "(You will need to select this tab/window and then crop the image)"
-                );
-
-                if (tryScreenCapture) {
-                    handleScreenCapture();
-                }
+                promptForScreenCapture();
             };
 
             tempVideo.addEventListener('seeked', onSeeked, { once: true });
