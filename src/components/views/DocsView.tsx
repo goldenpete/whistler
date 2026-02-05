@@ -4,6 +4,7 @@ import type { Doc, File as AppFile, Collection, Highlight } from "@/types";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useKeybind } from "@/hooks/use-keybind";
 import {
     NotePencil, TextB, TextItalic, ListBullets,
     TextUnderline, TextStrikethrough, TextAlignLeft, TextAlignCenter, TextAlignRight,
@@ -209,6 +210,23 @@ function DocEditor({ doc }: DocEditorProps) {
         editorRef.current?.focus();
         updateFormatState();
     };
+    // --- Keybinds ---
+    useKeybind("ctrl+s", () => {
+        saveContent();
+        // Visual feedback could be added here
+    }, { preventDefault: true });
+
+    useKeybind("ctrl+k", () => {
+        setLinkUrl("");
+        setLinkDialogOpen(true);
+    }, { preventDefault: true });
+
+    useKeybind("ctrl+shift+e", () => execCommand('justifyCenter'), { preventDefault: true });
+    useKeybind("ctrl+shift+l", () => execCommand('justifyLeft'), { preventDefault: true });
+    useKeybind("ctrl+shift+r", () => execCommand('justifyRight'), { preventDefault: true });
+    useKeybind("ctrl+shift+8", () => execCommand('insertUnorderedList'), { preventDefault: true }); // Standard bullet shortcut
+    useKeybind("ctrl+shift+u", () => execCommand('insertUnorderedList'), { preventDefault: true }); // Alternate
+
     const projectFiles = files.filter(
         (f: AppFile) => f.projectId === doc.projectId && !f.deleted
     );

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useImperativeHandle, forwa
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     CaretLeft, 
     CaretRight, 
@@ -227,6 +228,10 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     }, [onSelectionChange, readonly, selectedText]);
 
     // 4. Update Highlights Visuals
+    useEffect(() => {
+        setHighlightRects([]);
+    }, [pageNumber]);
+
     useEffect(() => {
         // Wait for text layer to render
         const timer = setTimeout(updateHighlights, 300); // Small delay to ensure DOM is ready
@@ -528,48 +533,57 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                     ref={pageWrapperRef}
                                     style={{ transform: `scale(${scale})` }}
                                 >
-                                    <Page
-                                        key={pageNumber}
-                                        pageNumber={pageNumber}
-                                        width={effectiveWidth}
-                                        renderTextLayer={true}
-                                        renderAnnotationLayer={true}
-                                        className="bg-white"
-                                        onLoadSuccess={handlePageLoadSuccess}
-                                    onRenderTextLayerSuccess={updateHighlights}
-                                    onRenderError={() => setHasError(true)}
-                                    onGetTextError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
-                                    onGetAnnotationsError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
-                                    onGetStructTreeError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
-                                    loading={
-                                        <div 
-                                            style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
-                                            className="bg-white/10 animate-pulse" 
-                                        />
-                                    }
-                                    error={
-                                        <div className="flex items-center justify-center h-64 text-red-400">
-                                            Error rendering page {pageNumber}
-                                        </div>
-                                    }
-                                />
-                                
-                                {/* Highlight Overlay Layer */}
-                                <div className="absolute inset-0 pointer-events-none z-10">
-                                    {highlightRects.map((rect, i) => (
-                                        <div
-                                            key={i}
-                                            className="absolute bg-yellow-400/30 mix-blend-multiply border-b-2 border-yellow-500/50"
-                                            style={{
-                                                left: rect.x,
-                                                top: rect.y,
-                                                width: rect.width,
-                                                height: rect.height,
-                                            }}
-                                        />
-                                    ))}
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={pageNumber}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.15 }}
+                                        >
+                                            <Page
+                                                pageNumber={pageNumber}
+                                                width={effectiveWidth}
+                                                renderTextLayer={true}
+                                                renderAnnotationLayer={true}
+                                                className="bg-white"
+                                                onLoadSuccess={handlePageLoadSuccess}
+                                                onRenderTextLayerSuccess={updateHighlights}
+                                                onRenderError={() => setHasError(true)}
+                                                onGetTextError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                                onGetAnnotationsError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                                onGetStructTreeError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
+                                                loading={
+                                                    <div 
+                                                        style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
+                                                        className="bg-white/10 animate-pulse" 
+                                                    />
+                                                }
+                                                error={
+                                                    <div className="flex items-center justify-center h-64 text-red-400">
+                                                        Error rendering page {pageNumber}
+                                                    </div>
+                                                }
+                                            />
+                                            
+                                            {/* Highlight Overlay Layer */}
+                                            <div className="absolute inset-0 pointer-events-none z-10">
+                                                {highlightRects.map((rect, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="absolute bg-yellow-400/30 mix-blend-multiply border-b-2 border-yellow-500/50"
+                                                        style={{
+                                                            left: rect.x,
+                                                            top: rect.y,
+                                                            width: rect.width,
+                                                            height: rect.height,
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    </AnimatePresence>
                                 </div>
-                            </div>
                         </div>
                         )}
                     </Document>

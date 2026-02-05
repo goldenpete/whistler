@@ -51,6 +51,8 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                         <TabsTrigger value="global" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Global</TabsTrigger>
                         <TabsTrigger value="navigation" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Navigation</TabsTrigger>
                         <TabsTrigger value="storage" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Storage</TabsTrigger>
+                        <TabsTrigger value="docs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Docs</TabsTrigger>
+                        <TabsTrigger value="graph" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Graph</TabsTrigger>
                         <TabsTrigger value="video" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Video</TabsTrigger>
                         <TabsTrigger value="audio" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Audio</TabsTrigger>
                         <TabsTrigger value="pdf" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">PDF</TabsTrigger>
@@ -90,6 +92,28 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Rename File" icon={PencilSimple} keys={[<Key>F2</Key>]} />
                             <ShortcutRow label="Go Up Directory" icon={CaretUp} keys={[<Key>Backspace</Key>]} />
                             <ShortcutRow label="Clear Selection" icon={CornersOut} keys={[<Key>Esc</Key>]} />
+                        </TabsContent>
+
+                        <TabsContent value="docs" className="mt-0 space-y-1">
+                            <ShortcutRow label="Save Document" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>S</Key>]} />
+                            <ShortcutRow label="Insert Link" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>K</Key>]} />
+                            <ShortcutRow label="Bold" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>B</Key>]} />
+                            <ShortcutRow label="Italic" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>I</Key>]} />
+                            <ShortcutRow label="Underline" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>U</Key>]} />
+                            <ShortcutRow label="Align Left" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>Shift</Key>, <Key>L</Key>]} />
+                            <ShortcutRow label="Align Center" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>Shift</Key>, <Key>E</Key>]} />
+                            <ShortcutRow label="Align Right" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>Shift</Key>, <Key>R</Key>]} />
+                            <ShortcutRow label="Bullet List" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>Shift</Key>, <Key>8</Key>]} />
+                        </TabsContent>
+
+                        <TabsContent value="graph" className="mt-0 space-y-1">
+                            <ShortcutRow label="Add Node" icon={Graph} keys={[<Key>N</Key>]} />
+                            <ShortcutRow label="Fit View" icon={CornersIn} keys={[<Key>Space</Key>]} />
+                            <ShortcutRow label="Zoom In" icon={MagnifyingGlass} keys={[<Key>+</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>=</Key>]} />
+                            <ShortcutRow label="Zoom Out" icon={MagnifyingGlass} keys={[<Key>-</Key>]} />
+                            <ShortcutRow label="Pan View" icon={CaretRight} keys={[<Key>↑</Key>, <Key>↓</Key>, <Key>←</Key>, <Key>→</Key>]} />
+                            <ShortcutRow label="Fast Pan" icon={CaretRight} keys={[<Key>Shift</Key>, <Key>Arrows</Key>]} />
+                            <ShortcutRow label="Delete Node" icon={Trash} keys={[<Key>Delete</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="video" className="mt-0 space-y-1">

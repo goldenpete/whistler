@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
+import { useKeybind } from "@/hooks/use-keybind";
 import {
     Plus, Circle,
     Note, File, Folder, Clock, Link as LinkIcon,
@@ -586,6 +587,65 @@ export default function GraphView() {
     const handleAddNode = (type: 'note' | 'file' | 'collection' | 'highlight' | 'link' | 'doc' = 'note') => {
         setAddNodeDialog({ open: true, type });
     };
+
+    // --- Keybinds ---
+    useKeybind("space", (e) => {
+        // Only fit if not in an input/dialog
+        if (!nodeDialog.open && !addNodeDialog.open) {
+            handleFitToView();
+        }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("n", () => {
+        if (!nodeDialog.open && !addNodeDialog.open) {
+            handleAddNode('note');
+        }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("+", () => {
+        setScale(s => Math.min(3, s * 1.2));
+    }, { preventDefault: true });
+
+    useKeybind("=", () => { // Catch both + and =
+        setScale(s => Math.min(3, s * 1.2));
+    }, { preventDefault: true });
+
+    useKeybind("-", () => {
+        setScale(s => Math.max(0.2, s / 1.2));
+    }, { preventDefault: true });
+
+    useKeybind("arrowup", () => setPan(p => ({ ...p, y: p.y + 20 })), { preventDefault: true });
+    useKeybind("arrowdown", () => setPan(p => ({ ...p, y: p.y - 20 })), { preventDefault: true });
+    useKeybind("arrowleft", () => setPan(p => ({ ...p, x: p.x + 20 })), { preventDefault: true });
+    useKeybind("arrowright", () => setPan(p => ({ ...p, x: p.x - 20 })), { preventDefault: true });
+    
+    useKeybind("shift+arrowup", () => setPan(p => ({ ...p, y: p.y + 100 })), { preventDefault: true });
+    useKeybind("shift+arrowdown", () => setPan(p => ({ ...p, y: p.y - 100 })), { preventDefault: true });
+    useKeybind("shift+arrowleft", () => setPan(p => ({ ...p, x: p.x + 100 })), { preventDefault: true });
+    useKeybind("shift+arrowright", () => setPan(p => ({ ...p, x: p.x - 100 })), { preventDefault: true });
+
+    useKeybind("delete", () => {
+        if (previewNodeId) {
+            handleAction('delete'); // Need to ensure handleAction handles this or call logic directly
+            // handleAction relies on contextMenu state. We should use direct store call or refactor handleAction.
+            // Let's call store directly for safety.
+            useStore.setState((state: AppStore) => ({
+                graphNodes: state.graphNodes.filter(n => n.id !== previewNodeId),
+                graphEdges: state.graphEdges.filter(e => e.fromId !== previewNodeId && e.toId !== previewNodeId)
+            }));
+            setPreviewNodeId(null);
+        }
+    }, { preventDefault: true });
+
+    useKeybind("backspace", () => {
+        if (previewNodeId) {
+            useStore.setState((state: AppStore) => ({
+                graphNodes: state.graphNodes.filter(n => n.id !== previewNodeId),
+                graphEdges: state.graphEdges.filter(e => e.fromId !== previewNodeId && e.toId !== previewNodeId)
+            }));
+            setPreviewNodeId(null);
+        }
+    }, { preventDefault: true });
 
 
     const handleContextMenu = (e: MouseEvent) => {
