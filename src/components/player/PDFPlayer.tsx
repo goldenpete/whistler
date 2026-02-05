@@ -75,6 +75,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     // --- State ---
     const [numPages, setNumPages] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<number>(initialPage);
+    const [direction, setDirection] = useState<number>(0);
     const [scale, setScale] = useState<number>(1.0);
     const [hasError, setHasError] = useState(false);
     const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
@@ -377,6 +378,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
 
     const changePage = (offset: number) => {
         if (lockedPage) return;
+        setDirection(offset > 0 ? 1 : -1);
         setPageNumber((prev: number) => {
             const newPage = Math.min(Math.max(prev + offset, 1), numPages);
             onPageChange?.(newPage);
@@ -428,6 +430,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     useImperativeHandle(ref, () => ({
         jumpToPage: (page: number) => {
             if (page >= 1 && page <= (numPages || Infinity)) {
+                setDirection(page > pageNumber ? 1 : -1);
                 setPageNumber(page);
             }
         },
@@ -441,6 +444,23 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     // --- Render Helpers ---
     const baseWidth = debouncedWidth ? debouncedWidth - 48 : 600;
     const effectiveWidth = baseWidth;
+
+    const variants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? 20 : -20,
+            opacity: 0
+        }),
+        center: {
+            zIndex: 1,
+            x: 0,
+            opacity: 1
+        },
+        exit: (direction: number) => ({
+            zIndex: 0,
+            x: direction < 0 ? 20 : -20,
+            opacity: 0
+        })
+    };
 
     if (!safeUrl) {
         return <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -522,6 +542,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                     >
                         {loadedUrl === safeUrl && (
                             <div 
+                                className="transition-all duration-200 ease-out"
                                 style={{ 
                                     width: effectiveWidth * scale, 
                                     height: (pageAspectRatio ? effectiveWidth * pageAspectRatio : effectiveWidth * 1.414) * scale,
@@ -531,22 +552,25 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                 <div 
                                     className="absolute top-0 left-0 transition-transform duration-200 ease-out origin-top-left" 
                                     ref={pageWrapperRef}
-                                    style={{ transform: `scale(${scale})` }}
+                                    style={{ transform: `scale(${scale})`, width: effectiveWidth }}
                                 >
-                                    <AnimatePresence mode="wait">
+                                    <AnimatePresence initial={false} custom={direction}>
                                         <motion.div
                                             key={pageNumber}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            transition={{ duration: 0.15 }}
+                                            custom={direction}
+                                            variants={variants}
+                                            initial="enter"
+                                            animate="center"
+                                            exit="exit"
+                                            transition={{ duration: 0.2 }}
+                                            className="absolute top-0 left-0 w-full"
                                         >
                                             <Page
                                                 pageNumber={pageNumber}
                                                 width={effectiveWidth}
                                                 renderTextLayer={true}
                                                 renderAnnotationLayer={true}
-                                                className="bg-white"
+                                                className="bg-white shadow-sm"
                                                 onLoadSuccess={handlePageLoadSuccess}
                                                 onRenderTextLayerSuccess={updateHighlights}
                                                 onRenderError={() => setHasError(true)}
@@ -556,7 +580,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                                 loading={
                                                     <div 
                                                         style={{ width: effectiveWidth, height: effectiveWidth * 1.4 }} 
-                                                        className="bg-white/10 animate-pulse" 
+                                                        className="bg-white/5 animate-pulse" 
                                                     />
                                                 }
                                                 error={
