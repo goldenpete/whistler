@@ -228,8 +228,30 @@ export default function SettingsView() {
         setAmbientMusicStorageKey(null);
     };
 
-    const handleReload = () => {
-        window.location.reload();
+    const handleReload = async () => {
+        try {
+            // 1. Unregister Service Workers (Force update of app shell/logic)
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+
+            // 2. Clear Cache API (Force update of assets/chunks)
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(key => caches.delete(key)));
+            }
+
+            // 3. Clear Session Storage (Reset temp state)
+            sessionStorage.clear();
+        } catch (e) {
+            console.error("Error clearing updates:", e);
+        } finally {
+            // 4. Hard Reload
+            window.location.reload();
+        }
     };
 
     const handleReset = () => {
