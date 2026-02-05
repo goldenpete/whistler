@@ -1120,6 +1120,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     ) : file.type === 'audio' ? (
                         <div className="absolute inset-0 z-10 bg-zinc-950">
                         <AudioPlayer
+                            ref={audioRef}
                             url={file.url || ""}
                             fileId={file.id}
                             className="w-full h-full"

@@ -385,7 +385,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
 
     // --- Render Helpers ---
     const baseWidth = debouncedWidth ? debouncedWidth - 48 : 600;
-    const effectiveWidth = baseWidth * scale;
+    const effectiveWidth = baseWidth;
 
     if (!safeUrl) {
         return <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -466,7 +466,11 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                         className="flex justify-center shadow-2xl"
                     >
                         {loadedUrl === safeUrl && (
-                            <div className="relative transition-all duration-200 ease-out" ref={pageWrapperRef}>
+                            <div 
+                                className="relative transition-transform duration-200 ease-out origin-top" 
+                                ref={pageWrapperRef}
+                                style={{ transform: `scale(${scale})` }}
+                            >
                                 <Page
                                     key={pageNumber}
                                     pageNumber={pageNumber}
