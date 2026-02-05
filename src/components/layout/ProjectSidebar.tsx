@@ -316,6 +316,33 @@ export default function ProjectSidebar() {
     const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
     const projectGraphs = graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted);
 
+    // Sidebar Tab Navigation (Unifying Keybind)
+    useKeybind("ctrl+alt+arrowdown", () => {
+        playSfx('cursor');
+        if (location.pathname === '/storage') {
+            navigate('/docs');
+        } else if (location.pathname.startsWith('/docs')) {
+            navigate('/graphs');
+        } else if (location.pathname.startsWith('/graphs')) {
+            navigate('/storage');
+        } else {
+            navigate('/storage');
+        }
+    }, { preventDefault: true });
+
+    useKeybind("ctrl+alt+arrowup", () => {
+        playSfx('cursor');
+        if (location.pathname === '/storage') {
+            navigate('/graphs');
+        } else if (location.pathname.startsWith('/docs')) {
+            navigate('/storage');
+        } else if (location.pathname.startsWith('/graphs')) {
+            navigate('/docs');
+        } else {
+            navigate('/storage');
+        }
+    }, { preventDefault: true });
+
     // Doc Navigation
     useKeybind("alt+arrowdown", () => {
         if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
