@@ -757,6 +757,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         const newVolume = Math.max(0, volume - 0.1);
         handleVolumeChange([newVolume]);
     }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("backspace", handleClose, { preventDefault: true, disableInInput: true });
+    useKeybind("escape", handleClose, { preventDefault: true, disableInInput: true });
     // --- End Shortcuts ---
 
     const handleCopyUrl = () => {

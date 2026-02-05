@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Keyboard, Command, ArrowRight, ArrowLeft, CornersOut, SpeakerHigh, Image, FilmStrip, Files, House, Folder, FileText, Graph, MagnifyingGlass, Gear, HardDrives, Trash, PencilSimple, SelectionAll, ArrowUUpLeft } from "@phosphor-icons/react";
+import { Keyboard, Command, ArrowRight, ArrowLeft, CornersOut, SpeakerHigh, Image, FilmStrip, Files, House, Folder, FileText, Graph, MagnifyingGlass, Gear, HardDrives, Trash, PencilSimple, SelectionAll, ArrowUUpLeft, CheckSquare, X } from "@phosphor-icons/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -53,7 +53,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                         <TabsTrigger value="player" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3">Media Player</TabsTrigger>
                     </TabsList>
 
-                    <ScrollArea className="h-[400px] p-4">
+                    <ScrollArea className="h-[60vh] p-4">
                         <TabsContent value="global" className="mt-0 space-y-1">
                             <ShortcutRow label="Show Shortcuts" icon={Keyboard} keys={[<Key>Shift</Key>, <Key>?</Key>]} />
                             <ShortcutRow label="Spotlight Search" icon={MagnifyingGlass} keys={[<Key>Ctrl</Key>, <Key>K</Key>]} />
@@ -81,6 +81,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                         <TabsContent value="storage" className="mt-0 space-y-1">
                             <ShortcutRow label="Navigate Items" icon={ArrowRight} keys={[<Key>↑</Key>, <Key>↓</Key>, <Key>←</Key>, <Key>→</Key>]} />
                             <ShortcutRow label="Open Item" icon={ArrowRight} keys={[<Key>Enter</Key>]} />
+                            <ShortcutRow label="Select Item" icon={CheckSquare} keys={[<Key>Space</Key>]} />
                             <ShortcutRow label="Select All" icon={SelectionAll} keys={[<Key>Ctrl</Key>, <Key>A</Key>]} />
                             <ShortcutRow label="Delete Selection" icon={Trash} keys={[<Key>Delete</Key>]} />
                             <ShortcutRow label="Rename File" icon={PencilSimple} keys={[<Key>F2</Key>]} />
@@ -91,6 +92,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                         <TabsContent value="player" className="mt-0 space-y-1">
                             <ShortcutRow label="Play / Pause" icon={FilmStrip} keys={[<Key>Space</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>K</Key>]} />
                             <ShortcutRow label="Fullscreen" icon={CornersOut} keys={[<Key>F</Key>]} />
+                            <ShortcutRow label="Close Player" icon={X} keys={[<Key>Esc</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>Backspace</Key>]} />
                             <ShortcutRow label="Mute / Unmute" icon={SpeakerHigh} keys={[<Key>M</Key>]} />
                             <ShortcutRow label="Volume Up" icon={SpeakerHigh} keys={[<Key>↑</Key>]} />
                             <ShortcutRow label="Volume Down" icon={SpeakerHigh} keys={[<Key>↓</Key>]} />

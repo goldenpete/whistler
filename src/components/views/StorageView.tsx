@@ -274,6 +274,11 @@ export default function StorageView() {
         setSelectionMode(true);
     }, { preventDefault: true, disableInInput: true });
 
+    useKeybind("space", () => {
+        if (!focusedId) return;
+        toggleSelectItem(focusedId);
+    }, { preventDefault: true, disableInInput: true });
+
     useKeybind("delete", () => {
         if (selectedIds.size > 0) {
             selectedIds.forEach(id => trashFile(id));
