@@ -78,6 +78,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const [hasError, setHasError] = useState(false);
     const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
     const [containerWidth, setContainerWidth] = useState<number>(0);
+    const [pageAspectRatio, setPageAspectRatio] = useState<number | null>(null);
     const [selectedText, setSelectedText] = useState<string>("");
     
     // Use debounce for resizing to prevent flickering and excessive re-renders
@@ -85,6 +86,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const [debouncedWidth] = useDebounceValue(containerWidth, 50);
 
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const pageWrapperRef = useRef<HTMLDivElement>(null);
 
     // --- Store Access ---
@@ -304,6 +306,14 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         setHighlightRects(newRects);
     }, [pageHighlights, scale]);
 
+    const handlePageLoadSuccess = useCallback((page: any) => {
+        const viewport = page.getViewport({ scale: 1 });
+        if (viewport.width > 0) {
+            setPageAspectRatio(viewport.height / viewport.width);
+        }
+        updateHighlights();
+    }, [updateHighlights]);
+
     const handleAddHighlight = () => {
         if (!selectedText || readonly) return;
 
@@ -369,6 +379,46 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         });
     };
 
+    // 5. Wheel Event Listener for Zoom/Pan
+    useEffect(() => {
+        const el = scrollContainerRef.current;
+        if (!el) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            if (e.shiftKey) {
+                e.preventDefault();
+                // Zoom (Shift + Scroll)
+                const isTrackpad = Math.abs(e.deltaY) < 50;
+                const delta = isTrackpad ? -e.deltaY * 0.01 : -Math.sign(e.deltaY) * 0.2;
+                
+                setScale(s => {
+                    const newScale = s + delta;
+                    return Math.min(Math.max(newScale, 0.5), 5.0);
+                });
+            } else if (e.ctrlKey) {
+                e.preventDefault();
+                // Heuristic: Trackpad pinch usually sends small deltas with Ctrl key.
+                // Mouse wheel usually sends large deltas (100+).
+                const isLikelyPinch = Math.abs(e.deltaY) < 60;
+                
+                if (isLikelyPinch) {
+                    // Pinch -> Zoom
+                    const delta = -e.deltaY * 0.01;
+                    setScale(s => {
+                        const newScale = s + delta;
+                        return Math.min(Math.max(newScale, 0.5), 5.0);
+                    });
+                } else {
+                    // Ctrl + Mouse Wheel -> Pan Horizontal
+                    el.scrollLeft += e.deltaY;
+                }
+            }
+        };
+
+        el.addEventListener('wheel', handleWheel, { passive: false });
+        return () => el.removeEventListener('wheel', handleWheel);
+    }, []);
+
     // --- Exposed Methods ---
     useImperativeHandle(ref, () => ({
         jumpToPage: (page: number) => {
@@ -432,7 +482,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
             )}
 
             {/* Main Document Area */}
-            <div className="flex-1 overflow-auto flex justify-center p-4 custom-scrollbar">
+            <div className="flex-1 overflow-auto flex justify-center p-4 custom-scrollbar" ref={scrollContainerRef}>
                 {hasError ? (
                     <div className="flex flex-col items-center justify-center text-red-400 gap-2 h-full">
                         <span className="text-lg font-medium">Unable to load PDF</span>
@@ -467,18 +517,25 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                     >
                         {loadedUrl === safeUrl && (
                             <div 
-                                className="relative transition-transform duration-200 ease-out origin-top" 
-                                ref={pageWrapperRef}
-                                style={{ transform: `scale(${scale})` }}
+                                style={{ 
+                                    width: effectiveWidth * scale, 
+                                    height: (pageAspectRatio ? effectiveWidth * pageAspectRatio : effectiveWidth * 1.414) * scale,
+                                    position: 'relative'
+                                }}
                             >
-                                <Page
-                                    key={pageNumber}
-                                    pageNumber={pageNumber}
-                                    width={effectiveWidth}
-                                    renderTextLayer={true}
-                                    renderAnnotationLayer={true}
-                                    className="bg-white"
-                                    onLoadSuccess={updateHighlights}
+                                <div 
+                                    className="absolute top-0 left-0 transition-transform duration-200 ease-out origin-top-left" 
+                                    ref={pageWrapperRef}
+                                    style={{ transform: `scale(${scale})` }}
+                                >
+                                    <Page
+                                        key={pageNumber}
+                                        pageNumber={pageNumber}
+                                        width={effectiveWidth}
+                                        renderTextLayer={true}
+                                        renderAnnotationLayer={true}
+                                        className="bg-white"
+                                        onLoadSuccess={handlePageLoadSuccess}
                                     onRenderTextLayerSuccess={updateHighlights}
                                     onRenderError={() => setHasError(true)}
                                     onGetTextError={(e: Error) => { if (!e.message?.includes('terminated')) setHasError(true) }}
@@ -513,6 +570,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                                     ))}
                                 </div>
                             </div>
+                        </div>
                         )}
                     </Document>
                     </ErrorBoundary>

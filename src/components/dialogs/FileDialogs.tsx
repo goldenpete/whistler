@@ -17,16 +17,18 @@ interface EditFileDialogProps {
 export function EditFileDialog({ open, onOpenChange, file, onSave, container }: EditFileDialogProps) {
     const [name, setName] = useState(file.name);
     const [description, setDescription] = useState(file.description || "");
+    const [url, setUrl] = useState(file.url || "");
 
     useEffect(() => {
         if (open) {
             setName(file.name);
             setDescription(file.description || "");
+            setUrl(file.url || "");
         }
     }, [open, file]);
 
     const handleSubmit = () => {
-        onSave({ name, description });
+        onSave({ name, description, url });
         onOpenChange(false);
     };
 
@@ -47,6 +49,16 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
                             value={name}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="url" className="text-zinc-400">Link</Label>
+                        <Input
+                            id="url"
+                            value={url}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
+                            className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
+                            placeholder="https://..."
                         />
                     </div>
                     <div className="grid gap-2">
