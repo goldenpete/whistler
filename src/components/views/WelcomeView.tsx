@@ -344,10 +344,36 @@ export function WelcomeView() {
             projectId: p1.id,
             storageId: s1.id,
             parentId: null,
-            name: 'Project Documentation.pdf',
-            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            name: 'Project Manual.pdf',
+            url: 'https://pdfobject.com/pdf/sample.pdf',
             type: 'pdf',
             order: 1,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        const f3: File = {
+            id: crypto.randomUUID(),
+            projectId: p1.id,
+            storageId: s1.id,
+            parentId: null,
+            name: 'Inspiration.jpg',
+            url: 'https://images.unsplash.com/photo-1707343843437-caacff5cfa74?q=80&w=1000&auto=format&fit=crop',
+            type: 'image',
+            order: 2,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        const f4: File = {
+            id: crypto.randomUUID(),
+            projectId: p1.id,
+            storageId: s1.id,
+            parentId: null,
+            name: 'Soundtrack.mp3',
+            url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+            type: 'audio',
+            order: 3,
             created: Date.now(),
             lastModified: Date.now()
         };
@@ -355,7 +381,7 @@ export function WelcomeView() {
         useStore.setState((state: AppStore) => ({
             projects: [...state.projects, p1],
             storages: [...state.storages, s1],
-            files: [...state.files, f1, f2],
+            files: [...state.files, f1, f2, f3, f4],
             activeProjectId: p1.id,
             activeStorageId: s1.id
         }));
