@@ -77,6 +77,7 @@ import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
+import { useKeybind } from "@/hooks/use-keybind";
 
 const STORAGE_COLORS = [
     "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
@@ -197,6 +198,47 @@ export default function StorageView() {
             }));
         }
     };
+
+    // --- Shortcuts ---
+    useKeybind("ctrl+a", () => {
+        const ids = new Set(orderedProjectFiles.map(f => f.id));
+        setSelectedIds(ids);
+        setSelectionMode(true);
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("delete", () => {
+        if (selectedIds.size > 0) {
+            selectedIds.forEach(id => trashFile(id));
+            setSelectedIds(new Set());
+            setSelectionMode(false);
+        }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("backspace", () => {
+        if (currentFolderId) {
+             if (currentFolder && currentFolder.parentId) {
+                 setSearchParams({ folderId: currentFolder.parentId });
+             } else {
+                 setSearchParams({});
+             }
+        }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("f2", () => {
+        if (selectedIds.size === 1) {
+            const id = Array.from(selectedIds)[0];
+            const file = files.find(f => f.id === id);
+            if (file) handleRenameInit(file);
+        }
+    }, { preventDefault: true, disableInInput: true });
+    
+    useKeybind("escape", () => {
+        if (selectedIds.size > 0) {
+            setSelectedIds(new Set());
+            setSelectionMode(false);
+        }
+    }, { preventDefault: true, disableInInput: true });
+    // --- End Shortcuts ---
 
     const handleMoveInit = (file: AppFile) => {
         if (!selectedIds.has(file.id)) {

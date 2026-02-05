@@ -68,6 +68,7 @@ import { YouTubePlayerComponent, type YouTubePlayerHandle, getYouTubeId } from '
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
+import { useKeybind } from "@/hooks/use-keybind";
 
 const ExpandableNote = ({ text }: { text: string }) => {
     const [expanded, setExpanded] = useState(false);
@@ -707,6 +708,46 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             containerRef.current?.requestFullscreen();
         }
     };
+
+    // --- Shortcuts ---
+    useKeybind("space", togglePlay, { preventDefault: true, disableInInput: true });
+    useKeybind("k", togglePlay, { preventDefault: true, disableInInput: true });
+    useKeybind("f", toggleFullscreen, { preventDefault: true, disableInInput: true });
+    useKeybind("m", handleToggleMute, { preventDefault: true, disableInInput: true });
+    useKeybind("s", handleCaptureFrame, { preventDefault: true, disableInInput: true });
+    
+    useKeybind("j", () => {
+        if (isYouTube && youtubeRef.current) {
+            youtubeRef.current.currentTime -= 10;
+        } else if (videoRef.current) {
+            videoRef.current.currentTime -= 10;
+        }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("l", () => {
+        if (isYouTube && youtubeRef.current) {
+            youtubeRef.current.currentTime += 10;
+        } else if (videoRef.current) {
+            videoRef.current.currentTime += 10;
+        }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("arrowleft", () => {
+        if (isYouTube && youtubeRef.current) {
+            youtubeRef.current.currentTime -= 5;
+        } else if (videoRef.current) {
+            videoRef.current.currentTime -= 5;
+        }
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("arrowright", () => {
+        if (isYouTube && youtubeRef.current) {
+            youtubeRef.current.currentTime += 5;
+        } else if (videoRef.current) {
+            videoRef.current.currentTime += 5;
+        }
+    }, { preventDefault: true, disableInInput: true });
+    // --- End Shortcuts ---
 
     const handleCopyUrl = () => {
         if (file.url) navigator.clipboard.writeText(file.url);
