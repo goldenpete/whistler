@@ -41,6 +41,8 @@ export function GlobalKeybinds() {
     useKeybind("1", () => handleNavigation("/storage", "storage"), { preventDefault: true, disableInInput: true });
     useKeybind("2", () => handleNavigation("/docs", "docs"), { preventDefault: true, disableInInput: true });
     useKeybind("3", () => handleNavigation("/graphs", "graphs"), { preventDefault: true, disableInInput: true });
+    useKeybind("4", () => handleNavigation("/collections", "main"), { preventDefault: true, disableInInput: true });
+    useKeybind("5", () => handleNavigation("/", "main"), { preventDefault: true, disableInInput: true });
 
     // --- Sequence Handler (G + Key) ---
     useEffect(() => {

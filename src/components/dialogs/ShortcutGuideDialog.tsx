@@ -81,9 +81,8 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Storage" icon={HardDrives} keys={[<Key>1</Key>]} />
                             <ShortcutRow label="Docs" icon={FileText} keys={[<Key>2</Key>]} />
                             <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>3</Key>]} />
-                            
-                            <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Document List</div>
-                            <ShortcutRow label="Navigate Docs" icon={CaretRight} keys={[<Key>↑</Key>, <Key>↓</Key>]} />
+                            <ShortcutRow label="Collections" icon={FileText} keys={[<Key>4</Key>]} />
+                            <ShortcutRow label="Home" icon={House} keys={[<Key>5</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="storage" className="mt-0 space-y-1">

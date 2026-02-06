@@ -1010,26 +1010,24 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             )}
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-2 group/edit cursor-pointer" onClick={() => setEditOpen(true)}>
-                                <h1 className="text-white font-medium text-base truncate">{file.name}</h1>
-                                <PencilSimple className="text-muted-foreground opacity-0 group-hover/edit:opacity-100 transition-opacity" size={14} weight="bold" />
-                            </div>
-                            <div className="flex items-center gap-2 mb-0.5 group/url w-full max-w-[400px]">
-                                <input
-                                    className="bg-transparent border-none p-0 h-auto text-xs text-blue-400 focus:text-blue-300 focus:outline-none w-full truncate hover:underline cursor-text placeholder:text-muted-foreground/50 font-mono"
-                                    value={localUrl}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setLocalUrl(e.target.value)}
-                                    onBlur={handleUrlUpdate}
-                                    onKeyDown={(e: ReactKeyboardEvent<HTMLInputElement>) => {
-                                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 group/edit cursor-pointer shrink-0" onClick={() => setEditOpen(true)}>
+                                    <h1 className="text-white font-medium text-base truncate max-w-[400px]">{file.name}</h1>
+                                </div>
+                                <div 
+                                    className="flex items-center gap-2 group/url cursor-pointer min-w-0" 
+                                    onClick={(e: MouseEvent) => {
                                         e.stopPropagation();
+                                        setEditOpen(true);
                                     }}
-                                    placeholder="Paste URL here..."
-                                    onClick={(e: MouseEvent) => e.stopPropagation()}
-                                />
-                                <PencilSimple className="text-muted-foreground opacity-0 group-hover/url:opacity-100 transition-opacity shrink-0" size={12} weight="bold" />
+                                >
+                                    <span className="text-xs text-blue-400 truncate max-w-[300px] hover:underline font-mono">
+                                        {localUrl || "Add URL..."}
+                                    </span>
+                                    <PencilSimple className="text-muted-foreground opacity-0 group-hover/url:opacity-100 transition-opacity shrink-0" size={12} weight="bold" />
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 group/desc cursor-pointer" onClick={() => setEditOpen(true)}>
+                            <div className="flex items-center gap-2 group/desc cursor-pointer mt-0.5" onClick={() => setEditOpen(true)}>
                                 <span className="text-muted-foreground text-xs truncate">{file.description || "Click to add description..."}</span>
                                 <PencilSimple className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" size={12} weight="bold" />
                             </div>

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback, type MouseEvent, type WheelEvent } from "react";
+import React, { useRef, useState, useEffect, useCallback, type MouseEvent, type WheelEvent, type KeyboardEvent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
@@ -148,6 +148,9 @@ export default function GraphView() {
         open: nodeDialog.open && nodeDialog.mode === 'create',
         type: nodeDialog.type
     };
+
+    // Add Node Menu State
+    const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
     // Load icons
     useEffect(() => {
@@ -590,8 +593,8 @@ export default function GraphView() {
 
     // --- Keybinds ---
     useKeybind("n", () => {
-        if (!nodeDialog.open) {
-            handleAddNode('note');
+        if (!nodeDialog.open && !isAddMenuOpen) {
+            setIsAddMenuOpen(true);
         }
     }, { preventDefault: true, disableInInput: true });
 
@@ -737,13 +740,23 @@ export default function GraphView() {
                     <>
                         {/* Toolbar */}
                         <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-sm p-1.5 rounded-lg border border-white/10 shadow-lg">
-                            <DropdownMenu>
+                            <DropdownMenu open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-white hover:bg-white/10">
                                         <Plus className="mr-2" /> Add Node
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className="w-48 bg-neutral-900 border-white/10 text-white">
+                                <DropdownMenuContent 
+                                    align="start" 
+                                    className="w-48 bg-neutral-900 border-white/10 text-white"
+                                    onKeyDown={(e: KeyboardEvent) => {
+                                        if (e.key === 'Backspace') {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setIsAddMenuOpen(false);
+                                        }
+                                    }}
+                                >
                                     <DropdownMenuItem onClick={() => handleAddNode('note')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
                                         <Note className="mr-2" /> Note
                                     </DropdownMenuItem>
