@@ -834,9 +834,16 @@ export default function GraphView() {
                             )}
                         </ContextMenu>
 
-                        {/* Node Count / Info */}
-                        <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-xs text-white/50 px-2 py-1 rounded select-none pointer-events-none border border-white/5">
-                            {nodes.length} nodes • {edges.length} edges
+                        {/* Status Bar */}
+                        <div className="absolute bottom-4 right-4 flex items-center gap-2 pointer-events-none select-none">
+                            {activeGraph && (
+                                <div className="px-2 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-[10px] text-zinc-400 font-medium">
+                                    {activeGraph.name}
+                                </div>
+                            )}
+                            <div className="px-2 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-[10px] text-zinc-400">
+                                {nodes.length} nodes • {edges.length} edges
+                            </div>
                         </div>
 
                         {/* Node Preview Card */}

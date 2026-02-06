@@ -114,6 +114,70 @@ const LOGO_MAP: Record<AccentTheme, string> = {
 
 
 
+
+function SortableStorageItem({ storage, activeStorageId, handleSelectStorage, handleEditStorageClick, handleDeleteStorage }: any) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: storage.id });
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+    const Icon = getIcon(storage.icon);
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectStorage(storage.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer", activeStorageId === storage.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+            <Icon weight={activeStorageId === storage.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeStorageId === storage.id ? undefined : storage.color }} />
+            <span className="truncate flex-1">{storage.name}</span>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleEditStorageClick(e, storage)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+                    <PencilSimple weight="bold" />
+                </button>
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteStorage(e, storage.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
+                    <Trash weight="bold" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function SortableDocItem({ doc, activeDocId, handleSelectDoc, handleRenameDoc, handleDeleteDoc }: any) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: doc.id });
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+    const DocIcon = getIcon(doc.icon);
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} data-doc-id={doc.id} onClick={() => handleSelectDoc(doc.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer", activeDocId === doc.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+            <DocIcon weight={activeDocId === doc.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeDocId === doc.id ? undefined : doc.color }} />
+            <span className="truncate flex-1">{doc.name}</span>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleRenameDoc(e, doc)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+                    <PencilSimple weight="bold" />
+                </button>
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteDoc(e, doc.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
+                    <Trash weight="bold" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function SortableGraphItem({ graph, activeGraphId, handleSelectGraph, handleEditGraph, handleDeleteGraph }: any) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: graph.id });
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+    const GraphIcon = getIcon(graph.icon);
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectGraph(graph.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer", activeGraphId === graph.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+            <GraphIcon weight={activeGraphId === graph.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeGraphId === graph.id ? undefined : graph.color }} />
+            <span className="truncate flex-1">{graph.name}</span>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleEditGraph(e, graph)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+                    <PencilSimple weight="bold" />
+                </button>
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteGraph(e, graph.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
+                    <Trash weight="bold" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 function SortableCollectionItem({
     collection,
     location,
@@ -319,46 +383,56 @@ export default function ProjectSidebar() {
     // Sidebar Tab Navigation (Unifying Keybind)
     useKeybind("ctrl+alt+arrowdown", () => {
         playSfx('cursor');
+        const sidebarEnabled = ['storage', 'docs', 'graphs'].includes(sidebarView);
+
         if (location.pathname === '/storage') {
             if (projectStorages.length > 0) {
                 const currentIndex = projectStorages.findIndex(s => s.id === activeStorageId);
                 const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectStorages.length;
                 handleSelectStorage(projectStorages[nextIndex].id);
+                if (sidebarEnabled) setSidebarView('storage');
             }
         } else if (location.pathname.startsWith('/docs')) {
             if (projectDocs.length > 0) {
                 const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
                 const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectDocs.length;
                 handleSelectDoc(projectDocs[nextIndex].id);
+                if (sidebarEnabled) setSidebarView('docs');
             }
         } else if (location.pathname.startsWith('/graphs')) {
             if (projectGraphs.length > 0) {
                 const currentIndex = projectGraphs.findIndex(g => g.id === activeGraphId);
                 const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectGraphs.length;
                 handleSelectGraph(projectGraphs[nextIndex].id);
+                if (sidebarEnabled) setSidebarView('graphs');
             }
         }
     }, { preventDefault: true });
 
     useKeybind("ctrl+alt+arrowup", () => {
         playSfx('cursor');
+        const sidebarEnabled = ['storage', 'docs', 'graphs'].includes(sidebarView);
+
         if (location.pathname === '/storage') {
              if (projectStorages.length > 0) {
                 const currentIndex = projectStorages.findIndex(s => s.id === activeStorageId);
                 const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectStorages.length) % projectStorages.length;
                 handleSelectStorage(projectStorages[prevIndex].id);
+                if (sidebarEnabled) setSidebarView('storage');
             }
         } else if (location.pathname.startsWith('/docs')) {
             if (projectDocs.length > 0) {
                 const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
                 const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectDocs.length) % projectDocs.length;
                 handleSelectDoc(projectDocs[prevIndex].id);
+                if (sidebarEnabled) setSidebarView('docs');
             }
         } else if (location.pathname.startsWith('/graphs')) {
             if (projectGraphs.length > 0) {
                 const currentIndex = projectGraphs.findIndex(g => g.id === activeGraphId);
                 const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectGraphs.length) % projectGraphs.length;
                 handleSelectGraph(projectGraphs[prevIndex].id);
+                if (sidebarEnabled) setSidebarView('graphs');
             }
         }
     }, { preventDefault: true });
@@ -421,15 +495,61 @@ export default function ProjectSidebar() {
         const { active, over } = event;
         if (!over || active.id === over.id || !activeProjectId) return;
 
+        // Try Collections
         const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
-        const oldIndex = projectCollections.findIndex((c: Collection) => c.id === active.id);
-        const newIndex = projectCollections.findIndex((c: Collection) => c.id === over.id);
+        const collectionOldIndex = projectCollections.findIndex((c: Collection) => c.id === active.id);
+        
+        if (collectionOldIndex !== -1) {
+            const collectionNewIndex = projectCollections.findIndex((c: Collection) => c.id === over.id);
+            if (collectionNewIndex !== -1) {
+                const reordered = arrayMove(projectCollections, collectionOldIndex, collectionNewIndex);
+                const otherCollections = collections.filter((c: Collection) => !(c.projectId === activeProjectId && !c.deleted));
+                useStore.setState({ collections: [...otherCollections, ...reordered] });
+                return;
+            }
+        }
 
-        if (oldIndex === -1 || newIndex === -1) return;
+        // Try Storages
+        const projectStoragesList = storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted);
+        const storageOldIndex = projectStoragesList.findIndex((s: Storage) => s.id === active.id);
 
-        const reordered = arrayMove(projectCollections, oldIndex, newIndex);
-        const otherCollections = collections.filter((c: Collection) => !(c.projectId === activeProjectId && !c.deleted));
-        useStore.setState({ collections: [...otherCollections, ...reordered] });
+        if (storageOldIndex !== -1) {
+             const storageNewIndex = projectStoragesList.findIndex((s: Storage) => s.id === over.id);
+             if (storageNewIndex !== -1) {
+                 const reordered = arrayMove(projectStoragesList, storageOldIndex, storageNewIndex);
+                 const otherStorages = storages.filter((s: Storage) => !(s.projectId === activeProjectId && !s.deleted));
+                 useStore.setState({ storages: [...otherStorages, ...reordered] });
+                 return;
+             }
+        }
+
+        // Try Docs
+        const projectDocsList = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
+        const docOldIndex = projectDocsList.findIndex((d: Doc) => d.id === active.id);
+
+        if (docOldIndex !== -1) {
+            const docNewIndex = projectDocsList.findIndex((d: Doc) => d.id === over.id);
+            if (docNewIndex !== -1) {
+                const reordered = arrayMove(projectDocsList, docOldIndex, docNewIndex);
+                const otherDocs = docs.filter((d: Doc) => !(d.projectId === activeProjectId && !d.deleted));
+                useStore.setState({ docs: [...otherDocs, ...reordered] });
+                return;
+            }
+        }
+
+        // Try Graphs
+        const projectGraphsList = graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted);
+        const graphOldIndex = projectGraphsList.findIndex((g: GraphType) => g.id === active.id);
+        
+        if (graphOldIndex !== -1) {
+            const graphNewIndex = projectGraphsList.findIndex((g: GraphType) => g.id === over.id);
+            if (graphNewIndex !== -1) {
+                const reordered = arrayMove(projectGraphsList, graphOldIndex, graphNewIndex);
+                const otherGraphs = graphs.filter((g: GraphType) => !(g.projectId === activeProjectId && !g.deleted));
+                useStore.setState({ graphs: [...otherGraphs, ...reordered] });
+                return;
+            }
+        }
     };
 
     const handleCreateStorage = () => {
@@ -1505,49 +1625,20 @@ export default function ProjectSidebar() {
                             
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
-                                    {projectDocs.map((doc: Doc) => {
-                                        const DocIcon = getIcon(doc.icon);
-                                        return (
-                                        <div
-                                            key={doc.id}
-                                            data-doc-id={doc.id}
-                                            onClick={() => handleSelectDoc(doc.id)}
-                                            role="button"
-                                            tabIndex={0}
-                                            onKeyDown={(e: ReactKeyboardEvent) => {
-                                                if (e.key === "Enter" || e.key === " ") {
-                                                    handleSelectDoc(doc.id);
-                                                }
-                                            }}
-                                            className={cn(
-                                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
-                                                activeDocId === doc.id
-                                                    ? "bg-primary/20 text-primary font-medium"
-                                                    : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
-                                            )}
-                                        >
-                                            <DocIcon 
-                                                weight={activeDocId === doc.id ? "fill" : "regular"} 
-                                                className="text-lg shrink-0 transition-colors"
-                                                style={{ color: activeDocId === doc.id ? undefined : doc.color }}
-                                            />
-                                            <span className="truncate flex-1">{doc.name}</span>
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e: ReactMouseEvent) => handleRenameDoc(e, doc)}
-                                                    className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                >
-                                                    <PencilSimple weight="bold" />
-                                                </button>
-                                                <button
-                                                    onClick={(e: ReactMouseEvent) => handleDeleteDoc(e, doc.id)}
-                                                    className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
-                                                >
-                                                    <Trash weight="bold" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )})}
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                        <SortableContext items={projectDocs.map((d: Doc) => d.id)} strategy={verticalListSortingStrategy}>
+                                            {projectDocs.map((doc: Doc) => (
+                                                <SortableDocItem 
+                                                    key={doc.id}
+                                                    doc={doc}
+                                                    activeDocId={activeDocId}
+                                                    handleSelectDoc={handleSelectDoc}
+                                                    handleRenameDoc={handleRenameDoc}
+                                                    handleDeleteDoc={handleDeleteDoc}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
 
                                     {projectDocs.length === 0 && (
                                         <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">
@@ -1589,48 +1680,20 @@ export default function ProjectSidebar() {
                             
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
-                                    {projectGraphs.map((graph: GraphType) => {
-                                        const GraphIcon = getIcon(graph.icon);
-                                        return (
-                                        <div
-                                            key={graph.id}
-                                            onClick={() => handleSelectGraph(graph.id)}
-                                            role="button"
-                                            tabIndex={0}
-                                            onKeyDown={(e: ReactKeyboardEvent) => {
-                                                if (e.key === "Enter" || e.key === " ") {
-                                                    handleSelectGraph(graph.id);
-                                                }
-                                            }}
-                                            className={cn(
-                                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
-                                                activeGraphId === graph.id
-                                                    ? "bg-primary/20 text-primary font-medium"
-                                                    : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
-                                            )}
-                                        >
-                                            <GraphIcon 
-                                                weight={activeGraphId === graph.id ? "fill" : "regular"} 
-                                                className="text-lg shrink-0 transition-colors"
-                                                style={{ color: activeGraphId === graph.id ? undefined : graph.color }}
-                                            />
-                                            <span className="truncate flex-1">{graph.name}</span>
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e: ReactMouseEvent) => handleEditGraph(e, graph)}
-                                                    className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-accent-foreground transition-colors"
-                                                >
-                                                    <PencilSimple weight="bold" />
-                                                </button>
-                                                <button
-                                                    onClick={(e: ReactMouseEvent) => handleDeleteGraph(e, graph.id)}
-                                                    className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-destructive transition-colors"
-                                                >
-                                                    <Trash weight="bold" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )})}
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                        <SortableContext items={projectGraphs.map((g: GraphType) => g.id)} strategy={verticalListSortingStrategy}>
+                                            {projectGraphs.map((graph: GraphType) => (
+                                                <SortableGraphItem
+                                                    key={graph.id}
+                                                    graph={graph}
+                                                    activeGraphId={activeGraphId}
+                                                    handleSelectGraph={handleSelectGraph}
+                                                    handleEditGraph={handleEditGraph}
+                                                    handleDeleteGraph={handleDeleteGraph}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
 
                                     {projectGraphs.length === 0 && (
                                         <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">
@@ -1713,67 +1776,31 @@ export default function ProjectSidebar() {
                                 
                                 <ScrollArea className="flex-1 px-3 py-2">
                                     <div className="space-y-1">
-                                        {projectStorages.map((storage: Storage) => {
-                                            const Icon = storage.icon ? getIcon(storage.icon) : Folder;
-                                            const isActive = activeStorageId === storage.id;
-                                            return (
-                                                <button
-                                                    key={storage.id}
-                                                    onClick={() => {
-                                                        playSfx('cursor');
-                                                        handleSelectStorage(storage.id);
-                                                    }}
-                                                    className={cn(
-                                                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer",
-                                                        isActive
-                                                            ? "bg-primary/20 text-primary font-medium"
-                                                            : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground",
-                                                        isSlim && "justify-center px-0 py-3"
-                                                    )}
-                                                    title={isSlim ? storage.name : undefined}
-                                                >
-                                                    <Icon 
-                                                        weight={isActive ? "fill" : "regular"} 
-                                                        className={cn("text-lg shrink-0 transition-colors", !storage.color && "text-primary")}
-                                                        style={{ color: isActive ? undefined : storage.color }}
+                                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                            <SortableContext items={projectStorages.map((s: Storage) => s.id)} strategy={verticalListSortingStrategy}>
+                                                {projectStorages.map((storage: Storage) => (
+                                                    <SortableStorageItem
+                                                        key={storage.id}
+                                                        storage={storage}
+                                                        activeStorageId={activeStorageId}
+                                                        handleSelectStorage={handleSelectStorage}
+                                                        handleEditStorageClick={handleEditStorageClick}
+                                                        handleDeleteStorage={handleDeleteStorage}
                                                     />
-                                                    {!isSlim && <span className="truncate flex-1">{storage.name}</span>}
-                                                    {!isSlim && (
-                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={(e: ReactMouseEvent) => {
-                                                                    playSfx('cursor');
-                                                                    handleEditStorageClick(e, storage);
-                                                                }}
-                                                                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                            >
-                                                                <PencilSimple weight="bold" />
-                                                            </button>
-                                                            <button
-                                                                onClick={(e: ReactMouseEvent) => {
-                                                                    playSfx('cursor');
-                                                                    handleDeleteStorage(e, storage.id);
-                                                                }}
-                                                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
-                                                        >
-                                                            <Trash weight="bold" />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
+                                                ))}
+                                            </SortableContext>
+                                        </DndContext>
 
-                                    {projectStorages.length === 0 && (
-                                        <div className={cn(
-                                            "text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2 flex items-center justify-center",
-                                            isSlim ? "p-2 h-10" : "p-4 text-center text-xs"
-                                        )}>
-                                            {isSlim ? <HardDrives className="opacity-50" /> : "No storages created yet"}
-                                        </div>
-                                    )}
-                                </div>
-                            </ScrollArea>
+                                        {projectStorages.length === 0 && (
+                                            <div className={cn(
+                                                "text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2 flex items-center justify-center",
+                                                isSlim ? "p-2 h-10" : "p-4 text-center text-xs"
+                                            )}>
+                                                {isSlim ? <HardDrives className="opacity-50" /> : "No storages created yet"}
+                                            </div>
+                                        )}
+                                    </div>
+                                </ScrollArea>
                         </motion.div>
                     )}
                 </AnimatePresence>
