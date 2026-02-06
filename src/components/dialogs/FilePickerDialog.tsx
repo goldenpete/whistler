@@ -115,110 +115,110 @@ export function FilePickerDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col p-0 gap-0 bg-zinc-900 border-zinc-800">
-                <DialogHeader className="p-4 border-b border-white/10 flex flex-row items-center justify-between space-y-0">
-                    <DialogTitle className="text-lg font-medium">{title}</DialogTitle>
+            <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
                     <DialogDescription className="sr-only">
                         Select a file from your storage.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-2 py-2">
-                    {/* Storage Tabs */}
-                    {projectStorages.length > 0 ? (
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-800 no-scrollbar">
-                            {projectStorages.map(storage => (
-                                <Button
-                                    key={storage.id}
-                                    variant={selectedStorageId === storage.id ? "default" : "ghost"}
-                                    size="sm"
-                                    onClick={() => {
-                                        setSelectedStorageId(storage.id);
-                                        setCurrentFolderId(null);
-                                    }}
-                                    className="gap-2 shrink-0"
-                                >
-                                    <HardDrives weight={selectedStorageId === storage.id ? "fill" : "regular"} />
-                                    {storage.name}
-                                </Button>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-xs text-muted-foreground py-1">No storages available.</div>
-                    )}
-
-                    {/* Breadcrumbs / Navigation */}
-                    <div className="py-2">
-                        <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground min-h-[32px] px-1">
-                            {currentFolderId && currentFolder ? (
-                                <div className="flex items-center gap-2">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleBack} data-sound-back>
-                                        <CaretLeft />
-                                    </Button>
-                                    <span className="font-medium text-foreground flex items-center gap-2">
-                                        <Folder weight="fill" className="text-amber-500" />
-                                        {currentFolder.name}
-                                    </span>
-                                </div>
-                            ) : (
-                                <span className="px-2 flex items-center gap-2">
-                                    <HardDrives className="text-muted-foreground" />
-                                    Root
-                                </span>
-                            )}
-                        </div>
-
-                        {/* File List */}
-                        <ScrollArea className="h-[300px] border border-zinc-800 rounded-md p-1">
-                            {displayedFolders.length === 0 && displayedFiles.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-                                    <Folder size={32} className="opacity-20" />
-                                    <span className="text-xs">No items</span>
-                                </div>
-                            ) : (
-                                <div className="space-y-1">
-                                    {displayedFolders.map(folder => (
-                                        <button
-                                            key={folder.id}
-                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground text-sm text-left transition-colors"
-                                            onClick={() => setCurrentFolderId(folder.id)}
-                                        >
-                                            <Folder className="text-amber-500 text-lg shrink-0" weight="fill" />
-                                            <span className="truncate">{folder.name}</span>
-                                        </button>
-                                    ))}
-                                    {displayedFiles.map(file => (
-                                        <button
-                                            key={file.id}
-                                            className={cn(
-                                                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left transition-colors",
-                                                selectedFileId === file.id
-                                                    ? "bg-primary/20 text-primary"
-                                                    : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
-                                            )}
-                                            onClick={() => setSelectedFileId(file.id)}
-                                            onDoubleClick={() => {
-                                                setSelectedFileId(file.id);
-                                                onSelect(file.id);
-                                                onOpenChange(false);
-                                            }}
-                                        >
-                                            <FileIcon className="text-muted-foreground text-lg shrink-0" />
-                                            <span className="truncate">{file.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </ScrollArea>
+                {/* Storage Tabs */}
+                {projectStorages.length > 0 ? (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border no-scrollbar">
+                        {projectStorages.map(storage => (
+                            <Button
+                                key={storage.id}
+                                variant={selectedStorageId === storage.id ? "default" : "ghost"}
+                                size="sm"
+                                onClick={() => {
+                                    setSelectedStorageId(storage.id);
+                                    setCurrentFolderId(null);
+                                }}
+                                className="gap-2 shrink-0"
+                            >
+                                <HardDrives weight={selectedStorageId === storage.id ? "fill" : "regular"} />
+                                {storage.name}
+                            </Button>
+                        ))}
                     </div>
+                ) : (
+                    <div className="text-sm text-muted-foreground text-center py-2">
+                        No storages available.
+                    </div>
+                )}
+
+                {/* Breadcrumbs / Navigation */}
+                <div className="py-2">
+                    <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground min-h-[32px] px-1">
+                        {currentFolderId && currentFolder ? (
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleBack} data-sound-back>
+                                    <CaretLeft />
+                                </Button>
+                                <span className="font-medium text-foreground flex items-center gap-2">
+                                    <Folder weight="fill" className="text-amber-500" />
+                                    {currentFolder.name}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="px-2 flex items-center gap-2">
+                                <HardDrives className="text-muted-foreground" />
+                                Root
+                            </span>
+                        )}
+                    </div>
+
+                    {/* File List */}
+                    <ScrollArea className="h-[250px] border rounded-md p-1">
+                        {displayedFolders.length === 0 && displayedFiles.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                                <Folder size={32} className="opacity-20" />
+                                <span className="text-xs">No items</span>
+                            </div>
+                        ) : (
+                            <div className="space-y-1">
+                                {displayedFolders.map(folder => (
+                                    <button
+                                        key={folder.id}
+                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground text-sm text-left transition-colors"
+                                        onClick={() => setCurrentFolderId(folder.id)}
+                                    >
+                                        <Folder className="text-amber-500 text-lg shrink-0" weight="fill" />
+                                        <span className="truncate">{folder.name}</span>
+                                    </button>
+                                ))}
+                                {displayedFiles.map(file => (
+                                    <button
+                                        key={file.id}
+                                        className={cn(
+                                            "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left transition-colors",
+                                            selectedFileId === file.id
+                                                ? "bg-primary/20 text-primary"
+                                                : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+                                        )}
+                                        onClick={() => setSelectedFileId(file.id)}
+                                        onDoubleClick={() => {
+                                            setSelectedFileId(file.id);
+                                            onSelect(file.id);
+                                            onOpenChange(false);
+                                        }}
+                                    >
+                                        <FileIcon className="text-muted-foreground text-lg shrink-0" />
+                                        <span className="truncate">{file.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </ScrollArea>
                 </div>
 
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button 
                         onClick={handleConfirm} 
-                        className="bg-primary text-primary-foreground"
                         disabled={!selectedFileId}
+                        data-sound-confirm
                     >
                         Select
                     </Button>

@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { sanitizeHTML } from "@/utils/security";
+import { FilePickerDialog } from "@/components/dialogs/FilePickerDialog";
 
 export default function DocsView() {
     const { docs, activeDocId, activeProjectId } = useStore();
@@ -108,6 +109,7 @@ function DocEditor({ doc }: DocEditorProps) {
     const [linkMode, setLinkMode] = useState<"external" | "internal">("external");
     const [internalType, setInternalType] = useState<"file" | "collection" | "highlight">("file");
     const [internalId, setInternalId] = useState<string>("");
+    const [filePickerOpen, setFilePickerOpen] = useState(false);
     const [formatState, setFormatState] = useState({
         bold: false,
         italic: false,
@@ -475,7 +477,7 @@ function DocEditor({ doc }: DocEditorProps) {
                         onInput={handleInput}
                         onBlur={saveContent}
                         className={cn(
-                            "prose prose-sm dark:prose-invert focus:outline-none transition-all duration-300 ease-in-out",
+                            "prose prose-sm dark:prose-invert focus:outline-none transition-all duration-300 ease-in-out [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
                             getContainerClass()
                         )}
                         suppressContentEditableWarning
@@ -583,97 +585,111 @@ function DocEditor({ doc }: DocEditorProps) {
                                         Highlights
                                     </Button>
                                 </div>
-                                <ScrollArea className="max-h-56 rounded-md border border-zinc-800 bg-zinc-900/60">
-                                    <div className="p-2 space-y-1">
-                                        {internalType === "file" &&
-                                            (projectFiles.length > 0 ? (
-                                                projectFiles.map((f: AppFile) => (
-                                                    <button
-                                                        key={f.id}
-                                                        type="button"
-                                                        onClick={() => setInternalId(f.id)}
-                                                        className={cn(
-                                                            "w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left transition-colors",
-                                                            internalId === f.id
-                                                                ? "bg-primary/20 text-primary"
-                                                                : "hover:bg-zinc-800/80 text-zinc-200"
-                                                        )}
-                                                    >
-                                                        <span className="truncate">{f.name}</span>
-                                                        <span className="ml-2 text-[10px] text-zinc-400 uppercase">
-                                                            {f.type}
-                                                        </span>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <div className="px-2 py-1.5 text-xs text-zinc-500">
-                                                    No files in this project
-                                                </div>
-                                            ))}
-                                        {internalType === "collection" &&
-                                            (projectCollections.length > 0 ? (
-                                                projectCollections.map((c: Collection) => (
-                                                    <button
-                                                        key={c.id}
-                                                        type="button"
-                                                        onClick={() => setInternalId(c.id)}
-                                                        className={cn(
-                                                            "w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left transition-colors",
-                                                            internalId === c.id
-                                                                ? "bg-primary/20 text-primary"
-                                                                : "hover:bg-zinc-800/80 text-zinc-200"
-                                                        )}
-                                                    >
-                                                        <span className="truncate">{c.name}</span>
-                                                        <span className="ml-2 text-[10px] text-zinc-400 uppercase">
-                                                            collection
-                                                        </span>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <div className="px-2 py-1.5 text-xs text-zinc-500">
-                                                    No collections in this project
-                                                </div>
-                                            ))}
-                                        {internalType === "highlight" &&
-                                            (projectHighlights.length > 0 ? (
-                                                projectHighlights.map((t: Highlight) => {
-                                                    const file = files.find(
-                                                        (f: AppFile) => f.id === t.fileId
-                                                    );
-                                                    const mins = Math.floor(t.start / 60);
-                                                    const secs = Math.floor(t.start % 60)
-                                                        .toString()
-                                                        .padStart(2, "0");
-                                                    return (
+                                {internalType === "file" ? (
+                                    <div className="py-2 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-zinc-800 rounded-md bg-zinc-900 text-sm text-muted-foreground overflow-hidden">
+                                                {internalId ? (
+                                                    (() => {
+                                                        const f = projectFiles.find(f => f.id === internalId);
+                                                        return f ? (
+                                                            <>
+                                                                <File className="shrink-0 text-foreground" />
+                                                                <span className="truncate text-foreground">{f.name}</span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="opacity-50">File not found</span>
+                                                        );
+                                                    })()
+                                                ) : (
+                                                    <span className="opacity-50">No file selected</span>
+                                                )}
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="shrink-0 bg-zinc-900 border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                                                onClick={() => setFilePickerOpen(true)}
+                                            >
+                                                Browse...
+                                            </Button>
+                                        </div>
+                                        <FilePickerDialog
+                                            open={filePickerOpen}
+                                            onOpenChange={setFilePickerOpen}
+                                            onSelect={(id) => setInternalId(id)}
+                                            initialFileId={internalId}
+                                        />
+                                    </div>
+                                ) : (
+                                    <ScrollArea className="max-h-56 rounded-md border border-zinc-800 bg-zinc-900/60">
+                                        <div className="p-2 space-y-1">
+                                            {internalType === "collection" &&
+                                                (projectCollections.length > 0 ? (
+                                                    projectCollections.map((c: Collection) => (
                                                         <button
-                                                            key={t.id}
+                                                            key={c.id}
                                                             type="button"
-                                                            onClick={() => setInternalId(t.id)}
+                                                            onClick={() => setInternalId(c.id)}
                                                             className={cn(
-                                                                "w-full flex flex-col px-2 py-1.5 rounded text-xs text-left transition-colors",
-                                                                internalId === t.id
+                                                                "w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left transition-colors",
+                                                                internalId === c.id
                                                                     ? "bg-primary/20 text-primary"
                                                                     : "hover:bg-zinc-800/80 text-zinc-200"
                                                             )}
                                                         >
-                                                            <span className="truncate">
-                                                                {t.note || "Highlight"}
-                                                            </span>
-                                                            <span className="text-[10px] text-zinc-400 truncate">
-                                                                {file?.name || "File"} • {mins}:
-                                                                {secs}
+                                                            <span className="truncate">{c.name}</span>
+                                                            <span className="ml-2 text-[10px] text-zinc-400 uppercase">
+                                                                collection
                                                             </span>
                                                         </button>
-                                                    );
-                                                })
-                                            ) : (
-                                                <div className="px-2 py-1.5 text-xs text-zinc-500">
-                                                    No highlights in this project
-                                                </div>
-                                            ))}
-                                    </div>
-                                </ScrollArea>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-2 py-1.5 text-xs text-zinc-500">
+                                                        No collections in this project
+                                                    </div>
+                                                ))}
+                                            {internalType === "highlight" &&
+                                                (projectHighlights.length > 0 ? (
+                                                    projectHighlights.map((t: Highlight) => {
+                                                        const file = files.find(
+                                                            (f: AppFile) => f.id === t.fileId
+                                                        );
+                                                        const mins = Math.floor(t.start / 60);
+                                                        const secs = Math.floor(t.start % 60)
+                                                            .toString()
+                                                            .padStart(2, "0");
+                                                        return (
+                                                            <button
+                                                                key={t.id}
+                                                                type="button"
+                                                                onClick={() => setInternalId(t.id)}
+                                                                className={cn(
+                                                                    "w-full flex flex-col px-2 py-1.5 rounded text-xs text-left transition-colors",
+                                                                    internalId === t.id
+                                                                        ? "bg-primary/20 text-primary"
+                                                                        : "hover:bg-zinc-800/80 text-zinc-200"
+                                                                )}
+                                                            >
+                                                                <span className="truncate">
+                                                                    {t.note || "Highlight"}
+                                                                </span>
+                                                                <span className="text-[10px] text-zinc-400 truncate">
+                                                                    {file?.name || "File"} • {mins}:
+                                                                    {secs}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <div className="px-2 py-1.5 text-xs text-zinc-500">
+                                                        No highlights in this project
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    </ScrollArea>
+                                )}
                             </div>
                         )}
                     </div>
