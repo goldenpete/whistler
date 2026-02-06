@@ -306,7 +306,7 @@ export default function StorageView() {
     }, { preventDefault: true, disableInInput: true });
     
     useKeybind("escape", () => {
-        if (selectedIds.size > 0) {
+        if (selectionMode || selectedIds.size > 0) {
             setSelectedIds(new Set());
             setSelectionMode(false);
         }

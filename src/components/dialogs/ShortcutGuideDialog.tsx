@@ -81,7 +81,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Rename" icon={PencilSimple} keys={[<Key>F2</Key>]} />
                             <ShortcutRow label="Delete" icon={Trash} keys={[<Key>Delete</Key>]} />
                             <ShortcutRow label="Go Up Directory" icon={CaretUp} keys={[<Key>Backspace</Key>]} />
-                            <ShortcutRow label="Clear Selection" icon={CornersOut} keys={[<Key>Esc</Key>]} />
+                            <ShortcutRow label="Exit Selection Mode" icon={CornersOut} keys={[<Key>Esc</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="storage" className="mt-0 space-y-1">
