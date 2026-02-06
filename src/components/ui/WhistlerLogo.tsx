@@ -63,7 +63,7 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
             >
                 <WaveSine 
                     weight="bold" 
-                    className="w-[70%] h-[70%]"
+                    className="w-[85%] h-[85%]"
                     style={{ color: lineColor }}
                 />
             </div>
