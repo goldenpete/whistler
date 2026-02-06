@@ -511,94 +511,115 @@ export default function SettingsView() {
                                                     if (!activeTheme) return null;
 
                                                     return (
-                                                        <div className="space-y-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                                <div className="space-y-2">
-                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Background</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <ColorPicker
-                                                                            color={activeTheme.colors['--background']}
-                                                                            onChange={(c) => {
-                                                                                setCustomBaseTheme(baseTheme, {
-                                                                                    colors: {
-                                                                                        ...activeTheme.colors,
-                                                                                        '--background': c
-                                                                                    }
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--background']}</span>
+                                                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button variant="outline" className="w-full border-dashed h-10">
+                                                                        <Palette className="mr-2 h-4 w-4" />
+                                                                        Customize Theme Colors
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-[340px] p-4" align="start">
+                                                                    <div className="space-y-4">
+                                                                        <div className="flex items-center justify-between border-b pb-2">
+                                                                            <h4 className="font-medium text-sm">Theme Colors</h4>
+                                                                            <span className="text-xs text-muted-foreground uppercase font-mono bg-muted/50 px-1.5 py-0.5 rounded">{baseTheme}</span>
+                                                                        </div>
+                                                                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                                                                            {/* Background */}
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Background</label>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <ColorPicker
+                                                                                        color={activeTheme.colors['--background']}
+                                                                                        onChange={(c) => {
+                                                                                            setCustomBaseTheme(baseTheme, {
+                                                                                                colors: {
+                                                                                                    ...activeTheme.colors,
+                                                                                                    '--background': c
+                                                                                                }
+                                                                                            });
+                                                                                        }}
+                                                                                    />
+                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--background']}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            {/* Sidebar */}
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sidebar</label>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <ColorPicker
+                                                                                        color={activeTheme.colors['--sidebar']}
+                                                                                        onChange={(c) => {
+                                                                                            setCustomBaseTheme(baseTheme, {
+                                                                                                colors: {
+                                                                                                    ...activeTheme.colors,
+                                                                                                    '--sidebar': c
+                                                                                                }
+                                                                                            });
+                                                                                        }}
+                                                                                    />
+                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--sidebar']}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            {/* Card */}
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Card / Panels</label>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <ColorPicker
+                                                                                        color={activeTheme.colors['--card']}
+                                                                                        onChange={(c) => {
+                                                                                            setCustomBaseTheme(baseTheme, {
+                                                                                                colors: {
+                                                                                                    ...activeTheme.colors,
+                                                                                                    '--card': c
+                                                                                                }
+                                                                                            });
+                                                                                        }}
+                                                                                    />
+                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--card']}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            {/* Foreground */}
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Foreground (Text)</label>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <ColorPicker
+                                                                                        color={activeTheme.colors['--foreground']}
+                                                                                        onChange={(c) => {
+                                                                                            setCustomBaseTheme(baseTheme, {
+                                                                                                colors: {
+                                                                                                    ...activeTheme.colors,
+                                                                                                    '--foreground': c
+                                                                                                }
+                                                                                            });
+                                                                                        }}
+                                                                                    />
+                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--foreground']}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            {/* Border */}
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Borders</label>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <ColorPicker
+                                                                                        color={activeTheme.colors['--border']}
+                                                                                        onChange={(c) => {
+                                                                                            setCustomBaseTheme(baseTheme, {
+                                                                                                colors: {
+                                                                                                    ...activeTheme.colors,
+                                                                                                    '--border': c
+                                                                                                }
+                                                                                            });
+                                                                                        }}
+                                                                                    />
+                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--border']}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sidebar</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <ColorPicker
-                                                                            color={activeTheme.colors['--sidebar']}
-                                                                            onChange={(c) => {
-                                                                                setCustomBaseTheme(baseTheme, {
-                                                                                    colors: {
-                                                                                        ...activeTheme.colors,
-                                                                                        '--sidebar': c
-                                                                                    }
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--sidebar']}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Card / Panels</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <ColorPicker
-                                                                            color={activeTheme.colors['--card']}
-                                                                            onChange={(c) => {
-                                                                                setCustomBaseTheme(baseTheme, {
-                                                                                    colors: {
-                                                                                        ...activeTheme.colors,
-                                                                                        '--card': c
-                                                                                    }
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--card']}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Foreground (Text)</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <ColorPicker
-                                                                            color={activeTheme.colors['--foreground']}
-                                                                            onChange={(c) => {
-                                                                                setCustomBaseTheme(baseTheme, {
-                                                                                    colors: {
-                                                                                        ...activeTheme.colors,
-                                                                                        '--foreground': c
-                                                                                    }
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--foreground']}</span>
-                                                                    </div>
-                                                                </div>
-                                                                 <div className="space-y-2">
-                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Borders</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <ColorPicker
-                                                                            color={activeTheme.colors['--border']}
-                                                                            onChange={(c) => {
-                                                                                setCustomBaseTheme(baseTheme, {
-                                                                                    colors: {
-                                                                                        ...activeTheme.colors,
-                                                                                        '--border': c
-                                                                                    }
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--border']}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                                </PopoverContent>
+                                                            </Popover>
                                                         </div>
                                                     );
                                                 })()}
