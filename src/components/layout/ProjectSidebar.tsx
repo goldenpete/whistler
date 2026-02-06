@@ -320,26 +320,46 @@ export default function ProjectSidebar() {
     useKeybind("ctrl+alt+arrowdown", () => {
         playSfx('cursor');
         if (location.pathname === '/storage') {
-            navigate('/docs');
+            if (projectStorages.length > 0) {
+                const currentIndex = projectStorages.findIndex(s => s.id === activeStorageId);
+                const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectStorages.length;
+                handleSelectStorage(projectStorages[nextIndex].id);
+            }
         } else if (location.pathname.startsWith('/docs')) {
-            navigate('/graphs');
+            if (projectDocs.length > 0) {
+                const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
+                const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectDocs.length;
+                handleSelectDoc(projectDocs[nextIndex].id);
+            }
         } else if (location.pathname.startsWith('/graphs')) {
-            navigate('/storage');
-        } else {
-            navigate('/storage');
+            if (projectGraphs.length > 0) {
+                const currentIndex = projectGraphs.findIndex(g => g.id === activeGraphId);
+                const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectGraphs.length;
+                handleSelectGraph(projectGraphs[nextIndex].id);
+            }
         }
     }, { preventDefault: true });
 
     useKeybind("ctrl+alt+arrowup", () => {
         playSfx('cursor');
         if (location.pathname === '/storage') {
-            navigate('/graphs');
+             if (projectStorages.length > 0) {
+                const currentIndex = projectStorages.findIndex(s => s.id === activeStorageId);
+                const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectStorages.length) % projectStorages.length;
+                handleSelectStorage(projectStorages[prevIndex].id);
+            }
         } else if (location.pathname.startsWith('/docs')) {
-            navigate('/storage');
+            if (projectDocs.length > 0) {
+                const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
+                const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectDocs.length) % projectDocs.length;
+                handleSelectDoc(projectDocs[prevIndex].id);
+            }
         } else if (location.pathname.startsWith('/graphs')) {
-            navigate('/docs');
-        } else {
-            navigate('/storage');
+            if (projectGraphs.length > 0) {
+                const currentIndex = projectGraphs.findIndex(g => g.id === activeGraphId);
+                const prevIndex = currentIndex === -1 ? 0 : (currentIndex - 1 + projectGraphs.length) % projectGraphs.length;
+                handleSelectGraph(projectGraphs[prevIndex].id);
+            }
         }
     }, { preventDefault: true });
 

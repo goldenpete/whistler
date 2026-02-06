@@ -75,7 +75,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>G</Key>]} />
                             
                             <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Sidebar</div>
-                            <ShortcutRow label="Cycle Tabs" icon={CaretRight} keys={[<Key>Ctrl</Key>, <Key>Alt</Key>, <Key>↑</Key>, <Key>↓</Key>]} />
+                            <ShortcutRow label="Cycle Items" icon={CaretRight} keys={[<Key>Ctrl</Key>, <Key>Alt</Key>, <Key>↑</Key>, <Key>↓</Key>]} />
                             
                             <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Legacy</div>
                             <ShortcutRow label="Storage" icon={HardDrives} keys={[<Key>1</Key>]} />
