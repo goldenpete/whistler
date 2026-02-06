@@ -40,6 +40,18 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
         const primaryColor = customTheme?.colors['--primary'] || '#f59e0b'; // Default to orange if not found
         const primaryForeground = customTheme?.colors['--primary-foreground'] || '#ffffff';
         
+        // Calculate luminance to determine if we should force black for contrast
+        const isLight = (color: string) => {
+            const hex = color.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return yiq >= 128;
+        };
+
+        const lineColor = isLight(primaryColor) ? '#000000' : primaryForeground;
+
         return (
             <div 
                 className={cn("shrink-0 flex items-center justify-center", className)}
@@ -52,7 +64,7 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
                 <WaveSine 
                     weight="bold" 
                     className="w-[70%] h-[70%]"
-                    style={{ color: primaryForeground }}
+                    style={{ color: lineColor }}
                 />
             </div>
         );
