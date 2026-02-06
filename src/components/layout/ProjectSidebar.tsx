@@ -110,6 +110,10 @@ const LOGO_MAP: Record<AccentTheme, string> = {
     emerald: whistlerLogoEmerald,
     sky: whistlerLogoSky,
     violet: whistlerLogoViolet,
+    'custom-accent-1': whistlerLogoOrange,
+    'custom-accent-2': whistlerLogoOrange,
+    'custom-accent-3': whistlerLogoOrange,
+    'custom-accent-4': whistlerLogoOrange,
 };
 
 

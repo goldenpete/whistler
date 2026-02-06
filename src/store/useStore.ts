@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { type AppState, type File, type Project, type Collection, type Highlight, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type BaseTheme, type CustomBaseTheme, type FloatingPlayerWindow } from '@/types';
+import { type AppState, type File, type Project, type Collection, type Highlight, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type CustomAccentTheme, type BaseTheme, type CustomBaseTheme, type FloatingPlayerWindow } from '@/types';
 
 interface User {
     id: string;
@@ -137,6 +137,8 @@ export interface AppStore extends AppState {
 
     // Theme Actions
     setAccentTheme: (theme: AccentTheme) => void;
+    setAccentThemeMode: (mode: 'presets' | 'custom') => void;
+    setCustomAccentTheme: (id: string, theme: Partial<CustomAccentTheme>) => void;
     setBaseTheme: (theme: BaseTheme) => void;
     setBaseThemeMode: (mode: 'presets' | 'custom') => void;
     setCustomBaseTheme: (id: string, theme: Partial<CustomBaseTheme>) => void;
@@ -307,6 +309,49 @@ const DEFAULT_CUSTOM_THEMES: Record<string, CustomBaseTheme> = {
     }
 };
 
+export const DEFAULT_CUSTOM_ACCENT_THEMES: Record<string, CustomAccentTheme> = {
+    'custom-accent-1': {
+        id: 'custom-accent-1',
+        name: 'Custom Accent 1',
+        colors: {
+            '--primary': '#f59e0b', // amber-500
+            '--primary-foreground': '#ffffff',
+            '--accent': '#78350f', // amber-900
+            '--accent-foreground': '#ffffff'
+        }
+    },
+    'custom-accent-2': {
+        id: 'custom-accent-2',
+        name: 'Custom Accent 2',
+        colors: {
+            '--primary': '#10b981', // emerald-500
+            '--primary-foreground': '#ffffff',
+            '--accent': '#064e3b', // emerald-900
+            '--accent-foreground': '#ffffff'
+        }
+    },
+    'custom-accent-3': {
+        id: 'custom-accent-3',
+        name: 'Custom Accent 3',
+        colors: {
+            '--primary': '#8b5cf6', // violet-500
+            '--primary-foreground': '#ffffff',
+            '--accent': '#4c1d95', // violet-900
+            '--accent-foreground': '#ffffff'
+        }
+    },
+    'custom-accent-4': {
+        id: 'custom-accent-4',
+        name: 'Custom Accent 4',
+        colors: {
+            '--primary': '#0ea5e9', // sky-500
+            '--primary-foreground': '#ffffff',
+            '--accent': '#0c4a6e', // sky-900
+            '--accent-foreground': '#ffffff'
+        }
+    }
+};
+
 export const useStore = create<AppStore>()(
     persist<AppStore>(
         (set) => ({
@@ -401,6 +446,8 @@ export const useStore = create<AppStore>()(
             // Doc State
             docViewMode: 'page',
             accentTheme: 'orange',
+            accentThemeMode: 'presets',
+            customAccentThemes: DEFAULT_CUSTOM_ACCENT_THEMES,
             baseTheme: 'zinc',
             baseThemeMode: 'presets',
             customBaseThemes: DEFAULT_CUSTOM_THEMES,
@@ -478,6 +525,20 @@ export const useStore = create<AppStore>()(
 
             setDocViewMode: (mode) => set({ docViewMode: mode }),
             setAccentTheme: (theme) => set({ accentTheme: theme }),
+            setAccentThemeMode: (mode) => set({ accentThemeMode: mode }),
+            setCustomAccentTheme: (id, theme) => set((state) => ({
+                customAccentThemes: {
+                    ...(state.customAccentThemes || DEFAULT_CUSTOM_ACCENT_THEMES),
+                    [id]: {
+                        ...(state.customAccentThemes?.[id] || DEFAULT_CUSTOM_ACCENT_THEMES[id]),
+                        ...theme,
+                        colors: {
+                            ...(state.customAccentThemes?.[id]?.colors || DEFAULT_CUSTOM_ACCENT_THEMES[id].colors),
+                            ...(theme.colors || {})
+                        }
+                    }
+                }
+            })),
             setBaseTheme: (theme) => set({ baseTheme: theme }),
             setBaseThemeMode: (mode) => set({ baseThemeMode: mode }),
             setCustomBaseTheme: (id, theme) => set((state) => ({

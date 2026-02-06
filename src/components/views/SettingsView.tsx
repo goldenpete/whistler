@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from "react";
-import { useStore, ambientMusicStorage } from "@/store/useStore";
+import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
 import { SidebarTrash } from "@/components/layout/SidebarTrash";
@@ -80,8 +80,12 @@ type SettingsTab = 'appearance' | 'music' | 'system' | 'sync' | 'history' | 'tra
 
 export default function SettingsView() {
     const {  
-        accentTheme, 
-        setAccentTheme, 
+        accentTheme: accentThemeOrUndefined, 
+        setAccentTheme,
+        accentThemeMode,
+        setAccentThemeMode,
+        customAccentThemes,
+        setCustomAccentTheme, 
         baseTheme, 
         setBaseTheme,
         baseThemeMode,
@@ -144,6 +148,8 @@ export default function SettingsView() {
     const [isDeletingLocal, setIsDeletingLocal] = useState(false);
     const [isDeletingReset, setIsDeletingReset] = useState(false);
     const [clearingCache, setClearingCache] = useState<string | null>(null);
+
+    const accentTheme = accentThemeOrUndefined || 'orange';
 
     const handleClearCache = async (type: 'files' | 'collections' | 'highlights') => {
         setClearingCache(type);
@@ -406,26 +412,227 @@ export default function SettingsView() {
                                 </h2>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <div className="space-y-4 p-5 rounded-lg border border-border bg-card/50">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between mb-2">
                                             <label className="text-sm font-medium">Accent Color</label>
-                                        </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                            {ACCENT_OPTIONS.map((option) => (
+                                            <div className="flex items-center bg-muted/50 rounded-lg p-1 border border-border/50">
                                                 <button
-                                                    key={option.id}
-                                                    onClick={() => setAccentTheme(option.id)}
+                                                    onClick={() => {
+                                                        setAccentThemeMode('presets');
+                                                        if (accentTheme.startsWith('custom-')) {
+                                                            setAccentTheme('orange');
+                                                        }
+                                                    }}
                                                     className={cn(
-                                                        "flex flex-col items-center gap-2 p-3 rounded-md border transition-all hover:bg-accent/50",
-                                                        accentTheme === option.id 
-                                                            ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
-                                                            : "border-border/50 bg-card"
+                                                        "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                                                        accentThemeMode === 'presets' 
+                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            : "text-muted-foreground hover:text-foreground"
                                                     )}
                                                 >
-                                                    <span className={cn("h-6 w-6 rounded-full shadow-sm", option.previewClass)} />
-                                                    <span className="text-xs font-medium">{option.label}</span>
+                                                    Presets
                                                 </button>
-                                            ))}
+                                                <button
+                                                    onClick={() => {
+                                                        setAccentThemeMode('custom');
+                                                        if (!accentTheme.startsWith('custom-')) {
+                                                            setAccentTheme('custom-accent-1');
+                                                        }
+                                                    }}
+                                                    className={cn(
+                                                        "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                                                        accentThemeMode === 'custom' 
+                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            : "text-muted-foreground hover:text-foreground"
+                                                    )}
+                                                >
+                                                    Custom
+                                                </button>
+                                            </div>
                                         </div>
+
+                                        {accentThemeMode === 'presets' ? (
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                {ACCENT_OPTIONS.map((option) => (
+                                                    <button
+                                                        key={option.id}
+                                                        onClick={() => setAccentTheme(option.id)}
+                                                        className={cn(
+                                                            "flex flex-col items-center gap-2 p-3 rounded-md border transition-all hover:bg-accent/50",
+                                                            accentTheme === option.id 
+                                                                ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
+                                                                : "border-border/50 bg-card"
+                                                        )}
+                                                    >
+                                                        <span className={cn("h-6 w-6 rounded-full shadow-sm", option.previewClass)} />
+                                                        <span className="text-xs font-medium">{option.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    {[1, 2, 3, 4].map((num) => {
+                                                        const id = `custom-accent-${num}`;
+                                                        const isActive = accentTheme === id;
+                                                        const theme = customAccentThemes?.[id];
+                                                        
+                                                        return (
+                                                            <button
+                                                                key={id}
+                                                                onClick={() => setAccentTheme(id as AccentTheme)}
+                                                                className={cn(
+                                                                    "flex flex-col items-center gap-2 p-3 rounded-md border transition-all hover:bg-accent/50",
+                                                                    isActive 
+                                                                        ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
+                                                                        : "border-border/50 bg-card"
+                                                                )}
+                                                            >
+                                                                <div className="h-6 w-6 rounded-full shadow-sm border border-border flex overflow-hidden ring-1 ring-border/20" style={{ backgroundColor: theme?.colors['--primary'] || '#f59e0b' }} />
+                                                                <span className="text-xs font-medium">Slot {num}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {(() => {
+                                                    if (!accentTheme.startsWith('custom-accent-') || !customAccentThemes) return null;
+                                                    const activeTheme = customAccentThemes[accentTheme];
+                                                    if (!activeTheme) return null;
+
+                                                    const themeSlots = [
+                                                        { key: '--primary', label: 'Primary' },
+                                                        { key: '--primary-foreground', label: 'Primary Text' },
+                                                        { key: '--accent', label: 'Accent' },
+                                                        { key: '--accent-foreground', label: 'Accent Text' },
+                                                    ] as const;
+
+                                                    return (
+                                                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                                                            <Dialog>
+                                                                <DialogTrigger asChild>
+                                                                    <Button variant="outline" className="w-full border-dashed h-10">
+                                                                        <Palette className="mr-2 h-4 w-4" />
+                                                                        Customize Accent Colors
+                                                                    </Button>
+                                                                </DialogTrigger>
+                                                                <DialogContent className="sm:max-w-[500px]">
+                                                                    <DialogHeader>
+                                                                        <DialogTitle>Customize Accent</DialogTitle>
+                                                                        <DialogDescription>
+                                                                            Fine-tune the colors for <span className="font-mono text-primary">{accentTheme}</span>.
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    
+                                                                    <div className="space-y-4 py-2">
+                                                                        {themeSlots.map((slot) => (
+                                                                            <div key={slot.key} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/50 transition-colors">
+                                                                                <div className="flex flex-col gap-1.5">
+                                                                                    <span className="text-sm font-medium">{slot.label}</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className="flex items-center gap-2 bg-background/50 p-1 rounded-lg border border-border/50">
+                                                                                        <div className="relative group">
+                                                                                            <div 
+                                                                                                className="w-8 h-8 rounded-md border shadow-sm cursor-pointer relative overflow-hidden ring-offset-background transition-all hover:scale-105 active:scale-95" 
+                                                                                                style={{ backgroundColor: activeTheme.colors[slot.key] }}
+                                                                                                title="Pick a color"
+                                                                                            >
+                                                                                                <input 
+                                                                                                    type="color" 
+                                                                                                    value={activeTheme.colors[slot.key]} 
+                                                                                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                                                                                        setCustomAccentTheme(accentTheme, {
+                                                                                                            colors: {
+                                                                                                                ...activeTheme.colors,
+                                                                                                                [slot.key]: e.target.value
+                                                                                                            }
+                                                                                                        });
+                                                                                                    }}
+                                                                                                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        
+                                                                                        <div className="w-px h-6 bg-border/50" />
+
+                                                                                        <Input
+                                                                                            value={activeTheme.colors[slot.key]}
+                                                                                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                                                                                setCustomAccentTheme(accentTheme, {
+                                                                                                    colors: {
+                                                                                                        ...activeTheme.colors,
+                                                                                                        [slot.key]: e.target.value
+                                                                                                    }
+                                                                                                });
+                                                                                            }}
+                                                                                            className="w-[80px] h-8 font-mono uppercase text-xs bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1"
+                                                                                            maxLength={7}
+                                                                                        />
+
+                                                                                        <div className="w-px h-6 bg-border/50" />
+
+                                                                                        <Popover>
+                                                                                            <PopoverTrigger asChild>
+                                                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                                                                    <Palette className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                            </PopoverTrigger>
+                                                                                            <PopoverContent className="w-[280px] p-3" align="end">
+                                                                                                <div className="grid grid-cols-8 gap-2">
+                                                                                                    {PRESET_COLORS.map((c) => (
+                                                                                                        <button
+                                                                                                            key={c}
+                                                                                                            className={cn(
+                                                                                                                "w-6 h-6 rounded-full border border-white/10 hover:scale-110 transition-transform shadow-sm",
+                                                                                                                activeTheme.colors[slot.key] === c && "ring-2 ring-white ring-offset-2 ring-offset-zinc-900"
+                                                                                                            )}
+                                                                                                            style={{ backgroundColor: c }}
+                                                                                                            onClick={() => {
+                                                                                                                setCustomAccentTheme(accentTheme, {
+                                                                                                                    colors: {
+                                                                                                                        ...activeTheme.colors,
+                                                                                                                        [slot.key]: c
+                                                                                                                    }
+                                                                                                                });
+                                                                                                            }}
+                                                                                                            title={c}
+                                                                                                        />
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            </PopoverContent>
+                                                                                        </Popover>
+                                                                                    </div>
+
+                                                                                    <Button 
+                                                                                        variant="ghost" 
+                                                                                        size="icon" 
+                                                                                        className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                                                                        onClick={() => {
+                                                                                            const defaultColor = DEFAULT_CUSTOM_ACCENT_THEMES[accentTheme]?.colors[slot.key];
+                                                                                            if (defaultColor) {
+                                                                                                setCustomAccentTheme(accentTheme, {
+                                                                                                    colors: {
+                                                                                                        ...activeTheme.colors,
+                                                                                                        [slot.key]: defaultColor
+                                                                                                    }
+                                                                                                });
+                                                                                            }
+                                                                                        }}
+                                                                                        title="Reset to default"
+                                                                                    >
+                                                                                        <ArrowCounterClockwise className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </DialogContent>
+                                                            </Dialog>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-4 p-5 rounded-lg border border-border bg-card/50">

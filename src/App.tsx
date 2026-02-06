@@ -83,9 +83,10 @@ export default function App() {
     throw new Error("Test error triggered manually via console");
   }
 
-  const { projects, accentTheme, baseTheme, customBaseThemes } = useStore(useShallow((state: AppStore) => ({
+  const { projects, accentTheme, customAccentThemes, baseTheme, customBaseThemes } = useStore(useShallow((state: AppStore) => ({
     projects: state.projects,
     accentTheme: state.accentTheme,
+    customAccentThemes: state.customAccentThemes,
     baseTheme: state.baseTheme,
     customBaseThemes: state.customBaseThemes,
   })));
@@ -117,11 +118,32 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     if (accentTheme) {
-      root.setAttribute("data-accent", accentTheme);
+      if (accentTheme.startsWith('custom-accent-')) {
+        const customTheme = customAccentThemes?.[accentTheme];
+        if (customTheme) {
+          Object.entries(customTheme.colors).forEach(([key, value]) => {
+            root.style.setProperty(key, value);
+            // Also set sidebar variants if not explicitly handled
+            if (key === '--primary') root.style.setProperty('--sidebar-primary', value);
+            if (key === '--primary-foreground') root.style.setProperty('--sidebar-primary-foreground', value);
+            if (key === '--accent') root.style.setProperty('--sidebar-accent', value);
+            if (key === '--accent-foreground') root.style.setProperty('--sidebar-accent-foreground', value);
+          });
+          root.removeAttribute("data-accent");
+        }
+      } else {
+        ['--primary', '--primary-foreground', '--accent', '--accent-foreground', '--sidebar-primary', '--sidebar-primary-foreground', '--sidebar-accent', '--sidebar-accent-foreground'].forEach(prop => {
+          root.style.removeProperty(prop);
+        });
+        root.setAttribute("data-accent", accentTheme);
+      }
     } else {
       root.removeAttribute("data-accent");
+      ['--primary', '--primary-foreground', '--accent', '--accent-foreground', '--sidebar-primary', '--sidebar-primary-foreground', '--sidebar-accent', '--sidebar-accent-foreground'].forEach(prop => {
+        root.style.removeProperty(prop);
+      });
     }
-  }, [accentTheme]);
+  }, [accentTheme, customAccentThemes]);
 
   useEffect(() => {
     const map: Partial<Record<AccentTheme, string>> = {

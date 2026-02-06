@@ -120,7 +120,7 @@ export interface HistoryEntry {
     timestamp: number;
 }
 
-export type AccentTheme = 'orange' | 'emerald' | 'violet' | 'sky';
+export type AccentTheme = 'orange' | 'emerald' | 'violet' | 'sky' | 'custom-accent-1' | 'custom-accent-2' | 'custom-accent-3' | 'custom-accent-4';
 export type BaseTheme = 'zinc' | 'stone' | 'neutral' | 'gray' | 'custom-1' | 'custom-2' | 'custom-3' | 'custom-4';
 
 export interface CustomBaseTheme {
@@ -132,6 +132,17 @@ export interface CustomBaseTheme {
         '--card': string;
         '--sidebar': string;
         '--border': string;
+    };
+}
+
+export interface CustomAccentTheme {
+    id: string;
+    name: string;
+    colors: {
+        '--primary': string;
+        '--primary-foreground': string;
+        '--accent': string;
+        '--accent-foreground': string;
     };
 }
 
@@ -170,6 +181,8 @@ export interface AppState {
 
     docViewMode?: 'page' | 'pageless' | 'pageless-wide';
     accentTheme?: AccentTheme;
+    accentThemeMode?: 'presets' | 'custom';
+    customAccentThemes?: Record<string, CustomAccentTheme>;
     baseTheme?: BaseTheme;
     baseThemeMode?: 'presets' | 'custom';
     customBaseThemes?: Record<string, CustomBaseTheme>;
