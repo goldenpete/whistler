@@ -74,14 +74,6 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Collections" icon={FileText} keys={[<Key>4</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>C</Key>]} />
                             <ShortcutRow label="Docs" icon={PencilSimple} keys={[<Key>2</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>D</Key>]} />
                             <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>3</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>G</Key>]} />
-
-                            <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">File Actions</div>
-                            <ShortcutRow label="Select All" icon={CheckSquare} keys={[<Key>Ctrl</Key>, <Key>A</Key>]} />
-                            <ShortcutRow label="Toggle Selection" icon={CheckSquare} keys={[<Key>Space</Key>]} />
-                            <ShortcutRow label="Rename" icon={PencilSimple} keys={[<Key>F2</Key>]} />
-                            <ShortcutRow label="Delete" icon={Trash} keys={[<Key>Delete</Key>]} />
-                            <ShortcutRow label="Go Up Directory" icon={CaretUp} keys={[<Key>Backspace</Key>]} />
-                            <ShortcutRow label="Exit Selection Mode" icon={CornersOut} keys={[<Key>Esc</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="storage" className="mt-0 space-y-1">
@@ -92,7 +84,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Delete Selection" icon={Trash} keys={[<Key>Delete</Key>]} />
                             <ShortcutRow label="Rename File" icon={PencilSimple} keys={[<Key>F2</Key>]} />
                             <ShortcutRow label="Go Up Directory" icon={CaretUp} keys={[<Key>Backspace</Key>]} />
-                            <ShortcutRow label="Clear Selection" icon={CornersOut} keys={[<Key>Esc</Key>]} />
+                            <ShortcutRow label="Exit Selection Mode" icon={CornersOut} keys={[<Key>Esc</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>Backspace</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="docs" className="mt-0 space-y-1">

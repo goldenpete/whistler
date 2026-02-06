@@ -288,6 +288,12 @@ export default function StorageView() {
     }, { preventDefault: true, disableInInput: true });
 
     useKeybind("backspace", () => {
+        if (selectionMode || selectedIds.size > 0) {
+            setSelectedIds(new Set());
+            setSelectionMode(false);
+            return;
+        }
+
         if (currentFolderId) {
              if (currentFolder && currentFolder.parentId) {
                  setSearchParams({ folderId: currentFolder.parentId });
