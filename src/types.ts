@@ -121,7 +121,19 @@ export interface HistoryEntry {
 }
 
 export type AccentTheme = 'orange' | 'emerald' | 'violet' | 'sky';
-export type BaseTheme = 'zinc' | 'stone' | 'neutral' | 'gray';
+export type BaseTheme = 'zinc' | 'stone' | 'neutral' | 'gray' | 'custom-1' | 'custom-2' | 'custom-3' | 'custom-4';
+
+export interface CustomBaseTheme {
+    id: string;
+    name: string;
+    colors: {
+        '--background': string;
+        '--foreground': string;
+        '--card': string;
+        '--sidebar': string;
+        '--border': string;
+    };
+}
 
 export interface FloatingPlayerWindow {
     id: string;
@@ -159,6 +171,8 @@ export interface AppState {
     docViewMode?: 'page' | 'pageless' | 'pageless-wide';
     accentTheme?: AccentTheme;
     baseTheme?: BaseTheme;
+    baseThemeMode?: 'presets' | 'custom';
+    customBaseThemes?: Record<string, CustomBaseTheme>;
     enableDefaultColorControls?: boolean;
     defaultColors?: {
         file?: string;

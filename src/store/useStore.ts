@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { type AppState, type File, type Project, type Collection, type Highlight, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type BaseTheme, type FloatingPlayerWindow } from '@/types';
+import { type AppState, type File, type Project, type Collection, type Highlight, type HistoryEntry, type Storage, type Graph, type Doc, type GraphNode, type GraphEdge, type AccentTheme, type BaseTheme, type CustomBaseTheme, type FloatingPlayerWindow } from '@/types';
 
 interface User {
     id: string;
@@ -138,6 +138,8 @@ export interface AppStore extends AppState {
     // Theme Actions
     setAccentTheme: (theme: AccentTheme) => void;
     setBaseTheme: (theme: BaseTheme) => void;
+    setBaseThemeMode: (mode: 'presets' | 'custom') => void;
+    setCustomBaseTheme: (id: string, theme: Partial<CustomBaseTheme>) => void;
     setEnableDefaultColorControls: (enabled: boolean) => void;
     setDefaultColor: (entity: 'file' | 'collection' | 'storage' | 'graph' | 'node', color: string) => void;
     setBackgroundImageUrl: (url: string | null) => void;
@@ -258,6 +260,53 @@ export const ambientMusicStorage = {
     clear: ambientMusicClear,
 };
 
+const DEFAULT_CUSTOM_THEMES: Record<string, CustomBaseTheme> = {
+    'custom-1': {
+        id: 'custom-1',
+        name: 'Custom 1',
+        colors: {
+            '--background': '#09090b', // zinc-950
+            '--foreground': '#fafafa', // zinc-50
+            '--card': '#18181b', // zinc-900
+            '--sidebar': '#18181b', // zinc-900
+            '--border': 'rgba(255, 255, 255, 0.1)'
+        }
+    },
+    'custom-2': {
+        id: 'custom-2',
+        name: 'Custom 2',
+        colors: {
+            '--background': '#0c0a09', // stone-950
+            '--foreground': '#fafaf9', // stone-50
+            '--card': '#1c1917', // stone-900
+            '--sidebar': '#1c1917', // stone-900
+            '--border': 'rgba(255, 255, 255, 0.1)'
+        }
+    },
+    'custom-3': {
+        id: 'custom-3',
+        name: 'Custom 3',
+        colors: {
+            '--background': '#0a0a0a', // neutral-950
+            '--foreground': '#fafafa', // neutral-50
+            '--card': '#171717', // neutral-900
+            '--sidebar': '#171717', // neutral-900
+            '--border': 'rgba(255, 255, 255, 0.1)'
+        }
+    },
+    'custom-4': {
+        id: 'custom-4',
+        name: 'Custom 4',
+        colors: {
+            '--background': '#030712', // gray-950 (cool gray)
+            '--foreground': '#f9fafb', // gray-50
+            '--card': '#111827', // gray-900
+            '--sidebar': '#111827', // gray-900
+            '--border': 'rgba(255, 255, 255, 0.1)'
+        }
+    }
+};
+
 export const useStore = create<AppStore>()(
     persist<AppStore>(
         (set) => ({
@@ -353,6 +402,8 @@ export const useStore = create<AppStore>()(
             docViewMode: 'page',
             accentTheme: 'orange',
             baseTheme: 'zinc',
+            baseThemeMode: 'presets',
+            customBaseThemes: DEFAULT_CUSTOM_THEMES,
             enableDefaultColorControls: false,
             defaultColors: {
                 file: '#f59e0b',
@@ -428,6 +479,13 @@ export const useStore = create<AppStore>()(
             setDocViewMode: (mode) => set({ docViewMode: mode }),
             setAccentTheme: (theme) => set({ accentTheme: theme }),
             setBaseTheme: (theme) => set({ baseTheme: theme }),
+            setBaseThemeMode: (mode) => set({ baseThemeMode: mode }),
+            setCustomBaseTheme: (id, theme) => set((state) => ({
+                customBaseThemes: {
+                    ...(state.customBaseThemes || DEFAULT_CUSTOM_THEMES),
+                    [id]: { ...(state.customBaseThemes || DEFAULT_CUSTOM_THEMES)[id], ...theme }
+                }
+            })),
             setEnableDefaultColorControls: (enabled) => set({ enableDefaultColorControls: enabled }),
             setDefaultColor: (entity, color) =>
                 set((state) => ({

@@ -612,30 +612,34 @@ export default function GraphView() {
     const PAN_STEP = 40;
     const FAST_PAN_STEP = 200;
 
+    const isMenuFocused = () => {
+        return !!document.activeElement?.closest('[role="menu"], [role="menuitem"], [data-radix-menu-content]');
+    };
+
     useKeybind("arrowup", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y + 40 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y + 40 }));
     }, { preventDefault: !isAddMenuOpen });
     useKeybind("arrowdown", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y - 40 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y - 40 }));
     }, { preventDefault: !isAddMenuOpen });
     useKeybind("arrowleft", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x + 40 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x + 40 }));
     }, { preventDefault: !isAddMenuOpen });
     useKeybind("arrowright", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x - 40 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x - 40 }));
     }, { preventDefault: !isAddMenuOpen });
     
     useKeybind("shift+arrowup", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y + 200 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y + 200 }));
     }, { preventDefault: !isAddMenuOpen });
     useKeybind("shift+arrowdown", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y - 200 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y - 200 }));
     }, { preventDefault: !isAddMenuOpen });
     useKeybind("shift+arrowleft", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x + 200 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x + 200 }));
     }, { preventDefault: !isAddMenuOpen });
     useKeybind("shift+arrowright", () => {
-        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x - 200 }));
+        if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x - 200 }));
     }, { preventDefault: !isAddMenuOpen });
 
     useKeybind("delete", () => {
@@ -657,6 +661,12 @@ export default function GraphView() {
             setPreviewNodeId(null);
         }
     }, { preventDefault: !isAddMenuOpen });
+
+    useKeybind("n", () => {
+        if (!nodeDialog.open && !isAddMenuOpen) {
+            setIsAddMenuOpen(true);
+        }
+    }, { preventDefault: true, disableInInput: true });
 
     const handleContextMenu = (e: MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect();
@@ -770,6 +780,10 @@ export default function GraphView() {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             setIsAddMenuOpen(false);
+                                        }
+                                        // Stop propagation for navigation keys to prevent graph interaction
+                                        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape'].includes(e.key)) {
+                                            e.stopPropagation();
                                         }
                                     }}
                                 >

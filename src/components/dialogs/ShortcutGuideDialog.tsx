@@ -63,7 +63,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                         <TabsContent value="global" className="mt-0 space-y-1">
                             <ShortcutRow label="Show Shortcuts" icon={CornersOut} keys={[<Key>Shift</Key>, <Key>?</Key>]} />
                             <ShortcutRow label="Spotlight Search" icon={MagnifyingGlass} keys={[<Key>Ctrl</Key>, <Key>K</Key>]} />
-                            <ShortcutRow label="Quick Menu" icon={CornersOut} keys={[<Key>Shift</Key>, <span className="text-xs text-zinc-500">x2</span>]} />
+                            <ShortcutRow label="Double Tap Menu" icon={CornersOut} keys={[<Key>Shift</Key>, <span className="text-xs text-zinc-500">x2</span>]} />
                             <ShortcutRow label="Settings" icon={Gear} keys={[<Key>Ctrl</Key>, <Key>,</Key>]} />
                         </TabsContent>
 
@@ -77,13 +77,6 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             
                             <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Sidebar</div>
                             <ShortcutRow label="Cycle Items" icon={CaretRight} keys={[<Key>Ctrl</Key>, <Key>Alt</Key>, <Key>↑</Key>, <Key>↓</Key>]} />
-                            
-                            <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Legacy</div>
-                            <ShortcutRow label="Storage" icon={HardDrives} keys={[<Key>1</Key>]} />
-                            <ShortcutRow label="Docs" icon={FileText} keys={[<Key>2</Key>]} />
-                            <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>3</Key>]} />
-                            <ShortcutRow label="Collections" icon={FileText} keys={[<Key>4</Key>]} />
-                            <ShortcutRow label="Home" icon={House} keys={[<Key>5</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="storage" className="mt-0 space-y-1">

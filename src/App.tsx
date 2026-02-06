@@ -83,10 +83,11 @@ export default function App() {
     throw new Error("Test error triggered manually via console");
   }
 
-  const { projects, accentTheme, baseTheme } = useStore(useShallow((state: AppStore) => ({
+  const { projects, accentTheme, baseTheme, customBaseThemes } = useStore(useShallow((state: AppStore) => ({
     projects: state.projects,
     accentTheme: state.accentTheme,
     baseTheme: state.baseTheme,
+    customBaseThemes: state.customBaseThemes,
   })));
   useSync();
 
@@ -166,11 +167,27 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     if (baseTheme) {
-      root.setAttribute("data-base", baseTheme);
+      if (baseTheme.startsWith('custom-')) {
+        const customTheme = customBaseThemes?.[baseTheme];
+        if (customTheme) {
+          Object.entries(customTheme.colors).forEach(([key, value]) => {
+            root.style.setProperty(key, value);
+          });
+          root.removeAttribute("data-base");
+        }
+      } else {
+        ['--background', '--foreground', '--card', '--sidebar', '--border'].forEach(prop => {
+          root.style.removeProperty(prop);
+        });
+        root.setAttribute("data-base", baseTheme);
+      }
     } else {
       root.removeAttribute("data-base");
+      ['--background', '--foreground', '--card', '--sidebar', '--border'].forEach(prop => {
+        root.style.removeProperty(prop);
+      });
     }
-  }, [baseTheme]);
+  }, [baseTheme, customBaseThemes]);
 
   if (projects.length === 0) {
     return <WelcomeView />;

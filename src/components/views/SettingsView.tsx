@@ -42,7 +42,7 @@ import { ColorPicker } from "@/components/ui/ColorPicker";
 import { GradientEditor } from "@/components/ui/GradientEditor";
 import { SettingsSync } from "@/components/settings/SettingsSync";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
-import type { AccentTheme, BaseTheme } from "@/types";
+import type { AccentTheme, BaseTheme, CustomBaseTheme } from "@/types";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
@@ -75,6 +75,10 @@ export default function SettingsView() {
         setAccentTheme, 
         baseTheme, 
         setBaseTheme,
+        baseThemeMode,
+        setBaseThemeMode,
+        customBaseThemes,
+        setCustomBaseTheme,
         backgroundImageOpacity,
         setBackgroundImageOpacity,
         backgroundImageUrl,
@@ -416,26 +420,190 @@ export default function SettingsView() {
                                     </div>
 
                                     <div className="space-y-4 p-5 rounded-lg border border-border bg-card/50">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between mb-2">
                                             <label className="text-sm font-medium">Base Theme</label>
-                                        </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                            {BASE_OPTIONS.map((option) => (
+                                            <div className="flex items-center bg-muted/50 rounded-lg p-1 border border-border/50">
                                                 <button
-                                                    key={option.id}
-                                                    onClick={() => setBaseTheme(option.id)}
+                                                    onClick={() => {
+                                                        setBaseThemeMode('presets');
+                                                        if (baseTheme?.startsWith('custom-')) {
+                                                            setBaseTheme('zinc');
+                                                        }
+                                                    }}
                                                     className={cn(
-                                                        "flex flex-col items-center gap-2 p-3 rounded-md border transition-all hover:bg-accent/50",
-                                                        baseTheme === option.id 
-                                                            ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
-                                                            : "border-border/50 bg-card"
+                                                        "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                                                        baseThemeMode === 'presets' 
+                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            : "text-muted-foreground hover:text-foreground"
                                                     )}
                                                 >
-                                                    <span className={cn("h-6 w-6 rounded-full shadow-sm", option.previewClass)} />
-                                                    <span className="text-xs font-medium">{option.label}</span>
+                                                    Presets
                                                 </button>
-                                            ))}
+                                                <button
+                                                    onClick={() => {
+                                                        setBaseThemeMode('custom');
+                                                        if (!baseTheme?.startsWith('custom-')) {
+                                                            setBaseTheme('custom-1');
+                                                        }
+                                                    }}
+                                                    className={cn(
+                                                        "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                                                        baseThemeMode === 'custom' 
+                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            : "text-muted-foreground hover:text-foreground"
+                                                    )}
+                                                >
+                                                    Custom
+                                                </button>
+                                            </div>
                                         </div>
+
+                                        {baseThemeMode === 'presets' ? (
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                {BASE_OPTIONS.map((option) => (
+                                                    <button
+                                                        key={option.id}
+                                                        onClick={() => setBaseTheme(option.id)}
+                                                        className={cn(
+                                                            "flex flex-col items-center gap-2 p-3 rounded-md border transition-all hover:bg-accent/50",
+                                                            baseTheme === option.id 
+                                                                ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
+                                                                : "border-border/50 bg-card"
+                                                        )}
+                                                    >
+                                                        <span className={cn("h-6 w-6 rounded-full shadow-sm", option.previewClass)} />
+                                                        <span className="text-xs font-medium">{option.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    {[1, 2, 3, 4].map((num) => {
+                                                        const id = `custom-${num}`;
+                                                        const isActive = baseTheme === id;
+                                                        const theme = customBaseThemes?.[id];
+                                                        
+                                                        return (
+                                                            <button
+                                                                key={id}
+                                                                onClick={() => setBaseTheme(id as BaseTheme)}
+                                                                className={cn(
+                                                                    "flex flex-col items-center gap-2 p-3 rounded-md border transition-all hover:bg-accent/50",
+                                                                    isActive 
+                                                                        ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
+                                                                        : "border-border/50 bg-card"
+                                                                )}
+                                                            >
+                                                                <div className="h-6 w-6 rounded-full shadow-sm border border-border flex overflow-hidden ring-1 ring-border/20">
+                                                                    <div className="w-1/2 h-full" style={{ backgroundColor: theme?.colors['--background'] || '#000' }} />
+                                                                    <div className="w-1/2 h-full" style={{ backgroundColor: theme?.colors['--sidebar'] || '#222' }} />
+                                                                </div>
+                                                                <span className="text-xs font-medium">Slot {num}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {(() => {
+                                                    if (!baseTheme?.startsWith('custom-') || !customBaseThemes) return null;
+                                                    const activeTheme = customBaseThemes[baseTheme];
+                                                    if (!activeTheme) return null;
+
+                                                    return (
+                                                        <div className="space-y-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                <div className="space-y-2">
+                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Background</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <ColorPicker
+                                                                            color={activeTheme.colors['--background']}
+                                                                            onChange={(c) => {
+                                                                                setCustomBaseTheme(baseTheme, {
+                                                                                    colors: {
+                                                                                        ...activeTheme.colors,
+                                                                                        '--background': c
+                                                                                    }
+                                                                                });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--background']}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sidebar</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <ColorPicker
+                                                                            color={activeTheme.colors['--sidebar']}
+                                                                            onChange={(c) => {
+                                                                                setCustomBaseTheme(baseTheme, {
+                                                                                    colors: {
+                                                                                        ...activeTheme.colors,
+                                                                                        '--sidebar': c
+                                                                                    }
+                                                                                });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--sidebar']}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Card / Panels</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <ColorPicker
+                                                                            color={activeTheme.colors['--card']}
+                                                                            onChange={(c) => {
+                                                                                setCustomBaseTheme(baseTheme, {
+                                                                                    colors: {
+                                                                                        ...activeTheme.colors,
+                                                                                        '--card': c
+                                                                                    }
+                                                                                });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--card']}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Foreground (Text)</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <ColorPicker
+                                                                            color={activeTheme.colors['--foreground']}
+                                                                            onChange={(c) => {
+                                                                                setCustomBaseTheme(baseTheme, {
+                                                                                    colors: {
+                                                                                        ...activeTheme.colors,
+                                                                                        '--foreground': c
+                                                                                    }
+                                                                                });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--foreground']}</span>
+                                                                    </div>
+                                                                </div>
+                                                                 <div className="space-y-2">
+                                                                    <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Borders</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <ColorPicker
+                                                                            color={activeTheme.colors['--border']}
+                                                                            onChange={(c) => {
+                                                                                setCustomBaseTheme(baseTheme, {
+                                                                                    colors: {
+                                                                                        ...activeTheme.colors,
+                                                                                        '--border': c
+                                                                                    }
+                                                                                });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">{activeTheme.colors['--border']}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
