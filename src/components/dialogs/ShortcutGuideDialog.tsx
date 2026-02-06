@@ -62,21 +62,26 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                     <ScrollArea className="h-[60vh] p-4">
                         <TabsContent value="global" className="mt-0 space-y-1">
                             <ShortcutRow label="Show Shortcuts" icon={CornersOut} keys={[<Key>Shift</Key>, <Key>?</Key>]} />
-                            <ShortcutRow label="Spotlight Search" icon={MagnifyingGlass} keys={[<Key>Ctrl</Key>, <Key>K</Key>]} />
+                            <ShortcutRow label="Spotlight Search" icon={MagnifyingGlass} keys={[<Key>Ctrl</Key>, <Key>K</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>/</Key>]} />
                             <ShortcutRow label="Double Tap Menu" icon={CornersOut} keys={[<Key>Shift</Key>, <span className="text-xs text-zinc-500">x2</span>]} />
                             <ShortcutRow label="Settings" icon={Gear} keys={[<Key>Ctrl</Key>, <Key>,</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="navigation" className="mt-0 space-y-1">
                             <div className="text-xs font-medium text-zinc-500 mb-2 mt-1 uppercase tracking-wider">Go To...</div>
-                            <ShortcutRow label="Home" icon={House} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>H</Key>]} />
-                            <ShortcutRow label="Storage" icon={HardDrives} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>S</Key>]} />
-                            <ShortcutRow label="Collections" icon={FileText} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>C</Key>]} />
-                            <ShortcutRow label="Docs" icon={FileText} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>D</Key>]} />
-                            <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>G</Key>, <span className="text-xs text-zinc-500">then</span>, <Key>G</Key>]} />
-                            
-                            <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">Sidebar</div>
-                            <ShortcutRow label="Cycle Items" icon={CaretRight} keys={[<Key>Ctrl</Key>, <Key>Alt</Key>, <Key>↑</Key>, <Key>↓</Key>]} />
+                            <ShortcutRow label="Home" icon={House} keys={[<Key>5</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>H</Key>]} />
+                            <ShortcutRow label="Storage" icon={HardDrives} keys={[<Key>1</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>S</Key>]} />
+                            <ShortcutRow label="Collections" icon={FileText} keys={[<Key>4</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>C</Key>]} />
+                            <ShortcutRow label="Docs" icon={PencilSimple} keys={[<Key>2</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>D</Key>]} />
+                            <ShortcutRow label="Graphs" icon={Graph} keys={[<Key>3</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>G</Key>, <Key>G</Key>]} />
+
+                            <div className="text-xs font-medium text-zinc-500 mb-2 mt-6 uppercase tracking-wider">File Actions</div>
+                            <ShortcutRow label="Select All" icon={CheckSquare} keys={[<Key>Ctrl</Key>, <Key>A</Key>]} />
+                            <ShortcutRow label="Toggle Selection" icon={CheckSquare} keys={[<Key>Space</Key>]} />
+                            <ShortcutRow label="Rename" icon={PencilSimple} keys={[<Key>F2</Key>]} />
+                            <ShortcutRow label="Delete" icon={Trash} keys={[<Key>Delete</Key>]} />
+                            <ShortcutRow label="Go Up Directory" icon={CaretUp} keys={[<Key>Backspace</Key>]} />
+                            <ShortcutRow label="Clear Selection" icon={CornersOut} keys={[<Key>Esc</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="storage" className="mt-0 space-y-1">
@@ -93,6 +98,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                         <TabsContent value="docs" className="mt-0 space-y-1">
                             <ShortcutRow label="Save Document" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>S</Key>]} />
                             <ShortcutRow label="Insert Link" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>K</Key>]} />
+                            <ShortcutRow label="Toggle View Mode" icon={FileText} keys={[<Key>Alt</Key>, <Key>L</Key>]} />
                             <ShortcutRow label="Bold" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>B</Key>]} />
                             <ShortcutRow label="Italic" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>I</Key>]} />
                             <ShortcutRow label="Underline" icon={FileText} keys={[<Key>Ctrl</Key>, <Key>U</Key>]} />

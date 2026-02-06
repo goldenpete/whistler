@@ -174,6 +174,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [isWindowed, setIsWindowed] = useState(floating);
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
     const [isScreenshotDialogOpen, setIsScreenshotDialogOpen] = useState(false);
+    const [isCaptureConfirmOpen, setIsCaptureConfirmOpen] = useState(false);
     const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
 
     const file = files.find(f => f.id === fileId);
@@ -216,15 +217,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             const video = videoRef.current;
             
             const promptForScreenCapture = () => {
-                 const tryScreenCapture = window.confirm(
-                    "Cannot capture screenshot directly because the video server blocks access.\n\n" +
-                    "Do you want to use Screen Capture instead?\n" +
-                    "(You will need to select this tab/window and then crop the image)"
-                );
-
-                if (tryScreenCapture) {
-                    handleScreenCapture();
-                }
+                setIsCaptureConfirmOpen(true);
             };
 
             // Try capturing from the main video first (fastest)
@@ -1654,6 +1647,48 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             navigate(-1);
                         }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isCaptureConfirmOpen} onOpenChange={setIsCaptureConfirmOpen}>
+                <AlertDialogContent portalContainer={containerRef.current}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Capture Screenshot</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cannot capture screenshot directly because the video server blocks access.
+                            <br /><br />
+                            Do you want to use Screen Capture instead?
+                            <br />
+                            (You will need to select this tab/window and then crop the image)
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleScreenCapture()}>
+                            OK
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isCaptureConfirmOpen} onOpenChange={setIsCaptureConfirmOpen}>
+                <AlertDialogContent portalContainer={containerRef.current}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Capture Screenshot</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cannot capture screenshot directly because the video server blocks access.
+                            <br /><br />
+                            Do you want to use Screen Capture instead?
+                            <br />
+                            (You will need to select this tab/window and then crop the image)
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleScreenCapture()}>
+                            OK
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
