@@ -177,6 +177,7 @@ function SortableCollectionItem({
     trashCollection,
     createMenuContent
 }: any) {
+    const navigate = useNavigate();
     const {
         attributes,
         listeners,
@@ -200,13 +201,14 @@ function SortableCollectionItem({
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
             <ContextMenu>
                 <ContextMenuTrigger className="block w-full">
-                    <Link
-                        to={`/collection/${collection.id}`}
-                        onClick={() => {
+                    <div
+                        onClick={(e: ReactMouseEvent) => {
+                            e.preventDefault();
                             playSfx('cursor');
                             handleSelectCollection(collection.id);
+                            navigate(`/collection/${collection.id}`);
                         }}
-                        className="block w-full group/item"
+                        className="block w-full group/item cursor-pointer"
                         title={isSlim ? collection.name : undefined}
                     >
                         <div className={cn(
@@ -246,7 +248,7 @@ function SortableCollectionItem({
                                 </div>
                             )}
                         </div>
-                    </Link>
+                    </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-48">
                     {createMenuContent}
