@@ -15,9 +15,10 @@ export function GlobalKeybinds() {
     // Sequence state
     const lastKeyTime = useRef<number>(0);
     const lastKey = useRef<string | null>(null);
+    const lastShiftTime = useRef<number>(0);
 
     // Toggle Settings
-    const { toggleSidebar, setSidebarView } = useStore();
+    const { toggleSidebar, setSidebarView, setDoubleTapMenuOpen, isDoubleTapMenuOpen } = useStore();
 
     const handleNavigation = (path: string, targetView: 'storage' | 'docs' | 'graphs' | 'main') => {
         navigate(path);
@@ -44,10 +45,25 @@ export function GlobalKeybinds() {
     useKeybind("4", () => handleNavigation("/collections", "main"), { preventDefault: true, disableInInput: true });
     useKeybind("5", () => handleNavigation("/", "main"), { preventDefault: true, disableInInput: true });
 
-    // --- Sequence Handler (G + Key) ---
+    // --- Sequence Handler (G + Key) & Double Shift ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if in input
+            // Double Shift Logic
+            if (e.key === "Shift" && !e.repeat) {
+                const now = Date.now();
+                if (now - lastShiftTime.current < 300) {
+                    // Double tap detected
+                    setDoubleTapMenuOpen(!isDoubleTapMenuOpen);
+                    lastShiftTime.current = 0; // Reset
+                } else {
+                    lastShiftTime.current = now;
+                }
+            } else if (e.key !== "Shift") {
+                // If any other key is pressed, reset the shift timer
+                lastShiftTime.current = 0;
+            }
+
+            // Ignore if in input for other shortcuts
             const target = e.target as HTMLElement;
             if (
                 target.tagName === 'INPUT' || 

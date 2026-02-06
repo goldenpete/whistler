@@ -30,15 +30,24 @@ import {
     Gear
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/toggle-switch";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogDescription,
+} from "@/components/ui/dialog";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { ColorPicker } from "@/components/ui/ColorPicker";
+import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import { GradientEditor } from "@/components/ui/GradientEditor";
 import { SettingsSync } from "@/components/settings/SettingsSync";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
@@ -510,116 +519,133 @@ export default function SettingsView() {
                                                     const activeTheme = customBaseThemes[baseTheme];
                                                     if (!activeTheme) return null;
 
+                                                    const themeSlots = [
+                                                        { key: '--background', label: 'Background', default: '#09090b' },
+                                                        { key: '--sidebar', label: 'Sidebar', default: '#09090b' },
+                                                        { key: '--card', label: 'Card / Panels', default: '#18181b' },
+                                                        { key: '--foreground', label: 'Foreground (Text)', default: '#fafafa' },
+                                                        { key: '--border', label: 'Borders', default: '#27272a' },
+                                                    ] as const;
+
                                                     return (
                                                         <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                                                            <Popover>
-                                                                <PopoverTrigger asChild>
+                                                            <Dialog>
+                                                                <DialogTrigger asChild>
                                                                     <Button variant="outline" className="w-full border-dashed h-10">
                                                                         <Palette className="mr-2 h-4 w-4" />
                                                                         Customize Theme Colors
                                                                     </Button>
-                                                                </PopoverTrigger>
-                                                                <PopoverContent className="w-[340px] p-4" align="start">
-                                                                    <div className="space-y-4">
-                                                                        <div className="flex items-center justify-between border-b pb-2">
-                                                                            <h4 className="font-medium text-sm">Theme Colors</h4>
-                                                                            <span className="text-xs text-muted-foreground uppercase font-mono bg-muted/50 px-1.5 py-0.5 rounded">{baseTheme}</span>
-                                                                        </div>
-                                                                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                                                                            {/* Background */}
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Background</label>
+                                                                </DialogTrigger>
+                                                                <DialogContent className="sm:max-w-[500px]">
+                                                                    <DialogHeader>
+                                                                        <DialogTitle>Customize Theme</DialogTitle>
+                                                                        <DialogDescription>
+                                                                            Fine-tune the colors for <span className="font-mono text-primary">{baseTheme}</span>.
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    
+                                                                    <div className="space-y-4 py-2">
+                                                                        {themeSlots.map((slot) => (
+                                                                            <div key={slot.key} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/50 transition-colors">
+                                                                                <div className="flex flex-col gap-1.5">
+                                                                                    <span className="text-sm font-medium">{slot.label}</span>
+                                                                                </div>
                                                                                 <div className="flex items-center gap-3">
-                                                                                    <ColorPicker
-                                                                                        color={activeTheme.colors['--background']}
-                                                                                        onChange={(c) => {
+                                                                                    <div className="flex items-center gap-2 bg-background/50 p-1 rounded-lg border border-border/50">
+                                                                                        <div className="relative group">
+                                                                                            <div 
+                                                                                                className="w-8 h-8 rounded-md border shadow-sm cursor-pointer relative overflow-hidden ring-offset-background transition-all hover:scale-105 active:scale-95" 
+                                                                                                style={{ backgroundColor: activeTheme.colors[slot.key] }}
+                                                                                                title="Pick a color"
+                                                                                            >
+                                                                                                <input 
+                                                                                                    type="color" 
+                                                                                                    value={activeTheme.colors[slot.key]} 
+                                                                                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                                                                                        setCustomBaseTheme(baseTheme, {
+                                                                                                            colors: {
+                                                                                                                ...activeTheme.colors,
+                                                                                                                [slot.key]: e.target.value
+                                                                                                            }
+                                                                                                        });
+                                                                                                    }}
+                                                                                                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        
+                                                                                        <div className="w-px h-6 bg-border/50" />
+
+                                                                                        <Input
+                                                                value={activeTheme.colors[slot.key]}
+                                                                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                                                    setCustomBaseTheme(baseTheme, {
+                                                                        colors: {
+                                                                            ...activeTheme.colors,
+                                                                            [slot.key]: e.target.value
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                                            className="w-[80px] h-8 font-mono uppercase text-xs bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1"
+                                                                                            maxLength={7}
+                                                                                        />
+
+                                                                                        <div className="w-px h-6 bg-border/50" />
+
+                                                                                        <Popover>
+                                                                                            <PopoverTrigger asChild>
+                                                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                                                                    <Palette className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                            </PopoverTrigger>
+                                                                                            <PopoverContent className="w-[280px] p-3" align="end">
+                                                                                                <div className="grid grid-cols-8 gap-2">
+                                                                                                    {PRESET_COLORS.map((c) => (
+                                                                                                        <button
+                                                                                                            key={c}
+                                                                                                            className={cn(
+                                                                                                                "w-6 h-6 rounded-full border border-white/10 hover:scale-110 transition-transform shadow-sm",
+                                                                                                                activeTheme.colors[slot.key] === c && "ring-2 ring-white ring-offset-2 ring-offset-zinc-900"
+                                                                                                            )}
+                                                                                                            style={{ backgroundColor: c }}
+                                                                                                            onClick={() => {
+                                                                                                                setCustomBaseTheme(baseTheme, {
+                                                                                                                    colors: {
+                                                                                                                        ...activeTheme.colors,
+                                                                                                                        [slot.key]: c
+                                                                                                                    }
+                                                                                                                });
+                                                                                                            }}
+                                                                                                            title={c}
+                                                                                                        />
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            </PopoverContent>
+                                                                                        </Popover>
+                                                                                    </div>
+
+                                                                                    <Button 
+                                                                                        variant="ghost" 
+                                                                                        size="icon" 
+                                                                                        className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                                                                        onClick={() => {
                                                                                             setCustomBaseTheme(baseTheme, {
                                                                                                 colors: {
                                                                                                     ...activeTheme.colors,
-                                                                                                    '--background': c
+                                                                                                    [slot.key]: slot.default
                                                                                                 }
                                                                                             });
                                                                                         }}
-                                                                                    />
-                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--background']}</span>
+                                                                                        title="Reset to default"
+                                                                                    >
+                                                                                        <ArrowCounterClockwise className="h-4 w-4" />
+                                                                                    </Button>
                                                                                 </div>
                                                                             </div>
-                                                                            {/* Sidebar */}
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sidebar</label>
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <ColorPicker
-                                                                                        color={activeTheme.colors['--sidebar']}
-                                                                                        onChange={(c) => {
-                                                                                            setCustomBaseTheme(baseTheme, {
-                                                                                                colors: {
-                                                                                                    ...activeTheme.colors,
-                                                                                                    '--sidebar': c
-                                                                                                }
-                                                                                            });
-                                                                                        }}
-                                                                                    />
-                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--sidebar']}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                            {/* Card */}
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Card / Panels</label>
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <ColorPicker
-                                                                                        color={activeTheme.colors['--card']}
-                                                                                        onChange={(c) => {
-                                                                                            setCustomBaseTheme(baseTheme, {
-                                                                                                colors: {
-                                                                                                    ...activeTheme.colors,
-                                                                                                    '--card': c
-                                                                                                }
-                                                                                            });
-                                                                                        }}
-                                                                                    />
-                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--card']}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                            {/* Foreground */}
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Foreground (Text)</label>
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <ColorPicker
-                                                                                        color={activeTheme.colors['--foreground']}
-                                                                                        onChange={(c) => {
-                                                                                            setCustomBaseTheme(baseTheme, {
-                                                                                                colors: {
-                                                                                                    ...activeTheme.colors,
-                                                                                                    '--foreground': c
-                                                                                                }
-                                                                                            });
-                                                                                        }}
-                                                                                    />
-                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--foreground']}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                            {/* Border */}
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Borders</label>
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <ColorPicker
-                                                                                        color={activeTheme.colors['--border']}
-                                                                                        onChange={(c) => {
-                                                                                            setCustomBaseTheme(baseTheme, {
-                                                                                                colors: {
-                                                                                                    ...activeTheme.colors,
-                                                                                                    '--border': c
-                                                                                                }
-                                                                                            });
-                                                                                        }}
-                                                                                    />
-                                                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded flex-1 select-all">{activeTheme.colors['--border']}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
+                                                                        ))}
                                                                     </div>
-                                                                </PopoverContent>
-                                                            </Popover>
+                                                                </DialogContent>
+                                                            </Dialog>
                                                         </div>
                                                     );
                                                 })()}

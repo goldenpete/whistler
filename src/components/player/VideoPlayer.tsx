@@ -1010,26 +1010,26 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             )}
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-nowrap min-w-0">
                                 <div className="flex items-center gap-2 group/edit cursor-pointer shrink-0" onClick={() => setEditOpen(true)}>
-                                    <h1 className="text-white font-medium text-base truncate max-w-[300px]">{file.name}</h1>
+                                    <h1 className="text-white font-medium text-base truncate max-w-[200px] sm:max-w-[300px]">{file.name}</h1>
                                 </div>
                                 <div 
-                                    className="flex items-center gap-2 group/url cursor-pointer min-w-0" 
+                                    className="flex items-center gap-2 group/url cursor-pointer min-w-0 shrink" 
                                     onClick={(e: MouseEvent) => {
                                         e.stopPropagation();
                                         setEditOpen(true);
                                     }}
                                 >
-                                    <span className="text-xs text-blue-400 truncate max-w-[200px] hover:underline font-mono">
+                                    <span className="text-xs text-blue-400 truncate max-w-[150px] sm:max-w-[200px] hover:underline font-mono">
                                         {localUrl || "Add URL..."}
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 mt-0.5">
-                                <div className="flex items-center gap-2 group/desc cursor-pointer" onClick={() => setEditOpen(true)}>
-                                    <span className="text-muted-foreground text-xs truncate max-w-[400px]">{file.description || "Click to add description..."}</span>
-                                    <PencilSimple className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" size={12} weight="bold" />
+                            <div className="flex items-center gap-3 mt-0.5 min-w-0">
+                                <div className="flex items-center gap-2 group/desc cursor-pointer min-w-0" onClick={() => setEditOpen(true)}>
+                                    <span className="text-muted-foreground text-xs truncate max-w-[250px] sm:max-w-[400px] block">{file.description || "Click to add description..."}</span>
+                                    <PencilSimple className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity shrink-0" size={12} weight="bold" />
                                 </div>
                             </div>
                         </div>

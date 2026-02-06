@@ -65,6 +65,10 @@ export interface AppStore extends AppState {
         search: boolean;
     };
 
+    // Double Tap Menu
+    isDoubleTapMenuOpen: boolean;
+    setDoubleTapMenuOpen: (isOpen: boolean) => void;
+
     // Actions
     setProjects: (projects: Project[]) => void;
     setFiles: (files: File[]) => void;
@@ -127,10 +131,6 @@ export interface AppStore extends AppState {
     setSidebarMode: (mode: 'full' | 'slim') => void;
     sidebarView: SidebarView;
     setSidebarView: (view: SidebarView) => void;
-
-    // Double Tap Menu State
-    isDoubleTapMenuOpen: boolean;
-    setDoubleTapMenuOpen: (open: boolean) => void;
 
     // Doc Actions
     setDocViewMode: (mode: 'page' | 'pageless' | 'pageless-wide') => void;
