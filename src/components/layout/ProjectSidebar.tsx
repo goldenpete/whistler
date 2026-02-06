@@ -1149,7 +1149,7 @@ export default function ProjectSidebar() {
                                     className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
                                 >
                                     <WhistlerLogo
-                                        className="rounded-md"
+                                        className="rounded-md mt-[1px]"
                                         width={24}
                                         height={24}
                                     />
