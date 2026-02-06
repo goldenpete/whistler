@@ -231,6 +231,19 @@ function DocEditor({ doc }: DocEditorProps) {
     useKeybind("ctrl+i", () => execCommand('italic'), { preventDefault: true });
     useKeybind("ctrl+u", () => execCommand('underline'), { preventDefault: true });
 
+    useKeybind("alt+l", () => {
+        const modes: ("page" | "pageless" | "pageless-wide")[] = ["page", "pageless", "pageless-wide"];
+        const currentIndex = modes.indexOf(viewMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        setViewMode(modes[nextIndex]);
+    }, { preventDefault: true });
+
+    useKeybind("escape", () => {
+        if (document.activeElement === editorRef.current) {
+            editorRef.current?.blur();
+        }
+    }, { preventDefault: true });
+
     const projectFiles = files.filter(
         (f: AppFile) => f.projectId === doc.projectId && !f.deleted
     );

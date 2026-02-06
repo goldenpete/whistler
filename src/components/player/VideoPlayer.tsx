@@ -1014,6 +1014,12 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 <div className="flex items-center gap-2 group/edit cursor-pointer shrink-0" onClick={() => setEditOpen(true)}>
                                     <h1 className="text-white font-medium text-base truncate max-w-[400px]">{file.name}</h1>
                                 </div>
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                                <div className="flex items-center gap-2 group/desc cursor-pointer" onClick={() => setEditOpen(true)}>
+                                    <span className="text-muted-foreground text-xs truncate">{file.description || "Click to add description..."}</span>
+                                    <PencilSimple className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" size={12} weight="bold" />
+                                </div>
                                 <div 
                                     className="flex items-center gap-2 group/url cursor-pointer min-w-0" 
                                     onClick={(e: MouseEvent) => {
@@ -1026,10 +1032,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     </span>
                                     <PencilSimple className="text-muted-foreground opacity-0 group-hover/url:opacity-100 transition-opacity shrink-0" size={12} weight="bold" />
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2 group/desc cursor-pointer mt-0.5" onClick={() => setEditOpen(true)}>
-                                <span className="text-muted-foreground text-xs truncate">{file.description || "Click to add description..."}</span>
-                                <PencilSimple className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" size={12} weight="bold" />
                             </div>
                         </div>
                     </div>
