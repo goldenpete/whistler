@@ -15,6 +15,8 @@ export function MainLayout() {
         backgroundImageUrl, 
         backgroundImageOpacity, 
         backgroundColor, 
+        backgroundGradient,
+        backgroundIsGradient,
         backgroundOverlayOpacity, 
         ambientMusicUrl, 
         ambientMusicName,
@@ -227,7 +229,9 @@ export function MainLayout() {
                 <div
                     className="absolute inset-0 z-0 pointer-events-none"
                     style={{
-                        backgroundColor: backgroundColor ?? '#000000',
+                        background: backgroundIsGradient 
+                            ? (backgroundGradient || 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)')
+                            : (backgroundColor || '#000000'),
                         opacity: backgroundOverlayOpacity ?? 0.5,
                     }}
                 />
