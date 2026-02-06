@@ -599,10 +599,10 @@ export default function GraphView() {
     }, { preventDefault: true, disableInInput: true });
 
     useKeybind("space", () => {
-        if (!nodeDialog.open) {
+        if (!nodeDialog.open && !isAddMenuOpen) {
             handleFitToView();
         }
-    }, { preventDefault: true, disableInInput: true });
+    }, { preventDefault: !isAddMenuOpen, disableInInput: true });
 
     useKeybind("=", () => setScale(s => Math.min(3, s * 1.2)), { preventDefault: true });
     useKeybind("+", () => setScale(s => Math.min(3, s * 1.2)), { preventDefault: true });
@@ -612,35 +612,51 @@ export default function GraphView() {
     const PAN_STEP = 40;
     const FAST_PAN_STEP = 200;
 
-    useKeybind("arrowup", () => setPan(p => ({ ...p, y: p.y + 40 })), { preventDefault: true });
-    useKeybind("arrowdown", () => setPan(p => ({ ...p, y: p.y - 40 })), { preventDefault: true });
-    useKeybind("arrowleft", () => setPan(p => ({ ...p, x: p.x + 40 })), { preventDefault: true });
-    useKeybind("arrowright", () => setPan(p => ({ ...p, x: p.x - 40 })), { preventDefault: true });
+    useKeybind("arrowup", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y + 40 }));
+    }, { preventDefault: !isAddMenuOpen });
+    useKeybind("arrowdown", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y - 40 }));
+    }, { preventDefault: !isAddMenuOpen });
+    useKeybind("arrowleft", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x + 40 }));
+    }, { preventDefault: !isAddMenuOpen });
+    useKeybind("arrowright", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x - 40 }));
+    }, { preventDefault: !isAddMenuOpen });
     
-    useKeybind("shift+arrowup", () => setPan(p => ({ ...p, y: p.y + 200 })), { preventDefault: true });
-    useKeybind("shift+arrowdown", () => setPan(p => ({ ...p, y: p.y - 200 })), { preventDefault: true });
-    useKeybind("shift+arrowleft", () => setPan(p => ({ ...p, x: p.x + 200 })), { preventDefault: true });
-    useKeybind("shift+arrowright", () => setPan(p => ({ ...p, x: p.x - 200 })), { preventDefault: true });
+    useKeybind("shift+arrowup", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y + 200 }));
+    }, { preventDefault: !isAddMenuOpen });
+    useKeybind("shift+arrowdown", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, y: p.y - 200 }));
+    }, { preventDefault: !isAddMenuOpen });
+    useKeybind("shift+arrowleft", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x + 200 }));
+    }, { preventDefault: !isAddMenuOpen });
+    useKeybind("shift+arrowright", () => {
+        if (!isAddMenuOpen) setPan(p => ({ ...p, x: p.x - 200 }));
+    }, { preventDefault: !isAddMenuOpen });
 
     useKeybind("delete", () => {
-        if (previewNodeId) {
+        if (previewNodeId && !isAddMenuOpen) {
             useStore.setState((state: AppStore) => ({
                 graphNodes: state.graphNodes.filter(n => n.id !== previewNodeId),
                 graphEdges: state.graphEdges.filter(e => e.fromId !== previewNodeId && e.toId !== previewNodeId)
             }));
             setPreviewNodeId(null);
         }
-    }, { preventDefault: true });
+    }, { preventDefault: !isAddMenuOpen });
 
     useKeybind("backspace", () => {
-        if (previewNodeId) {
+        if (previewNodeId && !isAddMenuOpen) {
             useStore.setState((state: AppStore) => ({
                 graphNodes: state.graphNodes.filter(n => n.id !== previewNodeId),
                 graphEdges: state.graphEdges.filter(e => e.fromId !== previewNodeId && e.toId !== previewNodeId)
             }));
             setPreviewNodeId(null);
         }
-    }, { preventDefault: true });
+    }, { preventDefault: !isAddMenuOpen });
 
     const handleContextMenu = (e: MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect();
