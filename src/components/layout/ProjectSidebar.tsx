@@ -1519,6 +1519,7 @@ export default function ProjectSidebar() {
                                                         onClick={() => {
                                                             playSfx('cursor');
                                                             navigate('/collections');
+                                                            setSidebarView('main');
                                                         }}
                                                         className={cn(
                                                             "text-muted-foreground hover:text-primary transition-colors",

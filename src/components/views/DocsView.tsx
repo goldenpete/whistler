@@ -8,7 +8,7 @@ import { useKeybind } from "@/hooks/use-keybind";
 import {
     NotePencil, TextB, TextItalic, ListBullets,
     TextUnderline, TextStrikethrough, TextAlignLeft, TextAlignCenter, TextAlignRight,
-    ArrowsCounterClockwise, ArrowsClockwise, Link, File, Rows, ArrowsOutSimple, Layout, Plus
+    CaretLeft, CaretRight, Link, File, Rows, ArrowsOutSimple, Layout, Plus
 } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -297,10 +297,10 @@ function DocEditor({ doc }: DocEditorProps) {
 
                 <div className="flex items-center gap-0.5">
                     <Button variant="ghost" size="icon" onClick={() => execCommand('undo')} className="size-8" title="Undo">
-                        <ArrowsCounterClockwise />
+                        <CaretLeft />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => execCommand('redo')} className="size-8" title="Redo">
-                        <ArrowsClockwise />
+                        <CaretRight />
                     </Button>
                 </div>
 

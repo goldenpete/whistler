@@ -19,6 +19,16 @@ export function GlobalKeybinds() {
     // Toggle Settings
     const { toggleSidebar, setSidebarView } = useStore();
 
+    const handleNavigation = (path: string, targetView: 'storage' | 'docs' | 'graphs' | 'main') => {
+        navigate(path);
+        const currentView = useStore.getState().sidebarView;
+        const isDoubleTapOpen = ['storage', 'docs', 'graphs'].includes(currentView);
+        
+        if (isDoubleTapOpen) {
+            setSidebarView(targetView);
+        }
+    };
+
     // --- Global Shortcuts ---
     useKeybind("shift+?", () => setShowGuide(prev => !prev), { preventDefault: true });
     
@@ -28,9 +38,9 @@ export function GlobalKeybinds() {
     }, { preventDefault: true });
 
     // --- Navigation Shortcuts (Legacy) ---
-    useKeybind("1", () => navigate("/storage"), { preventDefault: true, disableInInput: true });
-    useKeybind("2", () => navigate("/docs"), { preventDefault: true, disableInInput: true });
-    useKeybind("3", () => navigate("/graphs"), { preventDefault: true, disableInInput: true });
+    useKeybind("1", () => handleNavigation("/storage", "storage"), { preventDefault: true, disableInInput: true });
+    useKeybind("2", () => handleNavigation("/docs", "docs"), { preventDefault: true, disableInInput: true });
+    useKeybind("3", () => handleNavigation("/graphs", "graphs"), { preventDefault: true, disableInInput: true });
 
     // --- Sequence Handler (G + Key) ---
     useEffect(() => {
@@ -58,23 +68,23 @@ export function GlobalKeybinds() {
                 let handled = false;
                 switch (key) {
                     case 'h':
-                        navigate("/");
+                        handleNavigation("/", "main");
                         handled = true;
                         break;
                     case 's':
-                        navigate("/storage");
+                        handleNavigation("/storage", "storage");
                         handled = true;
                         break;
                     case 'c':
-                        navigate("/collections");
+                        handleNavigation("/collections", "main");
                         handled = true;
                         break;
                     case 'd':
-                        navigate("/docs");
+                        handleNavigation("/docs", "docs");
                         handled = true;
                         break;
                     case 'g':
-                        navigate("/graphs");
+                        handleNavigation("/graphs", "graphs");
                         handled = true;
                         break;
                 }
