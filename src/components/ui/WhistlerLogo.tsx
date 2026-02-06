@@ -4,7 +4,7 @@ import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
 import whistlerLogoSky from "../../../whistlerlogo-sky.png";
 import whistlerLogoViolet from "../../../whistlerlogo-violet.png";
-import type { AccentTheme } from "@/types";
+import { WaveSine } from "@phosphor-icons/react";
 
 const LOGO_MAP: Record<string, string> = {
     orange: whistlerLogoOrange,
@@ -34,28 +34,27 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
         );
     }
 
-    // If it's a custom theme, use masking
+    // If it's a custom theme, use SVG reconstruction
     if (accentTheme.startsWith('custom-')) {
         const customTheme = customAccentThemes?.[accentTheme];
         const primaryColor = customTheme?.colors['--primary'] || '#f59e0b'; // Default to orange if not found
+        const primaryForeground = customTheme?.colors['--primary-foreground'] || '#ffffff';
         
         return (
             <div 
-                className={cn("shrink-0", className)}
+                className={cn("shrink-0 flex items-center justify-center", className)}
                 style={{
                     width,
                     height,
                     backgroundColor: primaryColor,
-                    maskImage: `url(${whistlerLogoOrange})`,
-                    maskSize: 'contain',
-                    maskRepeat: 'no-repeat',
-                    maskPosition: 'center',
-                    WebkitMaskImage: `url(${whistlerLogoOrange})`,
-                    WebkitMaskSize: 'contain',
-                    WebkitMaskRepeat: 'no-repeat',
-                    WebkitMaskPosition: 'center',
                 }}
-            />
+            >
+                <WaveSine 
+                    weight="fill" 
+                    className="w-[60%] h-[60%]"
+                    style={{ color: primaryForeground }}
+                />
+            </div>
         );
     }
 
