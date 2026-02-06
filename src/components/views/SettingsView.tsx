@@ -543,30 +543,74 @@ export default function SettingsView() {
                                     <div className="space-y-6 p-5 rounded-lg border border-border bg-card/50 h-full">
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <label className="text-sm font-medium">Background Color</label>
-                                                <div className="flex items-center gap-2">
-                                                    <div 
-                                                        className="w-4 h-4 rounded-full border border-border" 
-                                                        style={{ backgroundColor: backgroundColor || '#000000' }}
-                                                    />
-                                                    <span className="text-xs font-mono text-muted-foreground">{backgroundColor || '#000000'}</span>
+                                                <label className="text-sm font-medium">Background Type</label>
+                                                <div className="flex bg-muted rounded-md p-1 gap-1">
+                                                    <button
+                                                        onClick={() => setBackgroundIsGradient(false)}
+                                                        className={cn(
+                                                            "px-3 py-1 rounded-sm text-xs font-medium transition-all",
+                                                            !backgroundIsGradient ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                        )}
+                                                    >
+                                                        Solid
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setBackgroundIsGradient(true)}
+                                                        className={cn(
+                                                            "px-3 py-1 rounded-sm text-xs font-medium transition-all",
+                                                            backgroundIsGradient ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                        )}
+                                                    >
+                                                        Gradient
+                                                    </button>
                                                 </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm font-medium">Background {backgroundIsGradient ? 'Gradient' : 'Color'}</label>
+                                                {!backgroundIsGradient ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <div 
+                                                            className="w-4 h-4 rounded-full border border-border" 
+                                                            style={{ backgroundColor: backgroundColor || '#000000' }}
+                                                        />
+                                                        <span className="text-xs font-mono text-muted-foreground">{backgroundColor || '#000000'}</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        <div 
+                                                            className="w-4 h-4 rounded-full border border-border" 
+                                                            style={{ background: backgroundGradient || 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)' }}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                             <Popover>
                                                 <PopoverTrigger asChild>
                                                     <Button variant="outline" className="w-full justify-start text-left font-normal">
                                                         <div 
                                                             className="w-4 h-4 rounded-full mr-2 border border-border" 
-                                                            style={{ backgroundColor: backgroundColor || '#000000' }}
+                                                            style={{ 
+                                                                background: backgroundIsGradient 
+                                                                    ? (backgroundGradient || 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)')
+                                                                    : (backgroundColor || '#000000') 
+                                                            }}
                                                         />
-                                                        Pick a color
+                                                        {backgroundIsGradient ? 'Edit Gradient' : 'Pick a color'}
                                                     </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-3">
-                                                    <ColorPicker
-                                                        color={backgroundColor || '#000000'}
-                                                        onChange={setBackgroundColor}
-                                                    />
+                                                <PopoverContent className="w-80 p-3">
+                                                    {backgroundIsGradient ? (
+                                                        <GradientEditor
+                                                            value={backgroundGradient || 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)'}
+                                                            onChange={setBackgroundGradient}
+                                                        />
+                                                    ) : (
+                                                        <ColorPicker
+                                                            color={backgroundColor || '#000000'}
+                                                            onChange={setBackgroundColor}
+                                                        />
+                                                    )}
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
