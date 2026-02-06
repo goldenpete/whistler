@@ -50,8 +50,8 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
                 }}
             >
                 <WaveSine 
-                    weight="fill" 
-                    className="w-[60%] h-[60%]"
+                    weight="bold" 
+                    className="w-[70%] h-[70%]"
                     style={{ color: primaryForeground }}
                 />
             </div>
