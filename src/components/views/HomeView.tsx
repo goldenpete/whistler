@@ -1,10 +1,6 @@
 import { useState, useRef, useEffect, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
-import whistlerLogoOrange from "../../../whistlerlogo.png";
-import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
-import whistlerLogoSky from "../../../whistlerlogo-sky.png";
-import whistlerLogoViolet from "../../../whistlerlogo-violet.png";
 import type { AccentTheme, File as AppFile, Doc, Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { formatTime } from "@/lib/utils";
@@ -60,17 +56,7 @@ import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
-
-const LOGO_MAP: Record<AccentTheme, string> = {
-    orange: whistlerLogoOrange,
-    emerald: whistlerLogoEmerald,
-    sky: whistlerLogoSky,
-    violet: whistlerLogoViolet,
-    'custom-accent-1': whistlerLogoOrange,
-    'custom-accent-2': whistlerLogoOrange,
-    'custom-accent-3': whistlerLogoOrange,
-    'custom-accent-4': whistlerLogoOrange,
-};
+import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 
 function getGreeting(username: string) {
     const hour = new Date().getHours();
@@ -859,10 +845,10 @@ export default function HomeView() {
         <div className="flex flex-col h-full bg-transparent overflow-hidden">
             {/* Top Bar */}
             <div className="flex items-center gap-4 p-8 pb-4 shrink-0">
-                <img 
-                    src={LOGO_MAP[(accentTheme as AccentTheme) || 'orange']}
-                    alt="Whistlerbox Logo" 
-                    className="w-12 h-12 rounded-xl pointer-events-none select-none shadow-sm"
+                <WhistlerLogo 
+                    className="rounded-xl pointer-events-none select-none shadow-sm"
+                    width={48}
+                    height={48}
                 />
                 <h1 className="text-2xl font-semibold tracking-tight text-foreground flex-1">
                     {getGreeting(username)}

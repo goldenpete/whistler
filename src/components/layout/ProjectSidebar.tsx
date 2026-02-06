@@ -100,24 +100,7 @@ import { PiPPlayer } from "@/components/player/PiPPlayer";
 import { exportProject, importProject, type ProjectExportData } from "@/utils/projectData";
 import { UploadSimple, DownloadSimple, ClockCounterClockwise } from "@phosphor-icons/react";
 import { playSfx } from "@/utils/sound";
-import whistlerLogoOrange from "../../../whistlerlogo.png";
-import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
-import whistlerLogoSky from "../../../whistlerlogo-sky.png";
-import whistlerLogoViolet from "../../../whistlerlogo-violet.png";
-
-const LOGO_MAP: Record<AccentTheme, string> = {
-    orange: whistlerLogoOrange,
-    emerald: whistlerLogoEmerald,
-    sky: whistlerLogoSky,
-    violet: whistlerLogoViolet,
-    'custom-accent-1': whistlerLogoOrange,
-    'custom-accent-2': whistlerLogoOrange,
-    'custom-accent-3': whistlerLogoOrange,
-    'custom-accent-4': whistlerLogoOrange,
-};
-
-
-
+import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 
 function SortableStorageItem({ storage, activeStorageId, handleSelectStorage, handleEditStorageClick, handleDeleteStorage }: any) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: storage.id });
@@ -899,10 +882,10 @@ export default function ProjectSidebar() {
                                     }}
                                     className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent hover:opacity-80 transition-colors"
                                 >
-                                    <img
-                                        src={LOGO_MAP[accentTheme as AccentTheme] || whistlerLogoOrange}
-                                        alt="Whistlerbox"
-                                        className="w-5 h-5 rounded-md"
+                                    <WhistlerLogo
+                                        className="rounded-md"
+                                        width={20}
+                                        height={20}
                                     />
                                 </button>
                             </TooltipTrigger>
@@ -1165,10 +1148,10 @@ export default function ProjectSidebar() {
                                     animate={{ opacity: 1 }}
                                     className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
                                 >
-                                    <img
-                                        src={LOGO_MAP[accentTheme as AccentTheme] || whistlerLogoOrange}
-                                        alt="Whistlerbox"
-                                        className="w-6 h-6 rounded-md"
+                                    <WhistlerLogo
+                                        className="rounded-md"
+                                        width={24}
+                                        height={24}
                                     />
                                     <span className="font-bold text-lg tracking-tight truncate">
                                         Whistlerbox
