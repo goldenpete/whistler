@@ -39,6 +39,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { ColorPicker } from "@/components/ui/ColorPicker";
+import { GradientEditor } from "@/components/ui/GradientEditor";
 import { SettingsSync } from "@/components/settings/SettingsSync";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
 import type { AccentTheme, BaseTheme } from "@/types";
@@ -80,6 +81,10 @@ export default function SettingsView() {
         setBackgroundImageUrl,
         backgroundColor,
         setBackgroundColor,
+        backgroundGradient,
+        setBackgroundGradient,
+        backgroundIsGradient,
+        setBackgroundIsGradient,
         backgroundOverlayOpacity,
         setBackgroundOverlayOpacity,
         setAmbientMusicUrl,
@@ -631,11 +636,13 @@ export default function SettingsView() {
                                             Preview
                                         </div>
                                             {/* Preview Logic - Matches MainLayout.tsx */}
-                                            {/* 1. Color Layer (Bottom) */}
+                                            {/* 1. Color/Gradient Layer (Bottom) */}
                                             <div 
                                                 className="absolute inset-0 z-0 pointer-events-none"
                                                 style={{ 
-                                                    backgroundColor: backgroundColor || '#000000',
+                                                    background: backgroundIsGradient 
+                                                        ? (backgroundGradient || 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)')
+                                                        : (backgroundColor || '#000000'),
                                                     opacity: backgroundOverlayOpacity
                                                 }}
                                             />

@@ -29,6 +29,8 @@ export function MainLayout() {
         backgroundImageUrl: state.backgroundImageUrl,
         backgroundImageOpacity: state.backgroundImageOpacity,
         backgroundColor: state.backgroundColor,
+        backgroundGradient: state.backgroundGradient,
+        backgroundIsGradient: state.backgroundIsGradient,
         backgroundOverlayOpacity: state.backgroundOverlayOpacity,
         ambientMusicUrl: state.ambientMusicUrl,
         ambientMusicName: state.ambientMusicName,

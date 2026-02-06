@@ -1017,7 +1017,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                             </div>
                             <div className="flex items-center gap-3 mt-0.5">
                                 <div className="flex items-center gap-2 group/desc cursor-pointer" onClick={() => setEditOpen(true)}>
-                                    <span className="text-muted-foreground text-xs truncate">{file.description || "Click to add description..."}</span>
+                                    <span className="text-muted-foreground text-xs truncate max-w-[300px]">{file.description || "Click to add description..."}</span>
                                     <PencilSimple className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" size={12} weight="bold" />
                                 </div>
                                 <div 

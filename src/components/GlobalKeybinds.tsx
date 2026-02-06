@@ -114,5 +114,45 @@ export function GlobalKeybinds() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [navigate]);
 
+    // --- Double Shift Menu ---
+    useEffect(() => {
+        let lastCleanShiftUpTime = 0;
+        let currentPressDirty = false;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Shift') {
+                currentPressDirty = false;
+            } else {
+                currentPressDirty = true;
+                lastCleanShiftUpTime = 0; // Invalidate sequence if any other key is pressed
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Shift') {
+                if (!currentPressDirty) {
+                    const now = Date.now();
+                    if (now - lastCleanShiftUpTime < 300) {
+                        useStore.getState().setDoubleTapMenuOpen(true);
+                        lastCleanShiftUpTime = 0;
+                    } else {
+                        lastCleanShiftUpTime = now;
+                    }
+                } else {
+                    // If dirty, we don't start a sequence, and we break any existing one
+                    lastCleanShiftUpTime = 0;
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, []);
+
     return <ShortcutGuideDialog open={showGuide} onOpenChange={setShowGuide} />;
 }

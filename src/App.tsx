@@ -11,6 +11,7 @@ import SettingsView from "@/components/views/SettingsView";
 import { Button } from "@/components/ui/button";
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
+import { DoubleTapMenu } from "@/components/DoubleTapMenu";
 import { useInitialData } from "@/hooks/useInitialData";
 import { useSync } from "@/hooks/useSync";
 
@@ -180,6 +181,7 @@ export default function App() {
     <>
       <GlobalKeybinds />
       <SpotlightSearch />
+      <DoubleTapMenu />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomeView />} />

@@ -33,6 +33,8 @@ export interface AppStore extends AppState {
     backgroundImageUrl: string | null;
     backgroundImageOpacity: number;
     backgroundColor: string;
+    backgroundGradient: string | null;
+    backgroundIsGradient: boolean;
     backgroundOverlayOpacity: number;
     ambientMusicUrl: string | null;
     ambientMusicName: string | null;
@@ -126,6 +128,10 @@ export interface AppStore extends AppState {
     sidebarView: SidebarView;
     setSidebarView: (view: SidebarView) => void;
 
+    // Double Tap Menu State
+    isDoubleTapMenuOpen: boolean;
+    setDoubleTapMenuOpen: (open: boolean) => void;
+
     // Doc Actions
     setDocViewMode: (mode: 'page' | 'pageless' | 'pageless-wide') => void;
 
@@ -137,6 +143,8 @@ export interface AppStore extends AppState {
     setBackgroundImageUrl: (url: string | null) => void;
     setBackgroundImageOpacity: (opacity: number) => void;
     setBackgroundColor: (color: string) => void;
+    setBackgroundGradient: (gradient: string) => void;
+    setBackgroundIsGradient: (isGradient: boolean) => void;
     setBackgroundOverlayOpacity: (opacity: number) => void;
     setAmbientMusicUrl: (url: string | null, name?: string | null, type?: string | null) => void;
     setAmbientMusicPaused: (paused: boolean) => void;
@@ -290,6 +298,8 @@ export const useStore = create<AppStore>()(
             backgroundImageUrl: null,
             backgroundImageOpacity: 0.2,
             backgroundColor: '#000000',
+            backgroundGradient: null,
+            backgroundIsGradient: false,
             backgroundOverlayOpacity: 0.5,
             ambientMusicUrl: null,
             ambientMusicName: null,
@@ -331,6 +341,10 @@ export const useStore = create<AppStore>()(
             isSidebarCollapsed: false,
             sidebarMode: 'slim',
             sidebarView: 'main',
+
+            // Double Tap Menu State
+            isDoubleTapMenuOpen: false,
+            setDoubleTapMenuOpen: (open) => set({ isDoubleTapMenuOpen: open }),
             
             // Spotlight State
             isSpotlightOpen: false,
@@ -425,6 +439,8 @@ export const useStore = create<AppStore>()(
             setBackgroundImageUrl: (url) => set({ backgroundImageUrl: url }),
             setBackgroundImageOpacity: (opacity) => set({ backgroundImageOpacity: Math.max(0, Math.min(1, opacity)) }),
             setBackgroundColor: (color) => set({ backgroundColor: color }),
+            setBackgroundGradient: (gradient) => set({ backgroundGradient: gradient }),
+            setBackgroundIsGradient: (isGradient) => set({ backgroundIsGradient: isGradient }),
             setBackgroundOverlayOpacity: (opacity) => set({ backgroundOverlayOpacity: opacity }),
             setAmbientMusicPaused: (paused) => set({ ambientMusicPaused: paused }),
             setAmbientMusicUrl: (url, name = null, type = null) => set({ ambientMusicUrl: url, ambientMusicName: name, ambientMusicType: type, ambientMusicPaused: false }),
