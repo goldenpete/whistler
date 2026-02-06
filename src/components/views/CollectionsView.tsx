@@ -10,7 +10,8 @@ import {
     Square,
     Trash,
     PencilSimple,
-    Plus
+    Plus,
+    Tag
 } from "@phosphor-icons/react";
 import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { Button } from "@/components/ui/button";
@@ -250,6 +251,7 @@ export default function CollectionsView() {
                     {sortedCollections.map(collection => {
                         const Icon = getIcon(collection.icon);
                         const isSelected = selectedIds.has(collection.id);
+                        const hasHighlights = highlights.some(h => h.collectionId === collection.id);
                         
                         return (
                             <div
@@ -265,6 +267,15 @@ export default function CollectionsView() {
                                     highlights={highlights} 
                                     files={files} 
                                 />
+
+                                {!hasHighlights && (
+                                    <div 
+                                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                                        style={{ color: collection.color }}
+                                    >
+                                        <Tag size={180} weight="fill" />
+                                    </div>
+                                )}
 
                                 {/* Gradient Overlay for Text Readability */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/40 to-transparent pointer-events-none" />
