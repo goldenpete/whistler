@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
-import StorageView from "@/components/views/StorageView";
-import FileView from "@/components/views/FileView";
-import DocsView from "@/components/views/DocsView";
-import GraphView from "@/components/views/GraphView";
-import CollectionView from "@/components/views/CollectionView";
-import CollectionsView from "@/components/views/CollectionsView";
-import SettingsView from "@/components/views/SettingsView";
 import { Button } from "@/components/ui/button";
+
+const StorageView = lazy(() => import("@/components/views/StorageView"));
+const FileView = lazy(() => import("@/components/views/FileView"));
+const DocsView = lazy(() => import("@/components/views/DocsView"));
+const GraphView = lazy(() => import("@/components/views/GraphView"));
+const CollectionView = lazy(() => import("@/components/views/CollectionView"));
+const CollectionsView = lazy(() => import("@/components/views/CollectionsView"));
+const SettingsView = lazy(() => import("@/components/views/SettingsView"));
+const HomeView = lazy(() => import("@/components/views/HomeView"));
+const WelcomeView = lazy(() => import("@/components/views/WelcomeView").then(module => ({ default: module.WelcomeView })));
+
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
 import { DoubleTapMenu } from "@/components/DoubleTapMenu";
@@ -17,10 +21,8 @@ import { useSync } from "@/hooks/useSync";
 
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
-import { WelcomeView } from "@/components/views/WelcomeView";
 import type { AccentTheme } from "@/types";
 
-import HomeView from "@/components/views/HomeView";
 import { preloadSounds, playSfx } from "@/utils/sound";
 
 const NotFoundView = () => {
@@ -212,28 +214,34 @@ export default function App() {
   }, [baseTheme, customBaseThemes]);
 
   if (projects.length === 0) {
-    return <WelcomeView />;
-  }
-
-  useInitialData(); // This is now a no-op
-  return (
-    <>
-      <GlobalKeybinds />
-      <SpotlightSearch />
-      <DoubleTapMenu />
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomeView />} />
-          <Route path="/storage" element={<StorageView />} />
-          <Route path="/file/:fileId" element={<FileView />} />
-          <Route path="/docs" element={<DocsView />} />
-          <Route path="/graphs" element={<GraphView />} />
-          <Route path="/collections" element={<CollectionsView />} />
-          <Route path="/collection/:id" element={<CollectionView />} />
-          <Route path="/settings" element={<SettingsView />} />
-          <Route path="*" element={<NotFoundView />} />
-        </Route>
-      </Routes>
+      return (
+        <Suspense fallback={<div className="h-screen w-screen bg-background" />}>
+          <WelcomeView />
+        </Suspense>
+      );
+    }
+  
+    useInitialData(); // This is now a no-op
+    return (
+      <>
+        <GlobalKeybinds />
+        <SpotlightSearch />
+        <DoubleTapMenu />
+        <Suspense fallback={<div className="h-full w-full bg-background" />}>
+          <Routes>
+            <Route element={<MainLayout />}>
+            <Route path="/" element={<HomeView />} />
+            <Route path="/storage" element={<StorageView />} />
+            <Route path="/file/:fileId" element={<FileView />} />
+            <Route path="/docs" element={<DocsView />} />
+            <Route path="/graphs" element={<GraphView />} />
+            <Route path="/collections" element={<CollectionsView />} />
+            <Route path="/collection/:id" element={<CollectionView />} />
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="*" element={<NotFoundView />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </>
   );
 }

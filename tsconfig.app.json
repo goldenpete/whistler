@@ -33,9 +33,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "radix-ui": [
-        "./src/types/radix-ui.d.ts"
       ]
     }
   },

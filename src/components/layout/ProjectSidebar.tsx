@@ -45,6 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useKeybind } from "@/hooks/use-keybind";
 
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
@@ -314,7 +315,41 @@ export default function ProjectSidebar() {
         sidebarView,
         setSidebarView,
         accentTheme,
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        projects: state.projects,
+        activeCollectionId: state.activeCollectionId,
+        activeProjectId: state.activeProjectId,
+        collections: state.collections,
+        storages: state.storages,
+        activeStorageId: state.activeStorageId,
+        docs: state.docs,
+        activeDocId: state.activeDocId,
+        graphs: state.graphs,
+        activeGraphId: state.activeGraphId,
+        addProject: state.addProject,
+        addStorage: state.addStorage,
+        updateStorage: state.updateStorage,
+        deleteStorage: state.deleteStorage,
+        setActiveProject: state.setActiveProject,
+        updateCollection: state.updateCollection,
+        updateGraph: state.updateGraph,
+        trashGraph: state.trashGraph,
+        updateDoc: state.updateDoc,
+        trashDoc: state.trashDoc,
+        updateProject: state.updateProject,
+        deleteProject: state.deleteProject,
+        trashCollection: state.trashCollection,
+        pipFileId: state.pipFileId,
+        isPipOpen: state.isPipOpen,
+        isSidebarCollapsed: state.isSidebarCollapsed,
+        toggleSidebarCollapse: state.toggleSidebarCollapse,
+        sidebarMode: state.sidebarMode,
+        setSidebarMode: state.setSidebarMode,
+        syncStatus: state.syncStatus,
+        sidebarView: state.sidebarView,
+        setSidebarView: state.setSidebarView,
+        accentTheme: state.accentTheme,
+    })));
 
     const activeCollection = collections.find((c: Collection) => c.id === activeCollectionId);
 

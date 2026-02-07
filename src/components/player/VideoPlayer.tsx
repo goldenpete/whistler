@@ -1195,7 +1195,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                         setIsPlaying(false);
                                         removeAmbientMusicSuppression('main-player');
                                     }}
-                                    onTimeUpdate={handleTimeUpdate}
+                                    onTimeUpdate={() => handleTimeUpdate()}
                                     onLoadedMetadata={handleLoadedMetadata}
                                     loop={isLooping}
                                 />

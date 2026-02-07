@@ -199,7 +199,7 @@ export function NodeDialog({
         <div className="space-y-2">
             <Label>Select File</Label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-zinc-800 rounded-md bg-zinc-900 text-sm text-muted-foreground overflow-hidden">
+                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
                     {selectedFile ? (
                         <>
                             <FileIcon className="shrink-0 text-foreground" />
@@ -265,7 +265,7 @@ export function NodeDialog({
         <div className="space-y-2">
             <Label>Select Highlight</Label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-11 px-3 py-1.5 flex items-center gap-3 border border-zinc-800 rounded-md bg-zinc-900 text-sm text-muted-foreground overflow-hidden">
+                <div className="flex-1 h-11 px-3 py-1.5 flex items-center gap-3 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
                     {selectedHighlight && selectedHighlightFile ? (
                         <>
                             <div className="flex flex-col items-center justify-center gap-1">
@@ -282,7 +282,7 @@ export function NodeDialog({
                                 <div className="text-xs font-medium truncate text-foreground">
                                     {selectedHighlight.note || selectedHighlight.text || selectedHighlightFile.name}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground truncate">
+                                <div className="text-xs text-muted-foreground truncate">
                                     {selectedHighlightFile.name}
                                 </div>
                             </div>
@@ -315,10 +315,10 @@ export function NodeDialog({
         <div className="space-y-2">
             <Label>Select Document</Label>
             <Select value={selectedDocId} onValueChange={setSelectedDocId}>
-                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                <SelectTrigger className="bg-secondary/50 border-border">
                     <SelectValue placeholder="Choose a document..." />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                <SelectContent>
                     {projectDocs.map((d: Doc) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
@@ -329,10 +329,10 @@ export function NodeDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{mode === 'create' ? `Add ${type.charAt(0).toUpperCase() + type.slice(1)}` : 'Edit Node'}</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
+                    <DialogDescription>
                         {mode === 'create' ? 'Configure new node details.' : 'Update node details.'}
                     </DialogDescription>
                 </DialogHeader>
@@ -345,7 +345,7 @@ export function NodeDialog({
                             value={title} 
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)} 
                             placeholder={type === 'note' ? "Note Title" : "Optional (defaults to selection)"}
-                            className="bg-zinc-900 border-zinc-800"
+                            className="bg-secondary/50 border-border"
                         />
                     </div>
 
@@ -358,10 +358,10 @@ export function NodeDialog({
                         <div className="space-y-2">
                             <Label>Select Collection</Label>
                             <Select value={selectedCollectionId} onValueChange={setSelectedCollectionId}>
-                                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                <SelectTrigger className="bg-secondary/50 border-border">
                                     <SelectValue placeholder="Choose a collection..." />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                <SelectContent>
                                     {projectCollections.map((c: Collection) => (
                                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                     ))}
@@ -377,7 +377,7 @@ export function NodeDialog({
                                 value={linkUrl} 
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)} 
                                 placeholder="https://..."
-                                className="bg-zinc-900 border-zinc-800"
+                                className="bg-secondary/50 border-border"
                             />
                         </div>
                     )}
@@ -388,7 +388,7 @@ export function NodeDialog({
 
                     <div className="space-y-2 pt-2">
                         <div className="text-xs font-medium text-muted-foreground">Preview</div>
-                        <div className="border border-zinc-800 rounded-lg bg-zinc-950/70 p-3 space-y-2">
+                        <div className="border border-border rounded-lg bg-secondary/20 p-3 space-y-2">
                             {type === 'file' && selectedFile && (
                                 <div className="flex items-center gap-3">
                                     <FileIcon className="text-muted-foreground" />

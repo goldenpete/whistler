@@ -477,7 +477,7 @@ function DocEditor({ doc }: DocEditorProps) {
                         onInput={handleInput}
                         onBlur={saveContent}
                         className={cn(
-                            "prose prose-sm dark:prose-invert focus:outline-none transition-all duration-300 ease-in-out [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
+                            "prose prose-sm dark:prose-invert focus:outline-none transition-all duration-300 ease-in-out [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:list-outside [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:list-outside",
                             getContainerClass()
                         )}
                         suppressContentEditableWarning
@@ -486,10 +486,10 @@ function DocEditor({ doc }: DocEditorProps) {
             </div>
 
             <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-                <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800 text-white">
+                <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
                         <DialogTitle>Insert Link</DialogTitle>
-                        <DialogDescription className="text-zinc-400">
+                        <DialogDescription>
                             Choose an external URL or an internal link.
                         </DialogDescription>
                     </DialogHeader>
@@ -497,13 +497,13 @@ function DocEditor({ doc }: DocEditorProps) {
                         <div className="flex items-center gap-2">
                             <Button
                                 type="button"
-                                variant={linkMode === "external" ? "default" : "ghost"}
+                                variant={linkMode === "external" ? "secondary" : "ghost"}
                                 size="sm"
                                 className={cn(
                                     "h-8 px-3 text-xs",
                                     linkMode === "external"
-                                        ? "bg-white text-black hover:bg-white/90"
-                                        : "text-zinc-300 hover:text-white"
+                                        ? "font-medium"
+                                        : "text-muted-foreground"
                                 )}
                                 onClick={() => setLinkMode("external")}
                             >
@@ -511,13 +511,13 @@ function DocEditor({ doc }: DocEditorProps) {
                             </Button>
                             <Button
                                 type="button"
-                                variant={linkMode === "internal" ? "default" : "ghost"}
+                                variant={linkMode === "internal" ? "secondary" : "ghost"}
                                 size="sm"
                                 className={cn(
                                     "h-8 px-3 text-xs",
                                     linkMode === "internal"
-                                        ? "bg-white text-black hover:bg-white/90"
-                                        : "text-zinc-300 hover:text-white"
+                                        ? "font-medium"
+                                        : "text-muted-foreground"
                                 )}
                                 onClick={() => setLinkMode("internal")}
                             >
@@ -531,7 +531,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                     placeholder="https://example.com"
                                     value={linkUrl}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)}
-                                    className="h-9 bg-zinc-900 border-zinc-700"
+                                    className="h-9 bg-secondary/50 border-border"
                                     autoFocus
                                 />
                             </div>
@@ -545,8 +545,8 @@ function DocEditor({ doc }: DocEditorProps) {
                                         className={cn(
                                             "h-7 px-3",
                                             internalType === "file"
-                                                ? "bg-zinc-100 text-black hover:bg-zinc-200"
-                                                : "text-zinc-300 hover:text-white"
+                                                ? "bg-secondary text-secondary-foreground"
+                                                : "text-muted-foreground hover:text-foreground"
                                         )}
                                         onClick={() => setInternalType("file")}
                                     >
@@ -561,8 +561,8 @@ function DocEditor({ doc }: DocEditorProps) {
                                         className={cn(
                                             "h-7 px-3",
                                             internalType === "collection"
-                                                ? "bg-zinc-100 text-black hover:bg-zinc-200"
-                                                : "text-zinc-300 hover:text-white"
+                                                ? "bg-secondary text-secondary-foreground"
+                                                : "text-muted-foreground hover:text-foreground"
                                         )}
                                         onClick={() => setInternalType("collection")}
                                     >
@@ -577,8 +577,8 @@ function DocEditor({ doc }: DocEditorProps) {
                                         className={cn(
                                             "h-7 px-3",
                                             internalType === "highlight"
-                                                ? "bg-zinc-100 text-black hover:bg-zinc-200"
-                                                : "text-zinc-300 hover:text-white"
+                                                ? "bg-secondary text-secondary-foreground"
+                                                : "text-muted-foreground hover:text-foreground"
                                         )}
                                         onClick={() => setInternalType("highlight")}
                                     >
@@ -588,7 +588,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                 {internalType === "file" ? (
                                     <div className="py-2 space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-zinc-800 rounded-md bg-zinc-900 text-sm text-muted-foreground overflow-hidden">
+                                            <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
                                                 {internalId ? (
                                                     (() => {
                                                         const f = projectFiles.find(f => f.id === internalId);
@@ -609,7 +609,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                className="shrink-0 bg-zinc-900 border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                                                className="shrink-0 bg-secondary/50 border-border hover:bg-secondary text-foreground"
                                                 onClick={() => setFilePickerOpen(true)}
                                             >
                                                 Browse...
@@ -623,7 +623,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                         />
                                     </div>
                                 ) : (
-                                    <ScrollArea className="max-h-56 rounded-md border border-zinc-800 bg-zinc-900/60">
+                                    <ScrollArea className="max-h-56 rounded-md border border-border bg-secondary/20">
                                         <div className="p-2 space-y-1">
                                             {internalType === "collection" &&
                                                 (projectCollections.length > 0 ? (
@@ -636,17 +636,17 @@ function DocEditor({ doc }: DocEditorProps) {
                                                                 "w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left transition-colors",
                                                                 internalId === c.id
                                                                     ? "bg-primary/20 text-primary"
-                                                                    : "hover:bg-zinc-800/80 text-zinc-200"
+                                                                    : "hover:bg-secondary/50 text-foreground"
                                                             )}
                                                         >
                                                             <span className="truncate">{c.name}</span>
-                                                            <span className="ml-2 text-[10px] text-zinc-400 uppercase">
+                                                            <span className="ml-2 text-[10px] text-muted-foreground uppercase">
                                                                 collection
                                                             </span>
                                                         </button>
                                                     ))
                                                 ) : (
-                                                    <div className="px-2 py-1.5 text-xs text-zinc-500">
+                                                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
                                                         No collections in this project
                                                     </div>
                                                 ))}
@@ -669,13 +669,13 @@ function DocEditor({ doc }: DocEditorProps) {
                                                                     "w-full flex flex-col px-2 py-1.5 rounded text-xs text-left transition-colors",
                                                                     internalId === t.id
                                                                         ? "bg-primary/20 text-primary"
-                                                                        : "hover:bg-zinc-800/80 text-zinc-200"
+                                                                        : "hover:bg-secondary/50 text-foreground"
                                                                 )}
                                                             >
                                                                 <span className="truncate">
                                                                     {t.note || "Highlight"}
                                                                 </span>
-                                                                <span className="text-[10px] text-zinc-400 truncate">
+                                                                <span className="text-[10px] text-muted-foreground truncate">
                                                                     {file?.name || "File"} • {mins}:
                                                                     {secs}
                                                                 </span>
@@ -683,7 +683,7 @@ function DocEditor({ doc }: DocEditorProps) {
                                                         );
                                                     })
                                                 ) : (
-                                                    <div className="px-2 py-1.5 text-xs text-zinc-500">
+                                                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
                                                         No highlights in this project
                                                     </div>
                                                 ))}

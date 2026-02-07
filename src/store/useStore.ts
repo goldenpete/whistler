@@ -1356,7 +1356,7 @@ export const useStore = create<AppStore>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state: AppStore) => {
                 const { ambientMusicUrl, ambientMusicSuppressedBy, floatingPlayerWindows, ...rest } = state;
-                return rest;
+                return rest as AppStore;
             },
         }
     )
