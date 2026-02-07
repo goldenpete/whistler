@@ -31,7 +31,6 @@ class WhistlerApp {
         this.player = new Player(this);
         this.ui = new UIManager(this);
         this.modals = new ModalManager(this);
-        this.tooltips = new TooltipManager();
         this.exportImport = new ExportImportManager(this);
         this.sync = new SyncManager(this);
         this.graph = new GraphController(this);
@@ -12637,79 +12636,6 @@ class GraphController {
 
         // Restore context
         ctx.restore();
-    }
-}
-
-// ============================================
-// TooltipManager
-// ============================================
-class TooltipManager {
-    constructor() {
-        this.tooltip = document.getElementById('global-tooltip');
-        this.target = null;
-
-        // Bind events globally to catch dynamic elements
-        document.addEventListener('mouseover', (e) => this.onMouseOver(e));
-        document.addEventListener('mouseout', (e) => this.onMouseOut(e));
-        document.addEventListener('mousemove', (e) => this.onMouseMove(e));
-    }
-
-    onMouseOver(e) {
-        const target = e.target.closest('[data-tooltip]');
-        if (target) {
-            this.target = target;
-            const text = target.getAttribute('data-tooltip');
-            if (text) {
-                this.show(text);
-            }
-        }
-    }
-
-    onMouseOut(e) {
-        const target = e.target.closest('[data-tooltip]');
-        if (target) {
-            // Only hide if we're leaving the current target
-            if (target === this.target) {
-                this.hide();
-                this.target = null;
-            }
-        }
-    }
-
-    onMouseMove(e) {
-        if (this.target && this.tooltip.classList.contains('visible')) {
-            // Position tooltip to right of cursor + offset
-            const x = e.clientX + 12;
-            const y = e.clientY + 12;
-
-            // Boundary checks
-            const rect = this.tooltip.getBoundingClientRect();
-            let finalX = x;
-            let finalY = y;
-
-            // Split screen logic: Right half -> Tooltip goes Left. Left half -> Tooltip goes Right.
-            if (e.clientX > window.innerWidth / 2) {
-                // Shift to left of cursor
-                finalX = e.clientX - rect.width - 12;
-            }
-            // If close to bottom edge
-            if (y + rect.height > window.innerHeight - 10) {
-                finalY = e.clientY - rect.height - 10;
-            }
-
-            this.tooltip.style.transform = `translate(${finalX}px, ${finalY}px)`;
-        }
-    }
-
-    show(text) {
-        if (!this.tooltip) return;
-        this.tooltip.textContent = text;
-        this.tooltip.classList.add('visible');
-    }
-
-    hide() {
-        if (!this.tooltip) return;
-        this.tooltip.classList.remove('visible');
     }
 }
 
