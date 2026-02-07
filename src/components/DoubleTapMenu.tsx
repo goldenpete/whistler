@@ -59,8 +59,8 @@ export function DoubleTapMenu() {
 
     return (
         <Dialog open={isDoubleTapMenuOpen} onOpenChange={setDoubleTapMenuOpen}>
-            <DialogContent className="max-w-5xl bg-transparent border-none shadow-none p-0 outline-none">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4">
+            <DialogContent className="w-full max-w-5xl sm:max-w-5xl bg-transparent border-none shadow-none p-0 outline-none">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 p-4">
                     {menuItems.map((item, index) => (
                         <motion.button
                             key={item.id}
@@ -69,24 +69,25 @@ export function DoubleTapMenu() {
                             transition={{ delay: index * 0.05 }}
                             onClick={() => handleNavigate(item.path)}
                             className={cn(
-                                "flex flex-col items-center justify-center p-6 rounded-xl border transition-all duration-200 group text-center h-48",
+                                "flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-200 group text-center h-56",
                                 "bg-zinc-950/80 backdrop-blur-md border-zinc-800/50",
-                                "hover:bg-zinc-900 hover:border-zinc-700 hover:shadow-2xl hover:scale-105"
+                                "hover:bg-zinc-900 hover:border-zinc-700 hover:shadow-2xl hover:scale-105",
+                                "focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-zinc-900"
                             )}
                         >
-                            <div className="mb-4 text-zinc-400 group-hover:text-white transition-colors duration-300">
-                                <item.icon size={48} weight="thin" />
+                            <div className="mb-6 text-zinc-400 group-hover:text-white transition-colors duration-300">
+                                <item.icon size={42} weight="thin" />
                             </div>
                             
-                            <h3 className="text-lg font-medium text-zinc-200 group-hover:text-white mb-1 tracking-tight">
+                            <h3 className="text-lg font-medium text-zinc-200 group-hover:text-white mb-2 tracking-tight">
                                 {item.label}
                             </h3>
                             
-                            <p className="text-xs text-zinc-500 group-hover:text-zinc-400 mb-4">
+                            <p className="text-xs text-zinc-500 group-hover:text-zinc-400 mb-6 leading-relaxed px-2">
                                 {item.description}
                             </p>
 
-                            <div className="mt-auto px-2 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-500 group-hover:border-zinc-600 transition-colors">
+                            <div className="mt-auto px-2.5 py-1 rounded-md bg-zinc-900/50 border border-zinc-800/50 text-[10px] font-mono text-zinc-500 group-hover:border-zinc-600 group-hover:text-zinc-400 transition-colors">
                                 {item.shortcut}
                             </div>
                         </motion.button>

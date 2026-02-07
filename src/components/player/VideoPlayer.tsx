@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -1705,6 +1713,26 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 imageUrl={screenshotUrl}
                 container={containerRef.current}
             />
+
+            <Dialog open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
+                <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800" portalContainer={containerRef.current}>
+                    <DialogHeader>
+                        <DialogTitle>Change Accent Color</DialogTitle>
+                        <DialogDescription>
+                            Choose a color to identify this file throughout the app.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2">
+                        <ColorPicker
+                            color={file.color || "#ffffff"}
+                            onChange={(color) => updateFile(file.id, { color })}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={() => setColorPickerOpen(false)}>Done</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
         </>
     );
