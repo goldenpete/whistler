@@ -44,13 +44,32 @@ export function GlobalKeybinds() {
     useKeybind("global.settings", () => navigate("/settings"), { preventDefault: true });
 
     // Toggle Sidebar
-    useKeybind("global.toggleSidebar", () => {
+    useKeybind("global.toggleSidebar", (e) => {
+        // Check for Docs Override condition:
+        // If user is typing in docs (contentEditable), and keybinds are defaults (Ctrl+B),
+        // we prioritize "Bold" over "Toggle Sidebar".
+        const isDocsContext = location.pathname.startsWith('/docs');
+        const target = e.target as HTMLElement;
+        const isEditing = target.isContentEditable || target.tagName === 'TEXTAREA' || target.tagName === 'INPUT';
+        
+        if (isDocsContext && isEditing) {
+            const sidebarCustom = customKeybinds["global.toggleSidebar"];
+            const boldCustom = customKeybinds["docs.bold"];
+            
+            // If neither is customized, let the default "Bold" behavior happen (don't toggle sidebar)
+            if (!sidebarCustom && !boldCustom) {
+                return; 
+            }
+        }
+
+        e.preventDefault();
+
         if (location.pathname.includes('/file/')) {
             toggleSidebar(!isSidebarOpen);
         } else {
             toggleSidebarCollapse();
         }
-    }, { preventDefault: true });
+    });
 
     // --- Navigation Shortcuts (Single Key / Custom) ---
     // Note: These useKeybind calls handle cases where the user has customized the key to a single chord,
