@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePrevious } from "@/hooks/usePrevious";
@@ -255,7 +255,9 @@ export function MainLayout() {
                         transition={{ duration: 0.15, ease: "easeInOut" }}
                         className="h-full w-full relative z-10"
                     >
-                        {currentOutlet}
+                        <Suspense fallback={<div className="h-full w-full bg-transparent" />}>
+                            {currentOutlet}
+                        </Suspense>
                     </motion.div>
                 </AnimatePresence>
             </main>

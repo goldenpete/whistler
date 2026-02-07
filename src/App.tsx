@@ -222,26 +222,25 @@ export default function App() {
     }
   
     useInitialData(); // This is now a no-op
-    return (
-      <>
-        <GlobalKeybinds />
-        <SpotlightSearch />
-        <DoubleTapMenu />
-        <Suspense fallback={<div className="h-full w-full bg-background" />}>
-          <Routes>
-            <Route element={<MainLayout />}>
-            <Route path="/" element={<HomeView />} />
-            <Route path="/storage" element={<StorageView />} />
-            <Route path="/file/:fileId" element={<FileView />} />
-            <Route path="/docs" element={<DocsView />} />
-            <Route path="/graphs" element={<GraphView />} />
-            <Route path="/collections" element={<CollectionsView />} />
-            <Route path="/collection/:id" element={<CollectionView />} />
-            <Route path="/settings" element={<SettingsView />} />
-            <Route path="*" element={<NotFoundView />} />
-          </Route>
-        </Routes>
-      </Suspense>
+  return (
+    <>
+      <GlobalKeybinds />
+      <SpotlightSearch />
+      <DoubleTapMenu />
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<HomeView />} />
+          <Route path="/storage/:id" element={<StorageView />} />
+          <Route path="/file/:id" element={<FileView />} />
+          <Route path="/docs/:id?" element={<DocsView />} />
+          <Route path="/graph/:id?" element={<GraphView />} />
+          <Route path="/collection/:id" element={<CollectionView />} />
+          <Route path="/collections" element={<CollectionsView />} />
+          <Route path="/settings" element={<SettingsView />} />
+          <Route path="/welcome" element={<WelcomeView />} />
+          <Route path="*" element={<NotFoundView />} />
+        </Route>
+      </Routes>
     </>
   );
 }
