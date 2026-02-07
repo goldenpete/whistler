@@ -119,12 +119,8 @@ export function KeybindsSettings() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-lg font-medium text-zinc-200">Keyboard Shortcuts</h2>
-                    <p className="text-sm text-zinc-400">Customize keybindings for quick access.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="relative w-64">
+                <div className="flex-1">
+                    <div className="relative w-full max-w-sm">
                         <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 w-3.5 h-3.5" />
                         <Input 
                             value={searchQuery}
@@ -133,6 +129,8 @@ export function KeybindsSettings() {
                             className="pl-8 h-7 text-xs bg-zinc-900/50 border-zinc-800 focus:bg-zinc-900"
                         />
                     </div>
+                </div>
+                <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={resetKeybinds}>
                         <ArrowCounterClockwise className="mr-2 h-4 w-4" />
                         Reset Defaults
