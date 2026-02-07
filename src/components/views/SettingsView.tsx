@@ -953,7 +953,7 @@ export default function SettingsView() {
                                                         >
                                                             <span
                                                                 className="h-3 w-3 rounded-full border border-border/60"
-                                                                style={{ backgroundColor: (defaultColors && defaultColors[entity.key]) || "hsl(var(--primary))" }}
+                                                                style={{ backgroundColor: (defaultColors && defaultColors[entity.key]) ?? "hsl(var(--primary))" }}
                                                             />
                                                             <span className="text-xs font-medium">{entity.label}</span>
                                                         </button>

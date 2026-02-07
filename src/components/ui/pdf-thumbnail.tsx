@@ -2,6 +2,10 @@ import { useState, useEffect, memo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+// import { globalWorker } from "@/pdf-worker"; // Removed or implicit? Assuming implicit or handled by pdfjs setup elsewhere. 
+// Wait, the original file had it. I should keep it if I can.
+// But the read didn't show the content of pdf-worker.
+// I will keep the imports exactly as they were in the Read output.
 import { globalWorker } from "@/pdf-worker";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 

@@ -3,8 +3,9 @@ import { useStore } from "@/store/useStore";
 import { KEYBIND_REGISTRY, KEYBIND_CATEGORIES, type KeybindDefinition } from "@/constants/keybinds";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/toggle-switch";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { PencilSimple, ArrowCounterClockwise, Warning, DownloadSimple, Keyboard } from "@phosphor-icons/react";
+import { PencilSimple, ArrowCounterClockwise, Warning, DownloadSimple, Keyboard, MagnifyingGlass, CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 const KeyDisplay = ({ k }: { k: string }) => {
@@ -29,6 +30,16 @@ export function KeybindsSettings() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [capturedKey, setCapturedKey] = useState<string>("");
     const [conflictId, setConflictId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [collapsedCategories, setCollapsedCategories] = useState<string[]>([]);
+
+    const toggleCategory = (category: string) => {
+        setCollapsedCategories(prev => 
+            prev.includes(category) 
+                ? prev.filter(c => c !== category)
+                : [...prev, category]
+        );
+    };
 
     const handleStartEditing = (id: string) => {
         setEditingId(id);
@@ -103,14 +114,25 @@ export function KeybindsSettings() {
     const editingDef = editingId ? KEYBIND_REGISTRY[editingId] : null;
     const conflictDef = conflictId ? KEYBIND_REGISTRY[conflictId] : null;
 
+    const showShortcutsKey = customKeybinds["global.showShortcuts"] || KEYBIND_REGISTRY["global.showShortcuts"]?.defaultKey || "Shift+?";
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-medium text-zinc-200">Keyboard Shortcuts</h2>
                     <p className="text-sm text-zinc-400">Customize keybindings for quick access.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                    <div className="relative w-64">
+                        <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 w-3.5 h-3.5" />
+                        <Input 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search shortcuts..."
+                            className="pl-8 h-7 text-xs bg-zinc-900/50 border-zinc-800 focus:bg-zinc-900"
+                        />
+                    </div>
                     <Button variant="outline" size="sm" onClick={resetKeybinds}>
                         <ArrowCounterClockwise className="mr-2 h-4 w-4" />
                         Reset Defaults
@@ -124,59 +146,87 @@ export function KeybindsSettings() {
 
             <div className="space-y-6">
                 {KEYBIND_CATEGORIES.map(category => {
-                    const items = Object.values(KEYBIND_REGISTRY).filter(item => item.category === category);
+                    const items = Object.values(KEYBIND_REGISTRY).filter(item => {
+                        if (item.category !== category) return false;
+                        if (!searchQuery) return true;
+                        
+                        const query = searchQuery.toLowerCase();
+                        return (
+                            item.label.toLowerCase().includes(query) || 
+                            (item.description && item.description.toLowerCase().includes(query)) ||
+                            (customKeybinds[item.id] || item.defaultKey).toLowerCase().includes(query)
+                        );
+                    });
+                    
+                    const isCollapsed = collapsedCategories.includes(category);
+
                     if (items.length === 0) return null;
 
                     return (
                         <div key={category} className="space-y-3">
-                            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">{category}</h3>
-                            <div className="grid gap-2">
-                                {items.map(item => {
-                                    const isDisabled = disabledKeybinds.includes(item.id);
-                                    const currentKey = customKeybinds[item.id] || item.defaultKey;
-                                    const Icon = item.icon || Keyboard;
+                            <button 
+                                onClick={() => toggleCategory(category)}
+                                className="flex items-center gap-2 text-sm font-medium text-zinc-500 uppercase tracking-wider hover:text-zinc-300 transition-colors"
+                            >
+                                <CaretRight size={14} weight="bold" className={cn("transition-transform duration-200", !isCollapsed && "rotate-90")} />
+                                {category}
+                            </button>
 
-                                    return (
-                                        <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn("p-2 rounded-md bg-zinc-800 text-zinc-400", isDisabled && "opacity-50")}>
-                                                    <Icon size={16} />
+                            {!isCollapsed && (
+                                <div className="grid gap-2 animate-in slide-in-from-top-2 duration-200">
+                                    {items.map(item => {
+                                        const isDisabled = disabledKeybinds.includes(item.id);
+                                        const currentKey = customKeybinds[item.id] || item.defaultKey;
+                                        const Icon = item.icon || Keyboard;
+
+                                        return (
+                                            <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn("p-2 rounded-md bg-zinc-800 text-zinc-400", isDisabled && "opacity-50")}>
+                                                        <Icon size={16} />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className={cn("text-sm font-medium text-zinc-200", isDisabled && "text-zinc-500 line-through")}>
+                                                            {item.label}
+                                                        </span>
+                                                        {item.description && (
+                                                            <span className="text-xs text-zinc-500">{item.description}</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className={cn("text-sm font-medium text-zinc-200", isDisabled && "text-zinc-500 line-through")}>
-                                                        {item.label}
-                                                    </span>
-                                                    {item.description && (
-                                                        <span className="text-xs text-zinc-500">{item.description}</span>
-                                                    )}
+                                                
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn("flex items-center gap-2", isDisabled && "opacity-50")}>
+                                                        <KeyDisplay k={currentKey} />
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-8 w-8 text-zinc-500 hover:text-zinc-300"
+                                                            onClick={() => handleStartEditing(item.id)}
+                                                            disabled={isDisabled}
+                                                        >
+                                                            <PencilSimple size={14} />
+                                                        </Button>
+                                                    </div>
+                                                    <Switch 
+                                                        checked={!isDisabled}
+                                                        onCheckedChange={(checked) => toggleKeybind(item.id, checked)}
+                                                    />
                                                 </div>
                                             </div>
-                                            
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn("flex items-center gap-2", isDisabled && "opacity-50")}>
-                                                    <KeyDisplay k={currentKey} />
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
-                                                        className="h-8 w-8 text-zinc-500 hover:text-zinc-300"
-                                                        onClick={() => handleStartEditing(item.id)}
-                                                        disabled={isDisabled}
-                                                    >
-                                                        <PencilSimple size={14} />
-                                                    </Button>
-                                                </div>
-                                                <Switch 
-                                                    checked={!isDisabled}
-                                                    onCheckedChange={(checked) => toggleKeybind(item.id, checked)}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
+            </div>
+
+            <div className="flex justify-center pt-8 pb-4 text-center">
+                <p className="text-xs text-zinc-500">
+                    Press <span className="inline-flex items-center justify-center h-4 px-1 text-[10px] font-bold font-mono text-zinc-400 bg-zinc-800 border border-zinc-700 rounded mx-0.5">{showShortcutsKey.replace('shift+?', '?')}</span> to view keyboard shortcuts at any time.
+                </p>
             </div>
 
             <Dialog open={!!editingId} onOpenChange={(open) => !open && setEditingId(null)}>
