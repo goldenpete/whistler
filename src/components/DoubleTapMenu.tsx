@@ -59,7 +59,10 @@ export function DoubleTapMenu() {
 
     return (
         <Dialog open={isDoubleTapMenuOpen} onOpenChange={setDoubleTapMenuOpen}>
-            <DialogContent className="w-full max-w-5xl sm:max-w-5xl bg-transparent border-none shadow-none p-0 outline-none">
+            <DialogContent 
+                showCloseButton={false} 
+                className="w-full max-w-5xl sm:max-w-5xl bg-transparent border-none shadow-none p-0 outline-none ring-0 focus:ring-0 data-[state=open]:ring-0"
+            >
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6 p-4">
                     {menuItems.map((item, index) => (
                         <motion.button
