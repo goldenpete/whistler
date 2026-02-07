@@ -29,3 +29,569 @@ public/legacy/worker/schema.sql
 public/legacy/worker/src/index.js
 public/legacy/worker/wrangler.toml
 vite.config.ts
+/* Whistlerbox Design System */
+:root {
+    /* Base Colors - Deep Premium Dark */
+    --bg-app: #050507;
+    --bg-sidebar: #0f0f12;
+    --bg-card: #141418;
+    --bg-hover: #1f1f25;
+    --bg-overlay: rgba(0, 0, 0, 0.4);
+    /* Less opaque for glass effect */
+
+    /* Text Colors */
+    --text-primary: #ededef;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+
+    /* Accents */
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --accent-glow: rgba(99, 102, 241, 0.5);
+    --accent-dim: rgba(99, 102, 241, 0.1);
+
+    --border: #27272a;
+    --border-light: #3f3f46;
+    --glass-border: rgba(255, 255, 255, 0.08);
+
+    /* Metrics */
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --header-height: 64px;
+
+    /* Animation */
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Reset & Base */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    outline: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+#app {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    font-family: inherit;
+    transition: all 0.2s var(--ease-out);
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 280px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    flex-shrink: 0;
+    z-index: 20;
+    transition: width 0.2s var(--ease-out), padding 0.2s var(--ease-out);
+}
+
+.sidebar.collapsed {
+    width: 0;
+    padding: 0;
+    border-right: none;
+    overflow: hidden;
+}
+
+.sidebar.collapsed .brand-name,
+.sidebar.collapsed .project-switcher,
+.sidebar.collapsed .nav-section-header,
+.sidebar.collapsed .nav-section-content,
+.sidebar.collapsed .brand,
+.sidebar.collapsed .nav-menu,
+.sidebar.collapsed .pip-container {
+    display: none;
+}
+
+.sidebar-collapse-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    background: transparent;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sidebar-collapse-btn i {
+    font-size: 16px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    position: relative;
+}
+
+.brand .sidebar-collapse-btn {
+    position: absolute;
+    left: 0;
+}
+
+.sidebar-search-btn {
+    position: absolute;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    background: transparent;
+    flex-shrink: 0;
+}
+
+.sidebar-search-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sidebar-search-btn i {
+    font-size: 16px;
+}
+
+.logo-icon {
+    font-size: 24px;
+    color: var(--accent);
+    filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.brand-name {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+}
+
+.project-context {
+    background: linear-gradient(145deg, var(--bg-card), var(--bg-hover));
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    animation: scaleIn 0.3s var(--ease-out);
+}
+
+.project-switcher {
+    margin-bottom: 16px;
+    padding: 0 4px;
+}
+
+.context-label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.project-select {
+    width: 100%;
+    appearance: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    padding-right: 32px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+/* Custom Dropdown v2 */
+.custom-select {
+    position: relative;
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+    /* Take remaining space in row */
+    min-width: 0;
+}
+
+.custom-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    font-size: 13px;
+    height: 34px;
+    /* Fixed height to match buttons */
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.custom-select-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.custom-select-trigger:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+}
+
+.custom-select-trigger i {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+/* Project Row Layout */
+.project-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.project-control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.2s var(--ease-out);
+}
+
+.project-control-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-light);
+    color: var(--text-primary);
+}
+
+.project-control-btn i {
+    font-size: 16px;
+}
+
+/* Sidebar action buttons (Legacy/Unused but kept for safe measures or if reused elsewhere) */
+.sidebar-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.sidebar-action-btn:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+}
+
+.sidebar-action-btn i {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.custom-select-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    overflow: hidden;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.custom-select-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: var(--text-secondary);
+}
+
+.custom-select-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.custom-select-item.selected {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+.custom-select-item.separator {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+/* Project dropdown item with actions */
+.custom-select-item.project-item {
+    display: flex;
+    align-items: center;
+    justi<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whistlerbox</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+
+<body>
+    <div id="app">
+        <input type="color" id="global-color-picker" style="display:none">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
+                    <i class="ph-bold ph-sidebar-simple"></i>
+                </button>
+                <i class="ph-fill ph-wave-sine logo-icon"></i>
+                <span class="brand-name">Whistlerbox</span>
+                <button class="sidebar-search-btn" id="global-search-btn" title="Search (Ctrl+K)">
+                    <i class="ph-bold ph-magnifying-glass"></i>
+                </button>
+            </div>
+
+            <!-- Project Dropdown -->
+            <div id="project-switcher" class="project-switcher">
+                <label class="context-label">PROJECT</label>
+                <div class="project-row">
+                    <!-- Default Group -->
+                    <!-- Default Project Controls (Dropdown + Load) -->
+                    <div id="project-controls-default"
+                        style="display: flex; flex: 1; min-width: 0; align-items: center; gap: 6px;">
+                        <div class="custom-select" id="project-dropdown" style="flex: 1;">
+                            <div class="custom-select-trigger" id="project-trigger">
+                                <span id="project-trigger-text">Select Project</span>
+                                <i class="ph-bold ph-caret-down"></i>
+                            </div>
+                            <div class="custom-select-menu hidden" id="project-menu">
+                                <!-- Items populated by JS -->
+                            </div>
+                        </div>
+                        <button class="project-control-btn" id="btn-export-import" data-tooltip="Load / Export">
+                            <i class="ph-bold ph-arrows-clockwise"></i>
+                        </button>
+                    </div>
+
+                    <!-- Sync Controls Group (Hidden) -->
+                    <div id="project-controls-sync" class="hidden"
+                        style="display: flex; flex: 1; min-width: 0; align-items: center; justify-content: flex-end; gap: 6px;">
+                        <button class="project-control-btn btn-sync-push" id="btn-sync-push">
+                            <i class="ph-bold ph-cloud-arrow-up"></i>
+                            <span>Push</span>
+                        </button>
+                        <button class="project-control-btn btn-sync-pull" id="btn-sync-pull">
+                            <i class="ph-bold ph-cloud-arrow-down"></i>
+                            <span>Pull</span>
+                        </button>
+                        <button class="project-control-btn" id="btn-sync-settings">
+                            <i class="ph-bold ph-gear"></i>
+                        </button>
+                    </div>
+
+                    <!-- Toggle Button -->
+                    <button class="project-control-btn" id="btn-cloud-sync">
+                        <i class="ph-bold ph-cloud" id="sync-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <div id="project-nav-items">
+                    <div class="nav-section-header nav-section-clickable" id="nav-assets-header">
+                        <div class="nav-section-left">
+                            <button class="nav-section-toggle" id="toggle-assets"><i
+                                    class="ph-bold ph-caret-down"></i></button>
+                            <span>Assets</span>
+                        </div>
+                    </div>
+                    <div class="nav-section-content assets-grid" id="assets-content">
+                        <button class="nav-item-grid active" id="nav-storage">
+                            <i class="ph-bold ph-hard-drives"></i>
+                            <span>Storage</span>
+                        </button>
+                        <button class="nav-item-grid" id="nav-docs">
+                            <i class="ph-bold ph-note-pencil"></i>
+                            <span>Docs</span>
+                        </button>
+                        <button class="nav-item-grid" id="nav-graph">
+                            <i class="ph-bold ph-graph"></i>
+                            <span>Graph</span>
+                        </button>
+                    </div>
+
+                    <div class="nav-divider"></div>
+
+                    <div class="nav-section-header nav-section-clickable" id="nav-collections-header">
+                        <div class="nav-section-left">
+                            <button class="nav-section-toggle" id="toggle-collections"><i
+                                    class="ph-bold ph-caret-down"></i></button>
+                            <span>Collections</span>
+                        </div>
+                        <button class="icon-btn-small" id="btn-add-collection"><i class="ph-bold ph-plus"></i></button>
+                    </div>
+                    <div class="nav-section-content" id="collections-content">
+                        <div id="collections-list" class="collections-list">
+                            <!-- Collections injected here -->
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+
+
+            <!-- Sidebar PiP -->
+            <div id="pip-container" class="pip-container hidden">
+                <div class="pip-video-stage" id="pip-video-stage">
+                    <!-- Video moves here -->
+                </div>
+                <div class="pip-bar">
+                    <button class="pip-btn" id="pip-rewind"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
+                    <button class="pip-btn" id="pip-play-pause"><i class="ph-fill ph-play"></i></button>
+                    <button class="pip-btn" id="pip-expand"><i class="ph-bold ph-arrows-out"></i></button>
+                    <button class="pip-btn" id="pip-close"><i class="ph-bold ph-x"></i></button>
+                    <button class="pip-btn" id="pip-forward"><i class="ph-bold ph-arrow-clockwise"></i></button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-view">
+            <!-- Storage View (Default) -->
+            <section id="view-storage" class="view-section">
+                <header class="view-header" id="storage-header-normal">
+                    <div class="topbar-sidebar-toggle">
+                        <button class="sidebar-expand-btn" data-sidebar-toggle>
+                            <i class="ph-bold ph-sidebar-simple"></i>
+                        </button>
+                        <i class="ph-fill ph-wave-sine topbar-logo"></i>
+                    </div>
+                    <div class="header-breadcrumb">
+                        <!-- Storage Switcher -->
+                        <div class="asset-switcher" id="storage-switcher">
+                            <button class="asset-switcher-trigger" id="storage-switcher-trigger"
+                                data-tooltip="Switch Storage">
+                                <i

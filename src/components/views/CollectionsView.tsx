@@ -40,6 +40,7 @@ type SortOption = "name" | "date" | "items";
 type SortDirection = "asc" | "desc";
 
 export default function CollectionsView() {
+    // Collections Grid View
     const { 
         collections, 
         activeProjectId, 
