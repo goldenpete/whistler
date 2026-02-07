@@ -120,7 +120,7 @@ export function KeybindsSettings() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-end justify-between gap-4">
                 <div className="flex-1">
                     <div className="relative w-full max-w-sm">
                         <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 w-3.5 h-3.5" />
@@ -132,26 +132,29 @@ export function KeybindsSettings() {
                         />
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger className="w-[140px] h-7 text-xs bg-zinc-900/50 border-zinc-800 focus:bg-zinc-900">
-                            <SelectValue placeholder="Filter category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="All">All Categories</SelectItem>
-                            {KEYBIND_CATEGORIES.map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="sm" onClick={resetKeybinds}>
-                        <ArrowCounterClockwise className="mr-2 h-4 w-4" />
-                        Reset Defaults
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleExport}>
-                        <DownloadSimple className="mr-2 h-4 w-4" />
-                        Export
-                    </Button>
+                <div className="flex flex-col items-end gap-2">
+                    <p className="text-xs text-zinc-500">Customize your keyboard shortcuts</p>
+                    <div className="flex items-center gap-2">
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <SelectTrigger className="w-[140px] h-7 text-xs bg-zinc-900/50 border-zinc-800 focus:bg-zinc-900">
+                                <SelectValue placeholder="Filter category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All Categories</SelectItem>
+                                {KEYBIND_CATEGORIES.map(cat => (
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button variant="outline" size="sm" onClick={resetKeybinds}>
+                            <ArrowCounterClockwise className="mr-2 h-4 w-4" />
+                            Reset Defaults
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleExport}>
+                            <DownloadSimple className="mr-2 h-4 w-4" />
+                            Export
+                        </Button>
+                    </div>
                 </div>
             </div>
 
