@@ -138,7 +138,9 @@ export default function SettingsView() {
         windowOutlineEnabled,
         setWindowOutlineEnabled,
         setState,
-        setAmbientMusicStorageKey
+        setAmbientMusicStorageKey,
+        alwaysShowMuteOverlay,
+        setAlwaysShowMuteOverlay
     } = useStore();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
@@ -148,6 +150,7 @@ export default function SettingsView() {
     const [isDeletingLocal, setIsDeletingLocal] = useState(false);
     const [isDeletingReset, setIsDeletingReset] = useState(false);
     const [clearingCache, setClearingCache] = useState<string | null>(null);
+    const [showMuteSettings, setShowMuteSettings] = useState(false);
 
     const accentTheme = accentThemeOrUndefined || 'orange';
 
@@ -1328,16 +1331,41 @@ export default function SettingsView() {
                                     Media Playback
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
-                                        <div className="space-y-0.5">
-                                            <label className="text-sm font-medium">Mute new videos until unmuted</label>
-                                            <p className="text-xs text-muted-foreground">Requires clicking Unmute Video the first time a video opens.</p>
+                                    {showMuteSettings ? (
+                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50 animate-in fade-in slide-in-from-right-2 duration-200">
+                                            <div className="flex items-center gap-4">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2 shrink-0" onClick={() => setShowMuteSettings(false)}>
+                                                    <CaretLeft size={16} />
+                                                </Button>
+                                                <div className="space-y-0.5">
+                                                    <label className="text-sm font-medium">Always show mute pop-up</label>
+                                                    <p className="text-xs text-muted-foreground">Show the overlay every time a video opens, regardless of history.</p>
+                                                </div>
+                                            </div>
+                                            <Switch 
+                                                checked={alwaysShowMuteOverlay}
+                                                onCheckedChange={setAlwaysShowMuteOverlay}
+                                            />
                                         </div>
-                                        <Switch 
-                                            checked={muteNewVideosUntilUnmuted}
-                                            onCheckedChange={setMuteNewVideosUntilUnmuted}
-                                        />
-                                    </div>
+                                    ) : (
+                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
+                                            <div className="space-y-0.5">
+                                                <label className="text-sm font-medium">Mute new videos until unmuted</label>
+                                                <p className="text-xs text-muted-foreground">Requires clicking Unmute Video the first time a video opens.</p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                {muteNewVideosUntilUnmuted && (
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShowMuteSettings(true)}>
+                                                        <Gear size={16} />
+                                                    </Button>
+                                                )}
+                                                <Switch 
+                                                    checked={muteNewVideosUntilUnmuted}
+                                                    onCheckedChange={setMuteNewVideosUntilUnmuted}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Remember media volume</label>

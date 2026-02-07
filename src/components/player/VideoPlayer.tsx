@@ -55,7 +55,7 @@ import {
      Desktop
  } from "@phosphor-icons/react";
 import { ScreenshotDialog } from "@/components/dialogs/ScreenshotDialog";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from './PDFPlayer';
 import type { PDFPlayerHandle } from './PDFPlayer';
 import { ImagePlayer } from './ImagePlayer';
@@ -145,7 +145,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         videoVolumeByFile,
         videoUnmutedByFile,
         setVideoVolumeForFile,
-        setVideoUnmutedForFile
+        setVideoUnmutedForFile,
+        alwaysShowMuteOverlay
     } = useStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeRef = useRef<YouTubePlayerHandle>(null);
@@ -444,13 +445,13 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             if (videoRef.current) videoRef.current.volume = initialVolume;
             if (youtubeRef.current) youtubeRef.current.volume = initialVolume;
             
-            const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && !videoUnmutedByFile[fileId];
+            const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && (alwaysShowMuteOverlay || !videoUnmutedByFile[fileId]);
             setIsMuted(shouldMuteForFirstOpen);
             setShowInitialMuteOverlay(shouldMuteForFirstOpen);
             if (videoRef.current) videoRef.current.muted = shouldMuteForFirstOpen;
             if (youtubeRef.current) youtubeRef.current.muted = shouldMuteForFirstOpen;
         }
-    }, [file, fileId, rememberMediaVolume, videoVolumeByFile, muteNewVideosUntilUnmuted, videoUnmutedByFile]);
+    }, [file, fileId, rememberMediaVolume, videoVolumeByFile, muteNewVideosUntilUnmuted, videoUnmutedByFile, alwaysShowMuteOverlay]);
 
     useEffect(() => {
         if (videoRef.current) {
@@ -1485,14 +1486,17 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             )}
 
             {/* Sidebar (Full Height, Sibling to Player Container) */}
-            {sidebarOpen && !activeHighlightForFile && (
-                <motion.div
-                    initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
-                    animate={{ width: 320, opacity: 1 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="bg-background border-l border-border flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full min-h-0"
-                >
-                    <div className="p-4 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between">
+            <AnimatePresence>
+                {sidebarOpen && !activeHighlightForFile && (
+                    <motion.div
+                        key="sidebar"
+                        initial={enableSidebarAnimation ? { width: 0, opacity: 0 } : false}
+                        animate={{ width: 320, opacity: 1 }}
+                        exit={enableSidebarAnimation ? { width: 0, opacity: 0 } : undefined}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="bg-background border-l border-border flex flex-col shrink-0 z-20 overflow-hidden w-80 h-full min-h-0"
+                    >
+                        <div className="p-4 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between">
                         <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
                         <Button
                             variant="ghost"
@@ -1604,6 +1608,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     </ScrollArea>
                 </motion.div>
             )}
+            </AnimatePresence>
 
             <MoveFileDialog
                 open={moveDialogOpen}
