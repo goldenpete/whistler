@@ -24,7 +24,6 @@ export const PdfThumbnail = memo(function PdfThumbnail({ url, onError, className
 
     useEffect(() => {
         if (!isVisible) {
-            setSafeUrl(null);
             return;
         }
 
