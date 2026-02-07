@@ -763,6 +763,102 @@ body {
     text-transform: uppercase;
 }
 
+/* Graph Toolbar */
+.graph-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border);
+}
+
+.graph-toolbar-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.graph-toolbar-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.graph-toolbar-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.graph-toolbar-btn.delete-mode-active {
+    background: var(--accent);
+    color: white;
+}
+
+.graph-toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 8px;
+}
+
+/* Graph Add Menu */
+.graph-add-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    z-index: 50;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    margin-top: 4px;
+    min-width: 160px;
+    overflow: hidden;
+}
+
+.graph-add-item {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.graph-add-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.graph-add-item i {
+    font-size: 16px;
+}
+
+/* Graph Zoom Indicator */
+.graph-zoom-indicator {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    z-index: 10;
+}
+
 /* Turnstile */
 #turnstile-container {
     min-height: 65px;
