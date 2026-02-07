@@ -65,6 +65,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             <ShortcutRow label="Spotlight Search" icon={MagnifyingGlass} keys={[<Key>Ctrl</Key>, <Key>K</Key>, <span className="text-xs text-zinc-500">or</span>, <Key>/</Key>]} />
                             <ShortcutRow label="Double Tap Menu" icon={CornersOut} keys={[<Key>Shift</Key>, <span className="text-xs text-zinc-500">x2</span>]} />
                             <ShortcutRow label="Settings" icon={Gear} keys={[<Key>Ctrl</Key>, <Key>,</Key>]} />
+                            <ShortcutRow label="Toggle Sidebar" icon={CornersIn} keys={[<Key>Ctrl</Key>, <Key>B</Key>]} />
                         </TabsContent>
 
                         <TabsContent value="navigation" className="mt-0 space-y-1">

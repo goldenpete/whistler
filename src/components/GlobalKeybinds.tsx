@@ -38,6 +38,11 @@ export function GlobalKeybinds() {
         navigate("/settings");
     }, { preventDefault: true });
 
+    // Toggle Sidebar: Ctrl+B
+    useKeybind("ctrl+b", () => {
+        toggleSidebarCollapse();
+    }, { preventDefault: true });
+
     // --- Navigation Shortcuts (Legacy) ---
     useKeybind("1", () => handleNavigation("/storage", "storage"), { preventDefault: true, disableInInput: true });
     useKeybind("2", () => handleNavigation("/docs", "docs"), { preventDefault: true, disableInInput: true });

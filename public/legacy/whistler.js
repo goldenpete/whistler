@@ -34,7 +34,6 @@ class WhistlerApp {
         this.tooltips = new TooltipManager();
         this.exportImport = new ExportImportManager(this);
         this.sync = new SyncManager(this);
-        this.sync = new SyncManager(this);
         this.graph = new GraphController(this);
         this.keybinds = new KeybindManager(this);
 
@@ -64,8 +63,8 @@ class WhistlerApp {
 class StorageManager {
     constructor(app) {
         this.app = app;
-        this.KEY = 'whistler_v2_data';
-        this.LAST_MODIFIED_KEY = 'whistler_last_modified';
+        this.KEY = 'whistler_legacy_v2_data';
+        this.LAST_MODIFIED_KEY = 'whistler_legacy_last_modified';
     }
 
     save() {
@@ -968,16 +967,30 @@ class Router {
     }
 
     init() {
-        document.getElementById('nav-storage').onclick = () => this.goTo('storage');
-        document.getElementById('nav-docs').onclick = () => this.goTo('docs');
-        document.getElementById('nav-graph').onclick = () => this.goTo('graph');
+        const bindClick = (id, handler) => {
+            const el = document.getElementById(id);
+            if (el) el.onclick = handler;
+        };
+
+        bindClick('nav-storage', () => this.goTo('storage'));
+        bindClick('nav-docs', () => this.goTo('docs'));
+        bindClick('nav-graph', () => this.goTo('graph'));
 
         // Category header clicks (span inside nav-section-left)
-        document.getElementById('nav-assets-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('assets');
-        document.getElementById('nav-collections-header').querySelector('.nav-section-left > span').onclick = () => this.goTo('collectionsGrid');
+        const assetsHeader = document.getElementById('nav-assets-header');
+        if (assetsHeader) {
+            const span = assetsHeader.querySelector('.nav-section-left > span');
+            if (span) span.onclick = () => this.goTo('assets');
+        }
+
+        const collectionsHeader = document.getElementById('nav-collections-header');
+        if (collectionsHeader) {
+            const span = collectionsHeader.querySelector('.nav-section-left > span');
+            if (span) span.onclick = () => this.goTo('collectionsGrid');
+        }
 
         // Add collection button on grid view
-        document.getElementById('btn-add-collection-grid').onclick = () => this.app.modals.openCollection();
+        bindClick('btn-add-collection-grid', () => this.app.modals.openCollection());
 
         // Setup collapsible sections
         this.setupCollapsibleSections();
@@ -996,7 +1009,7 @@ class Router {
         if (!sidebar || !collapseBtn) return;
 
         // Restore state from localStorage
-        const isCollapsed = localStorage.getItem('whistler-sidebar-collapsed') === 'true';
+        const isCollapsed = localStorage.getItem('whistler_legacy_sidebar_collapsed') === 'true';
         if (isCollapsed) {
             sidebar.classList.add('collapsed');
         }
@@ -1004,14 +1017,14 @@ class Router {
         // Sidebar collapse button (in sidebar)
         collapseBtn.onclick = () => {
             sidebar.classList.add('collapsed');
-            localStorage.setItem('whistler-sidebar-collapsed', 'true');
+            localStorage.setItem('whistler_legacy_sidebar_collapsed', 'true');
         };
 
         // All topbar expand buttons (in main view headers)
         document.querySelectorAll('[data-sidebar-toggle]').forEach(btn => {
             btn.onclick = () => {
                 sidebar.classList.remove('collapsed');
-                localStorage.setItem('whistler-sidebar-collapsed', 'false');
+                localStorage.setItem('whistler_legacy_sidebar_collapsed', 'false');
             };
         });
 
@@ -1669,6 +1682,7 @@ class Router {
     }
 
     openCollection(id) {
+        if (!id) return;
         this.app.state.activeCollectionId = id;
         this.goTo('collection');
     }
@@ -2045,8 +2059,6 @@ class Player {
 
         this.els.video.addEventListener('volumechange', () => this.updateVolumeUI());
 
-        this.els.video.addEventListener('volumechange', () => this.updateVolumeUI());
-
         // Edit Title
         document.getElementById('group-filename').onclick = () => {
             this.app.modals.prompt("Rename File", this.currentFile.name, (newName) => {
@@ -2205,6 +2217,10 @@ class Player {
     }
 
     load(file, pdfOptions = null) {
+        if (!file) {
+            console.warn("Player.load called with no file");
+            return;
+        }
         this.currentFile = file;
         this.els.filename.textContent = file.name;
 
@@ -2235,11 +2251,15 @@ class Player {
         };
 
         // Reset Logic
-        this.els.youtubePlace.innerHTML = '';
-        this.els.video.classList.remove('hidden');
-        this.els.youtubePlace.classList.add('hidden');
-        this.els.video.pause();
-        this.els.video.src = '';
+        if (this.els.video) {
+            this.els.video.classList.remove('hidden');
+            this.els.video.pause();
+            this.els.video.src = '';
+        }
+        if (this.els.youtubePlace) {
+            this.els.youtubePlace.innerHTML = '';
+            this.els.youtubePlace.classList.add('hidden');
+        }
 
         // PiP cleanup
         if (this.app.state.isPipActive) {
@@ -2345,9 +2365,11 @@ class Player {
             if (file.type === 'dropbox') {
                 src = src.replace('dl=0', 'raw=1');
             }
-            this.els.video.src = src;
-            this.els.video.play().catch(e => console.log("Autoplay blocked"));
-            this.els.btnPlay.innerHTML = '<i class="ph-fill ph-pause"></i>';
+            if (this.els.video) {
+                this.els.video.src = src || '';
+                this.els.video.play().catch(e => console.log("Autoplay blocked"));
+            }
+            if (this.els.btnPlay) this.els.btnPlay.innerHTML = '<i class="ph-fill ph-pause"></i>';
         }
 
         this.renderTimestamps();
@@ -3824,6 +3846,13 @@ class UIManager {
 
             card.onclick = (e) => {
                 if (e.target.closest('.collection-actions')) return;
+                
+                if (this.app.ui.collectionSelectionMode) {
+                   // Toggle selection if in selection mode (implement if needed for grid)
+                   // For now just return to prevent opening
+                   return;
+                }
+
                 this.app.router.openCollection(col.id);
             };
 
@@ -4833,7 +4862,11 @@ class UIManager {
         // update header directly in renderCollectionBreadcrumbs
 
         const col = this.app.state.collections.find(c => c.id === this.app.state.activeCollectionId);
-        if (!col) return;
+        if (!col) {
+            console.warn('Collection not found:', this.app.state.activeCollectionId);
+            this.app.router.goTo('collectionsGrid');
+            return;
+        }
 
         this.renderCollectionBreadcrumbs();
         grid.innerHTML = '';
@@ -7490,12 +7523,11 @@ class SyncManager {
         this.TURNSTILE_SITE_KEY = '0x4AAAAAACL9Ojn2jXAFNaw_';
 
         // Local storage keys
-        this.ACCOUNT_KEY = 'whistler_account_id';
-        this.TOKEN_KEY = 'whistler_session_token';
-        this.LAST_SYNC_KEY = 'whistler_last_sync';
-        this.DISPLAY_NAME_KEY = 'whistler_display_name';
-        this.DISPLAY_NAME_KEY = 'whistler_display_name';
-        this.CONFLICT_KEY = 'whistler_sync_conflict';
+        this.ACCOUNT_KEY = 'whistler_legacy_account_id';
+        this.TOKEN_KEY = 'whistler_legacy_session_token';
+        this.LAST_SYNC_KEY = 'whistler_legacy_last_sync';
+        this.DISPLAY_NAME_KEY = 'whistler_legacy_display_name';
+        this.CONFLICT_KEY = 'whistler_legacy_sync_conflict';
 
         // State
         this.accountId = null;
@@ -11125,7 +11157,7 @@ class KeybindManager {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
                 const collapsed = sidebar.classList.toggle('collapsed');
-                localStorage.setItem('whistler-sidebar-collapsed', collapsed);
+                localStorage.setItem('whistler_legacy_sidebar_collapsed', collapsed);
             }
         }
     }
