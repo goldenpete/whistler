@@ -136,7 +136,7 @@ export function GradientEditor({ value, onChange }: GradientEditorProps) {
 
             {/* Visual Gradient Preview & Stops */}
             <div className="space-y-2">
-                <div className="h-4 w-full rounded-md border border-border relative mb-6" style={{ background: `linear-gradient(90deg, ${stops.map(s => `${s.color} ${s.position}%`).join(', ')})` }}>
+                <div className="h-4 w-full rounded-md border border-border relative mb-6" style={{ background: `linear-gradient(90deg, ${stops.map(s => `${s.color || 'transparent'} ${s.position}%`).join(', ')})` }}>
                     {stops.map((stop) => (
                         <Popover key={stop.id}>
                             <PopoverTrigger asChild>
@@ -144,7 +144,7 @@ export function GradientEditor({ value, onChange }: GradientEditorProps) {
                                     className="absolute w-3 h-3 -ml-1.5 top-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm ring-1 ring-black/20 hover:scale-125 transition-transform focus:outline-none"
                                     style={{ 
                                         left: `${stop.position}%`,
-                                        backgroundColor: stop.color 
+                                        backgroundColor: stop.color || 'transparent'
                                     }}
                                 />
                             </PopoverTrigger>

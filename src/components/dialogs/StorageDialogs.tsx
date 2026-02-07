@@ -380,7 +380,7 @@ export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStor
     const store = useStore.getState();
     const { accentTheme, enableDefaultColorControls, defaultColors } = store;
     const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
-    const storageColor = enableDefaultColorControls && defaultColors?.storage
+    const storageColor = enableDefaultColorControls && defaultColors?.storage !== undefined
         ? defaultColors.storage
         : accentColor;
 

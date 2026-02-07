@@ -1744,7 +1744,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     </DialogHeader>
                     <div className="py-2">
                         <ColorPicker
-                            color={file.color || "#ffffff"}
+                            color={file.color ?? ""}
                             onChange={(color) => updateFile(file.id, { color })}
                         />
                     </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Palette, Check } from "@phosphor-icons/react";
+import { Palette, Check, X } from "@phosphor-icons/react";
 
 export const PRESET_COLORS = [
     "#f59e0b",
@@ -93,6 +93,26 @@ export function ColorPicker({ color, onChange, label = "Color" }: ColorPickerPro
                         )}
                     </button>
                 ))}
+                
+                <button
+                    type="button"
+                    onClick={() => {
+                        onChange("");
+                        setHex("");
+                    }}
+                    className={cn(
+                        "w-6 h-6 rounded-full transition-all border-2 relative flex items-center justify-center group",
+                        !color ? "border-white scale-110 bg-zinc-800" : "border-transparent hover:scale-110 hover:border-white/20 bg-zinc-800/50"
+                    )}
+                    title="No Color"
+                >
+                    {!color && (
+                        <Check weight="bold" className="w-3 h-3 text-white shadow-sm" />
+                    )}
+                    {color && (
+                        <X weight="bold" className="w-3 h-3 text-zinc-400 group-hover:text-white" />
+                    )}
+                </button>
             </div>
         </div>
     );

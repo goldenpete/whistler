@@ -75,7 +75,7 @@ export function NodeDialog({
         if (open) {
             if (mode === 'edit' && node) {
                 setTitle(node.title);
-                setColor(node.color || PRESET_COLORS[0]);
+                setColor(node.color ?? PRESET_COLORS[0]);
                 setIconName(node.icon || "");
                 if (node.type === 'file') {
                     const linkedId = node.linkedId || "";
@@ -109,7 +109,7 @@ export function NodeDialog({
                 setTitle("");
                 const accentKey = (accentTheme || "orange") as keyof typeof ACCENT_COLOR_MAP;
                 const accentColor = ACCENT_COLOR_MAP[accentKey] ?? PRESET_COLORS[0];
-                const nodeColor = enableDefaultColorControls && defaultColors?.node
+                const nodeColor = enableDefaultColorControls && defaultColors?.node !== undefined
                     ? defaultColors.node
                     : accentColor;
                 setColor(nodeColor);

@@ -16,7 +16,7 @@ interface NewDocDialogProps {
 export function NewDocDialog({ open, onOpenChange, onSubmit }: NewDocDialogProps) {
     const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
     const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
-    const docColor = enableDefaultColorControls && defaultColors?.file
+    const docColor = enableDefaultColorControls && defaultColors?.file !== undefined
         ? defaultColors.file
         : accentColor;
 
@@ -54,7 +54,7 @@ interface NewGraphDialogProps {
 export function NewGraphDialog({ open, onOpenChange, onSubmit }: NewGraphDialogProps) {
     const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
     const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
-    const graphColor = enableDefaultColorControls && defaultColors?.graph
+    const graphColor = enableDefaultColorControls && defaultColors?.graph !== undefined
         ? defaultColors.graph
         : accentColor;
 

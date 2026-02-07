@@ -1112,7 +1112,7 @@ export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChang
                 </ContextMenuSubTrigger>
                 <ContextMenuSubContent className="w-64 p-2">
                     <ColorPicker
-                        color={file.color || "#ffffff"}
+                        color={file.color || ""}
                         onChange={onColorChange}
                     />
                 </ContextMenuSubContent>

@@ -101,4 +101,4 @@ export const PdfThumbnail = memo(function PdfThumbnail({ url, onError, className
             </ErrorBoundary>
         </div>
     );
-}
+});

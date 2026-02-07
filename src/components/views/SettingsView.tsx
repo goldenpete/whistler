@@ -960,7 +960,7 @@ export default function SettingsView() {
                                                     </PopoverTrigger>
                                                     <PopoverContent className="w-auto p-3">
                                                         <ColorPicker
-                                                            color={(defaultColors && defaultColors[entity.key]) || "#000000"}
+                                                            color={(defaultColors && defaultColors[entity.key]) ?? "#000000"}
                                                             onChange={(c) => setDefaultColor(entity.key, c)}
                                                         />
                                                     </PopoverContent>
@@ -1046,7 +1046,7 @@ export default function SettingsView() {
                                                         />
                                                     ) : (
                                                         <ColorPicker
-                                                            color={backgroundColor || '#000000'}
+                                                            color={backgroundColor ?? '#000000'}
                                                             onChange={setBackgroundColor}
                                                         />
                                                     )}

@@ -159,7 +159,7 @@ export function CreateCollectionDialog({ open, onOpenChange, onSubmit }: CreateC
     const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
     const accentKey = (accentTheme || "orange") as keyof typeof ACCENT_COLOR_MAP;
     const accentColor = ACCENT_COLOR_MAP[accentKey] ?? PRESET_COLORS[0];
-    const collectionColor = enableDefaultColorControls && defaultColors?.collection
+    const collectionColor = enableDefaultColorControls && defaultColors?.collection !== undefined
         ? defaultColors.collection
         : accentColor;
 
