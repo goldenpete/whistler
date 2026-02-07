@@ -26,16 +26,8 @@ export const PdfThumbnail = memo(function PdfThumbnail({ url, onError, className
         }, 500); 
         return () => {
             clearTimeout(timer);
-            // Only clear safeUrl if we are actually unmounting or changing URL
-            // But we can't know for sure here. 
-            // However, the next effect run will handle the new URL.
-            // If we unmount, state is gone anyway.
-            // If we change URL, the next effect run will setLoadedUrl(null) and start a new timer.
-            // So we don't strictly need to setSafeUrl(null) here, 
-            // EXCEPT if we want to force a "Loading" state during the transition.
-            setSafeUrl(null);
         };
-    }, [url, safeUrl]);
+    }, [url]);
 
     if (!safeUrl) {
         return (

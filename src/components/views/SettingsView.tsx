@@ -1262,11 +1262,6 @@ export default function SettingsView() {
                         </div>
                     )}
 
-                    {/* Keybinds Tab */}
-                    {activeTab === 'keybinds' && (
-                        <KeybindsSettings />
-                    )}
-
                     {/* Sync Tab */}
                     {activeTab === 'sync' && (
                         <SettingsSync />
