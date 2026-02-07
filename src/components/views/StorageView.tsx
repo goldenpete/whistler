@@ -227,11 +227,11 @@ export default function StorageView() {
         }
     };
 
-    useKeybind("arrowright", () => handleMoveFocus(1), { preventDefault: true });
-    useKeybind("arrowleft", () => handleMoveFocus(-1), { preventDefault: true });
-    useKeybind("arrowup", () => handleMoveFocus(viewMode === 'grid' ? -getColumns() : -1), { preventDefault: true });
-    useKeybind("arrowdown", () => handleMoveFocus(viewMode === 'grid' ? getColumns() : 1), { preventDefault: true });
-    useKeybind("enter", handleEnter, { preventDefault: true });
+    useKeybind("storage.navRight", () => handleMoveFocus(1), { preventDefault: true });
+    useKeybind("storage.navLeft", () => handleMoveFocus(-1), { preventDefault: true });
+    useKeybind("storage.navUp", () => handleMoveFocus(viewMode === 'grid' ? -getColumns() : -1), { preventDefault: true });
+    useKeybind("storage.navDown", () => handleMoveFocus(viewMode === 'grid' ? getColumns() : 1), { preventDefault: true });
+    useKeybind("storage.open", handleEnter, { preventDefault: true });
 
     // Scroll focused item into view
     useEffect(() => {
@@ -275,18 +275,18 @@ export default function StorageView() {
     };
 
     // --- Shortcuts ---
-    useKeybind("ctrl+a", () => {
+    useKeybind("storage.selectAll", () => {
         const ids = new Set(orderedProjectFiles.map(f => f.id));
         setSelectedIds(ids);
         setSelectionMode(true);
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("space", () => {
+    useKeybind("storage.select", () => {
         if (!focusedId) return;
         toggleSelectItem(focusedId);
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("delete", () => {
+    useKeybind("storage.delete", () => {
         if (selectedIds.size > 0) {
             selectedIds.forEach(id => trashFile(id));
             setSelectedIds(new Set());
@@ -294,7 +294,7 @@ export default function StorageView() {
         }
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("backspace", () => {
+    useKeybind("storage.up", () => {
         if (selectionMode || selectedIds.size > 0) {
             setSelectedIds(new Set());
             setSelectionMode(false);
@@ -310,7 +310,7 @@ export default function StorageView() {
         }
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("f2", () => {
+    useKeybind("storage.rename", () => {
         if (selectedIds.size === 1) {
             const id = Array.from(selectedIds)[0];
             const file = files.find(f => f.id === id);
@@ -318,7 +318,7 @@ export default function StorageView() {
         }
     }, { preventDefault: true, disableInInput: true });
     
-    useKeybind("escape", () => {
+    useKeybind("storage.clearSelection", () => {
         if (selectionMode || selectedIds.size > 0) {
             setSelectedIds(new Set());
             setSelectionMode(false);

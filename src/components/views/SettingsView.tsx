@@ -50,9 +50,11 @@ import {
 import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import { GradientEditor } from "@/components/ui/GradientEditor";
 import { SettingsSync } from "@/components/settings/SettingsSync";
+import { KeybindsSettings } from "@/components/settings/KeybindsSettings";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
 import type { AccentTheme, BaseTheme, CustomBaseTheme } from "@/types";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
+import { Keyboard } from "@phosphor-icons/react";
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
     { id: "orange", label: "Orange", previewClass: "bg-orange-500" },
@@ -76,7 +78,7 @@ const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph'
     { key: 'node', label: 'Nodes' },
 ];
 
-type SettingsTab = 'appearance' | 'music' | 'system' | 'sync' | 'history' | 'trash';
+type SettingsTab = 'appearance' | 'music' | 'keybinds' | 'system' | 'sync' | 'history' | 'trash';
 
 export default function SettingsView() {
     const {  
@@ -335,6 +337,18 @@ export default function SettingsView() {
                             >
                                 <SpeakerHigh size={18} weight={activeTab === 'music' ? "fill" : "regular"} />
                                 Audio & Media
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('keybinds')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'keybinds' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Keyboard size={18} weight={activeTab === 'keybinds' ? "fill" : "regular"} />
+                                Shortcuts
                             </button>
                         </div>
                     </div>
@@ -1248,6 +1262,11 @@ export default function SettingsView() {
                         </div>
                     )}
 
+                    {/* Keybinds Tab */}
+                    {activeTab === 'keybinds' && (
+                        <KeybindsSettings />
+                    )}
+
                     {/* Sync Tab */}
                     {activeTab === 'sync' && (
                         <SettingsSync />
@@ -1443,6 +1462,13 @@ export default function SettingsView() {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Shortcuts Tab */}
+                    {activeTab === 'keybinds' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <KeybindsSettings />
                         </div>
                     )}
 

@@ -737,82 +737,102 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     };
 
     // --- Shortcuts ---
-    useKeybind("space", togglePlay, { preventDefault: true, disableInInput: true });
-    useKeybind("k", togglePlay, { preventDefault: true, disableInInput: true });
-    useKeybind("f", toggleFullscreen, { preventDefault: true, disableInInput: true });
-    useKeybind("m", handleToggleMute, { preventDefault: true, disableInInput: true });
-    useKeybind("s", handleCaptureFrame, { preventDefault: true, disableInInput: true });
+    // --- Shortcuts ---
     
-    useKeybind("j", () => {
-        if (file?.type === 'audio') {
-            audioRef.current?.seekRelative(-10);
-        } else if (isYouTube && youtubeRef.current) {
-            youtubeRef.current.currentTime -= 10;
-        } else if (videoRef.current) {
-            videoRef.current.currentTime -= 10;
-        }
+    const handlePlayPause = () => togglePlay();
+    useKeybind("video.playPause", handlePlayPause, { preventDefault: true, disableInInput: true });
+    useKeybind("audio.playPause", handlePlayPause, { preventDefault: true, disableInInput: true });
+
+    useKeybind("video.fullscreen", toggleFullscreen, { preventDefault: true, disableInInput: true });
+
+    useKeybind("video.mute", handleToggleMute, { preventDefault: true, disableInInput: true });
+    useKeybind("audio.mute", handleToggleMute, { preventDefault: true, disableInInput: true });
+
+    useKeybind("video.screenshot", handleCaptureFrame, { preventDefault: true, disableInInput: true });
+
+    // Seek 10s
+    useKeybind("video.seekBack10", () => {
+        if (isYouTube && youtubeRef.current) youtubeRef.current.currentTime -= 10;
+        else if (videoRef.current) videoRef.current.currentTime -= 10;
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("l", () => {
-        if (file?.type === 'audio') {
-            audioRef.current?.seekRelative(10);
-        } else if (isYouTube && youtubeRef.current) {
-            youtubeRef.current.currentTime += 10;
-        } else if (videoRef.current) {
-            videoRef.current.currentTime += 10;
-        }
+    useKeybind("audio.seekBack10", () => {
+        if (file?.type === 'audio') audioRef.current?.seekRelative(-10);
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("arrowleft", () => {
-        if (file?.type === 'pdf') {
-            pdfRef.current?.prevPage();
-        } else if (file?.type === 'audio') {
-            audioRef.current?.seekRelative(-5);
-        } else if (isYouTube && youtubeRef.current) {
-            youtubeRef.current.currentTime -= 5;
-        } else if (videoRef.current) {
-            videoRef.current.currentTime -= 5;
-        }
+    useKeybind("video.seekFwd10", () => {
+        if (isYouTube && youtubeRef.current) youtubeRef.current.currentTime += 10;
+        else if (videoRef.current) videoRef.current.currentTime += 10;
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("arrowright", () => {
-        if (file?.type === 'pdf') {
-            pdfRef.current?.nextPage();
-        } else if (file?.type === 'audio') {
-            audioRef.current?.seekRelative(5);
-        } else if (isYouTube && youtubeRef.current) {
-            youtubeRef.current.currentTime += 5;
-        } else if (videoRef.current) {
-            videoRef.current.currentTime += 5;
-        }
+    useKeybind("audio.seekFwd10", () => {
+        if (file?.type === 'audio') audioRef.current?.seekRelative(10);
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("=", () => {
+    // Seek 5s / Page Nav
+    useKeybind("video.seekBack5", () => {
+        if (isYouTube && youtubeRef.current) youtubeRef.current.currentTime -= 5;
+        else if (videoRef.current) videoRef.current.currentTime -= 5;
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("audio.seekBack5", () => {
+        if (file?.type === 'audio') audioRef.current?.seekRelative(-5);
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("pdf.prevPage", () => {
+        if (file?.type === 'pdf') pdfRef.current?.prevPage();
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("video.seekFwd5", () => {
+        if (isYouTube && youtubeRef.current) youtubeRef.current.currentTime += 5;
+        else if (videoRef.current) videoRef.current.currentTime += 5;
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("audio.seekFwd5", () => {
+        if (file?.type === 'audio') audioRef.current?.seekRelative(5);
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("pdf.nextPage", () => {
+        if (file?.type === 'pdf') pdfRef.current?.nextPage();
+    }, { preventDefault: true, disableInInput: true });
+
+    // Zoom
+    useKeybind("pdf.zoomIn", () => {
         if (file?.type === 'pdf') pdfRef.current?.zoomIn();
+    }, { preventDefault: true, disableInInput: true });
+    
+    useKeybind("image.zoomIn", () => {
         if (file?.type === 'image') imageRef.current?.zoomIn();
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("-", () => {
+    useKeybind("pdf.zoomOut", () => {
         if (file?.type === 'pdf') pdfRef.current?.zoomOut();
+    }, { preventDefault: true, disableInInput: true });
+
+    useKeybind("image.zoomOut", () => {
         if (file?.type === 'image') imageRef.current?.zoomOut();
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("0", () => {
+    useKeybind("image.resetZoom", () => {
         if (file?.type === 'image') imageRef.current?.resetZoom();
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("arrowup", () => {
+    // Volume
+    useKeybind("video.volUp", () => {
         const newVolume = Math.min(1, volume + 0.1);
         handleVolumeChange([newVolume]);
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("arrowdown", () => {
+    useKeybind("video.volDown", () => {
         const newVolume = Math.max(0, volume - 0.1);
         handleVolumeChange([newVolume]);
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("backspace", handleClose, { preventDefault: true, disableInInput: true });
-    useKeybind("escape", handleClose, { preventDefault: true, disableInInput: true });
+    // Close
+    useKeybind("video.close", handleClose, { preventDefault: true, disableInInput: true });
+    useKeybind("audio.close", handleClose, { preventDefault: true, disableInInput: true });
+    useKeybind("pdf.close", handleClose, { preventDefault: true, disableInInput: true });
+    useKeybind("image.close", handleClose, { preventDefault: true, disableInInput: true });
     // --- End Shortcuts ---
 
     const handleCopyUrl = () => {

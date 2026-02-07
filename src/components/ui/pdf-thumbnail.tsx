@@ -1,15 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { globalWorker } from "@/pdf-worker";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
-export function PdfThumbnail({ url, onError, className, width = 160, page = 1, rect }: { url: string; onError: () => void, className?: string, width?: number, page?: number, rect?: { x: number; y: number; width: number; height: number } }) {
+export const PdfThumbnail = memo(function PdfThumbnail({ url, onError, className, width = 160, page = 1, rect }: { url: string; onError: () => void, className?: string, width?: number, page?: number, rect?: { x: number; y: number; width: number; height: number } }) {
     const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
     const [safeUrl, setSafeUrl] = useState<string | null>(null);
 
     useEffect(() => {
+        // If the URL hasn't effectively changed (and we have a safeUrl), don't reset
+        // This prevents flickering if the parent re-renders but the URL is the same
+        if (url === safeUrl) return;
+
         setLoadedUrl(null);
         // Debounce the PDF loading to prevent worker termination race conditions
         // when scrolling quickly through files
@@ -18,9 +22,16 @@ export function PdfThumbnail({ url, onError, className, width = 160, page = 1, r
         }, 500); 
         return () => {
             clearTimeout(timer);
+            // Only clear safeUrl if we are actually unmounting or changing URL
+            // But we can't know for sure here. 
+            // However, the next effect run will handle the new URL.
+            // If we unmount, state is gone anyway.
+            // If we change URL, the next effect run will setLoadedUrl(null) and start a new timer.
+            // So we don't strictly need to setSafeUrl(null) here, 
+            // EXCEPT if we want to force a "Loading" state during the transition.
             setSafeUrl(null);
         };
-    }, [url]);
+    }, [url, safeUrl]);
 
     if (!safeUrl) {
         return (

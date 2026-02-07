@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type MouseEvent, type SyntheticEvent } from "react";
+import { useState, useRef, useEffect, memo, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import type { AccentTheme, File as AppFile, Doc, Collection } from "@/types";
@@ -231,7 +231,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
     );
 };
 
-const CardPreview = ({ item }: { item: any }) => {
+const CardPreview = memo(({ item }: { item: any }) => {
     // Image File
     if (item.type === 'file' && item.subType === 'image' && item.data.url) {
         return (
@@ -422,7 +422,15 @@ const CardPreview = ({ item }: { item: any }) => {
     }
 
     return null;
-};
+}, (prev, next) => {
+    // Custom comparison since 'item' is a new object on every render
+    // We check if the ID, type, and underlying data reference are the same.
+    // Also check timestamp which indicates modification.
+    return prev.item.id === next.item.id && 
+           prev.item.type === next.item.type &&
+           prev.item.timestamp === next.item.timestamp &&
+           prev.item.data === next.item.data;
+});
 
 export default function HomeView() {
     const { 

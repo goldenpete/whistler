@@ -405,7 +405,7 @@ export default function ProjectSidebar() {
     const projectGraphs = graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted);
 
     // Sidebar Tab Navigation (Unifying Keybind)
-    useKeybind("ctrl+alt+arrowdown", () => {
+    useKeybind("nav.nextItem", () => {
         playSfx('cursor');
         const sidebarEnabled = ['storage', 'docs', 'graphs'].includes(sidebarView);
 
@@ -433,7 +433,7 @@ export default function ProjectSidebar() {
         }
     }, { preventDefault: true });
 
-    useKeybind("ctrl+alt+arrowup", () => {
+    useKeybind("nav.prevItem", () => {
         playSfx('cursor');
         const sidebarEnabled = ['storage', 'docs', 'graphs'].includes(sidebarView);
 
@@ -462,7 +462,7 @@ export default function ProjectSidebar() {
     }, { preventDefault: true });
 
     // Doc Navigation
-    useKeybind("alt+arrowdown", () => {
+    useKeybind("docs.next", () => {
         if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
         const currentIndex = projectDocs.findIndex(d => d.id === activeDocId);
         const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % projectDocs.length;
@@ -470,7 +470,7 @@ export default function ProjectSidebar() {
     }, { preventDefault: true });
 
     // Doc Navigation in Sidebar
-    useKeybind("arrowdown", () => {
+    useKeybind("nav.listDown", () => {
         if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
         
         // Only if sidebar is focused
@@ -490,7 +490,7 @@ export default function ProjectSidebar() {
 
     }, { preventDefault: true });
 
-    useKeybind("arrowup", () => {
+    useKeybind("nav.listUp", () => {
         if (!location.pathname.startsWith('/docs') || projectDocs.length === 0) return;
 
         // Only if sidebar is focused

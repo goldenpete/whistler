@@ -221,34 +221,33 @@ function DocEditor({ doc }: DocEditorProps) {
         updateFormatState();
     };
     // --- Keybinds ---
-    useKeybind("ctrl+s", () => {
+    useKeybind("docs.save", () => {
         saveContent();
         // Visual feedback could be added here
     }, { preventDefault: true });
 
-    useKeybind("ctrl+k", () => {
+    useKeybind("docs.link", () => {
         setLinkUrl("");
         setLinkDialogOpen(true);
     }, { preventDefault: true });
 
-    useKeybind("ctrl+shift+e", () => execCommand('justifyCenter'), { preventDefault: true });
-    useKeybind("ctrl+shift+l", () => execCommand('justifyLeft'), { preventDefault: true });
-    useKeybind("ctrl+shift+r", () => execCommand('justifyRight'), { preventDefault: true });
-    useKeybind("ctrl+shift+8", () => execCommand('insertUnorderedList'), { preventDefault: true }); // Standard bullet shortcut
-    useKeybind("ctrl+shift+u", () => execCommand('insertUnorderedList'), { preventDefault: true }); // Alternate
+    useKeybind("docs.alignCenter", () => execCommand('justifyCenter'), { preventDefault: true });
+    useKeybind("docs.alignLeft", () => execCommand('justifyLeft'), { preventDefault: true });
+    useKeybind("docs.alignRight", () => execCommand('justifyRight'), { preventDefault: true });
+    useKeybind("docs.bulletList", () => execCommand('insertUnorderedList'), { preventDefault: true });
 
-    useKeybind("ctrl+b", () => execCommand('bold'), { preventDefault: true });
-    useKeybind("ctrl+i", () => execCommand('italic'), { preventDefault: true });
-    useKeybind("ctrl+u", () => execCommand('underline'), { preventDefault: true });
+    useKeybind("docs.bold", () => execCommand('bold'), { preventDefault: true });
+    useKeybind("docs.italic", () => execCommand('italic'), { preventDefault: true });
+    useKeybind("docs.underline", () => execCommand('underline'), { preventDefault: true });
 
-    useKeybind("alt+l", () => {
+    useKeybind("docs.viewMode", () => {
         const modes: ("page" | "pageless" | "pageless-wide")[] = ["page", "pageless", "pageless-wide"];
         const currentIndex = modes.indexOf(viewMode);
         const nextIndex = (currentIndex + 1) % modes.length;
         setViewMode(modes[nextIndex]);
     }, { preventDefault: true });
 
-    useKeybind("escape", () => {
+    useKeybind("docs.blur", () => {
         if (document.activeElement === editorRef.current) {
             editorRef.current?.blur();
         }

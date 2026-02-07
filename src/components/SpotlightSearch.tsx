@@ -68,9 +68,7 @@ export function SpotlightSearch() {
         return highlights.filter((t: Highlight) => fileIds.has(t.fileId));
     }, [highlights, projectFiles]);
 
-    useKeybind("ctrl+k", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
-    useKeybind("meta+k", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
-    useKeybind("/", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("global.search", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
 
     const getFileIcon = useCallback((type: string) => {
         switch (type) {

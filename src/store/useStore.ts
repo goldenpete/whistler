@@ -199,6 +199,13 @@ export interface AppStore extends AppState {
     logAction: (entry: Omit<HistoryEntry, 'id' | 'timestamp'>) => void;
     clearHistory: () => void;
 
+    // Keybind Actions
+    customKeybinds: Record<string, string>;
+    disabledKeybinds: string[];
+    setKeybind: (actionId: string, key: string) => void;
+    toggleKeybind: (actionId: string, enabled: boolean) => void;
+    resetKeybinds: () => void;
+
     // Auth Actions
     login: (user: User) => void;
     logout: () => void;
@@ -357,6 +364,23 @@ export const DEFAULT_CUSTOM_ACCENT_THEMES: Record<string, CustomAccentTheme> = {
 export const useStore = create<AppStore>()(
     persist<AppStore>(
         (set) => ({
+            // Keybinds Initial State
+            customKeybinds: {},
+            disabledKeybinds: [],
+            setKeybind: (actionId, key) => set((state) => ({
+                customKeybinds: { ...state.customKeybinds, [actionId]: key }
+            })),
+            toggleKeybind: (actionId, enabled) => set((state) => {
+                const disabled = new Set(state.disabledKeybinds);
+                if (enabled) {
+                    disabled.delete(actionId);
+                } else {
+                    disabled.add(actionId);
+                }
+                return { disabledKeybinds: Array.from(disabled) };
+            }),
+            resetKeybinds: () => set({ customKeybinds: {}, disabledKeybinds: [] }),
+
             projects: [],
             files: [],
             collections: [],

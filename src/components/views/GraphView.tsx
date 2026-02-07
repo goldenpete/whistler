@@ -599,21 +599,20 @@ export default function GraphView() {
     };
 
     // --- Keybinds ---
-    useKeybind("n", () => {
+    useKeybind("graph.newNode", () => {
         if (!nodeDialog.open && !isAddMenuOpen) {
             setIsAddMenuOpen(true);
         }
     }, { preventDefault: true, disableInInput: true });
 
-    useKeybind("space", () => {
+    useKeybind("graph.center", () => {
         if (!nodeDialog.open && !isAddMenuOpen) {
             handleFitToView();
         }
     }, { preventDefault: !isAddMenuOpen, disableInInput: true });
 
-    useKeybind("=", () => setScale(s => Math.min(3, s * 1.2)), { preventDefault: true });
-    useKeybind("+", () => setScale(s => Math.min(3, s * 1.2)), { preventDefault: true });
-    useKeybind("-", () => setScale(s => Math.max(0.2, s / 1.2)), { preventDefault: true });
+    useKeybind("graph.zoomIn", () => setScale(s => Math.min(3, s * 1.2)), { preventDefault: true });
+    useKeybind("graph.zoomOut", () => setScale(s => Math.max(0.2, s / 1.2)), { preventDefault: true });
 
     // Panning
     const PAN_STEP = 40;
@@ -623,33 +622,33 @@ export default function GraphView() {
         return !!document.activeElement?.closest('[role="menu"], [role="menuitem"], [data-radix-menu-content]');
     };
 
-    useKeybind("arrowup", () => {
+    useKeybind("graph.panUp", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y + 40 }));
     }, { preventDefault: !isAddMenuOpen });
-    useKeybind("arrowdown", () => {
+    useKeybind("graph.panDown", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y - 40 }));
     }, { preventDefault: !isAddMenuOpen });
-    useKeybind("arrowleft", () => {
+    useKeybind("graph.panLeft", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x + 40 }));
     }, { preventDefault: !isAddMenuOpen });
-    useKeybind("arrowright", () => {
+    useKeybind("graph.panRight", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x - 40 }));
     }, { preventDefault: !isAddMenuOpen });
     
-    useKeybind("shift+arrowup", () => {
+    useKeybind("graph.panUpFast", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y + 200 }));
     }, { preventDefault: !isAddMenuOpen });
-    useKeybind("shift+arrowdown", () => {
+    useKeybind("graph.panDownFast", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, y: p.y - 200 }));
     }, { preventDefault: !isAddMenuOpen });
-    useKeybind("shift+arrowleft", () => {
+    useKeybind("graph.panLeftFast", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x + 200 }));
     }, { preventDefault: !isAddMenuOpen });
-    useKeybind("shift+arrowright", () => {
+    useKeybind("graph.panRightFast", () => {
         if (!isAddMenuOpen && !isMenuFocused()) setPan(p => ({ ...p, x: p.x - 200 }));
     }, { preventDefault: !isAddMenuOpen });
 
-    useKeybind("delete", () => {
+    useKeybind("graph.delete", () => {
         if (previewNodeId && !isAddMenuOpen) {
             useStore.setState((state: AppStore) => ({
                 graphNodes: state.graphNodes.filter(n => n.id !== previewNodeId),
@@ -658,22 +657,6 @@ export default function GraphView() {
             setPreviewNodeId(null);
         }
     }, { preventDefault: !isAddMenuOpen });
-
-    useKeybind("backspace", () => {
-        if (previewNodeId && !isAddMenuOpen) {
-            useStore.setState((state: AppStore) => ({
-                graphNodes: state.graphNodes.filter(n => n.id !== previewNodeId),
-                graphEdges: state.graphEdges.filter(e => e.fromId !== previewNodeId && e.toId !== previewNodeId)
-            }));
-            setPreviewNodeId(null);
-        }
-    }, { preventDefault: !isAddMenuOpen });
-
-    useKeybind("n", () => {
-        if (!nodeDialog.open && !isAddMenuOpen) {
-            setIsAddMenuOpen(true);
-        }
-    }, { preventDefault: true, disableInInput: true });
 
     const handleContextMenu = (e: MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect();

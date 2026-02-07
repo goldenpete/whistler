@@ -3,6 +3,7 @@ import { useKeybind } from "@/hooks/use-keybind";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ShortcutGuideDialog } from "@/components/dialogs/ShortcutGuideDialog";
 import { useStore } from "@/store/useStore";
+import { KEYBIND_REGISTRY } from "@/constants/keybinds";
 
 /**
  * Global keyboard shortcuts configuration.
@@ -17,9 +18,14 @@ export function GlobalKeybinds() {
     const lastKeyTime = useRef<number>(0);
     const lastKey = useRef<string | null>(null);
     const lastShiftTime = useRef<number>(0);
+    const lastCleanShiftUpTime = useRef<number>(0);
+    const currentPressDirty = useRef<boolean>(false);
 
-    // Toggle Settings
-    const { toggleSidebar, toggleSidebarCollapse, isSidebarOpen, setSidebarView, setDoubleTapMenuOpen, isDoubleTapMenuOpen } = useStore();
+    const { 
+        toggleSidebar, toggleSidebarCollapse, isSidebarOpen, setSidebarView, 
+        setDoubleTapMenuOpen, isDoubleTapMenuOpen,
+        customKeybinds, disabledKeybinds
+    } = useStore();
 
     const handleNavigation = (path: string, targetView: 'storage' | 'docs' | 'graphs' | 'main') => {
         navigate(path);
@@ -32,15 +38,13 @@ export function GlobalKeybinds() {
     };
 
     // --- Global Shortcuts ---
-    useKeybind("shift+?", () => setShowGuide(prev => !prev), { preventDefault: true });
+    useKeybind("global.showShortcuts", () => setShowGuide(prev => !prev), { preventDefault: true });
     
-    // Settings: Ctrl+,
-    useKeybind("ctrl+,", () => {
-        navigate("/settings");
-    }, { preventDefault: true });
+    // Settings
+    useKeybind("global.settings", () => navigate("/settings"), { preventDefault: true });
 
-    // Toggle Sidebar: Ctrl+B
-    useKeybind("ctrl+b", () => {
+    // Toggle Sidebar
+    useKeybind("global.toggleSidebar", () => {
         if (location.pathname.includes('/file/')) {
             toggleSidebar(!isSidebarOpen);
         } else {
@@ -48,125 +52,121 @@ export function GlobalKeybinds() {
         }
     }, { preventDefault: true });
 
-    // --- Navigation Shortcuts (Legacy) ---
-    useKeybind("1", () => handleNavigation("/storage", "storage"), { preventDefault: true, disableInInput: true });
-    useKeybind("2", () => handleNavigation("/docs", "docs"), { preventDefault: true, disableInInput: true });
-    useKeybind("3", () => handleNavigation("/graphs", "graphs"), { preventDefault: true, disableInInput: true });
-    useKeybind("4", () => handleNavigation("/collections", "main"), { preventDefault: true, disableInInput: true });
-    useKeybind("5", () => handleNavigation("/", "main"), { preventDefault: true, disableInInput: true });
+    // --- Navigation Shortcuts (Single Key / Custom) ---
+    // Note: These useKeybind calls handle cases where the user has customized the key to a single chord,
+    // OR if it's one of the ".num" legacy shortcuts which are single keys by default.
+    // If it's a sequence default (e.g. g+h), useKeybind won't trigger unless customized to simple key.
+    
+    useKeybind("nav.storage", () => handleNavigation("/storage", "storage"), { preventDefault: true, disableInInput: true });
+    useKeybind("nav.storage.num", () => handleNavigation("/storage", "storage"), { preventDefault: true, disableInInput: true });
+    
+    useKeybind("nav.docs", () => handleNavigation("/docs", "docs"), { preventDefault: true, disableInInput: true });
+    useKeybind("nav.docs.num", () => handleNavigation("/docs", "docs"), { preventDefault: true, disableInInput: true });
+
+    useKeybind("nav.graphs", () => handleNavigation("/graphs", "graphs"), { preventDefault: true, disableInInput: true });
+    useKeybind("nav.graphs.num", () => handleNavigation("/graphs", "graphs"), { preventDefault: true, disableInInput: true });
+
+    useKeybind("nav.collections", () => handleNavigation("/collections", "main"), { preventDefault: true, disableInInput: true });
+    useKeybind("nav.collections.num", () => handleNavigation("/collections", "main"), { preventDefault: true, disableInInput: true });
+
+    useKeybind("nav.home", () => handleNavigation("/", "main"), { preventDefault: true, disableInInput: true });
+    useKeybind("nav.home.num", () => handleNavigation("/", "main"), { preventDefault: true, disableInInput: true });
+
+    // Double Tap Menu (Customized Case)
+    useKeybind("global.doubleTapMenu", () => setDoubleTapMenuOpen(!isDoubleTapMenuOpen));
 
     // --- Sequence Handler (G + Key) & Double Shift ---
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Double Shift Logic
-            if (e.key === "Shift" && !e.repeat) {
-                const now = Date.now();
-                if (now - lastShiftTime.current < 300) {
-                    // Double tap detected
-                    setDoubleTapMenuOpen(!isDoubleTapMenuOpen);
-                    lastShiftTime.current = 0; // Reset
-                } else {
-                    lastShiftTime.current = now;
+        // Build dynamic map of G-sequences from registry + custom keybinds
+        const gSequences: Record<string, string> = {};
+        
+        Object.values(KEYBIND_REGISTRY).forEach(def => {
+            // We only care about navigation sequences that default to starting with g+
+            // or if the user explicitly set a custom keybind that starts with g+
+            if (!def.isSequence && !customKeybinds[def.id]) return;
+
+            const effectiveKey = customKeybinds[def.id] || def.defaultKey;
+            const parts = effectiveKey.toLowerCase().split('+').map(p => p.trim());
+            
+            // check if it is a "g + <char>" sequence
+            if (parts.length === 2 && parts[0] === 'g') {
+                const secondKey = parts[1];
+                // Only register if not disabled
+                if (!disabledKeybinds.includes(def.id)) {
+                    gSequences[secondKey] = def.id;
                 }
-            } else if (e.key !== "Shift") {
-                // If any other key is pressed, reset the shift timer
-                lastShiftTime.current = 0;
+            }
+        });
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Track if key press is "dirty" for double shift (any non-shift key makes it dirty)
+            if (e.key === 'Shift') {
+                currentPressDirty.current = false;
+            } else {
+                currentPressDirty.current = true;
+                lastCleanShiftUpTime.current = 0;
             }
 
-            // Ignore if in input for other shortcuts
+            // Ignore inputs for navigation sequences
             const target = e.target as HTMLElement;
-            if (
-                target.tagName === 'INPUT' || 
-                target.tagName === 'TEXTAREA' || 
-                target.isContentEditable
-            ) {
-                return;
-            }
+            const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+            
+            if (isInput) return;
 
             const now = Date.now();
             const key = e.key.toLowerCase();
 
-            // Check for sequence timeout (1 second)
+            // G-Sequence Logic
             if (now - lastKeyTime.current > 1000) {
                 lastKey.current = null;
             }
 
-            // Check for G-sequence completion
             if (lastKey.current === 'g') {
-                let handled = false;
-                switch (key) {
-                    case 'h':
-                        handleNavigation("/", "main");
-                        handled = true;
-                        break;
-                    case 's':
-                        handleNavigation("/storage", "storage");
-                        handled = true;
-                        break;
-                    case 'c':
-                        handleNavigation("/collections", "main");
-                        handled = true;
-                        break;
-                    case 'd':
-                        handleNavigation("/docs", "docs");
-                        handled = true;
-                        break;
-                    case 'g':
-                        handleNavigation("/graphs", "graphs");
-                        handled = true;
-                        break;
-                }
+                // Check against our dynamic map
+                const targetId = gSequences[key];
 
-                if (handled) {
+                if (targetId) {
+                    switch (targetId) {
+                        case "nav.home": handleNavigation("/", "main"); break;
+                        case "nav.storage": handleNavigation("/storage", "storage"); break;
+                        case "nav.collections": handleNavigation("/collections", "main"); break;
+                        case "nav.docs": handleNavigation("/docs", "docs"); break;
+                        case "nav.graphs": handleNavigation("/graphs", "graphs"); break;
+                    }
+                    
                     e.preventDefault();
-                    lastKey.current = null; // Reset sequence
+                    lastKey.current = null;
                     return;
                 }
             }
 
-            // Start sequence
+            // Start G sequence
             if (key === 'g' && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 lastKey.current = 'g';
                 lastKeyTime.current = now;
-                // We don't prevent default on 'g' immediately to allow typing if focus check fails? 
-                // But we checked focus above.
             } else if (!['shift', 'control', 'alt', 'meta'].includes(key)) {
-                // Reset if any other key is pressed that isn't a modifier
                 lastKey.current = null;
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [navigate]);
-
-    // --- Double Shift Menu ---
-    useEffect(() => {
-        let lastCleanShiftUpTime = 0;
-        let currentPressDirty = false;
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Shift') {
-                currentPressDirty = false;
-            } else {
-                currentPressDirty = true;
-                lastCleanShiftUpTime = 0; // Invalidate sequence if any other key is pressed
-            }
-        };
-
         const handleKeyUp = (e: KeyboardEvent) => {
+            // Double Shift Logic (Shift Up)
             if (e.key === 'Shift') {
-                if (!currentPressDirty) {
-                    const now = Date.now();
-                    if (now - lastCleanShiftUpTime < 300) {
-                        useStore.getState().setDoubleTapMenuOpen(true);
-                        lastCleanShiftUpTime = 0;
+                const id = "global.doubleTapMenu";
+                // Only if NOT customized and NOT disabled
+                if (!customKeybinds[id] && !disabledKeybinds.includes(id)) {
+                    if (!currentPressDirty.current) {
+                        const now = Date.now();
+                        if (now - lastCleanShiftUpTime.current < 300) {
+                            // Double tap detected
+                            setDoubleTapMenuOpen(true);
+                            lastCleanShiftUpTime.current = 0;
+                        } else {
+                            lastCleanShiftUpTime.current = now;
+                        }
                     } else {
-                        lastCleanShiftUpTime = now;
+                        lastCleanShiftUpTime.current = 0;
                     }
-                } else {
-                    // If dirty, we don't start a sequence, and we break any existing one
-                    lastCleanShiftUpTime = 0;
                 }
             }
         };
@@ -178,7 +178,7 @@ export function GlobalKeybinds() {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, []);
+    }, [navigate, isDoubleTapMenuOpen, customKeybinds, disabledKeybinds]);
 
     return <ShortcutGuideDialog open={showGuide} onOpenChange={setShowGuide} />;
 }
