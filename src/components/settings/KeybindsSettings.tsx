@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
 import { KEYBIND_REGISTRY, KEYBIND_CATEGORIES, type KeybindDefinition } from "@/constants/keybinds";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/toggle-switch";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export function KeybindsSettings() {
     const [capturedKey, setCapturedKey] = useState<string>("");
     const [conflictId, setConflictId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string>("All");
     const [collapsedCategories, setCollapsedCategories] = useState<string[]>([]);
 
     const toggleCategory = (category: string) => {
@@ -131,6 +133,17 @@ export function KeybindsSettings() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger className="w-[140px] h-7 text-xs bg-zinc-900/50 border-zinc-800 focus:bg-zinc-900">
+                            <SelectValue placeholder="Filter category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="All">All Categories</SelectItem>
+                            {KEYBIND_CATEGORIES.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Button variant="outline" size="sm" onClick={resetKeybinds}>
                         <ArrowCounterClockwise className="mr-2 h-4 w-4" />
                         Reset Defaults
@@ -143,7 +156,7 @@ export function KeybindsSettings() {
             </div>
 
             <div className="space-y-6">
-                {KEYBIND_CATEGORIES.map(category => {
+                {KEYBIND_CATEGORIES.filter(c => selectedCategory === "All" || c === selectedCategory).map(category => {
                     const items = Object.values(KEYBIND_REGISTRY).filter(item => {
                         if (item.category !== category) return false;
                         if (!searchQuery) return true;
