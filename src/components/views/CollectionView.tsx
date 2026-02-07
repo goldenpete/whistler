@@ -94,6 +94,17 @@ export default function CollectionView() {
     const activeProject = projects.find(p => p.id === activeProjectId);
     const collectionIdToUse = id || activeCollectionId;
     const activeCollection = collections.find(c => c.id === collectionIdToUse);
+
+    if (collectionIdToUse && !activeCollection) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full bg-transparent text-foreground">
+                <h1 className="text-xl font-semibold">Collection Not Found</h1>
+                <p className="text-muted-foreground mt-2">The collection you are looking for does not exist or has been deleted.</p>
+                <Button className="mt-4" onClick={() => navigate('/')}>Go Home</Button>
+            </div>
+        );
+    }
+
     const selectedHighlight = highlights.find(h => h.id === selectedHighlightId) || null;
     const selectedFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) || null : null;
 
