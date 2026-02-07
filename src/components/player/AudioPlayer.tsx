@@ -13,7 +13,7 @@ import {
     SpeakerX, 
     Repeat, 
     ArrowCounterClockwise,
-    ArrowsCounterClockwise,
+    ArrowClockwise,
     MusicNotes,
     Minus,
     Plus
@@ -247,7 +247,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
 
             {/* Controls Container */}
             {showControls && (
-                <div className="w-full max-w-2xl bg-zinc-900/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-800/50 shadow-xl">
+                <div 
+                    className="w-full max-w-2xl bg-zinc-900/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-800/50 shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {/* Progress Bar */}
                     <div className="mb-6 space-y-2 relative group/seek">
                         {/* Highlights Overlay - Only show when not in highlight mode */}
@@ -272,16 +275,18 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                                 })}
                             </div>
                         )}
-                        <Slider
-                            value={[relativeTime]}
-                            max={segmentDuration || 100}
-                            step={0.1}
-                            onValueChange={(val: number[]) => {
-                                const newTime = highlight ? highlight.start + val[0] : val[0];
-                                handleSeek([newTime]);
-                            }}
-                            className="cursor-pointer"
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <Slider
+                                value={[relativeTime]}
+                                max={segmentDuration || 100}
+                                step={0.1}
+                                onValueChange={(val: number[]) => {
+                                    const newTime = highlight ? highlight.start + val[0] : val[0];
+                                    handleSeek([newTime]);
+                                }}
+                                className="cursor-pointer"
+                            />
+                        </div>
                         <div className="flex justify-between text-xs font-mono text-zinc-500">
                             <span>{formatSeconds(relativeTime)}</span>
                             <span>{formatSeconds(segmentDuration)}</span>
@@ -291,8 +296,13 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                     {/* Main Controls */}
                     <div className="flex items-center justify-between">
                         {/* Left: Volume */}
-                        <div className="flex items-center gap-2 w-32">
-                            <Button variant="ghost" size="icon" onClick={toggleMute} className="text-zinc-400 hover:text-white">
+                        <div className="flex items-center gap-2 w-32" onClick={(e) => e.stopPropagation()}>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => { e.stopPropagation(); toggleMute(); }} 
+                                className="text-zinc-400 hover:text-white"
+                            >
                                 {isMuted ? <SpeakerX size={20} /> : <SpeakerHigh size={20} />}
                             </Button>
                             <Slider
@@ -309,18 +319,22 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={() => { 
+                                onClick={(e) => { 
+                                    e.stopPropagation();
                                     playSfx('cursor');
                                     if (audioRef.current) audioRef.current.currentTime -= 10; 
                                 }}
-                                className="text-zinc-400 hover:text-white"
+                                className="text-zinc-400 hover:text-white flex flex-col items-center gap-0.5 h-auto py-1"
+                                title="Rewind 10s"
                             >
-                                <ArrowCounterClockwise size={24} weight="fill" />
+                                <ArrowCounterClockwise size={20} weight="bold" />
+                                <span className="text-[10px] font-medium leading-none">10</span>
                             </Button>
 
                             <Button 
                                 size="icon" 
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.stopPropagation();
                                     playSfx('cursor');
                                     togglePlay();
                                 }}
@@ -332,24 +346,28 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={() => { 
+                                onClick={(e) => { 
+                                    e.stopPropagation();
                                     playSfx('cursor');
                                     if (audioRef.current) audioRef.current.currentTime += 10; 
                                 }}
-                                className="text-zinc-400 hover:text-white"
+                                className="text-zinc-400 hover:text-white flex flex-col items-center gap-0.5 h-auto py-1"
+                                title="Skip 10s"
                             >
-                                <ArrowsCounterClockwise size={24} weight="fill" />
+                                <ArrowClockwise size={20} weight="bold" />
+                                <span className="text-[10px] font-medium leading-none">10</span>
                             </Button>
                         </div>
 
                         {/* Right: Options */}
-                        <div className="flex items-center gap-2 w-32 justify-end">
+                        <div className="flex items-center gap-2 w-32 justify-end" onClick={(e) => e.stopPropagation()}>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button 
                                         variant="ghost" 
                                         size="sm" 
                                         className="text-xs font-bold text-zinc-400 hover:text-white w-12"
+                                        onClick={(e) => e.stopPropagation()}
                                     >
                                         {playbackRate}x
                                     </Button>
@@ -398,7 +416,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={() => { playSfx('cursor'); toggleLoop(); }}
+                                onClick={(e) => { e.stopPropagation(); playSfx('cursor'); toggleLoop(); }}
                                 className={cn(
                                     "transition-colors",
                                     isLooping ? "text-primary bg-primary/10" : "text-zinc-400 hover:text-white"

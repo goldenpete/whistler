@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@/store/useStore";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { HardDrives, FileText, Graph, ArrowRight } from "@phosphor-icons/react";
+import { HardDrives, FileText, Graph, ArrowRight, House, Folders } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -11,34 +11,44 @@ export function DoubleTapMenu() {
 
     const menuItems = [
         {
+            id: 'home',
+            label: 'Home',
+            icon: House,
+            path: '/',
+            description: 'Dashboard & Overview',
+            shortcut: 'G + H'
+        },
+        {
+            id: 'collections',
+            label: 'Collections',
+            icon: Folders,
+            path: '/collections',
+            description: 'Organize your media',
+            shortcut: 'G + C'
+        },
+        {
             id: 'storage',
             label: 'Storage',
             icon: HardDrives,
             path: '/storage',
-            description: 'Manage your files and folders',
-            color: 'text-blue-400',
-            bg: 'bg-blue-400/10',
-            border: 'border-blue-400/20'
+            description: 'File system access',
+            shortcut: 'G + S'
         },
         {
             id: 'docs',
             label: 'Documents',
             icon: FileText,
             path: '/docs',
-            description: 'Write and edit documents',
-            color: 'text-emerald-400',
-            bg: 'bg-emerald-400/10',
-            border: 'border-emerald-400/20'
+            description: 'Notes & Documentation',
+            shortcut: 'G + D'
         },
         {
             id: 'graphs',
             label: 'Graphs',
             icon: Graph,
             path: '/graphs',
-            description: 'Visualize connections and nodes',
-            color: 'text-violet-400',
-            bg: 'bg-violet-400/10',
-            border: 'border-violet-400/20'
+            description: 'Node visualizations',
+            shortcut: 'G + G'
         }
     ];
 
@@ -49,36 +59,35 @@ export function DoubleTapMenu() {
 
     return (
         <Dialog open={isDoubleTapMenuOpen} onOpenChange={setDoubleTapMenuOpen}>
-            <DialogContent className="max-w-4xl bg-transparent border-none shadow-none p-0 outline-none">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
+            <DialogContent className="max-w-5xl bg-transparent border-none shadow-none p-0 outline-none">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4">
                     {menuItems.map((item, index) => (
                         <motion.button
                             key={item.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
+                            transition={{ delay: index * 0.05 }}
                             onClick={() => handleNavigate(item.path)}
                             className={cn(
-                                "flex flex-col items-start p-6 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] group text-left",
-                                "bg-zinc-950/90 hover:bg-zinc-900/90",
-                                item.border
+                                "flex flex-col items-center justify-center p-6 rounded-xl border transition-all duration-200 group text-center h-48",
+                                "bg-zinc-950/80 backdrop-blur-md border-zinc-800/50",
+                                "hover:bg-zinc-900 hover:border-zinc-700 hover:shadow-2xl hover:scale-105"
                             )}
                         >
-                            <div className={cn("p-3 rounded-xl mb-4", item.bg, item.color)}>
-                                <item.icon size={32} weight="duotone" />
+                            <div className="mb-4 text-zinc-400 group-hover:text-white transition-colors duration-300">
+                                <item.icon size={48} weight="thin" />
                             </div>
                             
-                            <h3 className="text-xl font-bold text-white mb-2 group-hover:text-primary transition-colors">
+                            <h3 className="text-lg font-medium text-zinc-200 group-hover:text-white mb-1 tracking-tight">
                                 {item.label}
                             </h3>
                             
-                            <p className="text-sm text-zinc-400 mb-6 flex-1">
+                            <p className="text-xs text-zinc-500 group-hover:text-zinc-400 mb-4">
                                 {item.description}
                             </p>
 
-                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 group-hover:text-white transition-colors">
-                                <span>Open</span>
-                                <ArrowRight weight="bold" />
+                            <div className="mt-auto px-2 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-500 group-hover:border-zinc-600 transition-colors">
+                                {item.shortcut}
                             </div>
                         </motion.button>
                     ))}
