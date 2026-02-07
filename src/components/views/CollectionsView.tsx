@@ -1,19 +1,5 @@
-import React, { useState, useMemo, type ChangeEvent } from "react";
-import { useStore } from "@/store/useStore";
-import { useShallow } from "@/lib/zustand-shallow";
-import { useNavigate } from "react-router-dom";
-import {
-    MagnifyingGlass,
-    CaretUp,
-    CaretDown,
-    CheckSquare,
-    Square,
-    Trash,
-    PencilSimple,
-    Plus,
-    Tag
-} from "@phosphor-icons/react";
 import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
+import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,13 +14,20 @@ import { cn } from "@/lib/utils";
 import { getIcon } from "@/utils/iconMap";
 import { type Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
-import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
-import { getYouTubeId } from "@/components/player/YouTubePlayer";
-import { thumbnailStorage } from "@/lib/thumbnailDb";
-import { useEffect } from "react";
-import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
-
-
+import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
+import { useNavigate } from "react-router-dom";
+import {
+    MagnifyingGlass,
+    CaretUp,
+    CaretDown,
+    CheckSquare,
+    Square,
+    Trash,
+    Plus,
+    Tag
+} from "@phosphor-icons/react";
+import React, { useState, useMemo, type ChangeEvent } from "react";
 
 type SortOption = "name" | "date" | "items";
 type SortDirection = "asc" | "desc";
@@ -45,18 +38,14 @@ export default function CollectionsView() {
         collections, 
         activeProjectId, 
         trashCollection,
-        updateCollection,
         setActiveCollection,
-        setSidebarView,
         highlights,
         files
     } = useStore(useShallow((state) => ({
         collections: state.collections,
         activeProjectId: state.activeProjectId,
         trashCollection: state.trashCollection,
-        updateCollection: state.updateCollection,
         setActiveCollection: state.setActiveCollection,
-        setSidebarView: state.setSidebarView,
         highlights: state.highlights,
         files: state.files
     })));
@@ -108,21 +97,11 @@ export default function CollectionsView() {
                     comparison = a.name.localeCompare(b.name);
                     break;
                 case "date":
-                    // Assuming collections have createdAt or similar, otherwise fallback to name or ID
-                    // If createdAt is missing in types, we might need to rely on something else or mock it
-                    // For now, let's assume createdAt exists or use ID as proxy for creation time if sequential
-                    // Checking type definition would be good, but assuming createdAt or updatedAt usually exists.
-                    // If not, we'll fix it. Let's assume 'updatedAt' or 'createdAt' exists.
-                    // Based on other files, it likely has dates.
                     const dateA = a.lastModified || a.created || 0;
                     const dateB = b.lastModified || b.created || 0;
                     comparison = dateA - dateB;
                     break;
                 case "items":
-                     // We don't have item count directly on collection object usually, 
-                     // unless we calculate it from highlights/files. 
-                     // For simplicity, let's skip 'items' sort or implement if easy.
-                     // Let's stick to name and date for now.
                      comparison = 0;
                      break;
             }
@@ -149,7 +128,6 @@ export default function CollectionsView() {
     };
 
     const handleBulkDelete = () => {
-        // Implement bulk delete
         selectedIds.forEach(id => trashCollection(id));
         setSelectedIds(new Set());
         setSelectionMode(false);
@@ -161,9 +139,6 @@ export default function CollectionsView() {
         } else {
             setActiveCollection(id);
             navigate(`/collection/${id}`);
-            // navigate(`/collections`); // Old route
-            // We are changing the route for single collection to /collection/:id (or similar)
-            // But wait, if I haven't updated App.tsx yet, I should match what I WILL do.
         }
     };
 
