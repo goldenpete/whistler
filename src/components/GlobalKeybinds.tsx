@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useKeybind } from "@/hooks/use-keybind";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ShortcutGuideDialog } from "@/components/dialogs/ShortcutGuideDialog";
 import { useStore } from "@/store/useStore";
 
@@ -10,6 +10,7 @@ import { useStore } from "@/store/useStore";
  */
 export function GlobalKeybinds() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [showGuide, setShowGuide] = useState(false);
     
     // Sequence state
@@ -18,7 +19,7 @@ export function GlobalKeybinds() {
     const lastShiftTime = useRef<number>(0);
 
     // Toggle Settings
-    const { toggleSidebar, setSidebarView, setDoubleTapMenuOpen, isDoubleTapMenuOpen } = useStore();
+    const { toggleSidebar, toggleSidebarCollapse, isSidebarOpen, setSidebarView, setDoubleTapMenuOpen, isDoubleTapMenuOpen } = useStore();
 
     const handleNavigation = (path: string, targetView: 'storage' | 'docs' | 'graphs' | 'main') => {
         navigate(path);
@@ -40,7 +41,11 @@ export function GlobalKeybinds() {
 
     // Toggle Sidebar: Ctrl+B
     useKeybind("ctrl+b", () => {
-        toggleSidebarCollapse();
+        if (location.pathname.includes('/file/')) {
+            toggleSidebar(!isSidebarOpen);
+        } else {
+            toggleSidebarCollapse();
+        }
     }, { preventDefault: true });
 
     // --- Navigation Shortcuts (Legacy) ---
