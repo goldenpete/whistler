@@ -230,10 +230,10 @@ export default function App() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomeView />} />
-          <Route path="/storage/:id" element={<StorageView />} />
+          <Route path="/storage/:id?" element={<StorageView />} />
           <Route path="/file/:id" element={<FileView />} />
           <Route path="/docs/:id?" element={<DocsView />} />
-          <Route path="/graph/:id?" element={<GraphView />} />
+          <Route path="/graphs/:id?" element={<GraphView />} />
           <Route path="/collection/:id" element={<CollectionView />} />
           <Route path="/collections" element={<CollectionsView />} />
           <Route path="/settings" element={<SettingsView />} />

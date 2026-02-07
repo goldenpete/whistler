@@ -728,7 +728,7 @@ export default function HomeView() {
         switch (item.type) {
             case 'file':
                 if (item.subType === 'folder') {
-                    navigate(`/storage?folderId=${item.id}`);
+                    navigate(`/storage/${item.data.storageId}?folderId=${item.id}`);
                 } else {
                     useStore.getState().setActiveFile(item.id);
                     navigate(`/file/${item.id}`);
@@ -736,15 +736,15 @@ export default function HomeView() {
                 break;
             case 'doc':
                 useStore.getState().setActiveDoc(item.id);
-                navigate('/docs');
+                navigate(`/docs/${item.id}`);
                 break;
             case 'collection':
                 useStore.getState().setActiveCollection(item.id);
-                navigate('/collections');
+                navigate(`/collection/${item.id}`);
                 break;
             case 'graph':
                 useStore.getState().setActiveGraph(item.id);
-                navigate('/graphs');
+                navigate(`/graphs/${item.id}`);
                 break;
             case 'highlight':
                 if (item.data.file) {
@@ -755,7 +755,7 @@ export default function HomeView() {
                 break;
             case 'storage':
                 useStore.setState({ activeStorageId: item.id });
-                navigate('/storage');
+                navigate(`/storage/${item.id}`);
                 break;
             case 'project':
                 useStore.setState({ activeProjectId: item.id });
