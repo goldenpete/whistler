@@ -23,7 +23,7 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
     const { accentTheme, customAccentThemes } = useStore();
 
     // If it's a preset theme, use the PNG directly
-    if (LOGO_MAP[accentTheme]) {
+    if (accentTheme && LOGO_MAP[accentTheme]) {
         return (
             <img 
                 src={LOGO_MAP[accentTheme]} 
@@ -35,7 +35,7 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
     }
 
     // If it's a custom theme, use SVG reconstruction
-    if (accentTheme.startsWith('custom-')) {
+    if (accentTheme && accentTheme.startsWith('custom-')) {
         const customTheme = customAccentThemes?.[accentTheme];
         const primaryColor = customTheme?.colors['--primary'] || '#f59e0b'; // Default to orange if not found
         const primaryForeground = customTheme?.colors['--primary-foreground'] || '#ffffff';
