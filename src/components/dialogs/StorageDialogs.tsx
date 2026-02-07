@@ -466,24 +466,27 @@ function extractFilename(url: string): string {
 interface RenameFileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string, description: string) => void;
+    onSubmit: (name: string, description: string, url: string) => void;
     initialName: string;
     initialDescription?: string;
+    initialUrl?: string;
     showDescription?: boolean;
 }
 
-export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "", showDescription = true }: RenameFileDialogProps) {
+export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "", initialUrl = "", showDescription = true }: RenameFileDialogProps) {
     const [name, setName] = useState(initialName);
     const [description, setDescription] = useState(initialDescription);
+    const [url, setUrl] = useState(initialUrl);
 
     useEffect(() => {
         setName(initialName);
         setDescription(initialDescription || "");
-    }, [initialName, initialDescription, open]);
+        setUrl(initialUrl || "");
+    }, [initialName, initialDescription, initialUrl, open]);
 
     const handleSubmit = () => {
         if (!name.trim()) return;
-        onSubmit(name.trim(), description.trim());
+        onSubmit(name.trim(), description.trim(), url.trim());
         onOpenChange(false);
     };
 
@@ -513,6 +516,19 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                             className="bg-zinc-900 border-zinc-800"
                         />
                     </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="rename-file-url">Link</Label>
+                        <Input
+                            id="rename-file-url"
+                            placeholder="https://..."
+                            value={url}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="bg-zinc-900 border-zinc-800 font-mono text-xs"
+                        />
+                    </div>
+
                     {showDescription && (
                         <div className="space-y-2">
                             <Label htmlFor="rename-file-description">Description</Label>
@@ -521,7 +537,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                                 placeholder="Add a description..."
                                 value={description}
                                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-                                className="bg-zinc-900 border-zinc-800 resize-none h-32"
+                                className="bg-zinc-900 border-zinc-800 resize-none h-24"
                             />
                         </div>
                     )}
@@ -531,7 +547,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                         Cancel
                     </Button>
                     <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground" data-sound-confirm>
-                        Save Changes
+                        Save
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -763,14 +763,14 @@ export default function HomeView() {
         }
     };
 
-    const handleRename = (name: string, description?: string, color?: string, icon?: string) => {
+    const handleRename = (name: string, description?: string, color?: string, icon?: string, url?: string) => {
         if (!renameItem) return;
 
         const { id, type } = renameItem;
         
         switch (type) {
             case 'file':
-                useStore.getState().updateFile(id, { name, description });
+                useStore.getState().updateFile(id, { name, description, url });
                 break;
             case 'doc':
                 if (color || icon) {
@@ -1094,9 +1094,10 @@ export default function HomeView() {
                     <RenameFileDialog
                         open={renameFileOpen}
                         onOpenChange={setRenameFileOpen}
-                        onSubmit={(name, description) => handleRename(name, description)}
+                        onSubmit={(name, description, url) => handleRename(name, description, undefined, undefined, url)}
                         initialName={renameItem.name}
                         initialDescription={renameItem.data.description}
+                        initialUrl={renameItem.data.url}
                     />
                     <EditDocDialog
                         open={renameDocOpen}

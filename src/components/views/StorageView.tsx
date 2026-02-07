@@ -742,6 +742,8 @@ export default function StorageView() {
                 onSubmit={handleRenameSubmit}
                 initialName={fileToRename?.name || ""}
                 initialDescription={fileToRename?.description || ""}
+                initialUrl={fileToRename?.url || ""}
+                showDescription={fileToRename?.type !== 'folder'}
             />
             <EditFolderDialog
                 open={editFolderOpen}
