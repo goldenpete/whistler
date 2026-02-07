@@ -1,0 +1,31 @@
+[33mcommit b6bfb6b8a0d7fa08f695a984c8dd6a1b9c394e54[m
+Author: goldenpete <peteawesome@icloud.com>
+Date:   Thu Jan 15 16:02:50 2026 -0500
+
+    feat: Introduce legacy application structure, Cloudflare Worker for sync, and rebuilt core logic.
+
+public/CNAME
+public/legacy/.github/workflows/deploy.yml
+public/legacy/.gitignore
+public/legacy/.vscode/settings.json
+public/legacy/CNAME
+public/legacy/LICENSE
+public/legacy/README.md
+public/legacy/android-chrome-192x192.png
+public/legacy/android-chrome-512x512.png
+public/legacy/app.js
+public/legacy/apple-touch-icon.png
+public/legacy/favicon-16x16.png
+public/legacy/favicon-32x32.png
+public/legacy/favicon.ico
+public/legacy/index.html
+public/legacy/site.webmanifest
+public/legacy/style.css
+public/legacy/whistler.js
+public/legacy/worker/README.md
+public/legacy/worker/package-lock.json
+public/legacy/worker/package.json
+public/legacy/worker/schema.sql
+public/legacy/worker/src/index.js
+public/legacy/worker/wrangler.toml
+vite.config.ts
