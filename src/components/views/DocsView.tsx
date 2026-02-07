@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, type ChangeEvent } fro
 import { useStore, type AppStore } from "@/store/useStore";
 import type { Doc, File as AppFile, Collection, Highlight } from "@/types";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useKeybind } from "@/hooks/use-keybind";
 import {
@@ -31,8 +31,16 @@ import { sanitizeHTML } from "@/utils/security";
 import { FilePickerDialog } from "@/components/dialogs/FilePickerDialog";
 
 export default function DocsView() {
+    const { id } = useParams();
     const { docs, activeDocId, activeProjectId } = useStore();
     const activeDoc = docs.find((d: Doc) => d.id === activeDocId && !d.deleted);
+
+    // Sync URL to store
+    useEffect(() => {
+        if (id && id !== activeDocId) {
+            useStore.setState({ activeDocId: id });
+        }
+    }, [id, activeDocId]);
 
     // Auto-select first doc if none active
     useEffect(() => {

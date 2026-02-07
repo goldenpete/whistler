@@ -28,13 +28,14 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const NODE_RADIUS = 18;
 const COLORS = ["#f97316", "#8b5cf6", "#10b981", "#3b82f6", "#ef4444", "#eab308"];
 const GRAPH_VIEW_KEY_PREFIX = "graph_view_";
 
 export default function GraphView() {
+    const { id } = useParams();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const imagesRef = useRef<Record<string, HTMLImageElement>>({});
@@ -64,6 +65,12 @@ export default function GraphView() {
         addEdge: state.addEdge,
         removeEdge: state.removeEdge
     })));
+
+    useEffect(() => {
+        if (id && id !== activeGraphId) {
+            useStore.setState({ activeGraphId: id });
+        }
+    }, [id, activeGraphId]);
 
     const activeGraph = graphs.find((g: Graph) => g.id === activeGraphId && !g.deleted);
     const nodes: GraphNode[] = graphNodes.filter((n: GraphNode) => n.graphId === activeGraphId);

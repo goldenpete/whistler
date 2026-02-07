@@ -106,7 +106,7 @@ interface VideoPlayerProps {
 }
 
 export default function VideoPlayer({ fileIdOverride, floating = false, isMinimized: isMinimizedProp, windowZIndex, onFocus, onMinimize, onClose, onExitFloating }: VideoPlayerProps) {
-    const { fileId: routeFileId } = useParams() as { fileId?: string };
+    const { id: routeFileId } = useParams() as { id?: string };
     const fileId = fileIdOverride ?? routeFileId;
     const navigate = useNavigate();
     const { 

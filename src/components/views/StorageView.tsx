@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import type { ReactElement, MouseEvent, ReactNode, CSSProperties, ChangeEvent, SyntheticEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
     HardDrives, Folder, File as FileIcon, FilePdf, FileText, Image, MusicNote, VideoCamera,
@@ -88,6 +88,7 @@ const STORAGE_COLORS = [
 
 
 export default function StorageView() {
+    const { id } = useParams();
     const {
         projects,
         activeProjectId,
@@ -105,6 +106,12 @@ export default function StorageView() {
         trashFile: state.trashFile,
         addStorage: state.addStorage,
     })));
+
+    useEffect(() => {
+        if (id && id !== activeStorageId) {
+            useStore.setState({ activeStorageId: id });
+        }
+    }, [id, activeStorageId]);
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [addFileOpen, setAddFileOpen] = useState(false);
