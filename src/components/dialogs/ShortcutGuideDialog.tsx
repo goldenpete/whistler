@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from "@/store/useStore";
 import { KEYBIND_REGISTRY } from "@/constants/keybinds";
+import { formatKey } from "@/lib/utils";
 
 interface ShortcutGuideDialogProps {
     open: boolean;
@@ -78,7 +79,7 @@ const DynamicShortcutRow = ({ ids, label, icon: Icon, customKeys, extraKeys }: {
         const parts = keyStr.includes(' ') ? keyStr.split(' ') : keyStr.split('+');
         
         parts.forEach((part, pIndex) => {
-             keysToRender.push(<Key key={`${id}-${pIndex}`}>{part}</Key>);
+             keysToRender.push(<Key key={`${id}-${pIndex}`}>{formatKey(part)}</Key>);
         });
     });
 

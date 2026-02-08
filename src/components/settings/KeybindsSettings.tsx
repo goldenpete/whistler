@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/toggle-switch";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { PencilSimple, ArrowCounterClockwise, Warning, DownloadSimple, Keyboard, MagnifyingGlass, CaretRight } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn, formatKey } from "@/lib/utils";
 
 const KeyDisplay = ({ k }: { k: string }) => {
     if (!k) return null;
@@ -18,7 +18,7 @@ const KeyDisplay = ({ k }: { k: string }) => {
                 <div key={i} className="flex items-center gap-1">
                     {i > 0 && <span className="text-zinc-600 text-xs">+</span>}
                     <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold font-mono text-zinc-400 bg-zinc-800 border border-zinc-700 rounded shadow-[0_1px_0_rgba(0,0,0,0.2)] select-none uppercase whitespace-nowrap">
-                        {part}
+                        {formatKey(part)}
                     </span>
                 </div>
             ))}
