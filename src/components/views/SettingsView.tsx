@@ -520,7 +520,7 @@ export default function SettingsView() {
                                                         { key: '--primary', label: 'Primary' },
                                                         { key: '--primary-foreground', label: 'Primary Text' },
                                                         { key: '--accent', label: 'Accent' },
-                                                        { key: '--accent-foreground', label: 'Accent Text' },
+                                                        { key: '--accent-foreground', label: 'Accent Text (Hover)' },
                                                     ] as const;
 
                                                     return (
@@ -540,6 +540,21 @@ export default function SettingsView() {
                                                                         </DialogDescription>
                                                                     </DialogHeader>
                                                                     
+                                                                    <div className="grid grid-cols-2 gap-4 py-2">
+                                                                        <div className="flex flex-col gap-2 items-center p-4 rounded-lg border border-border bg-card">
+                                                                            <span className="text-xs font-medium text-muted-foreground">Primary</span>
+                                                                            <div className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-sm">
+                                                                                Active Item
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-2 items-center p-4 rounded-lg border border-border bg-card">
+                                                                            <span className="text-xs font-medium text-muted-foreground">Accent (Hover)</span>
+                                                                            <div className="px-4 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium shadow-sm">
+                                                                                Hover Item
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
                                                                     <div className="space-y-4 py-2">
                                                                         {themeSlots.map((slot) => (
                                                                             <div key={slot.key} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/50 transition-colors">
