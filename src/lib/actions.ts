@@ -50,68 +50,6 @@ export interface ActionDefinition {
 }
 
 export const ACTION_REGISTRY: ActionDefinition[] = [
-    // --- Navigation ---
-    {
-        id: "nav.home",
-        labels: ["Go Home", "Home"],
-        description: "Navigate to the home dashboard",
-        icon: House,
-        execute: ({ navigate }) => {
-            navigate("/");
-            return { type: 'success' };
-        }
-    },
-    {
-        id: "nav.storage",
-        labels: ["Go Storage", "Storage"],
-        description: "Browse files and folders",
-        icon: HardDrives,
-        execute: ({ navigate }) => {
-            navigate("/storage");
-            return { type: 'success' };
-        }
-    },
-    {
-        id: "nav.settings",
-        labels: ["Go Settings", "Settings"],
-        description: "Open application settings",
-        icon: Gear,
-        execute: ({ navigate }) => {
-            navigate("/settings");
-            return { type: 'success' };
-        }
-    },
-    {
-        id: "nav.docs",
-        labels: ["Go Docs", "Docs"],
-        description: "View documents",
-        icon: FileText,
-        execute: ({ navigate }) => {
-            navigate("/docs");
-            return { type: 'success' };
-        }
-    },
-    {
-        id: "nav.graphs",
-        labels: ["Go Graphs", "Graphs"],
-        description: "View knowledge graphs",
-        icon: Graph,
-        execute: ({ navigate }) => {
-            navigate("/graphs");
-            return { type: 'success' };
-        }
-    },
-    {
-        id: "nav.trash",
-        labels: ["Go Trash", "Trash"],
-        description: "View deleted items",
-        icon: Trash,
-        execute: ({ navigate }) => {
-            navigate("/trash");
-            return { type: 'success' };
-        }
-    },
-
     // --- Creation (Simple) ---
     {
         id: "create.folder",

@@ -21,7 +21,8 @@ import {
     HardDrives,
     NotePencil,
     Graph,
-    Trash,
+    House,
+    Gear,
 } from "@phosphor-icons/react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
@@ -230,6 +231,10 @@ export function SpotlightSearch() {
                     <>
                         {/* Quick Navigation */}
                         <CommandGroup heading="Navigation">
+                            <CommandItem onSelect={() => handleNavigation("/")}>
+                                <House className="mr-2 h-4 w-4" />
+                                <span>Home</span>
+                            </CommandItem>
                             <CommandItem onSelect={() => handleNavigation("/storage")}>
                                 <HardDrives className="mr-2 h-4 w-4" />
                                 <span>Storage</span>
@@ -242,9 +247,9 @@ export function SpotlightSearch() {
                                 <Graph className="mr-2 h-4 w-4" />
                                 <span>Graphs</span>
                             </CommandItem>
-                            <CommandItem onSelect={() => handleNavigation("/trash")}>
-                                <Trash className="mr-2 h-4 w-4 text-red-400" />
-                                <span>Trash</span>
+                            <CommandItem onSelect={() => handleNavigation("/settings")}>
+                                <Gear className="mr-2 h-4 w-4" />
+                                <span>Settings</span>
                             </CommandItem>
                         </CommandGroup>
 
