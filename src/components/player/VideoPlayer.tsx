@@ -961,7 +961,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
         const handleAudioPlay = () => audioRef.current?.play();
         const handleAudioPause = () => audioRef.current?.pause();
-        const handleAudioMute = () => audioRef.current?.toggleMute();
+        const handleAudioMute = () => audioRef.current?.mute();
+        const handleAudioUnmute = () => audioRef.current?.unmute();
         const handleAudioSeekForward = () => audioRef.current?.seekRelative(10);
         const handleAudioSeekBackward = () => audioRef.current?.seekRelative(-10);
 
@@ -989,6 +990,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         window.addEventListener("trigger-audio-play", handleAudioPlay);
         window.addEventListener("trigger-audio-pause", handleAudioPause);
         window.addEventListener("trigger-audio-mute", handleAudioMute);
+        window.addEventListener("trigger-audio-unmute", handleAudioUnmute);
         window.addEventListener("trigger-audio-seek-forward", handleAudioSeekForward);
         window.addEventListener("trigger-audio-seek-backward", handleAudioSeekBackward);
         
@@ -1012,6 +1014,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             window.removeEventListener("trigger-audio-play", handleAudioPlay);
             window.removeEventListener("trigger-audio-pause", handleAudioPause);
             window.removeEventListener("trigger-audio-mute", handleAudioMute);
+            window.removeEventListener("trigger-audio-unmute", handleAudioUnmute);
             window.removeEventListener("trigger-audio-seek-forward", handleAudioSeekForward);
             window.removeEventListener("trigger-audio-seek-backward", handleAudioSeekBackward);
             

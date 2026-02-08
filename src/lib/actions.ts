@@ -118,6 +118,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["New Folder", "Create Folder"],
         description: "Create a new folder in current location",
         icon: Plus,
+        available: ({ location }) => location.pathname.startsWith("/storage"),
         execute: ({ store, location, navigate }, args) => {
             // Determine parent ID from URL if possible
             const params = new URLSearchParams(location.search);
@@ -129,11 +130,6 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
             // Name is the rest of the args
             const name = args?.join(" ") || "New Folder";
             
-            // We need a store action for this, currently only addStorage exists which might be root storage
-            // Assuming addStorage handles parentId correctly if updated, or we need to check store capabilities.
-            // Based on store dump, addStorage takes (name, projectId). It doesn't seem to support parentId in the signature shown.
-            // Let's fallback to navigating to storage and letting user create it, or use what we have.
-            // Ideally we'd have `addFile` with type folder.
              navigate("/storage?create=folder");
              return { type: 'success', message: "Opening creation dialog..." };
         }
@@ -145,16 +141,15 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Add Highlight", "Highlight"],
         description: "Create a highlight at current time",
         icon: HighlighterCircle,
-        available: ({ location }) => location.pathname.startsWith("/file/"),
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'video' || file?.type === 'audio';
+        },
         execute: ({ store, location }, args) => {
             const fileId = location.pathname.split("/").pop();
             if (!fileId) return { type: 'error', message: "No file context" };
-            
-            // We can't easily grab the *current time* from the store unless it's synced there.
-            // The video player usually manages its own time or syncs it to store.
-            // If we can't get time, we might fail.
-            // However, the request says "It will be smart enough". 
-            // If we are in the player, we can dispatch a custom event that the player listens to.
             
             window.dispatchEvent(new CustomEvent("trigger-highlight", { 
                 detail: { 
@@ -170,7 +165,12 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Screenshot", "Take Screenshot"],
         description: "Capture current video frame",
         icon: Camera,
-        available: ({ location }) => location.pathname.startsWith("/file/"),
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'video';
+        },
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-screenshot"));
             return { type: 'success' };
@@ -179,8 +179,14 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
     {
         id: "media.mute",
         labels: ["Mute"],
-        description: "Mute audio/video",
+        description: "Mute video",
         icon: SpeakerSimpleSlash,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'video';
+        },
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-mute"));
             return { type: 'success' };
@@ -189,8 +195,14 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
     {
         id: "media.unmute",
         labels: ["Unmute"],
-        description: "Unmute audio/video",
+        description: "Unmute video",
         icon: SpeakerSimpleHigh,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'video';
+        },
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-unmute"));
             return { type: 'success' };
@@ -201,6 +213,12 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Play"],
         description: "Resume playback",
         icon: Play,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'video';
+        },
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-play"));
             return { type: 'success' };
@@ -211,6 +229,12 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Pause"],
         description: "Pause playback",
         icon: Pause,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'video';
+        },
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-pause"));
             return { type: 'success' };
@@ -394,7 +418,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
             return file?.type === 'audio';
         },
         execute: () => {
-            window.dispatchEvent(new CustomEvent("trigger-audio-mute")); // Toggle mute usually, or separate? AudioPlayer has toggleMute.
+            window.dispatchEvent(new CustomEvent("trigger-audio-unmute"));
             return { type: 'success' };
         }
     },

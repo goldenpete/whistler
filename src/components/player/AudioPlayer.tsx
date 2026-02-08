@@ -41,6 +41,8 @@ export interface AudioPlayerHandle {
     seekRelative: (seconds: number) => void;
     setVolume: (volume: number) => void;
     toggleMute: () => void;
+    mute: () => void;
+    unmute: () => void;
 }
 
 export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ url, fileId, className, highlights = [], highlight, showControls = true }, ref) => {
@@ -83,7 +85,13 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
             }
         },
         setVolume: (vol: number) => handleVolumeChange([vol]),
-        toggleMute: () => toggleMute()
+        toggleMute: () => toggleMute(),
+        mute: () => {
+            if (audioRef.current && !isMuted) toggleMute();
+        },
+        unmute: () => {
+            if (audioRef.current && isMuted) toggleMute();
+        }
     }));
 
     // Initial load progress or highlight start
