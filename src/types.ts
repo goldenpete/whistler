@@ -129,8 +129,10 @@ export interface CustomBaseTheme {
     colors: {
         '--background': string;
         '--foreground': string;
+        '--muted-foreground': string;
         '--card': string;
         '--sidebar': string;
+        '--sidebar-foreground': string;
         '--border': string;
     };
 }

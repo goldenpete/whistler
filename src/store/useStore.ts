@@ -271,15 +271,17 @@ export const ambientMusicStorage = {
     clear: ambientMusicClear,
 };
 
-const DEFAULT_CUSTOM_THEMES: Record<string, CustomBaseTheme> = {
+export const DEFAULT_CUSTOM_THEMES: Record<string, CustomBaseTheme> = {
     'custom-1': {
         id: 'custom-1',
         name: 'Custom 1',
         colors: {
             '--background': '#09090b', // zinc-950
             '--foreground': '#fafafa', // zinc-50
+            '--muted-foreground': '#a1a1aa', // zinc-400
             '--card': '#18181b', // zinc-900
             '--sidebar': '#18181b', // zinc-900
+            '--sidebar-foreground': '#fafafa',
             '--border': 'rgba(255, 255, 255, 0.1)'
         }
     },
@@ -289,8 +291,10 @@ const DEFAULT_CUSTOM_THEMES: Record<string, CustomBaseTheme> = {
         colors: {
             '--background': '#0c0a09', // stone-950
             '--foreground': '#fafaf9', // stone-50
+            '--muted-foreground': '#a8a29e', // stone-400
             '--card': '#1c1917', // stone-900
             '--sidebar': '#1c1917', // stone-900
+            '--sidebar-foreground': '#fafaf9',
             '--border': 'rgba(255, 255, 255, 0.1)'
         }
     },
@@ -300,8 +304,10 @@ const DEFAULT_CUSTOM_THEMES: Record<string, CustomBaseTheme> = {
         colors: {
             '--background': '#0a0a0a', // neutral-950
             '--foreground': '#fafafa', // neutral-50
+            '--muted-foreground': '#a3a3a3', // neutral-400
             '--card': '#171717', // neutral-900
             '--sidebar': '#171717', // neutral-900
+            '--sidebar-foreground': '#fafafa',
             '--border': 'rgba(255, 255, 255, 0.1)'
         }
     },
@@ -311,8 +317,10 @@ const DEFAULT_CUSTOM_THEMES: Record<string, CustomBaseTheme> = {
         colors: {
             '--background': '#030712', // gray-950 (cool gray)
             '--foreground': '#f9fafb', // gray-50
+            '--muted-foreground': '#9ca3af', // gray-400
             '--card': '#111827', // gray-900
             '--sidebar': '#111827', // gray-900
+            '--sidebar-foreground': '#f9fafb',
             '--border': 'rgba(255, 255, 255, 0.1)'
         }
     }
@@ -571,7 +579,14 @@ export const useStore = create<AppStore>()(
             setCustomBaseTheme: (id, theme) => set((state) => ({
                 customBaseThemes: {
                     ...(state.customBaseThemes || DEFAULT_CUSTOM_THEMES),
-                    [id]: { ...(state.customBaseThemes || DEFAULT_CUSTOM_THEMES)[id], ...theme }
+                    [id]: {
+                        ...(state.customBaseThemes?.[id] || DEFAULT_CUSTOM_THEMES[id]),
+                        ...theme,
+                        colors: {
+                            ...(state.customBaseThemes?.[id]?.colors || DEFAULT_CUSTOM_THEMES[id].colors),
+                            ...(theme.colors || {})
+                        }
+                    }
                 }
             })),
             setEnableDefaultColorControls: (enabled) => set({ enableDefaultColorControls: enabled }),

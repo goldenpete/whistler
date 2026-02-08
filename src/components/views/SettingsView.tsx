@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from "react";
-import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES } from "@/store/useStore";
+import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES, DEFAULT_CUSTOM_THEMES } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
 import { SidebarTrash } from "@/components/layout/SidebarTrash";
@@ -744,11 +744,13 @@ export default function SettingsView() {
                                                     if (!activeTheme) return null;
 
                                                     const themeSlots = [
-                                                        { key: '--background', label: 'Background', default: '#09090b' },
-                                                        { key: '--sidebar', label: 'Sidebar', default: '#09090b' },
-                                                        { key: '--card', label: 'Card / Panels', default: '#18181b' },
-                                                        { key: '--foreground', label: 'Foreground (Text)', default: '#fafafa' },
-                                                        { key: '--border', label: 'Borders', default: '#27272a' },
+                                                        { key: '--background', label: 'Background' },
+                                                        { key: '--sidebar', label: 'Sidebar' },
+                                                        { key: '--sidebar-foreground', label: 'Sidebar Text' },
+                                                        { key: '--card', label: 'Card / Panels' },
+                                                        { key: '--foreground', label: 'Foreground (Text)' },
+                                                        { key: '--muted-foreground', label: 'Secondary Text' },
+                                                        { key: '--border', label: 'Borders' },
                                                     ] as const;
 
                                                     return (
@@ -849,21 +851,24 @@ export default function SettingsView() {
                                                                                     </div>
 
                                                                                     <Button 
-                                                                                        variant="ghost" 
-                                                                                        size="icon" 
-                                                                                        className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                                                                                        onClick={() => {
-                                                                                            setCustomBaseTheme(baseTheme, {
-                                                                                                colors: {
-                                                                                                    ...activeTheme.colors,
-                                                                                                    [slot.key]: slot.default
-                                                                                                }
-                                                                                            });
-                                                                                        }}
-                                                                                        title="Reset to default"
-                                                                                    >
-                                                                                        <ArrowCounterClockwise className="h-4 w-4" />
-                                                                                    </Button>
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                                        onClick={() => {
+                                                            const defaultColor = DEFAULT_CUSTOM_THEMES[baseTheme]?.colors[slot.key];
+                                                            if (defaultColor) {
+                                                                setCustomBaseTheme(baseTheme, {
+                                                                    colors: {
+                                                                        ...activeTheme.colors,
+                                                                        [slot.key]: defaultColor
+                                                                    }
+                                                                });
+                                                            }
+                                                        }}
+                                                        title="Reset to default"
+                                                    >
+                                                        <ArrowCounterClockwise className="h-4 w-4" />
+                                                    </Button>
                                                                                 </div>
                                                                             </div>
                                                                         ))}

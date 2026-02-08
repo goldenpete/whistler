@@ -200,14 +200,14 @@ export default function App() {
           root.removeAttribute("data-base");
         }
       } else {
-        ['--background', '--foreground', '--card', '--sidebar', '--border'].forEach(prop => {
+        ['--background', '--foreground', '--card', '--sidebar', '--sidebar-foreground', '--border', '--muted-foreground'].forEach(prop => {
           root.style.removeProperty(prop);
         });
         root.setAttribute("data-base", baseTheme);
       }
     } else {
       root.removeAttribute("data-base");
-      ['--background', '--foreground', '--card', '--sidebar', '--border'].forEach(prop => {
+      ['--background', '--foreground', '--card', '--sidebar', '--sidebar-foreground', '--border', '--muted-foreground'].forEach(prop => {
         root.style.removeProperty(prop);
       });
     }
