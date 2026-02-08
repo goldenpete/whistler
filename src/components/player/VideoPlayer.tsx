@@ -943,6 +943,87 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         windowRectInitialized.current = true;
     }, [isWindowed]);
 
+    // --- Slash Command / Action Integration ---
+    const actionHandlersRef = useRef({ togglePlay, handleAddHighlight, handleCaptureFrame });
+    useEffect(() => {
+        actionHandlersRef.current = { togglePlay, handleAddHighlight, handleCaptureFrame };
+    });
+
+    useEffect(() => {
+        const handlePdfNext = () => pdfRef.current?.nextPage();
+        const handlePdfPrev = () => pdfRef.current?.prevPage();
+        const handlePdfZoomIn = () => pdfRef.current?.zoomIn();
+        const handlePdfZoomOut = () => pdfRef.current?.zoomOut();
+
+        const handleImageZoomIn = () => imageRef.current?.zoomIn();
+        const handleImageZoomOut = () => imageRef.current?.zoomOut();
+        const handleImageReset = () => imageRef.current?.resetZoom();
+
+        const handleAudioPlay = () => audioRef.current?.play();
+        const handleAudioPause = () => audioRef.current?.pause();
+        const handleAudioMute = () => audioRef.current?.toggleMute();
+        const handleAudioSeekForward = () => audioRef.current?.seekRelative(10);
+        const handleAudioSeekBackward = () => audioRef.current?.seekRelative(-10);
+
+        const handleMediaPlay = () => actionHandlersRef.current.togglePlay();
+        const handleMediaPause = () => {
+             if (videoRef.current) videoRef.current.pause();
+             if (youtubeRef.current) youtubeRef.current.pause();
+             if (audioRef.current) audioRef.current.pause();
+             setIsPlaying(false);
+        };
+        const handleMediaMute = () => setIsMuted(true);
+        const handleMediaUnmute = () => setIsMuted(false);
+        const handleScreenshot = () => actionHandlersRef.current.handleCaptureFrame();
+        const handleHighlight = () => actionHandlersRef.current.handleAddHighlight();
+        
+        window.addEventListener("trigger-pdf-next", handlePdfNext);
+        window.addEventListener("trigger-pdf-prev", handlePdfPrev);
+        window.addEventListener("trigger-pdf-zoom-in", handlePdfZoomIn);
+        window.addEventListener("trigger-pdf-zoom-out", handlePdfZoomOut);
+
+        window.addEventListener("trigger-image-zoom-in", handleImageZoomIn);
+        window.addEventListener("trigger-image-zoom-out", handleImageZoomOut);
+        window.addEventListener("trigger-image-reset", handleImageReset);
+
+        window.addEventListener("trigger-audio-play", handleAudioPlay);
+        window.addEventListener("trigger-audio-pause", handleAudioPause);
+        window.addEventListener("trigger-audio-mute", handleAudioMute);
+        window.addEventListener("trigger-audio-seek-forward", handleAudioSeekForward);
+        window.addEventListener("trigger-audio-seek-backward", handleAudioSeekBackward);
+        
+        window.addEventListener("trigger-play", handleMediaPlay);
+        window.addEventListener("trigger-pause", handleMediaPause);
+        window.addEventListener("trigger-mute", handleMediaMute);
+        window.addEventListener("trigger-unmute", handleMediaUnmute);
+        window.addEventListener("trigger-screenshot", handleScreenshot);
+        window.addEventListener("trigger-highlight", handleHighlight);
+
+        return () => {
+            window.removeEventListener("trigger-pdf-next", handlePdfNext);
+            window.removeEventListener("trigger-pdf-prev", handlePdfPrev);
+            window.removeEventListener("trigger-pdf-zoom-in", handlePdfZoomIn);
+            window.removeEventListener("trigger-pdf-zoom-out", handlePdfZoomOut);
+
+            window.removeEventListener("trigger-image-zoom-in", handleImageZoomIn);
+            window.removeEventListener("trigger-image-zoom-out", handleImageZoomOut);
+            window.removeEventListener("trigger-image-reset", handleImageReset);
+
+            window.removeEventListener("trigger-audio-play", handleAudioPlay);
+            window.removeEventListener("trigger-audio-pause", handleAudioPause);
+            window.removeEventListener("trigger-audio-mute", handleAudioMute);
+            window.removeEventListener("trigger-audio-seek-forward", handleAudioSeekForward);
+            window.removeEventListener("trigger-audio-seek-backward", handleAudioSeekBackward);
+            
+            window.removeEventListener("trigger-play", handleMediaPlay);
+            window.removeEventListener("trigger-pause", handleMediaPause);
+            window.removeEventListener("trigger-mute", handleMediaMute);
+            window.removeEventListener("trigger-unmute", handleMediaUnmute);
+            window.removeEventListener("trigger-screenshot", handleScreenshot);
+            window.removeEventListener("trigger-highlight", handleHighlight);
+        };
+    }, []);
+
     return (
         <>
         <div 

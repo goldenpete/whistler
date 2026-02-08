@@ -17,7 +17,14 @@ import {
     Pause,
     Moon,
     Sun,
-    Sidebar
+    Sidebar,
+    CaretRight,
+    CaretLeft,
+    MagnifyingGlassPlus,
+    MagnifyingGlassMinus,
+    ArrowsClockwise,
+    ArrowClockwise,
+    ArrowCounterClockwise
 } from "@phosphor-icons/react";
 
 export type ActionContext = {
@@ -210,6 +217,220 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         }
     },
 
+    // --- PDF Actions ---
+    {
+        id: "pdf.nextPage",
+        labels: ["Next Page", "PDF Next"],
+        description: "Go to next page",
+        icon: CaretRight,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'pdf';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-pdf-next"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "pdf.prevPage",
+        labels: ["Previous Page", "PDF Previous"],
+        description: "Go to previous page",
+        icon: CaretLeft,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'pdf';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-pdf-prev"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "pdf.zoomIn",
+        labels: ["Zoom In", "PDF Zoom In"],
+        description: "Zoom in PDF",
+        icon: MagnifyingGlassPlus,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'pdf';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-pdf-zoom-in"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "pdf.zoomOut",
+        labels: ["Zoom Out", "PDF Zoom Out"],
+        description: "Zoom out PDF",
+        icon: MagnifyingGlassMinus,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'pdf';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-pdf-zoom-out"));
+            return { type: 'success' };
+        }
+    },
+
+    // --- Image Actions ---
+    {
+        id: "image.zoomIn",
+        labels: ["Zoom In", "Image Zoom In"],
+        description: "Zoom in Image",
+        icon: MagnifyingGlassPlus,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'image';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-image-zoom-in"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "image.zoomOut",
+        labels: ["Zoom Out", "Image Zoom Out"],
+        description: "Zoom out Image",
+        icon: MagnifyingGlassMinus,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'image';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-image-zoom-out"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "image.resetZoom",
+        labels: ["Reset Zoom", "Image Reset"],
+        description: "Reset Image Zoom",
+        icon: ArrowsClockwise,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'image';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-image-reset"));
+            return { type: 'success' };
+        }
+    },
+
+    // --- Audio Actions ---
+    {
+        id: "audio.play",
+        labels: ["Play", "Resume"],
+        description: "Play audio",
+        icon: Play,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'audio';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-audio-play"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "audio.pause",
+        labels: ["Pause"],
+        description: "Pause audio",
+        icon: Pause,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'audio';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-audio-pause"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "audio.mute",
+        labels: ["Mute"],
+        description: "Mute audio",
+        icon: SpeakerSimpleSlash,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'audio';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-audio-mute"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "audio.unmute",
+        labels: ["Unmute"],
+        description: "Unmute audio",
+        icon: SpeakerSimpleHigh,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'audio';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-audio-mute")); // Toggle mute usually, or separate? AudioPlayer has toggleMute.
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "audio.forward",
+        labels: ["Forward 10s", "Skip"],
+        description: "Skip forward 10 seconds",
+        icon: ArrowClockwise,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'audio';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-audio-seek-forward"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "audio.rewind",
+        labels: ["Rewind 10s", "Back"],
+        description: "Skip backward 10 seconds",
+        icon: ArrowCounterClockwise,
+        available: ({ location, store }) => {
+            if (!location.pathname.startsWith("/file/")) return false;
+            const fileId = location.pathname.split("/").pop();
+            const file = store.files.find(f => f.id === fileId);
+            return file?.type === 'audio';
+        },
+        execute: () => {
+            window.dispatchEvent(new CustomEvent("trigger-audio-seek-backward"));
+            return { type: 'success' };
+        }
+    },
+
     // --- System / UI ---
     {
         id: "ui.toggleSidebar",
@@ -219,19 +440,6 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         execute: ({ }) => {
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "b", ctrlKey: true }));
             return { type: 'success' };
-        }
-    },
-    {
-        id: "ui.theme.dark",
-        labels: ["Dark Mode", "Theme Dark"],
-        description: "Switch to dark theme",
-        icon: Moon,
-        execute: ({ store }) => {
-            // Assuming store has theme control or we use document class
-            // store.setTheme('dark') ? 
-            // Based on store dump, we have `setCustomBaseTheme`.
-            // Let's assume standard toggle for now or leave placeholder.
-            return { type: 'success', message: "Theme switching not fully implemented via action yet" };
         }
     }
 ];
