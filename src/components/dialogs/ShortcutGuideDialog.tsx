@@ -100,7 +100,7 @@ type GuideItem =
 const GUIDE_DATA: Record<string, GuideItem[]> = {
     global: [
         { type: 'dynamic', ids: ["global.showShortcuts"] },
-        { type: 'dynamic', ids: ["global.spotlight"] },
+        { type: 'dynamic', ids: ["global.search"] },
         { type: 'dynamic', ids: ["global.doubleTapMenu"] },
         { type: 'dynamic', ids: ["global.settings"] },
         { type: 'dynamic', ids: ["global.toggleSidebar"] },

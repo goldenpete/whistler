@@ -40,7 +40,8 @@ export interface KeybindDefinition {
 export const KEYBIND_REGISTRY: Record<string, KeybindDefinition> = {
     // Global
     "global.showShortcuts": { id: "global.showShortcuts", label: "Show Shortcuts", defaultKey: "shift+?", category: "Global", icon: CornersOut },
-    "global.spotlight": { id: "global.spotlight", label: "Spotlight Search", defaultKey: "/", category: "Global", icon: MagnifyingGlass },
+    "global.search": { id: "global.search", label: "Spotlight Search", defaultKey: "ctrl+k", category: "Global", icon: MagnifyingGlass },
+    "global.search.slash": { id: "global.search.slash", label: "Spotlight Search (Alt)", defaultKey: "/", category: "Global", icon: MagnifyingGlass },
     "global.doubleTapMenu": { id: "global.doubleTapMenu", label: "Double Tap Menu", defaultKey: "shift shift", category: "Global", icon: CornersOut, isSequence: true }, // Special handling needed
     "global.settings": { id: "global.settings", label: "Settings", defaultKey: "ctrl+,", category: "Global", icon: Gear },
     "global.toggleSidebar": { id: "global.toggleSidebar", label: "Toggle Sidebar", defaultKey: "ctrl+b", category: "Global", icon: CornersIn },
@@ -117,7 +118,7 @@ export const KEYBIND_REGISTRY: Record<string, KeybindDefinition> = {
     // Docs
     "docs.next": { id: "docs.next", label: "Next Document", defaultKey: "alt+arrowdown", category: "Docs", icon: CaretDown },
     "docs.save": { id: "docs.save", label: "Save", defaultKey: "ctrl+s", category: "Docs", icon: FileText },
-    "docs.link": { id: "docs.link", label: "Insert Link", defaultKey: "ctrl+k", category: "Docs", icon: FileText },
+    "docs.link": { id: "docs.link", label: "Insert Link", defaultKey: "ctrl+shift+k", category: "Docs", icon: FileText },
     "docs.bold": { id: "docs.bold", label: "Bold", defaultKey: "ctrl+b", category: "Docs", icon: FileText },
     "docs.italic": { id: "docs.italic", label: "Italic", defaultKey: "ctrl+i", category: "Docs", icon: FileText },
     "docs.underline": { id: "docs.underline", label: "Underline", defaultKey: "ctrl+u", category: "Docs", icon: FileText },

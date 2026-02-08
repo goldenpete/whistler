@@ -69,6 +69,7 @@ export function SpotlightSearch() {
     }, [highlights, projectFiles]);
 
     useKeybind("global.search", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("global.search.slash", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
 
     const getFileIcon = useCallback((type: string) => {
         switch (type) {
