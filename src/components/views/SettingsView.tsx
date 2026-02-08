@@ -1463,10 +1463,15 @@ export default function SettingsView() {
                     {/* Shortcuts Tab */}
                     {activeTab === 'keybinds' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <Keyboard className="text-primary" size={24} />
-                                Keyboard Shortcuts
-                            </h2>
+                            <div className="flex items-center justify-between mb-2">
+                                <h2 className="text-lg font-semibold flex items-center gap-2">
+                                    <Keyboard className="text-primary" size={24} />
+                                    Keyboard Shortcuts
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    Customize your keyboard shortcuts
+                                </p>
+                            </div>
                             <KeybindsSettings />
                         </div>
                     )}

@@ -133,10 +133,6 @@ export function KeybindsSettings() {
                     </div>
                 </div>
                 
-                <p className="absolute right-0 -top-5 text-xs text-zinc-500">
-                    Customize your keyboard shortcuts
-                </p>
-
                 <div className="flex items-center gap-2">
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                         <SelectTrigger className="w-[140px] h-7 text-xs bg-zinc-900/50 border-zinc-800 focus:bg-zinc-900">
