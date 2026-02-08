@@ -24,7 +24,11 @@ import {
     MagnifyingGlassMinus,
     ArrowsClockwise,
     ArrowClockwise,
-    ArrowCounterClockwise
+    ArrowCounterClockwise,
+    FilePlus,
+    Tag,
+    Link as LinkIcon,
+    Note
 } from "@phosphor-icons/react";
 
 export type ActionContext = {
@@ -70,6 +74,94 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
             
              navigate("/storage?create=folder");
              return { type: 'success', message: "Opening creation dialog..." };
+        }
+    },
+    {
+        id: "create.file",
+        labels: ["New File", "Add File", "Upload File"],
+        description: "Add a new file to storage",
+        icon: FilePlus,
+        available: ({ location }) => location.pathname.startsWith("/storage"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-storage-create-file"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "graph.create_node",
+        labels: ["Add Node", "New Node"],
+        description: "Open node creation menu",
+        icon: Graph,
+        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-graph-add-node-menu"));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "graph.create_node.note",
+        labels: ["Add Node Note", "New Node Note"],
+        description: "Create a new note node",
+        icon: Note,
+        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'note' } }));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "graph.create_node.file",
+        labels: ["Add Node File", "New Node File"],
+        description: "Create a new file node",
+        icon: FileText,
+        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'file' } }));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "graph.create_node.collection",
+        labels: ["Add Node Collection", "New Node Collection"],
+        description: "Create a new collection node",
+        icon: Tag,
+        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'collection' } }));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "graph.create_node.highlight",
+        labels: ["Add Node Highlight", "New Node Highlight"],
+        description: "Create a new highlight node",
+        icon: HighlighterCircle,
+        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'highlight' } }));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "graph.create_node.link",
+        labels: ["Add Node Link", "New Node Link"],
+        description: "Create a new link node",
+        icon: LinkIcon,
+        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'link' } }));
+            return { type: 'success' };
+        }
+    },
+    {
+        id: "graph.create_node.doc",
+        labels: ["Add Node Doc", "New Node Doc"],
+        description: "Create a new document node",
+        icon: FileText,
+        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        execute: ({ }) => {
+            window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'doc' } }));
+            return { type: 'success' };
         }
     },
 

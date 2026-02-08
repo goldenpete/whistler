@@ -598,6 +598,20 @@ export default function GraphView() {
         setAddNodeDialog({ open: true, type });
     };
 
+    // Listen for action triggers
+    useEffect(() => {
+        const handleTriggerAddNodeMenu = () => setIsAddMenuOpen(true);
+        const handleTriggerCreateNode = (e: CustomEvent) => handleAddNode(e.detail?.type);
+
+        window.addEventListener("trigger-graph-add-node-menu", handleTriggerAddNodeMenu);
+        window.addEventListener("trigger-graph-create-node", handleTriggerCreateNode as EventListener);
+        
+        return () => {
+            window.removeEventListener("trigger-graph-add-node-menu", handleTriggerAddNodeMenu);
+            window.removeEventListener("trigger-graph-create-node", handleTriggerCreateNode as EventListener);
+        };
+    }, []);
+
     // --- Keybinds ---
     useKeybind("graph.newNode", () => {
         if (!nodeDialog.open && !isAddMenuOpen) {

@@ -115,6 +115,14 @@ export default function StorageView() {
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [addFileOpen, setAddFileOpen] = useState(false);
+    
+    // Listen for action triggers
+    useEffect(() => {
+        const handleTriggerCreateFile = () => setAddFileOpen(true);
+        window.addEventListener("trigger-storage-create-file", handleTriggerCreateFile);
+        return () => window.removeEventListener("trigger-storage-create-file", handleTriggerCreateFile);
+    }, []);
+
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
