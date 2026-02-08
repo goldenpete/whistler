@@ -51,10 +51,11 @@ import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import { GradientEditor } from "@/components/ui/GradientEditor";
 import { SettingsSync } from "@/components/settings/SettingsSync";
 import { KeybindsSettings } from "@/components/settings/KeybindsSettings";
+import { ActionsSettings } from "@/components/settings/ActionsSettings";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
 import type { AccentTheme, BaseTheme, CustomBaseTheme } from "@/types";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
-import { Keyboard } from "@phosphor-icons/react";
+import { Keyboard, Lightning } from "@phosphor-icons/react";
 
 const ACCENT_OPTIONS: { id: AccentTheme; label: string; previewClass: string }[] = [
     { id: "orange", label: "Orange", previewClass: "bg-orange-500" },
@@ -78,7 +79,7 @@ const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph'
     { key: 'node', label: 'Nodes' },
 ];
 
-type SettingsTab = 'appearance' | 'music' | 'keybinds' | 'system' | 'sync' | 'history' | 'trash';
+type SettingsTab = 'appearance' | 'music' | 'keybinds' | 'actions' | 'system' | 'sync' | 'history' | 'trash';
 
 export default function SettingsView() {
     const {  
@@ -349,6 +350,18 @@ export default function SettingsView() {
                             >
                                 <Keyboard size={18} weight={activeTab === 'keybinds' ? "fill" : "regular"} />
                                 Shortcuts
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('actions')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'actions' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Lightning size={18} weight={activeTab === 'actions' ? "fill" : "regular"} />
+                                Actions
                             </button>
                         </div>
                     </div>
@@ -1493,6 +1506,22 @@ export default function SettingsView() {
                                 </p>
                             </div>
                             <KeybindsSettings />
+                        </div>
+                    )}
+
+                    {/* Actions Tab */}
+                    {activeTab === 'actions' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="flex items-center justify-between mb-2">
+                                <h2 className="text-lg font-semibold flex items-center gap-2">
+                                    <Lightning className="text-primary" size={24} />
+                                    Actions
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    View all available actions
+                                </p>
+                            </div>
+                            <ActionsSettings />
                         </div>
                     )}
 
