@@ -148,7 +148,7 @@ export function SpotlightSearch() {
         // Remove "/" and trim
         const query = inputValue.slice(1).trim().toLowerCase();
         
-        const context: ActionContext = { navigate, location, store };
+        const context: ActionContext = { navigate, location, store, query };
         
         return ACTION_REGISTRY.filter(action => {
             // Check availability
@@ -166,7 +166,7 @@ export function SpotlightSearch() {
         const action = ACTION_REGISTRY.find(a => a.id === actionId);
         if (!action) return;
 
-        const context: ActionContext = { navigate, location, store };
+        const context: ActionContext = { navigate, location, store, query: inputValue.slice(1).trim().toLowerCase() };
         
         // Parse arguments: everything after the command label
         // This is a naive implementation; complex args would need better parsing

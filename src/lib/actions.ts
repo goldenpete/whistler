@@ -35,6 +35,7 @@ export type ActionContext = {
     navigate: NavigateFunction;
     location: Location;
     store: AppStore;
+    query: string;
 };
 
 export type ActionResult = 
@@ -103,7 +104,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Add Node Note", "New Node Note"],
         description: "Create a new note node",
         icon: Note,
-        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        available: ({ location, query }) => location.pathname.startsWith("/graphs") && (query.startsWith("add node") || query.startsWith("new node")),
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'note' } }));
             return { type: 'success' };
@@ -114,7 +115,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Add Node File", "New Node File"],
         description: "Create a new file node",
         icon: FileText,
-        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        available: ({ location, query }) => location.pathname.startsWith("/graphs") && (query.startsWith("add node") || query.startsWith("new node")),
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'file' } }));
             return { type: 'success' };
@@ -125,7 +126,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Add Node Collection", "New Node Collection"],
         description: "Create a new collection node",
         icon: Tag,
-        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        available: ({ location, query }) => location.pathname.startsWith("/graphs") && (query.startsWith("add node") || query.startsWith("new node")),
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'collection' } }));
             return { type: 'success' };
@@ -136,7 +137,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Add Node Highlight", "New Node Highlight"],
         description: "Create a new highlight node",
         icon: HighlighterCircle,
-        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        available: ({ location, query }) => location.pathname.startsWith("/graphs") && (query.startsWith("add node") || query.startsWith("new node")),
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'highlight' } }));
             return { type: 'success' };
@@ -147,7 +148,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Add Node Link", "New Node Link"],
         description: "Create a new link node",
         icon: LinkIcon,
-        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        available: ({ location, query }) => location.pathname.startsWith("/graphs") && (query.startsWith("add node") || query.startsWith("new node")),
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'link' } }));
             return { type: 'success' };
@@ -158,7 +159,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         labels: ["Add Node Doc", "New Node Doc"],
         description: "Create a new document node",
         icon: FileText,
-        available: ({ location }) => location.pathname.startsWith("/graphs"),
+        available: ({ location, query }) => location.pathname.startsWith("/graphs") && (query.startsWith("add node") || query.startsWith("new node")),
         execute: ({ }) => {
             window.dispatchEvent(new CustomEvent("trigger-graph-create-node", { detail: { type: 'doc' } }));
             return { type: 'success' };
