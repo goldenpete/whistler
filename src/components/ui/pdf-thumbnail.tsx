@@ -29,10 +29,14 @@ export const PdfThumbnail = memo(function PdfThumbnail({ url, onError, className
 
         if (url === safeUrl) return;
 
+        // Load immediately if we don't have a URL yet (first load/remount)
+        // This prevents the "Loading..." flash when switching pages
+        const delay = safeUrl === null ? 0 : 200;
+
         setLoadedUrl(null);
         const timer = setTimeout(() => {
             setSafeUrl(url);
-        }, 500); 
+        }, delay); 
         return () => {
             clearTimeout(timer);
         };
