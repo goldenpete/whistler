@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     CommandDialog,
     CommandEmpty,
@@ -29,10 +29,15 @@ import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
 import { formatTime } from "@/lib/utils";
 import { playSfx } from "@/utils/sound";
+import { ACTION_REGISTRY, type ActionContext } from "@/lib/actions";
 
 export function SpotlightSearch() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [inputValue, setInputValue] = useState("");
+    const [pages, setPages] = useState<string[]>([]);
 
+    const store = useStore();
     const {
         files,
         collections,
@@ -53,6 +58,14 @@ export function SpotlightSearch() {
         setSpotlightOpen: state.setSpotlightOpen,
     })));
 
+    // Reset state when opening
+    useEffect(() => {
+        if (isSpotlightOpen) {
+            setInputValue("");
+            setPages([]);
+        }
+    }, [isSpotlightOpen]);
+
     const projectFiles = useMemo(
         () => files.filter((f: File) => f.projectId === activeProjectId && !f.deleted),
         [files, activeProjectId]
@@ -69,7 +82,11 @@ export function SpotlightSearch() {
     }, [highlights, projectFiles]);
 
     useKeybind("global.search", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
-    useKeybind("global.search.slash", () => setSpotlightOpen(true), { preventDefault: true, disableInInput: true });
+    useKeybind("global.search.slash", () => {
+        setSpotlightOpen(true);
+        // Small timeout to allow the dialog to open before setting input
+        setTimeout(() => setInputValue("/"), 10);
+    }, { preventDefault: true, disableInInput: true });
 
     const getFileIcon = useCallback((type: string) => {
         switch (type) {
@@ -87,8 +104,6 @@ export function SpotlightSearch() {
                 return <FileText className="mr-2 h-4 w-4 text-zinc-400" />;
         }
     }, []);
-
-
 
     const handleSelectFile = (file: File) => {
         playSfx("search");
@@ -118,87 +133,187 @@ export function SpotlightSearch() {
         playSfx("search");
         setSpotlightOpen(false);
         navigate(`/file/${highlight.fileId}`);
-        // We might need to set a state to jump to the highlight time/page
-        // For now just navigating to the file is a good start. 
-        // Ideally we should pass state or use a URL param.
-        // Assuming the VideoPlayer/PDFPlayer handles URL params or we set store state.
-        // Let's check if we can set active highlight.
-        // The store has `activeFileId` but maybe not active highlight for auto-play.
-        // But VideoPlayer usually checks for something.
-        // Let's just navigate for now, maybe with a query param if supported.
-        // Or set a transient state if we had one.
-        // Actually, let's use the file navigation and maybe the player will pick up if we set something?
-        // The `VideoPlayer` component uses `useParams`.
-        // Let's just navigate to file.
-        // Wait, if I want to jump to time, I might need to use the store to set a "pending seek" or similar.
-        // But let's just do navigation first to fix the error.
+        // See comments in original code regarding time seek
         useStore.setState({ activeFileId: highlight.fileId });
-        // Also maybe set query param? ?t=start
-        // navigate(`/file/${highlight.fileId}?t=${highlight.start}`); 
-        // I'll stick to simple navigation to fix the build error.
+    };
+
+    // --- Action Logic ---
+    const isActionSearch = inputValue.startsWith("/");
+    
+    // Filter actions based on context and input
+    const filteredActions = useMemo(() => {
+        if (!isActionSearch) return [];
+        
+        // Remove "/" and trim
+        const query = inputValue.slice(1).trim().toLowerCase();
+        
+        const context: ActionContext = { navigate, location, store };
+        
+        return ACTION_REGISTRY.filter(action => {
+            // Check availability
+            if (action.available && !action.available(context)) return false;
+            
+            // Match query
+            if (!query) return true; // Show all available actions if only "/"
+            
+            return action.labels.some(label => label.toLowerCase().includes(query)) ||
+                   action.keywords?.some(kw => kw.toLowerCase().includes(query));
+        });
+    }, [inputValue, location, store, navigate]);
+
+    const executeAction = (actionId: string) => {
+        const action = ACTION_REGISTRY.find(a => a.id === actionId);
+        if (!action) return;
+
+        const context: ActionContext = { navigate, location, store };
+        
+        // Parse arguments: everything after the command label
+        // This is a naive implementation; complex args would need better parsing
+        // We find the label that matched to determine where args start
+        const query = inputValue.slice(1).trim();
+        const matchedLabel = action.labels.find(l => query.toLowerCase().startsWith(l.toLowerCase()));
+        
+        let args: string[] = [];
+        if (matchedLabel && query.length > matchedLabel.length) {
+            const argsStr = query.slice(matchedLabel.length).trim();
+            if (argsStr) {
+                // simple space split for now, preserving quotes could be next step
+                args = argsStr.split(" ");
+            }
+        }
+
+        const result = action.execute(context, args);
+        
+        // Handle result
+        // if (result instanceof Promise) ...
+        
+        // For now assume synchronous success usually
+        playSfx("confirm");
+        setSpotlightOpen(false);
     };
 
     return (
-        <CommandDialog open={isSpotlightOpen} onOpenChange={setSpotlightOpen}>
-            <CommandInput placeholder="Search files, collections, highlights..." />
+        <CommandDialog 
+            open={isSpotlightOpen} 
+            onOpenChange={setSpotlightOpen}
+            commandProps={{
+                shouldFilter: !isActionSearch // We do our own filtering for actions
+            }}
+        >
+            <CommandInput 
+                placeholder={isActionSearch ? "Type a command..." : "Search files, collections, highlights..."}
+                value={inputValue}
+                onValueChange={setInputValue}
+            />
             <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
 
-                {/* Quick Navigation */}
-                <CommandGroup heading="Navigation">
-                    <CommandItem onSelect={() => handleNavigation("/storage")}>
-                        <HardDrives className="mr-2 h-4 w-4" />
-                        <span>Storage</span>
-                    </CommandItem>
-                    <CommandItem onSelect={() => handleNavigation("/docs")}>
-                        <NotePencil className="mr-2 h-4 w-4" />
-                        <span>Docs</span>
-                    </CommandItem>
-                    <CommandItem onSelect={() => handleNavigation("/graphs")}>
-                        <Graph className="mr-2 h-4 w-4" />
-                        <span>Graphs</span>
-                    </CommandItem>
-                    <CommandItem onSelect={() => handleNavigation("/trash")}>
-                        <Trash className="mr-2 h-4 w-4 text-red-400" />
-                        <span>Trash</span>
-                    </CommandItem>
-                </CommandGroup>
-
-                <CommandSeparator />
-
-                {/* Files */}
-                {projectFiles.length > 0 && (
-                    <CommandGroup heading="Files">
-                        {projectFiles.slice(0, 10).map((file: File) => (
+                {/* Actions Section */}
+                {isActionSearch && (
+                    <CommandGroup heading="Actions">
+                        {filteredActions.map(action => (
                             <CommandItem
-                                key={file.id}
-                                value={file.name}
-                                onSelect={() => handleSelectFile(file)}
+                                key={action.id}
+                                value={action.labels[0]} // value used for selection
+                                onSelect={() => executeAction(action.id)}
                             >
-                                {getFileIcon(file.type)}
-                                <span className="truncate">{file.name}</span>
+                                <action.icon className="mr-2 h-4 w-4" />
+                                <span>{action.labels[0]}</span>
+                                <span className="ml-2 text-xs text-muted-foreground">{action.description}</span>
                             </CommandItem>
                         ))}
                     </CommandGroup>
                 )}
 
-                {/* Collections */}
-                {projectCollections.length > 0 && (
-                    <CommandGroup heading="Collections">
-                        {projectCollections.map((collection: Collection) => (
-                            <CommandItem
-                                key={collection.id}
-                                value={collection.name}
-                                onSelect={() => handleSelectCollection(collection)}
-                            >
-                                <Tag
-                                    className="mr-2 h-4 w-4"
-                                    style={{ color: collection.color }}
-                                />
-                                <span>{collection.name}</span>
+                {/* Standard Search Sections (Hidden if Action Search) */}
+                {!isActionSearch && (
+                    <>
+                        {/* Quick Navigation */}
+                        <CommandGroup heading="Navigation">
+                            <CommandItem onSelect={() => handleNavigation("/storage")}>
+                                <HardDrives className="mr-2 h-4 w-4" />
+                                <span>Storage</span>
                             </CommandItem>
-                        ))}
-                    </CommandGroup>
+                            <CommandItem onSelect={() => handleNavigation("/docs")}>
+                                <NotePencil className="mr-2 h-4 w-4" />
+                                <span>Docs</span>
+                            </CommandItem>
+                            <CommandItem onSelect={() => handleNavigation("/graphs")}>
+                                <Graph className="mr-2 h-4 w-4" />
+                                <span>Graphs</span>
+                            </CommandItem>
+                            <CommandItem onSelect={() => handleNavigation("/trash")}>
+                                <Trash className="mr-2 h-4 w-4 text-red-400" />
+                                <span>Trash</span>
+                            </CommandItem>
+                        </CommandGroup>
+
+                        <CommandSeparator />
+
+                        {/* Files */}
+                        {projectFiles.length > 0 && (
+                            <CommandGroup heading="Files">
+                                {projectFiles.slice(0, 10).map((file: File) => (
+                                    <CommandItem
+                                        key={file.id}
+                                        value={file.name}
+                                        onSelect={() => handleSelectFile(file)}
+                                    >
+                                        {getFileIcon(file.type)}
+                                        <span className="truncate">{file.name}</span>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        )}
+
+                        {/* Collections */}
+                        {projectCollections.length > 0 && (
+                            <CommandGroup heading="Collections">
+                                {projectCollections.map((collection: Collection) => (
+                                    <CommandItem
+                                        key={collection.id}
+                                        value={collection.name}
+                                        onSelect={() => handleSelectCollection(collection)}
+                                    >
+                                        <Tag
+                                            className="mr-2 h-4 w-4"
+                                            style={{ color: collection.color }}
+                                        />
+                                        <span>{collection.name}</span>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        )}
+                        
+                         {/* Highlights */}
+                        {projectHighlights.length > 0 && (
+                            <CommandGroup heading="Highlights">
+                                {projectHighlights.slice(0, 10).map((highlight: Highlight) => {
+                                    // Find file name for context
+                                    const file = projectFiles.find(f => f.id === highlight.fileId);
+                                    return (
+                                        <CommandItem
+                                            key={highlight.id}
+                                            value={highlight.note || "Highlight"}
+                                            onSelect={() => handleSelectHighlight(highlight)}
+                                        >
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center">
+                                                    <Clock className="mr-2 h-3 w-3 text-muted-foreground" />
+                                                    <span className="truncate font-medium">{highlight.note || "Untitled Highlight"}</span>
+                                                </div>
+                                                <div className="ml-5 text-xs text-muted-foreground flex items-center">
+                                                    <span className="truncate max-w-[200px]">{file?.name}</span>
+                                                    <span className="mx-1">•</span>
+                                                    <span>{formatTime(highlight.start)}</span>
+                                                </div>
+                                            </div>
+                                        </CommandItem>
+                                    );
+                                })}
+                            </CommandGroup>
+                        )}
+                    </>
                 )}
 
                 {/* Highlights */}
