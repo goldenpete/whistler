@@ -21,12 +21,15 @@ export const preloadSounds = () => {
 };
 
 export const playSfx = (type: SoundType) => {
-    const { sfxEnabled, enabledSounds, replaceSearchWithConfirm } = useStore.getState();
+    const { sfxEnabled, enabledSounds, replaceSearchWithConfirm, replaceAllSoundsWithCursor } = useStore.getState();
     if (!sfxEnabled) return;
     
-    // Check if we should replace search sound with confirm
+    // Check overrides
     let finalType = type;
-    if (type === 'search' && replaceSearchWithConfirm) {
+    
+    if (replaceAllSoundsWithCursor) {
+        finalType = 'cursor';
+    } else if (type === 'search' && replaceSearchWithConfirm) {
         finalType = 'confirm';
     }
 

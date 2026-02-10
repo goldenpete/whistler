@@ -66,6 +66,7 @@ export interface AppStore extends AppState {
         search: boolean;
     };
     replaceSearchWithConfirm: boolean;
+    replaceAllSoundsWithCursor: boolean;
 
     // Double Tap Menu
     isDoubleTapMenuOpen: boolean;
@@ -460,6 +461,7 @@ export const useStore = create<AppStore>()(
                 search: true,
             },
             replaceSearchWithConfirm: false,
+            replaceAllSoundsWithCursor: false,
 
             // ActionsPiP State
             pipFileId: null,
@@ -676,6 +678,7 @@ export const useStore = create<AppStore>()(
         };
     }),
     setReplaceSearchWithConfirm: (enabled) => set({ replaceSearchWithConfirm: enabled }),
+    setReplaceAllSoundsWithCursor: (enabled) => set({ replaceAllSoundsWithCursor: enabled }),
 
     setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 

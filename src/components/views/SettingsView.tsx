@@ -145,7 +145,9 @@ export default function SettingsView() {
         alwaysShowMuteOverlay,
         setAlwaysShowMuteOverlay,
         replaceSearchWithConfirm,
-        setReplaceSearchWithConfirm
+        setReplaceSearchWithConfirm,
+        replaceAllSoundsWithCursor,
+        setReplaceAllSoundsWithCursor
     } = useStore();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
@@ -1476,12 +1478,38 @@ export default function SettingsView() {
                                                 { id: 'back', label: 'Back', icon: CaretLeft },
                                                 { id: 'search', label: 'Search', icon: MagnifyingGlass },
                                             ].map((sound) => (
-                                                <div key={sound.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
+                                                <div key={sound.id} className={cn(
+                                                    "flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors",
+                                                    (sound.id === 'search' && replaceSearchWithConfirm && !replaceAllSoundsWithCursor) && "opacity-50 pointer-events-none",
+                                                    (replaceAllSoundsWithCursor && sound.id !== 'cursor') && "opacity-50 pointer-events-none"
+                                                )}>
                                                     <div className="flex items-center gap-2">
                                                         <sound.icon className="text-muted-foreground" size={16} />
                                                         <span className="text-sm">{sound.label}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
+                                                        {sound.id === 'cursor' && (
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                                                                        <Gear size={14} />
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-64 p-3" align="end">
+                                                                    <div className="space-y-2">
+                                                                        <h4 className="font-medium text-sm leading-none">Sound Settings</h4>
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <label className="text-xs text-muted-foreground">Replace all sounds with cursor?</label>
+                                                                            <Switch 
+                                                                                checked={replaceAllSoundsWithCursor}
+                                                                                onCheckedChange={setReplaceAllSoundsWithCursor}
+                                                                                className="scale-75"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                        )}
                                                         {sound.id === 'confirm' && (
                                                             <Popover>
                                                                 <PopoverTrigger asChild>
@@ -1507,7 +1535,7 @@ export default function SettingsView() {
                                                         <Switch 
                                                             checked={enabledSounds[sound.id as keyof typeof enabledSounds]}
                                                             onCheckedChange={() => toggleSound(sound.id as any)}
-                                                            disabled={sound.id === 'search' && replaceSearchWithConfirm}
+                                                            disabled={(sound.id === 'search' && replaceSearchWithConfirm) || (replaceAllSoundsWithCursor && sound.id !== 'cursor')}
                                                             className="scale-75"
                                                         />
                                                     </div>
