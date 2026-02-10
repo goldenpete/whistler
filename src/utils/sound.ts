@@ -21,21 +21,39 @@ export const preloadSounds = () => {
 };
 
 export const playSfx = (type: SoundType) => {
-    const { sfxEnabled, enabledSounds, replaceSearchWithConfirm, replaceAllSoundsWithCursor } = useStore.getState();
+    const { sfxEnabled, enabledSounds, replaceSearchWithConfirm, replaceAllSoundsWithCursor, soundConfigs } = useStore.getState();
     if (!sfxEnabled) return;
     
-    // Check overrides
-    let finalType = type;
+    // Check overrides first
+    let mappedKey = type;
     
     if (replaceAllSoundsWithCursor) {
-        finalType = 'cursor';
+        mappedKey = 'cursor';
     } else if (type === 'search' && replaceSearchWithConfirm) {
-        finalType = 'confirm';
+        mappedKey = 'confirm';
     }
 
-    if (enabledSounds && !enabledSounds[finalType]) return;
+    // Check if the resulting key is enabled
+    if (enabledSounds && !enabledSounds[mappedKey]) return;
 
-    const audio = audioCache[finalType] || new Audio(SOUNDS[finalType]);
+    // Resolve the actual sound to play based on config
+    const config = soundConfigs?.[mappedKey];
+    let audioSrc: string;
+
+    if (config?.source === 'custom') {
+        audioSrc = config.value;
+    } else {
+        // Default behavior or mapped to another preset
+        const presetKey = (config?.value as SoundType) || mappedKey;
+        audioSrc = SOUNDS[presetKey];
+    }
+
+    // Play
+    const audio = audioCache[audioSrc] || new Audio(audioSrc);
+    // Cache it if it's a preset or new custom sound
+    if (!audioCache[audioSrc]) {
+        audioCache[audioSrc] = audio;
+    }
     
     // Reset if already playing or ended
     if (audio.currentTime > 0) {

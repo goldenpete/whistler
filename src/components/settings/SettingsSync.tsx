@@ -711,13 +711,6 @@ export function SettingsSync() {
                                     >
                                         <Copy size={12} />
                                     </button>
-                                    <button
-                                        onClick={() => setIsSyncIdRevealed(!isSyncIdRevealed)}
-                                        className="hover:text-foreground transition-colors"
-                                        title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
-                                    >
-                                        {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
-                                    </button>
                                 </div>
                             </div>
                         </div>

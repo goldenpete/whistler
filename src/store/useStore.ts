@@ -11,6 +11,12 @@ type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync';
 type SoundKey = 'cursor' | 'confirm' | 'error' | 'back' | 'search';
 
+interface SoundConfig {
+    source: 'preset' | 'custom';
+    value: string; // If preset: SoundKey, if custom: URL
+    name?: string; // For custom sounds
+}
+
 export interface AppStore extends AppState {
     activeFileId: string | null;
     activeHighlightId: string | null;
@@ -67,6 +73,7 @@ export interface AppStore extends AppState {
     };
     replaceSearchWithConfirm: boolean;
     replaceAllSoundsWithCursor: boolean;
+    soundConfigs: Record<SoundKey, SoundConfig>;
 
     // Double Tap Menu
     isDoubleTapMenuOpen: boolean;
@@ -462,6 +469,13 @@ export const useStore = create<AppStore>()(
             },
             replaceSearchWithConfirm: false,
             replaceAllSoundsWithCursor: false,
+            soundConfigs: {
+                cursor: { source: 'preset', value: 'cursor' },
+                confirm: { source: 'preset', value: 'confirm' },
+                error: { source: 'preset', value: 'error' },
+                back: { source: 'preset', value: 'back' },
+                search: { source: 'preset', value: 'search' },
+            },
 
             // ActionsPiP State
             pipFileId: null,
@@ -679,6 +693,12 @@ export const useStore = create<AppStore>()(
     }),
     setReplaceSearchWithConfirm: (enabled) => set({ replaceSearchWithConfirm: enabled }),
     setReplaceAllSoundsWithCursor: (enabled) => set({ replaceAllSoundsWithCursor: enabled }),
+    setSoundConfig: (key, config) => set((state) => ({
+        soundConfigs: {
+            ...state.soundConfigs,
+            [key]: config
+        }
+    })),
 
     setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 

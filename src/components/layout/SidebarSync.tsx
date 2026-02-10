@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, type KeyboardEvent, type MouseEvent, type ChangeEvent, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useSync } from "@/hooks/useSync";
@@ -24,7 +25,9 @@ import {
     QrCode,
     PencilSimple,
     Check,
-    X
+    X,
+    Eye,
+    EyeSlash
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 
@@ -96,7 +99,9 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
 
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState("");
+    const [isSyncIdRevealed, setIsSyncIdRevealed] = useState(false);
     
+    const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -759,7 +764,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                         Sync
                     </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" title="Settings">
+                <Button variant="ghost" size="icon" className="h-6 w-6" title="Settings" onClick={() => navigate('/settings?tab=sync')}>
                     <Gear weight="bold" className="text-muted-foreground" />
                 </Button>
             </div>
@@ -849,8 +854,20 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                                 <PencilSimple size={12} />
                                             </button>
                                         </div>
-                                        <div className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors">
-                                            {accountId ? formatAccountId(accountId) : formatAccountId(user.id)}
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors font-mono">
+                                                {isSyncIdRevealed 
+                                                    ? (accountId ? formatAccountId(accountId) : formatAccountId(user.id))
+                                                    : "••••-••••-••••-••••"
+                                                }
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setIsSyncIdRevealed(!isSyncIdRevealed); }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                                title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
+                                            >
+                                                {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
+                                            </button>
                                         </div>
                                     </>
                                 )}

@@ -1,8 +1,10 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES, DEFAULT_CUSTOM_THEMES } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
 import { SidebarTrash } from "@/components/layout/SidebarTrash";
+import { ChangeEvent } from "react";
 import { 
     SpeakerHigh, 
     Palette, 
@@ -47,6 +49,13 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { ColorPicker, PRESET_COLORS } from "@/components/ui/ColorPicker";
 import { GradientEditor } from "@/components/ui/GradientEditor";
 import { SettingsSync } from "@/components/settings/SettingsSync";
@@ -147,10 +156,21 @@ export default function SettingsView() {
         replaceSearchWithConfirm,
         setReplaceSearchWithConfirm,
         replaceAllSoundsWithCursor,
-        setReplaceAllSoundsWithCursor
+        setReplaceAllSoundsWithCursor,
+        soundConfigs,
+        setSoundConfig
     } = useStore();
 
+    const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab && ['appearance', 'music', 'keybinds', 'actions', 'system', 'sync', 'history', 'trash'].includes(tab)) {
+            setActiveTab(tab as SettingsTab);
+        }
+    }, [searchParams]);
+
     const [deleteLocalOpen, setDeleteLocalOpen] = useState(false);
     const [resetAllOpen, setResetAllOpen] = useState(false);
     const [localItemToDelete, setLocalItemToDelete] = useState<{id: string, label: string} | null>(null);
@@ -1463,10 +1483,114 @@ export default function SettingsView() {
                                             <label className="text-sm font-medium">Enable website sounds</label>
                                             <p className="text-xs text-muted-foreground">Plays sounds for clicks, confirmations, and errors.</p>
                                         </div>
-                                        <Switch 
-                                            checked={sfxEnabled}
-                                            onCheckedChange={setSfxEnabled}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                        <Gear size={18} />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-md">
+                                                    <DialogHeader>
+                                                        <DialogTitle>Advanced Sound Settings</DialogTitle>
+                                                        <DialogDescription>
+                                                            Customize sound effects by remapping them or uploading your own files.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="space-y-4 pt-4">
+                                                        {[
+                                                            { id: 'cursor', label: 'Cursor' },
+                                                            { id: 'confirm', label: 'Confirm' },
+                                                            { id: 'error', label: 'Error' },
+                                                            { id: 'back', label: 'Back' },
+                                                            { id: 'search', label: 'Search' },
+                                                        ].map((sound) => {
+                                                            const config = soundConfigs?.[sound.id as any] || { source: 'preset', value: sound.id };
+                                                            
+                                                            const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    const reader = new FileReader();
+                                                                    reader.onload = (event) => {
+                                                                        const url = event.target?.result as string;
+                                                                        setSoundConfig(sound.id as any, {
+                                                                            source: 'custom',
+                                                                            value: url,
+                                                                            name: file.name
+                                                                        });
+                                                                    };
+                                                                    reader.readAsDataURL(file);
+                                                                }
+                                                            };
+
+                                                            return (
+                                                                <div key={sound.id} className="space-y-2">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <label className="text-sm font-medium">{sound.label} Sound</label>
+                                                                        {config.source === 'custom' && (
+                                                                            <Button 
+                                                                                variant="ghost" 
+                                                                                size="sm" 
+                                                                                className="h-6 text-xs text-muted-foreground hover:text-destructive"
+                                                                                onClick={() => setSoundConfig(sound.id as any, { source: 'preset', value: sound.id })}
+                                                                            >
+                                                                                Reset to Default
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <Select
+                                                                            value={config.source === 'preset' ? config.value : 'custom'}
+                                                                            onValueChange={(val) => {
+                                                                                if (val === 'custom') {
+                                                                                    // Trigger file input
+                                                                                    document.getElementById(`sound-upload-${sound.id}`)?.click();
+                                                                                } else {
+                                                                                    setSoundConfig(sound.id as any, { source: 'preset', value: val });
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <SelectTrigger className="flex-1">
+                                                                                <SelectValue placeholder="Select sound..." />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="cursor">Cursor</SelectItem>
+                                                                                <SelectItem value="confirm">Confirm</SelectItem>
+                                                                                <SelectItem value="error">Error</SelectItem>
+                                                                                <SelectItem value="back">Back</SelectItem>
+                                                                                <SelectItem value="search">Search</SelectItem>
+                                                                                <SelectItem value="custom">
+                                                                                    {config.source === 'custom' ? (config.name || 'Custom Sound') : 'Upload Custom...'}
+                                                                                </SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                        <Input 
+                                                                            id={`sound-upload-${sound.id}`}
+                                                                            type="file" 
+                                                                            accept="audio/*" 
+                                                                            className="hidden"
+                                                                            onChange={handleFileChange}
+                                                                        />
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            onClick={() => document.getElementById(`sound-upload-${sound.id}`)?.click()}
+                                                                            title="Upload custom sound"
+                                                                        >
+                                                                            <UploadSimple size={16} />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </DialogContent>
+                                            </Dialog>
+                                            <Switch 
+                                                checked={sfxEnabled}
+                                                onCheckedChange={setSfxEnabled}
+                                            />
+                                        </div>
                                     </div>
 
                                     {sfxEnabled && (
