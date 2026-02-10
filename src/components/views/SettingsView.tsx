@@ -20,6 +20,7 @@ import {
     X,
     MagnifyingGlass,
     CaretLeft,
+    CaretRight,
     SidebarSimple,
     FilmStrip,
     Cloud,
@@ -149,6 +150,8 @@ export default function SettingsView() {
         setSidebarMode,
         windowOutlineEnabled,
         setWindowOutlineEnabled,
+        toggleThemingEnabled,
+        setToggleThemingEnabled,
         setState,
         setAmbientMusicStorageKey,
         alwaysShowMuteOverlay,
@@ -178,6 +181,7 @@ export default function SettingsView() {
     const [isDeletingReset, setIsDeletingReset] = useState(false);
     const [clearingCache, setClearingCache] = useState<string | null>(null);
     const [showMuteSettings, setShowMuteSettings] = useState(false);
+    const [interfacePage, setInterfacePage] = useState(1);
 
     const accentTheme = accentThemeOrUndefined || 'orange';
 
@@ -944,33 +948,70 @@ export default function SettingsView() {
                                     Interface
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4 p-5 rounded-lg border border-border bg-card/50">
-                                        <label className="text-sm font-medium block mb-3">Sidebar Mode</label>
-                                        <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-border/50">
-                                            <button
-                                                onClick={() => setSidebarMode('full')}
-                                                className={cn(
-                                                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all",
-                                                    sidebarMode === 'full' 
-                                                        ? "bg-background shadow-sm text-foreground" 
-                                                        : "text-muted-foreground hover:text-foreground"
-                                                )}
+                                    <div className="space-y-4 p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between">
+                                        <div className="min-h-[80px] flex flex-col justify-center">
+                                            {interfacePage === 1 ? (
+                                                <>
+                                                    <label className="text-sm font-medium block mb-3">Sidebar Mode</label>
+                                                    <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-border/50">
+                                                        <button
+                                                            onClick={() => setSidebarMode('full')}
+                                                            className={cn(
+                                                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all",
+                                                                sidebarMode === 'full' 
+                                                                    ? "bg-background shadow-sm text-foreground" 
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                            )}
+                                                        >
+                                                            <SidebarSimple size={16} />
+                                                            Full
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setSidebarMode('slim')}
+                                                            className={cn(
+                                                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all",
+                                                                sidebarMode === 'slim' 
+                                                                    ? "bg-background shadow-sm text-foreground" 
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                            )}
+                                                        >
+                                                            <SidebarSimple size={16} weight="duotone" />
+                                                            Slim
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center justify-between">
+                                                    <div className="space-y-0.5">
+                                                        <label className="text-sm font-medium">Toggle Theming</label>
+                                                        <p className="text-xs text-muted-foreground">Apply theme color to enabled toggles</p>
+                                                    </div>
+                                                    <Switch 
+                                                        checked={toggleThemingEnabled}
+                                                        onCheckedChange={setToggleThemingEnabled}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/40">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon-xs" 
+                                                onClick={() => setInterfacePage(Math.max(1, interfacePage - 1))} 
+                                                disabled={interfacePage === 1}
                                             >
-                                                <SidebarSimple size={16} />
-                                                Full
-                                            </button>
-                                            <button
-                                                onClick={() => setSidebarMode('slim')}
-                                                className={cn(
-                                                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all",
-                                                    sidebarMode === 'slim' 
-                                                        ? "bg-background shadow-sm text-foreground" 
-                                                        : "text-muted-foreground hover:text-foreground"
-                                                )}
+                                                <CaretLeft size={14} />
+                                            </Button>
+                                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Page {interfacePage}</span>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon-xs" 
+                                                onClick={() => setInterfacePage(Math.min(2, interfacePage + 1))} 
+                                                disabled={interfacePage === 2}
                                             >
-                                                <SidebarSimple size={16} weight="duotone" />
-                                                Slim
-                                            </button>
+                                                <CaretRight size={14} />
+                                            </Button>
                                         </div>
                                     </div>
 
@@ -1491,6 +1532,19 @@ export default function SettingsView() {
                                                     </Button>
                                                 </DialogTrigger>
                                                 <DialogContent className="max-w-md">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-sm"
+                                                        className="absolute right-10 top-2 text-muted-foreground hover:text-foreground"
+                                                        onClick={() => {
+                                                            ['cursor', 'confirm', 'error', 'back', 'search'].forEach((id) => {
+                                                                setSoundConfig(id as any, { source: 'preset', value: id });
+                                                            });
+                                                        }}
+                                                        title="Reset all to default"
+                                                    >
+                                                        <ArrowCounterClockwise />
+                                                    </Button>
                                                     <DialogHeader>
                                                         <DialogTitle>Advanced Sound Settings</DialogTitle>
                                                         <DialogDescription>

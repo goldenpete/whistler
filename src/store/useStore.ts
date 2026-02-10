@@ -75,6 +75,9 @@ export interface AppStore extends AppState {
     replaceAllSoundsWithCursor: boolean;
     soundConfigs: Record<SoundKey, SoundConfig>;
 
+    toggleThemingEnabled: boolean;
+    setToggleThemingEnabled: (enabled: boolean) => void;
+
     // Double Tap Menu
     isDoubleTapMenuOpen: boolean;
     setDoubleTapMenuOpen: (isOpen: boolean) => void;
@@ -476,6 +479,9 @@ export const useStore = create<AppStore>()(
                 back: { source: 'preset', value: 'back' },
                 search: { source: 'preset', value: 'search' },
             },
+
+            toggleThemingEnabled: true,
+            setToggleThemingEnabled: (enabled) => set({ toggleThemingEnabled: enabled }),
 
             // ActionsPiP State
             pipFileId: null,
