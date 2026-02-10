@@ -989,10 +989,6 @@ export default function SettingsView() {
                                                     <p className="text-xs text-muted-foreground">Apply theme color to enabled toggles</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Switch 
-                                                        checked={toggleThemingEnabled}
-                                                        onCheckedChange={setToggleThemingEnabled}
-                                                    />
                                                     <Popover>
                                                         <PopoverTrigger asChild>
                                                             <Button variant="ghost" size="icon-xs" className="h-6 w-6 text-muted-foreground hover:text-foreground">
@@ -1011,6 +1007,10 @@ export default function SettingsView() {
                                                             </div>
                                                         </PopoverContent>
                                                     </Popover>
+                                                    <Switch 
+                                                        checked={toggleThemingEnabled}
+                                                        onCheckedChange={setToggleThemingEnabled}
+                                                    />
                                                 </div>
                                             </div>
                                             )}
