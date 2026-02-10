@@ -152,6 +152,8 @@ export default function SettingsView() {
         setWindowOutlineEnabled,
         toggleThemingEnabled,
         setToggleThemingEnabled,
+        largeTogglesThemingEnabled,
+        setLargeTogglesThemingEnabled,
         setState,
         setAmbientMusicStorageKey,
         alwaysShowMuteOverlay,
@@ -483,7 +485,7 @@ export default function SettingsView() {
                                                     className={cn(
                                                         "px-3 py-1 rounded-md text-xs font-medium transition-all",
                                                         accentThemeMode === 'presets' 
-                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
                                                             : "text-muted-foreground hover:text-foreground"
                                                     )}
                                                 >
@@ -499,7 +501,7 @@ export default function SettingsView() {
                                                     className={cn(
                                                         "px-3 py-1 rounded-md text-xs font-medium transition-all",
                                                         accentThemeMode === 'custom' 
-                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
                                                             : "text-muted-foreground hover:text-foreground"
                                                     )}
                                                 >
@@ -722,7 +724,7 @@ export default function SettingsView() {
                                                     className={cn(
                                                         "px-3 py-1 rounded-md text-xs font-medium transition-all",
                                                         baseThemeMode === 'presets' 
-                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
                                                             : "text-muted-foreground hover:text-foreground"
                                                     )}
                                                 >
@@ -738,7 +740,7 @@ export default function SettingsView() {
                                                     className={cn(
                                                         "px-3 py-1 rounded-md text-xs font-medium transition-all",
                                                         baseThemeMode === 'custom' 
-                                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
                                                             : "text-muted-foreground hover:text-foreground"
                                                     )}
                                                 >
@@ -959,7 +961,7 @@ export default function SettingsView() {
                                                             className={cn(
                                                                 "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all",
                                                                 sidebarMode === 'full' 
-                                                                    ? "bg-background shadow-sm text-foreground" 
+                                                                    ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
                                                                     : "text-muted-foreground hover:text-foreground"
                                                             )}
                                                         >
@@ -971,7 +973,7 @@ export default function SettingsView() {
                                                             className={cn(
                                                                 "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all",
                                                                 sidebarMode === 'slim' 
-                                                                    ? "bg-background shadow-sm text-foreground" 
+                                                                    ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
                                                                     : "text-muted-foreground hover:text-foreground"
                                                             )}
                                                         >
@@ -982,15 +984,35 @@ export default function SettingsView() {
                                                 </>
                                             ) : (
                                                 <div className="flex items-center justify-between h-full">
-                                                    <div className="space-y-0.5">
-                                                        <label className="text-sm font-medium">Toggle Theming</label>
-                                                        <p className="text-xs text-muted-foreground">Apply theme color to enabled toggles</p>
-                                                    </div>
+                                                <div className="space-y-0.5">
+                                                    <label className="text-sm font-medium">Toggle Theming</label>
+                                                    <p className="text-xs text-muted-foreground">Apply theme color to enabled toggles</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
                                                     <Switch 
                                                         checked={toggleThemingEnabled}
                                                         onCheckedChange={setToggleThemingEnabled}
                                                     />
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button variant="ghost" size="icon-xs" className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                                                                <Gear size={14} weight="fill" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-3" align="end">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="space-y-0.5">
+                                                                    <label className="text-sm font-medium whitespace-nowrap">Include large toggles</label>
+                                                                </div>
+                                                                <Switch 
+                                                                    checked={largeTogglesThemingEnabled}
+                                                                    onCheckedChange={setLargeTogglesThemingEnabled}
+                                                                />
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
                                                 </div>
+                                            </div>
                                             )}
                                         </div>
                                         
@@ -1087,7 +1109,9 @@ export default function SettingsView() {
                                                         onClick={() => setBackgroundIsGradient(false)}
                                                         className={cn(
                                                             "px-3 py-1 rounded-sm text-xs font-medium transition-all",
-                                                            !backgroundIsGradient ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                            !backgroundIsGradient 
+                                                                ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
+                                                                : "text-muted-foreground hover:text-foreground"
                                                         )}
                                                     >
                                                         Solid
@@ -1096,7 +1120,9 @@ export default function SettingsView() {
                                                         onClick={() => setBackgroundIsGradient(true)}
                                                         className={cn(
                                                             "px-3 py-1 rounded-sm text-xs font-medium transition-all",
-                                                            backgroundIsGradient ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                            backgroundIsGradient 
+                                                                ? (largeTogglesThemingEnabled ? "bg-primary text-primary-foreground shadow-sm" : "bg-background shadow-sm text-foreground")
+                                                                : "text-muted-foreground hover:text-foreground"
                                                         )}
                                                     >
                                                         Gradient

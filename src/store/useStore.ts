@@ -77,6 +77,8 @@ export interface AppStore extends AppState {
 
     toggleThemingEnabled: boolean;
     setToggleThemingEnabled: (enabled: boolean) => void;
+    largeTogglesThemingEnabled: boolean;
+    setLargeTogglesThemingEnabled: (enabled: boolean) => void;
 
     // Double Tap Menu
     isDoubleTapMenuOpen: boolean;
@@ -481,7 +483,9 @@ export const useStore = create<AppStore>()(
             },
 
             toggleThemingEnabled: true,
-            setToggleThemingEnabled: (enabled) => set({ toggleThemingEnabled: enabled }),
+    setToggleThemingEnabled: (enabled) => set({ toggleThemingEnabled: enabled }),
+    largeTogglesThemingEnabled: true,
+    setLargeTogglesThemingEnabled: (enabled) => set({ largeTogglesThemingEnabled: enabled }),
 
             // ActionsPiP State
             pipFileId: null,
