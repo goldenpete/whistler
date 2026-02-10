@@ -20,7 +20,8 @@ import {
     NotePencil,
     ProjectorScreenChart,
     FunnelSimple,
-    Check
+    Check,
+    MagnifyingGlass
 } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -862,6 +863,18 @@ export default function HomeView() {
                     {getGreeting(username)}
                 </h1>
                 
+                <Button 
+                    variant="outline" 
+                    className="gap-2 text-muted-foreground hover:text-foreground w-64 justify-start px-3"
+                    onClick={() => useStore.getState().setSpotlightOpen(true)}
+                >
+                    <MagnifyingGlass weight="bold" />
+                    <span className="font-normal">Search...</span>
+                    <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                        <span className="text-xs">Ctrl</span>K
+                    </kbd>
+                </Button>
+
                 <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
                     <PopoverTrigger asChild>
                         <Button variant="outline" className="gap-2">
