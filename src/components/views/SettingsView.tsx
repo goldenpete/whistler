@@ -948,8 +948,8 @@ export default function SettingsView() {
                                     Interface
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4 p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between">
-                                        <div className="min-h-[80px] flex flex-col justify-center">
+                                    <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between">
+                                        <div className="flex flex-col justify-center flex-1">
                                             {interfacePage === 1 ? (
                                                 <>
                                                     <label className="text-sm font-medium block mb-3">Sidebar Mode</label>
@@ -981,7 +981,7 @@ export default function SettingsView() {
                                                     </div>
                                                 </>
                                             ) : (
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex items-center justify-between h-full">
                                                     <div className="space-y-0.5">
                                                         <label className="text-sm font-medium">Toggle Theming</label>
                                                         <p className="text-xs text-muted-foreground">Apply theme color to enabled toggles</p>
@@ -994,10 +994,11 @@ export default function SettingsView() {
                                             )}
                                         </div>
                                         
-                                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/40">
+                                        <div className="flex items-center justify-between pt-1 mt-1">
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon-xs" 
+                                                className="h-6 w-6"
                                                 onClick={() => setInterfacePage(Math.max(1, interfacePage - 1))} 
                                                 disabled={interfacePage === 1}
                                             >
@@ -1007,6 +1008,7 @@ export default function SettingsView() {
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon-xs" 
+                                                className="h-6 w-6"
                                                 onClick={() => setInterfacePage(Math.min(2, interfacePage + 1))} 
                                                 disabled={interfacePage === 2}
                                             >
