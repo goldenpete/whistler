@@ -21,11 +21,18 @@ export const preloadSounds = () => {
 };
 
 export const playSfx = (type: SoundType) => {
-    const { sfxEnabled, enabledSounds } = useStore.getState();
+    const { sfxEnabled, enabledSounds, replaceSearchWithConfirm } = useStore.getState();
     if (!sfxEnabled) return;
-    if (enabledSounds && !enabledSounds[type]) return;
+    
+    // Check if we should replace search sound with confirm
+    let finalType = type;
+    if (type === 'search' && replaceSearchWithConfirm) {
+        finalType = 'confirm';
+    }
 
-    const audio = audioCache[type] || new Audio(SOUNDS[type]);
+    if (enabledSounds && !enabledSounds[finalType]) return;
+
+    const audio = audioCache[finalType] || new Audio(SOUNDS[finalType]);
     
     // Reset if already playing or ended
     if (audio.currentTime > 0) {

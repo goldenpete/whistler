@@ -143,7 +143,9 @@ export default function SettingsView() {
         setState,
         setAmbientMusicStorageKey,
         alwaysShowMuteOverlay,
-        setAlwaysShowMuteOverlay
+        setAlwaysShowMuteOverlay,
+        replaceSearchWithConfirm,
+        setReplaceSearchWithConfirm
     } = useStore();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
@@ -1479,11 +1481,36 @@ export default function SettingsView() {
                                                         <sound.icon className="text-muted-foreground" size={16} />
                                                         <span className="text-sm">{sound.label}</span>
                                                     </div>
-                                                    <Switch 
-                                                        checked={enabledSounds[sound.id as keyof typeof enabledSounds]}
-                                                        onCheckedChange={() => toggleSound(sound.id as any)}
-                                                        className="scale-75"
-                                                    />
+                                                    <div className="flex items-center gap-2">
+                                                        {sound.id === 'confirm' && (
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                                                                        <Gear size={14} />
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-64 p-3" align="end">
+                                                                    <div className="space-y-2">
+                                                                        <h4 className="font-medium text-sm leading-none">Sound Settings</h4>
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <label className="text-xs text-muted-foreground">Replace search sound with confirm?</label>
+                                                                            <Switch 
+                                                                                checked={replaceSearchWithConfirm}
+                                                                                onCheckedChange={setReplaceSearchWithConfirm}
+                                                                                className="scale-75"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                        )}
+                                                        <Switch 
+                                                            checked={enabledSounds[sound.id as keyof typeof enabledSounds]}
+                                                            onCheckedChange={() => toggleSound(sound.id as any)}
+                                                            disabled={sound.id === 'search' && replaceSearchWithConfirm}
+                                                            className="scale-75"
+                                                        />
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>

@@ -65,6 +65,7 @@ export interface AppStore extends AppState {
         back: boolean;
         search: boolean;
     };
+    replaceSearchWithConfirm: boolean;
 
     // Double Tap Menu
     isDoubleTapMenuOpen: boolean;
@@ -458,6 +459,7 @@ export const useStore = create<AppStore>()(
                 back: true,
                 search: true,
             },
+            replaceSearchWithConfirm: false,
 
             // ActionsPiP State
             pipFileId: null,
@@ -657,24 +659,25 @@ export const useStore = create<AppStore>()(
             setCacheFiles: (enabled) => set({ cacheFiles: enabled }),
             setCacheCollections: (enabled) => set({ cacheCollections: enabled }),
             setCacheHighlights: (enabled) => set({ cacheHighlights: enabled }),
-            clearMediaVolumes: () => set({ videoVolumeByFile: {}, audioVolumeByFile: {} }),
-            toggleSound: (type) => set((state) => {
-                const currentSounds = state.enabledSounds || {
-                    cursor: true,
-                    confirm: true,
-                    error: true,
-                    back: true,
-                    search: true,
-                };
-                return {
-                    enabledSounds: {
-                        ...currentSounds,
-                        [type]: !currentSounds[type]
-                    }
-                };
-            }),
+    clearMediaVolumes: () => set({ videoVolumeByFile: {}, audioVolumeByFile: {} }),
+    toggleSound: (type) => set((state) => {
+        const currentSounds = state.enabledSounds || {
+            cursor: true,
+            confirm: true,
+            error: true,
+            back: true,
+            search: true,
+        };
+        return {
+            enabledSounds: {
+                ...currentSounds,
+                [type]: !currentSounds[type]
+            }
+        };
+    }),
+    setReplaceSearchWithConfirm: (enabled) => set({ replaceSearchWithConfirm: enabled }),
 
-            setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
+    setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 
             login: (user) => set({ user }),
             logout: () => set({ user: null }),
