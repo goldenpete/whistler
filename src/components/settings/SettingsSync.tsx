@@ -29,7 +29,14 @@ import {
     Gear,
     Trash,
     Eye,
-    EyeSlash
+    EyeSlash,
+    Desktop,
+    DeviceMobile,
+    Globe,
+    Clock,
+    Laptop,
+    CaretLeft,
+    Monitor
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -56,6 +63,64 @@ const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
+
+interface Session {
+    id: string;
+    browser: string;
+    device: string;
+    location: string;
+    lastActive: string;
+    isCurrent: boolean;
+    icon: React.ElementType;
+}
+
+const MOCK_SESSIONS: Session[] = [
+    {
+        id: '1',
+        browser: 'Chrome 120.0',
+        device: 'Windows 11',
+        location: 'London, UK',
+        lastActive: 'Just now',
+        isCurrent: true,
+        icon: Desktop
+    },
+    {
+        id: '2',
+        browser: 'Safari 17.2',
+        device: 'iPhone 15 Pro',
+        location: 'London, UK',
+        lastActive: '2 hours ago',
+        isCurrent: false,
+        icon: DeviceMobile
+    },
+    {
+        id: '3',
+        browser: 'Firefox 121.0',
+        device: 'MacOS Sonoma',
+        location: 'Manchester, UK',
+        lastActive: '1 day ago',
+        isCurrent: false,
+        icon: Laptop
+    },
+    {
+        id: '4',
+        browser: 'Edge 120.0',
+        device: 'Windows 10',
+        location: 'Leeds, UK',
+        lastActive: '3 days ago',
+        isCurrent: false,
+        icon: Desktop
+    },
+     {
+        id: '5',
+        browser: 'Chrome 119.0',
+        device: 'Android 14',
+        location: 'London, UK',
+        lastActive: '1 week ago',
+        isCurrent: false,
+        icon: DeviceMobile
+    }
+];
 
 export function SettingsSync() {
     const { 
@@ -111,6 +176,7 @@ export function SettingsSync() {
 
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState("");
+    const [viewSessions, setViewSessions] = useState(false);
 
     // Remote Deletion State
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -653,6 +719,59 @@ export function SettingsSync() {
     }
 
     // Logged In View
+    if (viewSessions) {
+        return (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 pb-10">
+                <div className="flex items-center gap-4 mb-2">
+                    <Button variant="ghost" size="icon" onClick={() => setViewSessions(false)}>
+                        <CaretLeft size={20} />
+                    </Button>
+                    <div>
+                        <h2 className="text-lg font-semibold">Login Sessions</h2>
+                        <p className="text-sm text-muted-foreground">Manage devices where you're logged in</p>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    {MOCK_SESSIONS.map((session) => (
+                        <div key={session.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
+                            <div className="flex items-center gap-4">
+                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
+                                    <session.icon size={20} weight={session.isCurrent ? "fill" : "regular"} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">{session.browser} on {session.device}</span>
+                                        {session.isCurrent && (
+                                            <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded-full font-medium border border-green-500/20">
+                                                Current
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-3 mt-0.5">
+                                        <span className="flex items-center gap-1">
+                                            <Globe size={12} />
+                                            {session.location}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Clock size={12} />
+                                            {session.lastActive}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {!session.isCurrent && (
+                                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10">
+                                    Revoke
+                                </Button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-10">
             {/* Account Status */}
@@ -948,6 +1067,55 @@ export function SettingsSync() {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            <Separator />
+
+            {/* Sessions */}
+            <div>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Monitor className="text-primary" size={24} />
+                    Sessions
+                </h2>
+                <div className="space-y-4">
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {MOCK_SESSIONS.slice(0, 3).map((session) => (
+                            <div key={session.id} className="p-4 rounded-lg border border-border bg-card/50 flex flex-col gap-3">
+                                <div className="flex items-start justify-between">
+                                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
+                                        <session.icon size={16} weight={session.isCurrent ? "fill" : "regular"} />
+                                    </div>
+                                    {session.isCurrent && (
+                                        <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded-full font-medium border border-green-500/20">
+                                            Current
+                                        </span>
+                                    )}
+                                </div>
+                                <div>
+                                    <div className="font-medium text-sm truncate" title={`${session.browser} on ${session.device}`}>
+                                        {session.browser}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground truncate">
+                                        {session.device}
+                                    </div>
+                                </div>
+                                <div className="text-[10px] text-muted-foreground flex items-center gap-2 pt-2 border-t border-border/50">
+                                    <span className="flex items-center gap-1">
+                                        <Globe size={10} />
+                                        {session.location}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Clock size={10} />
+                                        {session.lastActive}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                     </div>
+                     <Button variant="outline" className="w-full" onClick={() => setViewSessions(true)}>
+                        View more
+                     </Button>
                 </div>
             </div>
 
