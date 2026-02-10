@@ -1382,12 +1382,17 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 {fileHighlights.map((h: Highlight) => {
                                     const collection = collections.find((c: Collection) => c.id === h.collectionId);
                                     const color = collection ? collection.color : 'var(--primary)';
+                                    const startPct = (h.start / duration) * 100;
+                                    const hasRange = h.end && h.end > h.start;
+                                    const widthPct = hasRange ? ((h.end! - h.start) / duration) * 100 : 0;
+                                    
                                     return (
                                         <div
                                             key={h.id}
-                                            className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full opacity-60"
+                                            className="absolute top-1/2 -translate-y-1/2 h-2 rounded-full opacity-60"
                                             style={{
-                                                left: `${(h.start / duration) * 100}%`,
+                                                left: `${startPct}%`,
+                                                width: hasRange ? `${widthPct}%` : '4px',
                                                 backgroundColor: color,
                                                 filter: 'brightness(0.9) saturate(0.9)'
                                             }}

@@ -268,13 +268,16 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                                     const collection = collections.find((c: Collection) => c.id === h.collectionId);
                                     const color = collection?.color || 'var(--primary)';
                                     const startPct = (h.start / duration) * 100;
-                                    // Simple marker for now
+                                    const hasRange = h.end && h.end > h.start;
+                                    const widthPct = hasRange ? ((h.end! - h.start) / duration) * 100 : 0;
+
                                     return (
                                         <div 
                                             key={h.id}
-                                            className="absolute top-1/2 -translate-y-1/2 w-1 h-3 rounded-full opacity-60 transition-opacity hover:opacity-100"
+                                            className="absolute top-1/2 -translate-y-1/2 h-3 rounded-full opacity-60 transition-opacity hover:opacity-100"
                                             style={{ 
                                                 left: `${startPct}%`,
+                                                width: hasRange ? `${widthPct}%` : '4px',
                                                 backgroundColor: color,
                                                 boxShadow: `0 0 4px ${color}`
                                             }}
