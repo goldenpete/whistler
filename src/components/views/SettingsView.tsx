@@ -948,7 +948,7 @@ export default function SettingsView() {
                                     Interface
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between">
+                                    <div className="relative p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between">
                                         <div className="flex flex-col justify-center flex-1">
                                             {interfacePage === 1 ? (
                                                 <>
@@ -994,7 +994,7 @@ export default function SettingsView() {
                                             )}
                                         </div>
                                         
-                                        <div className="flex items-center justify-between pt-1 mt-1">
+                                        <div className="absolute top-3 right-3 flex gap-1">
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon-xs" 
@@ -1004,7 +1004,6 @@ export default function SettingsView() {
                                             >
                                                 <CaretLeft size={14} />
                                             </Button>
-                                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Page {interfacePage}</span>
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon-xs" 
@@ -1562,6 +1561,9 @@ export default function SettingsView() {
                                                             { id: 'search', label: 'Search' },
                                                         ].map((sound) => {
                                                             const config = soundConfigs?.[sound.id as any] || { source: 'preset', value: sound.id };
+                                                            const isSearchDisabled = sound.id === 'search' && replaceSearchWithConfirm && !replaceAllSoundsWithCursor;
+                                                            const isAllDisabled = sound.id !== 'cursor' && replaceAllSoundsWithCursor;
+                                                            const isDisabled = isSearchDisabled || isAllDisabled;
                                                             
                                                             const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
                                                                 const file = e.target.files?.[0];
@@ -1580,7 +1582,7 @@ export default function SettingsView() {
                                                             };
 
                                                             return (
-                                                                <div key={sound.id} className="space-y-2">
+                                                                <div key={sound.id} className={cn("space-y-2", isDisabled && "opacity-50 pointer-events-none")}>
                                                                     <div className="flex items-center justify-between">
                                                                         <label className="text-sm font-medium">{sound.label} Sound</label>
                                                                         {config.source === 'custom' && (
