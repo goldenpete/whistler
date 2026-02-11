@@ -201,6 +201,9 @@ export function MainLayout() {
         };
     }, [ambientAutoplayBlocked, ambientMusicUrl, isAmbientSuppressed, ambientMusicPaused]);
 
+    // Use a stable key for settings sub-routes to prevent the sidebar from re-animating
+    const motionKey = location.pathname.startsWith('/settings') ? '/settings' : location.pathname;
+
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground animate-in fade-in duration-300">
             <audio ref={audioRef} loop />
@@ -248,7 +251,7 @@ export function MainLayout() {
                 )}
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={location.pathname}
+                        key={motionKey}
                         initial={{ opacity: 0, scale: isPlayer ? 0.95 : 1 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: isPlayer ? 0.95 : 1 }}
