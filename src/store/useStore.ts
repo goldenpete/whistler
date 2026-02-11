@@ -35,6 +35,15 @@ export interface AppStore extends AppState {
         graphs: boolean;
         storages: boolean;
         settings: boolean;
+        advancedSettings: {
+            appearance: boolean;
+            music: boolean;
+            playback: boolean;
+            cache: boolean;
+            sounds: boolean;
+            sync: boolean;
+            keybinds: boolean;
+        };
     };
     backgroundImageUrl: string | null;
     backgroundImageOpacity: number;
@@ -438,6 +447,15 @@ export const useStore = create<AppStore>()(
                 graphs: true,
                 storages: true,
                 settings: true,
+                advancedSettings: {
+                    appearance: true,
+                    music: true,
+                    playback: true,
+                    cache: true,
+                    sounds: true,
+                    sync: true,
+                    keybinds: true,
+                },
             },
             backgroundImageUrl: null,
             backgroundImageOpacity: 0.2,
@@ -722,9 +740,16 @@ export const useStore = create<AppStore>()(
             setLastSyncTime: (time) => set({ lastSyncTime: time }),
             setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
             setSyncStatus: (status) => set({ syncStatus: status }),
-            setSyncOptions: (options) => set((state) => ({
-                syncOptions: { ...state.syncOptions, ...options }
-            })),
+            setSyncOptions: (options) => set((state) => {
+                const newOptions = { ...state.syncOptions, ...options };
+                if (options.advancedSettings) {
+                    newOptions.advancedSettings = {
+                        ...state.syncOptions.advancedSettings,
+                        ...options.advancedSettings
+                    };
+                }
+                return { syncOptions: newOptions };
+            }),
 
             addProject: (name) => {
                 const newProject: Project = {

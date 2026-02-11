@@ -171,6 +171,7 @@ export function SettingsSync() {
     const [itemToDelete, setItemToDelete] = useState<{id: string, label: string} | null>(null);
     const [isDeletingRemote, setIsDeletingRemote] = useState(false);
     const [isSyncIdRevealed, setIsSyncIdRevealed] = useState(false);
+    const [advancedSyncOpen, setAdvancedSyncOpen] = useState(false);
     
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -1035,6 +1036,17 @@ export function SettingsSync() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {item.id === 'settings' && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
+                                            onClick={() => setAdvancedSyncOpen(true)}
+                                            title="Advanced Settings Sync Options"
+                                        >
+                                            <Gear size={18} />
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="icon"
@@ -1048,7 +1060,7 @@ export function SettingsSync() {
                                         <Trash size={18} />
                                     </Button>
                                     <Switch 
-                                        checked={syncOptions[item.id as keyof typeof syncOptions]}
+                                        checked={syncOptions[item.id as keyof typeof syncOptions] as boolean}
                                         onCheckedChange={(checked: boolean) => setSyncOptions({ [item.id]: checked })}
                                     />
                                 </div>
@@ -1122,6 +1134,46 @@ export function SettingsSync() {
                      </Button>
                 </div>
             </div>
+
+            <Dialog open={advancedSyncOpen} onOpenChange={setAdvancedSyncOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Advanced Settings Sync Options</DialogTitle>
+                        <DialogDescription>
+                            Choose specifically which settings you want to keep in sync across devices.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        {[
+                            { id: 'appearance', label: 'Appearance', desc: 'Themes, colors, and background' },
+                            { id: 'music', label: 'Ambient Music', desc: 'Music URLs, volume, and preferences' },
+                            { id: 'playback', label: 'Media Playback', desc: 'Volume, mute settings, and autoplay' },
+                            { id: 'cache', label: 'Cache & Performance', desc: 'Frame caching and performance flags' },
+                            { id: 'sounds', label: 'Sound Effects', desc: 'SFX enabled status and configurations' },
+                            { id: 'sync', label: 'Sync Settings', desc: 'Auto-sync interval and background sync' },
+                            { id: 'keybinds', label: 'Keybinds', desc: 'Custom keyboard shortcuts and disabled keys' },
+                        ].map((option) => (
+                            <div key={option.id} className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <div className="text-sm font-medium">{option.label}</div>
+                                    <div className="text-xs text-muted-foreground">{option.desc}</div>
+                                </div>
+                                <Switch 
+                                    checked={syncOptions.advancedSettings?.[option.id as keyof typeof syncOptions.advancedSettings] ?? true}
+                                    onCheckedChange={(checked) => setSyncOptions({ 
+                                        advancedSettings: { [option.id]: checked } 
+                                    })}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button">Done</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <DestructiveDeleteDialog 
                 open={deleteDialogOpen}
