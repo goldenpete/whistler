@@ -439,9 +439,9 @@ export function WelcomeView() {
                 </div>
 
                 <div className="flex justify-center gap-6 mt-8">
-                    <Link to="/legal/terms" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Terms</Link>
-                    <Link to="/legal/privacy" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Privacy</Link>
-                    <Link to="/legal/license" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">License</Link>
+                    <Link to="/legal/terms" state={{ from: 'welcome' }} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Terms</Link>
+                    <Link to="/legal/privacy" state={{ from: 'welcome' }} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Privacy</Link>
+                    <Link to="/legal/license" state={{ from: 'welcome' }} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">License</Link>
                 </div>
             </div>
 

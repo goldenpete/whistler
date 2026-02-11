@@ -2028,13 +2028,13 @@ export default function SettingsView() {
                                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Legal & Credits</h4>
                                     <div className="flex flex-wrap gap-x-6 gap-y-2">
                                         <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm" asChild>
-                                            <Link to="/legal/terms">Terms</Link>
+                                            <Link to="/legal/terms" state={{ from: 'settings' }}>Terms</Link>
                                         </Button>
                                         <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm" asChild>
-                                            <Link to="/legal/privacy">Privacy</Link>
+                                            <Link to="/legal/privacy" state={{ from: 'settings' }}>Privacy</Link>
                                         </Button>
                                         <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm" asChild>
-                                            <Link to="/legal/license">License</Link>
+                                            <Link to="/legal/license" state={{ from: 'settings' }}>License</Link>
                                         </Button>
                                     </div>
                                 </div>
