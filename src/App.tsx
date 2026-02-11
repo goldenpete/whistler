@@ -238,7 +238,8 @@ export default function App() {
               <Route path="/collection/:id" element={<CollectionView />} />
               <Route path="/collections" element={<CollectionsView />} />
               <Route path="/settings" element={<SettingsView />} />
-              <Route path="/welcome" element={<WelcomeView />} />
+                <Route path="/settings/legal/:tab?" element={<SettingsView />} />
+                <Route path="/welcome" element={<WelcomeView />} />
               <Route path="/legal/:tab?" element={<LegalView />} />
               <Route path="*" element={<NotFoundView />} />
             </Route>

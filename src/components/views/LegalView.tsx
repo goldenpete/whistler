@@ -13,8 +13,9 @@ const TABS = [
 
 type TabId = typeof TABS[number]['id'];
 
-export default function LegalView() {
-    const { tab = 'terms' } = useParams<{ tab: TabId }>();
+export default function LegalView({ isNested = false }: { isNested?: boolean }) {
+    const { tab: paramTab } = useParams<{ tab: TabId }>();
+    const tab = paramTab || 'terms';
     const navigate = useNavigate();
     const location = useLocation();
     const { projects, largeTogglesThemingEnabled } = useStore(useShallow(state => ({
@@ -23,8 +24,14 @@ export default function LegalView() {
     })));
     const isLoggedIn = projects.length > 0;
 
+    const baseRoute = isNested ? '/settings/legal' : '/legal';
+
     // Determine where to go back to
     const handleBack = () => {
+        if (isNested) {
+            navigate('/settings?tab=about');
+            return;
+        }
         const from = location.state?.from;
         if (from === 'settings') {
             navigate('/settings?tab=about');
@@ -128,7 +135,7 @@ The GNU Affero General Public License is designed specifically to ensure that, i
             {TABS.map((t) => (
                 <button
                     key={t.id}
-                    onClick={() => navigate(`/legal/${t.id}`, { replace: true, state: location.state })}
+                    onClick={() => navigate(`${baseRoute}/${t.id}`, { replace: true, state: location.state })}
                     className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
                         tab === t.id 
@@ -144,7 +151,7 @@ The GNU Affero General Public License is designed specifically to ensure that, i
     );
 
     const content = (
-        <div className="max-w-4xl mx-auto p-8 pb-20">
+        <div className={cn(isNested ? "" : "max-w-4xl mx-auto p-8 pb-20")}>
             <div className="flex items-center gap-4 mb-10">
                 <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full">
                     <ArrowLeft size={20} />
@@ -160,6 +167,8 @@ The GNU Affero General Public License is designed specifically to ensure that, i
             </div>
         </div>
     );
+
+    if (isNested) return content;
 
     if (!isLoggedIn) {
         return (
