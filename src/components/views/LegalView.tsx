@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Scroll, ShieldCheck, FileText } from "@phosphor-icons/react";
@@ -16,10 +17,10 @@ export default function LegalView() {
     const { tab = 'terms' } = useParams<{ tab: TabId }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { projects, largeTogglesThemingEnabled } = useStore(state => ({
+    const { projects, largeTogglesThemingEnabled } = useStore(useShallow(state => ({
         projects: state.projects,
         largeTogglesThemingEnabled: state.largeTogglesThemingEnabled
-    }));
+    })));
     const isLoggedIn = projects.length > 0;
 
     // Determine where to go back to

@@ -46,7 +46,6 @@ const NotFoundView = () => {
 
 export default function App() {
   const [shouldThrow, setShouldThrow] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     // Expose debug function to window
@@ -216,39 +215,35 @@ export default function App() {
   }, [baseTheme, customBaseThemes]);
 
 
-  const isLegalRoute = location.pathname.startsWith('/legal');
-  const showWelcome = projects.length === 0 && !isLegalRoute;
-
   return (
     <>
       <GlobalKeybinds />
       <SpotlightSearch />
       <DoubleTapMenu />
       <Suspense fallback={<div className="h-screen w-screen bg-background" />}>
-        {showWelcome ? (
-          <WelcomeView />
-        ) : (
-          <Routes>
-            {projects.length === 0 ? (
+        <Routes>
+          {projects.length === 0 ? (
+            <>
+              <Route path="/" element={<WelcomeView />} />
               <Route path="/legal/:tab?" element={<LegalView />} />
-            ) : (
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<HomeView />} />
-                <Route path="/storage/:id?" element={<StorageView />} />
-                <Route path="/file/:id" element={<FileView />} />
-                <Route path="/docs/:id?" element={<DocsView />} />
-                <Route path="/graphs/:id?" element={<GraphView />} />
-                <Route path="/collection/:id" element={<CollectionView />} />
-                <Route path="/collections" element={<CollectionsView />} />
-                <Route path="/settings" element={<SettingsView />} />
-                <Route path="/welcome" element={<WelcomeView />} />
-                <Route path="/legal/:tab?" element={<LegalView />} />
-                <Route path="*" element={<NotFoundView />} />
-              </Route>
-            )}
-            {projects.length === 0 && <Route path="*" element={<Navigate to="/" replace />} />}
-          </Routes>
-        )}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          ) : (
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<HomeView />} />
+              <Route path="/storage/:id?" element={<StorageView />} />
+              <Route path="/file/:id" element={<FileView />} />
+              <Route path="/docs/:id?" element={<DocsView />} />
+              <Route path="/graphs/:id?" element={<GraphView />} />
+              <Route path="/collection/:id" element={<CollectionView />} />
+              <Route path="/collections" element={<CollectionsView />} />
+              <Route path="/settings" element={<SettingsView />} />
+              <Route path="/welcome" element={<WelcomeView />} />
+              <Route path="/legal/:tab?" element={<LegalView />} />
+              <Route path="*" element={<NotFoundView />} />
+            </Route>
+          )}
+        </Routes>
       </Suspense>
     </>
   );
