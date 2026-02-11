@@ -148,6 +148,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         videoZoomManualByFile,
         setVideoZoomManualForFile,
         muteNewVideosUntilUnmuted,
+        muteHighlightsUntilUnmuted,
         rememberMediaVolume,
         disableMediaAutoplay,
         videoVolumeByFile,
@@ -453,13 +454,19 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             if (videoRef.current) videoRef.current.volume = initialVolume;
             if (youtubeRef.current) youtubeRef.current.volume = initialVolume;
             
-            const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && (alwaysShowMuteOverlay || !videoUnmutedByFile[fileId]);
+            // Check if we are viewing a highlight
+            const isViewingHighlight = activeHighlightId && highlights.find((h: Highlight) => h.id === activeHighlightId)?.fileId === fileId;
+
+            const shouldMuteForFirstOpen = muteNewVideosUntilUnmuted && 
+                (alwaysShowMuteOverlay || !videoUnmutedByFile[fileId]) &&
+                (!isViewingHighlight || muteHighlightsUntilUnmuted);
+
             setIsMuted(shouldMuteForFirstOpen);
             setShowInitialMuteOverlay(shouldMuteForFirstOpen);
             if (videoRef.current) videoRef.current.muted = shouldMuteForFirstOpen;
             if (youtubeRef.current) youtubeRef.current.muted = shouldMuteForFirstOpen;
         }
-    }, [file, fileId, rememberMediaVolume, videoVolumeByFile, muteNewVideosUntilUnmuted, videoUnmutedByFile, alwaysShowMuteOverlay]);
+    }, [file, fileId, rememberMediaVolume, videoVolumeByFile, muteNewVideosUntilUnmuted, videoUnmutedByFile, alwaysShowMuteOverlay, muteHighlightsUntilUnmuted, activeHighlightId, highlights]);
 
     useEffect(() => {
         if (videoRef.current) {

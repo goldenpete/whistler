@@ -53,6 +53,7 @@ export interface AppStore extends AppState {
     videoZoomByFile: Record<string, number>;
     videoZoomManualByFile: Record<string, boolean>;
     muteNewVideosUntilUnmuted: boolean;
+    muteHighlightsUntilUnmuted: boolean;
     alwaysShowMuteOverlay: boolean;
     rememberMediaVolume: boolean;
     disableMediaAutoplay: boolean;
@@ -177,6 +178,7 @@ export interface AppStore extends AppState {
     setVideoZoomForFile: (fileId: string, zoom: number) => void;
     setVideoZoomManualForFile: (fileId: string, manual: boolean) => void;
     setMuteNewVideosUntilUnmuted: (enabled: boolean) => void;
+    setMuteHighlightsUntilUnmuted: (enabled: boolean) => void;
     setAlwaysShowMuteOverlay: (enabled: boolean) => void;
     setRememberMediaVolume: (enabled: boolean) => void;
     setDisableMediaAutoplay: (enabled: boolean) => void;
@@ -454,6 +456,7 @@ export const useStore = create<AppStore>()(
             videoZoomByFile: {},
             videoZoomManualByFile: {},
             muteNewVideosUntilUnmuted: true,
+            muteHighlightsUntilUnmuted: false,
             alwaysShowMuteOverlay: false,
             rememberMediaVolume: false,
             disableMediaAutoplay: false,
@@ -660,6 +663,7 @@ export const useStore = create<AppStore>()(
                 }
             })),
             setMuteNewVideosUntilUnmuted: (enabled) => set({ muteNewVideosUntilUnmuted: enabled }),
+            setMuteHighlightsUntilUnmuted: (enabled) => set({ muteHighlightsUntilUnmuted: enabled }),
             setAlwaysShowMuteOverlay: (enabled) => set({ alwaysShowMuteOverlay: enabled }),
             setRememberMediaVolume: (enabled) => set({ rememberMediaVolume: enabled }),
             setDisableMediaAutoplay: (enabled) => set({ disableMediaAutoplay: enabled }),
