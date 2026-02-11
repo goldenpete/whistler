@@ -110,9 +110,11 @@ export function EntityForm({
     };
 
     return (
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-4">
             <div className="space-y-2">
-                <Label htmlFor="entity-name">{label}</Label>
+                <Label htmlFor="entity-name" className="text-zinc-400">
+                    {label}
+                </Label>
                 <Input
                     id="entity-name"
                     placeholder={placeholder}
@@ -120,19 +122,21 @@ export function EntityForm({
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                     onKeyDown={handleKeyDown}
                     autoFocus
-                    className="bg-zinc-900 border-zinc-800"
+                    className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                 />
             </div>
 
             {showDescription && (
                 <div className="space-y-2">
-                    <Label htmlFor="entity-description">Description</Label>
+                    <Label htmlFor="entity-description" className="text-zinc-400">
+                        Description
+                    </Label>
                     <Textarea
                         id="entity-description"
                         placeholder="Add a description..."
                         value={description}
                         onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-                        className="bg-zinc-900 border-zinc-800 resize-none h-24"
+                        className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 resize-none h-24"
                     />
                 </div>
             )}
@@ -144,7 +148,7 @@ export function EntityForm({
             />
 
             <div className="space-y-2">
-                <Label>Icon</Label>
+                <Label className="text-zinc-400">Icon</Label>
                 <div className="grid grid-cols-7 gap-2">
                     {allowNoIcon && (
                         <button
@@ -153,12 +157,12 @@ export function EntityForm({
                             className={cn(
                                 "aspect-square flex items-center justify-center rounded-md border transition-all",
                                 !iconName
-                                    ? "bg-primary/20 border-primary text-primary"
-                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                    ? "bg-primary border-primary text-primary-foreground"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
                             )}
                             title="None"
                         >
-                            <span className="text-xs font-medium">None</span>
+                            <span className="text-[10px] uppercase font-medium">None</span>
                         </button>
                     )}
                     {ICONS.map(({ name: iName, icon: Icon }) => (
@@ -169,25 +173,34 @@ export function EntityForm({
                             className={cn(
                                 "aspect-square flex items-center justify-center rounded-md border transition-all",
                                 iconName === iName
-                                    ? "bg-primary/20 border-primary text-primary"
-                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                    ? "bg-primary border-primary text-primary-foreground"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
                             )}
                             title={iName}
                         >
-                            <Icon weight="regular" size={20} />
+                            <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
                         </button>
                     ))}
                 </div>
             </div>
 
-            <DialogFooter className="pt-4">
-                <Button variant="ghost" onClick={onCancel} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+            <div className="flex justify-end gap-3 pt-4">
+                <Button 
+                    variant="ghost" 
+                    onClick={onCancel} 
+                    className="text-zinc-400 hover:text-white hover:bg-zinc-900"
+                >
                     Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground" data-sound-confirm>
+                <Button 
+                    onClick={handleSubmit} 
+                    disabled={!name.trim()} 
+                    className="bg-primary text-primary-foreground hover:opacity-90" 
+                    data-sound-confirm
+                >
                     {submitLabel}
                 </Button>
-            </DialogFooter>
+            </div>
         </div>
     );
 }
@@ -232,16 +245,18 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
                     <DialogTitle>Add File</DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-zinc-400">
                         Enter a web link to a video, PDF, image, or other file.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="url">URL</Label>
+                        <Label htmlFor="url" className="text-zinc-400">
+                            URL
+                        </Label>
                         <Input
                             id="url"
                             placeholder="https://example.com/video.mp4"
@@ -249,90 +264,40 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                             onChange={(e: ChangeEvent<HTMLInputElement>) => handleUrlChange(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
+                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="name">Name (optional)</Label>
+                        <Label htmlFor="name" className="text-zinc-400">
+                            Display Name
+                        </Label>
                         <Input
                             id="name"
-                            placeholder="My Video"
+                            placeholder="My File"
                             value={name}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
+                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                         />
                     </div>
-                    <div className="space-y-2 text-xs text-muted-foreground">
-                        <p>
-                            Upload your file to a hosting service and paste the direct URL above:
-                        </p>
-                        <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Permanent
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <a
-                                        href="https://catbox.moe/"
-                                        target="_blank"
-                                        rel="noreferrer noopener"
-                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
-                                    >
-                                        catbox.moe
-                                    </a>
-                                    <a
-                                        href="https://pomf2.lain.la/"
-                                        target="_blank"
-                                        rel="noreferrer noopener"
-                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
-                                    >
-                                        pomf2.lain.la
-                                    </a>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Temporary
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <a
-                                        href="https://litterbox.catbox.moe/"
-                                        target="_blank"
-                                        rel="noreferrer noopener"
-                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
-                                    >
-                                        litterbox
-                                    </a>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Other Options
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <a
-                                        href="https://youtube.com/"
-                                        target="_blank"
-                                        rel="noreferrer noopener"
-                                        className="px-2 py-1 rounded-md border border-border/60 hover:border-primary/60 hover:text-primary transition-colors"
-                                    >
-                                        YouTube
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <p className="text-[11px]">
-                            Discord file links also work here. Any direct video, image, or PDF URL from the web can be imported.
-                        </p>
-                    </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                <div className="flex justify-end gap-3 pt-4">
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => onOpenChange(false)}
+                        className="text-zinc-400 hover:text-white hover:bg-zinc-900"
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={!url.trim()} data-sound-confirm>
-                        Add File
+                    <Button 
+                        onClick={handleSubmit} 
+                        disabled={!url.trim()}
+                        className="bg-primary text-primary-foreground hover:opacity-90"
+                        data-sound-confirm
+                    >
+                        Add to Project
                     </Button>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );
@@ -349,9 +314,9 @@ export function NewFolderDialog({ open, onOpenChange, onSubmit }: NewFolderDialo
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                    <DialogTitle>New Folder</DialogTitle>
+                    <DialogTitle>Add Folder</DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Customize your new folder.
+                        Create a folder to organize your collections.
                     </DialogDescription>
                 </DialogHeader>
                 <EntityForm
@@ -388,9 +353,9 @@ export function CreateStorageDialog({ open, onOpenChange, onSubmit }: CreateStor
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                    <DialogTitle>Create Storage</DialogTitle>
+                    <DialogTitle>New Storage</DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Customize your new storage.
+                        Create a new storage location for your files.
                     </DialogDescription>
                 </DialogHeader>
                 <EntityForm
@@ -502,10 +467,15 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
                     <DialogTitle>{showDescription ? "Edit File Details" : "Rename"}</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Update the file's name, link, and description.
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="rename-file-name">Name</Label>
+                        <Label htmlFor="rename-file-name" className="text-zinc-400">
+                            Name
+                        </Label>
                         <Input
                             id="rename-file-name"
                             placeholder="Name"
@@ -513,43 +483,56 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
-                            className="bg-zinc-900 border-zinc-800"
+                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="rename-file-url">Link</Label>
+                        <Label htmlFor="rename-file-url" className="text-zinc-400">
+                            Link
+                        </Label>
                         <Input
                             id="rename-file-url"
                             placeholder="https://..."
                             value={url}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="bg-zinc-900 border-zinc-800 font-mono text-xs"
+                            className="bg-zinc-900 border-zinc-800 font-mono text-white placeholder:text-zinc-500"
                         />
                     </div>
 
                     {showDescription && (
                         <div className="space-y-2">
-                            <Label htmlFor="rename-file-description">Description</Label>
+                            <Label htmlFor="rename-file-description" className="text-zinc-400">
+                                Description
+                            </Label>
                             <Textarea
                                 id="rename-file-description"
                                 placeholder="Add a description..."
                                 value={description}
                                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-                                className="bg-zinc-900 border-zinc-800 resize-none h-24"
+                                className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 resize-none h-24"
                             />
                         </div>
                     )}
                 </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+                <div className="flex justify-end gap-3 pt-4">
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => onOpenChange(false)} 
+                        className="text-zinc-400 hover:text-white hover:bg-zinc-900"
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground" data-sound-confirm>
+                    <Button 
+                        onClick={handleSubmit} 
+                        disabled={!name.trim()} 
+                        className="bg-primary text-primary-foreground hover:opacity-90"
+                        data-sound-confirm
+                    >
                         Save
                     </Button>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

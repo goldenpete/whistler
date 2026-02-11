@@ -94,17 +94,17 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
     };
 
     return (
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-4">
             <div className="space-y-2">
-                <Label htmlFor="collection-name">Collection Name</Label>
+                <Label htmlFor="collection-name" className="text-zinc-400">Collection Name</Label>
                 <Input
                     id="collection-name"
-                    placeholder="My Collection"
+                    placeholder="E.g. My Favorite Things"
                     value={name}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                     onKeyDown={handleKeyDown}
                     autoFocus
-                    className="bg-zinc-900 border-zinc-800"
+                    className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                 />
             </div>
 
@@ -115,7 +115,7 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
             />
 
             <div className="space-y-2">
-                <Label>Icon</Label>
+                <Label className="text-zinc-400">Icon</Label>
                 <div className="grid grid-cols-7 gap-2">
                     {ICONS.map(({ name: iName, icon: Icon }) => (
                         <button
@@ -125,22 +125,22 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
                             className={cn(
                                 "aspect-square flex items-center justify-center rounded-md border transition-all",
                                 iconName === iName
-                                    ? "bg-primary/20 border-primary text-primary"
-                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                    ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                             )}
                             title={iName}
                         >
-                            <Icon weight={iconName === iName ? "fill" : "regular"} size={20} />
+                            <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
                         </button>
                     ))}
                 </div>
             </div>
 
-            <DialogFooter className="pt-4">
-                <Button variant="ghost" onClick={onCancel} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+            <DialogFooter>
+                <Button variant="outline" onClick={onCancel} className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800">
                     Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground" data-sound-confirm>
+                <Button onClick={handleSubmit} disabled={!name.trim()} data-sound-confirm>
                     {submitLabel}
                 </Button>
             </DialogFooter>

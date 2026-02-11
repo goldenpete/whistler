@@ -493,7 +493,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 value={totpCode}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                                 autoComplete="one-time-code"
-                                className="h-10 text-center tracking-[0.5em] text-lg font-mono"
+                                className="h-10 text-center tracking-[0.5em] text-lg font-mono bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                                 placeholder="000000"
                             />
                             {error && (
@@ -559,7 +559,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 placeholder="16-digit ID" 
                                 value={syncId}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
-                                className="h-8 text-sm font-mono"
+                                className="h-8 text-sm font-mono bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                                 maxLength={19}
                                 minLength={16}
                                 required
@@ -696,7 +696,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     maxLength={6}
                                     value={totpCode}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                    className="h-10 text-center tracking-[0.5em] text-lg font-mono"
+                                    className="h-10 text-center tracking-[0.5em] text-lg font-mono bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                                     placeholder="000000"
                                 />
                                 {error && (
@@ -730,7 +730,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     maxLength={6}
                                     value={totpCode}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                    className="h-10 text-center tracking-[0.5em] text-lg font-mono"
+                                    className="h-10 text-center tracking-[0.5em] text-lg font-mono bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                                     placeholder="000000"
                                 />
                                 {error && (

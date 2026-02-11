@@ -1995,28 +1995,36 @@ export default function ProjectSidebar() {
                     <DialogHeader>
                         <DialogTitle>New Project</DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Name your new project.
+                            Enter a name for your new archive.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="new-project-name">Project Name</Label>
+                            <Label htmlFor="new-project-name" className="text-zinc-400">Project Name</Label>
                             <Input
                                 id="new-project-name"
-                                placeholder="My Project"
+                                placeholder="E.g. My Creative Work"
                                 value={newProjectName}
                                 onChange={(e: ReactChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
                                 autoFocus
-                                className="bg-zinc-900 border-zinc-800"
+                                className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-primary/20"
                             />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewProjectOpen(false)}>
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setNewProjectOpen(false)}
+                            className="text-zinc-400 hover:text-white hover:bg-zinc-900"
+                        >
                             Cancel
                         </Button>
-                        <Button onClick={handleCreateProjectSubmit} disabled={!newProjectName.trim()}>
-                            Create
+                        <Button 
+                            onClick={handleCreateProjectSubmit} 
+                            disabled={!newProjectName.trim()}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                            Create Project
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -110,26 +110,37 @@ export function NewProjectDialog({ open, onOpenChange, onSubmit }: NewProjectDia
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="new-project-name">Project Name</Label>
+                        <Label htmlFor="new-project-name" className="text-zinc-400">
+                            Project Name
+                        </Label>
                         <Input
                             id="new-project-name"
                             placeholder="My Project"
                             value={name}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             autoFocus
-                            className="bg-zinc-900 border-zinc-800"
+                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && handleSubmit()}
                         />
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                <div className="flex justify-end gap-3 pt-4">
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => onOpenChange(false)} 
+                        className="text-zinc-400 hover:text-white hover:bg-zinc-900"
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()} data-sound-confirm>
+                    <Button 
+                        onClick={handleSubmit} 
+                        disabled={!name.trim()} 
+                        className="bg-primary text-primary-foreground hover:opacity-90"
+                        data-sound-confirm
+                    >
                         Create
                     </Button>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

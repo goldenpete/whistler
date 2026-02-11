@@ -171,15 +171,15 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                                     <XCircle className="h-4 w-4" />
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-white">
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogDescription className="text-zinc-400">
                                         "{name}" will be permanently deleted. This cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel className="bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white">Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                         onClick={onDelete}
                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -238,15 +238,15 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                                 <XCircle className="h-3 w-3" />
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-white">
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
-                                <AlertDialogDescription>
+                                <AlertDialogDescription className="text-zinc-400">
                                     "{name}" will be permanently deleted. This cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel className="bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white">Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={onDelete}
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -281,15 +281,15 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                                     Empty
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-white">
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogDescription className="text-zinc-400">
                                         This will permanently delete all items in the trash. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel className="bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white">Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                         onClick={emptyTrash}
                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -323,15 +323,15 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                                     Empty Trash
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-white">
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogDescription className="text-zinc-400">
                                         This will permanently delete all items in the trash. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel className="bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white">Cancel</AlertDialogCancel>
                                     <AlertDialogAction onClick={emptyTrash} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                         Empty Trash
                                     </AlertDialogAction>
@@ -360,15 +360,15 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
                                 Empty Trash
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-white">
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
-                                <AlertDialogDescription>
+                                <AlertDialogDescription className="text-zinc-400">
                                     This will permanently delete all items in the trash. This action cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel className="bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white">Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={emptyTrash} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                     Empty Trash
                                 </AlertDialogAction>

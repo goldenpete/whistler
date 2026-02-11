@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef, type ChangeEvent, type FormEvent } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,9 +27,17 @@ import {
     CaretRight
 } from "@phosphor-icons/react";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
+import type { AccentTheme } from "@/types";
 
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
+
+const ACCENT_OPTIONS: { id: AccentTheme; label: string; color: string }[] = [
+    { id: "orange", label: "Orange", color: "#f97316" },
+    { id: "emerald", label: "Emerald", color: "#10b981" },
+    { id: "violet", label: "Violet", color: "#8b5cf6" },
+    { id: "sky", label: "Sky", color: "#0ea5e9" },
+];
 
 declare global {
     interface Window {
@@ -40,12 +50,14 @@ declare global {
 }
 
 export function WelcomeView() {
-    const { addProject, setActiveProject, login, setLastSyncTime, setState } = useStore(useShallow((state: AppStore) => ({
+    const { addProject, setActiveProject, login, setLastSyncTime, setState, accentTheme, setAccentTheme } = useStore(useShallow((state: AppStore) => ({
         addProject: state.addProject,
         setActiveProject: state.setActiveProject,
         login: state.login,
         setLastSyncTime: state.setLastSyncTime,
         setState: state.setState,
+        accentTheme: state.accentTheme,
+        setAccentTheme: state.setAccentTheme,
     })));
 
     const [signInOpen, setSignInOpen] = useState(false);
@@ -279,16 +291,10 @@ export function WelcomeView() {
 
     const handleCreateProject = (e: FormEvent) => {
         e.preventDefault();
-        if (!newProjectName.trim()) return;
+        const name = newProjectName.trim();
+        if (!name) return;
         
-        const project: Project = {
-            id: crypto.randomUUID(),
-            name: newProjectName.trim(),
-            created: Date.now(),
-            lastModified: Date.now()
-        };
-        
-        addProject(project);
+        const project = addProject(name);
         setActiveProject(project.id);
         setNewProjectOpen(false);
     };
@@ -406,99 +412,115 @@ export function WelcomeView() {
     };
 
     return (
-        <div className="h-screen bg-black text-foreground font-mono flex flex-col border-[4px] md:border-[8px] border-black overflow-hidden select-none">
-            <header className="bg-background border-b-[4px] md:border-b-[8px] border-black p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 shrink-0 transition-all duration-300">
-                <div className="max-w-4xl flex-shrink">
-                    <h1 className="text-4xl md:text-7xl lg:text-9xl font-black uppercase tracking-tighter leading-[0.8] text-black dark:text-white transition-all">
+        <div className="min-h-screen xl:h-screen bg-black text-foreground font-mono flex flex-col border-[4px] md:border-[8px] border-black overflow-x-hidden xl:overflow-hidden select-none">
+            <header className="bg-background border-b-[4px] md:border-b-[8px] border-black p-4 md:p-6 xl:p-8 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4 shrink-0 transition-all duration-300 relative overflow-hidden">
+                {/* Subtle header pattern */}
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                
+                <div className="max-w-4xl flex-shrink relative z-10">
+                    <h1 className="text-[12vw] md:text-7xl xl:text-9xl font-black uppercase tracking-tighter leading-[0.8] text-black dark:text-white transition-all">
                         Whistler<span className="text-primary italic">box</span>
                     </h1>
-                    <p className="text-sm md:text-xl lg:text-2xl mt-2 md:mt-4 font-bold uppercase italic bg-primary text-primary-foreground inline-block px-2 md:px-3 py-1">
+                    <p className="text-[3vw] md:text-xl xl:text-2xl mt-2 md:mt-4 font-bold uppercase italic bg-primary text-primary-foreground inline-block px-2 md:px-3 py-1">
                         Your creative media organizer.
                     </p>
                 </div>
-                <div className="flex gap-4 w-full lg:w-auto shrink-0">
+                <div className="flex gap-4 w-full xl:w-auto shrink-0 relative z-10">
                     <Button 
                         onClick={() => setSignInOpen(true)}
-                        className="w-full lg:w-auto bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl lg:text-2xl px-4 md:px-10 py-4 md:py-8 rounded-none border-black font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.7)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all group"
+                        className="w-full xl:w-auto bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl xl:text-2xl px-4 md:px-10 py-4 md:py-8 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.7)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all group"
                     >
                         <SignIn weight="fill" className="mr-2 md:mr-3 size-5 md:size-8 group-hover:rotate-12 transition-transform" /> Sync Access
                     </Button>
                 </div>
             </header>
 
-            <main className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-grow bg-black min-h-0 overflow-hidden">
+            <main className="grid grid-cols-1 xl:grid-cols-12 gap-0 flex-grow bg-black min-h-0 overflow-y-auto xl:overflow-hidden">
                 {/* Primary Action Card */}
-                <section className="lg:col-span-7 bg-background border-r-0 lg:border-r-[8px] md:border-r-[12px] border-black p-4 md:p-8 lg:p-12 flex flex-col justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-0 shrink">
-                    <div className="absolute top-[-5%] right-[-5%] opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
-                        <FolderPlus weight="fill" className="size-[250px] md:size-[500px] -rotate-12" />
+                <section className="xl:col-span-7 bg-background border-r-0 xl:border-r-[8px] md:border-r-[12px] border-b-[4px] xl:border-b-0 border-black p-6 md:p-8 xl:p-12 flex flex-col justify-center xl:justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-[300px] xl:min-h-0 shrink-0 xl:shrink">
+                    {/* Themed shading/gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 group-hover:from-primary/20 transition-all duration-500 pointer-events-none"></div>
+                    
+                    {/* Abstract Shapes for "Colorfulness" */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-primary group-hover:h-2 transition-all"></div>
+                    <div className="absolute top-20 -left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
+                    
+                    <div className="absolute top-[-5%] right-[-5%] opacity-[0.05] group-hover:opacity-[0.15] group-hover:scale-110 transition-all duration-700 pointer-events-none text-primary">
+                        <FolderPlus weight="fill" className="size-[200px] md:size-[500px] -rotate-12" />
                     </div>
                     
-                    <div className="relative z-10 flex-shrink">
-                        <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-6">
-                            <div className="bg-black text-white p-2 md:p-3">
+                    <div className="relative z-10 flex-shrink mb-6 xl:mb-0">
+                        <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-6">
+                            <div className="bg-black text-white p-2 md:p-3 border-2 border-primary group-hover:bg-primary group-hover:text-black transition-colors">
                                 <Plus weight="bold" className="size-6 md:size-10" />
                             </div>
-                            <h2 className="text-2xl md:text-5xl lg:text-7xl font-black uppercase leading-none tracking-tight">
+                            <h2 className="text-[8vw] md:text-5xl xl:text-7xl font-black uppercase leading-none tracking-tight group-hover:text-primary transition-colors">
                                 Start Fresh
                             </h2>
                         </div>
-                        <p className="text-base md:text-xl lg:text-3xl leading-tight mb-4 md:mb-8 font-bold max-w-2xl opacity-90">
+                        <p className="text-[4vw] md:text-xl xl:text-3xl leading-tight mb-4 md:mb-8 font-bold max-w-2xl opacity-90 group-hover:opacity-100 transition-opacity">
                             Create a new project and start organizing your files, highlights, and thoughts in a brutalist environment.
                         </p>
                     </div>
 
                     <Button 
                         onClick={handleNewProject}
-                        className="w-full lg:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] md:border-[6px] border-black text-lg md:text-2xl lg:text-4xl py-6 md:py-10 lg:py-14 px-8 md:px-16 lg:px-20 rounded-none font-black uppercase shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),0.8)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center gap-3 md:gap-6 group/btn"
+                        className="w-full xl:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] md:border-[6px] border-black text-lg md:text-2xl xl:text-4xl py-6 md:py-10 xl:py-14 px-6 md:px-16 xl:px-20 rounded-none font-black uppercase shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),0.8)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-6 group/btn"
                     >
                         Create Project <CaretRight weight="bold" className="size-6 md:size-10 group-hover/btn:translate-x-2 transition-transform" />
                     </Button>
                 </section>
 
                 {/* Secondary Action Cards */}
-                <div className="lg:col-span-5 grid grid-rows-2 min-h-0 shrink">
-                    <section className="bg-secondary border-b-[4px] md:border-b-[8px] border-black p-4 md:p-6 lg:p-8 flex flex-col justify-between group hover:bg-secondary/80 transition-colors relative overflow-hidden min-h-0 shrink">
-                        <div className="absolute bottom-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
-                            <Database weight="fill" className="size-[150px] md:size-[300px]" />
+                <div className="xl:col-span-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 xl:grid-rows-2 min-h-0 shrink-0 xl:shrink">
+                    <section className="bg-secondary border-b-[4px] md:border-b-[8px] xl:border-b-[8px] border-r-0 sm:border-r-[4px] xl:border-r-0 border-black p-4 md:p-6 xl:p-8 flex flex-col justify-between group hover:bg-secondary transition-colors relative overflow-hidden min-h-[250px] xl:min-h-0">
+                        {/* Themed shading */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent group-hover:from-primary/30 transition-all duration-500 pointer-events-none"></div>
+                        
+                        <div className="absolute bottom-[-10%] right-[-5%] opacity-[0.08] group-hover:opacity-[0.2] group-hover:scale-110 transition-all duration-700 pointer-events-none text-primary">
+                            <Database weight="fill" className="size-[120px] md:size-[300px]" />
                         </div>
 
                         <div className="relative z-10 flex-shrink">
-                            <h2 className="text-xl md:text-3xl lg:text-5xl font-black uppercase mb-2 md:mb-4 bg-black text-white inline-block px-2 md:px-3 py-1">
+                            <h2 className="text-[6vw] md:text-3xl xl:text-5xl font-black uppercase mb-2 md:mb-4 bg-black text-white inline-block px-2 py-1 border-l-4 border-primary group-hover:bg-primary group-hover:text-black transition-colors">
                                 Import
                             </h2>
-                            <p className="text-sm md:text-lg lg:text-2xl leading-tight mb-2 md:mb-4 font-bold max-w-md">
+                            <p className="text-[3.5vw] md:text-lg xl:text-2xl leading-tight mb-3 md:mb-4 font-bold max-w-md group-hover:text-primary transition-colors">
                                 Have an existing project? Import your JSON archive here.
                             </p>
+                            {importError && (
+                                <div className="text-xs font-black bg-red-500 text-white px-3 py-2 border-[3px] border-black uppercase mb-4 animate-shake inline-block">
+                                    {importError}
+                                </div>
+                            )}
                         </div>
                         <Button 
                             onClick={handleImportProject}
-                            className="w-full lg:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl lg:text-2xl py-3 md:py-5 lg:py-6 px-5 md:px-8 lg:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center gap-2 md:gap-4"
+                            className="w-full xl:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-sm md:text-xl xl:text-2xl py-3 md:py-5 xl:py-6 px-4 md:px-8 xl:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-2 md:gap-4"
                         >
-                            <DownloadSimple weight="bold" className="size-5 md:size-8" /> Import JSON
+                            <DownloadSimple weight="bold" className="size-5 md:size-8" /> Import Archive
                         </Button>
-                        {importError && (
-                            <div className="text-[10px] md:text-sm bg-red-500 text-white font-black p-2 mt-2 uppercase inline-block border-2 border-black">
-                                {importError}
-                            </div>
-                        )}
                     </section>
 
-                    <section className="bg-accent border-black p-4 md:p-6 lg:p-8 flex flex-col justify-between group hover:bg-accent/80 transition-colors relative overflow-hidden min-h-0 shrink">
-                        <div className="absolute top-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
-                            <Sparkle weight="fill" className="size-[150px] md:size-[300px] animate-pulse" />
+                    <section className="bg-background p-4 md:p-6 xl:p-8 flex flex-col justify-between group hover:bg-primary/10 transition-colors relative overflow-hidden border-b-[4px] sm:border-b-0 xl:border-b-0 border-black min-h-[250px] xl:min-h-0">
+                        {/* Themed shading */}
+                        <div className="absolute inset-0 bg-gradient-to-bl from-primary/15 via-transparent to-transparent group-hover:from-primary/25 transition-all duration-500 pointer-events-none"></div>
+
+                        <div className="absolute top-[-5%] left-[-5%] opacity-[0.08] group-hover:opacity-[0.2] group-hover:scale-110 transition-all duration-700 pointer-events-none rotate-12 text-primary">
+                            <Sparkle weight="fill" className="size-[120px] md:size-[300px]" />
                         </div>
 
-                        <div className="relative z-10 flex-shrink">
-                            <h2 className="text-xl md:text-3xl lg:text-5xl font-black uppercase mb-2 md:mb-4 bg-black text-white inline-block px-2 md:px-3 py-1">
-                                Demo
+                        <div className="relative z-10 flex-shrink xl:text-right flex flex-col xl:items-end">
+                            <h2 className="text-[6vw] md:text-3xl xl:text-5xl font-black uppercase mb-2 md:mb-4 bg-primary text-primary-foreground inline-block px-2 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:bg-black group-hover:text-primary group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+                                Quick Start
                             </h2>
-                            <p className="text-sm md:text-lg lg:text-2xl leading-tight mb-2 md:mb-4 font-bold max-w-md text-black/80">
-                                Just looking around? Load some sample data to see how it works.
+                            <p className="text-[3.5vw] md:text-lg xl:text-2xl leading-tight mb-3 md:mb-4 font-bold max-w-md group-hover:text-primary transition-colors">
+                                Not ready to commit? Load a demo project to explore the features.
                             </p>
                         </div>
                         <Button 
                             onClick={handleLoadDemo}
-                            className="w-full lg:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl lg:text-2xl py-3 md:py-5 lg:py-6 px-5 md:px-8 lg:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center gap-2 md:gap-4"
+                            className="w-full xl:w-fit xl:self-end bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-sm md:text-xl xl:text-2xl py-3 md:py-5 xl:py-6 px-4 md:px-8 xl:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-2 md:gap-4"
                         >
                             <Lightning weight="fill" className="size-5 md:size-8" /> Load Demo
                         </Button>
@@ -506,13 +528,33 @@ export function WelcomeView() {
                 </div>
             </main>
 
-            <footer className="bg-black text-white p-4 md:p-6 lg:p-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8 font-black uppercase text-base md:text-xl lg:text-2xl tracking-tight shrink-0 transition-all duration-300">
-                <div className="flex items-center gap-4">
-                    <span className="bg-white text-black px-3 py-1">&copy; {new Date().getFullYear()}</span>
-                    <span>WHISTLERBOX</span>
+            <footer className="bg-black text-white p-4 md:p-8 xl:p-10 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-10 font-black uppercase text-[3vw] md:text-xl xl:text-2xl tracking-tight shrink-0 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(45deg, #ffffff 25%, transparent 25%, transparent 50%, #ffffff 50%, #ffffff 75%, transparent 75%, transparent)', backgroundSize: '4px 4px' }}></div>
+                
+                <div className="flex items-center gap-4 relative z-10">
+                    <span className="bg-white text-black px-2 py-0.5 md:px-3 md:py-1 text-[2.5vw] md:text-base">&copy; {new Date().getFullYear()}</span>
+                    <span className="text-[4vw] md:text-2xl">WHISTLERBOX</span>
                 </div>
-                <div className="flex flex-wrap justify-center gap-x-12 gap-y-4">
-                    <Link to="/legal/terms" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">Terms</Link>
+                <div className="flex flex-wrap justify-center items-center gap-x-6 md:gap-x-12 gap-y-4 relative z-10">
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
+                            {ACCENT_OPTIONS.map((option) => (
+                                <button
+                                    key={option.id}
+                                    onClick={() => setAccentTheme(option.id)}
+                                    className={cn(
+                                        "size-4 md:size-5 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                                        accentTheme === option.id 
+                                            ? "border-white scale-125 shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+                                            : "border-transparent opacity-50 hover:opacity-100"
+                                    )}
+                                    style={{ backgroundColor: option.color }}
+                                    title={option.label}
+                                />
+                            ))}
+                        </div>
+                        <Link to="/legal/terms" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">Terms</Link>
+                    </div>
                     <Link to="/legal/privacy" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">Privacy</Link>
                     <Link to="/legal/license" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">License</Link>
                 </div>
@@ -527,21 +569,24 @@ export function WelcomeView() {
                     setTotpCode("");
                 }
             }}>
-                <DialogContent className="sm:max-w-md bg-background border-[6px] md:border-[10px] border-black rounded-none shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] p-6 md:p-10 gap-0">
-                    <DialogHeader className="mb-6 md:mb-10">
-                        <DialogTitle className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tighter">
+                <DialogContent className="w-[95vw] sm:max-w-lg bg-background border-[6px] md:border-[10px] border-black rounded-none shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] p-4 md:p-10 gap-0 overflow-y-auto max-h-[90vh]">
+                    {/* Dialog themed shading */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
+                    
+                    <DialogHeader className="mb-4 md:mb-10 text-left relative z-10">
+                        <DialogTitle className="text-[8vw] md:text-5xl xl:text-6xl font-black uppercase leading-none tracking-tighter">
                             {phase === 'totp' ? 'Security Check' : 'Sync Access'}
                         </DialogTitle>
-                        <DialogDescription className="text-lg font-bold uppercase italic mt-3 text-foreground/80">
+                        <DialogDescription className="text-sm md:text-lg font-bold uppercase italic mt-2 md:mt-3 text-foreground/80">
                             {phase === 'totp' 
                                 ? 'Enter the code from your authenticator app.' 
                                 : 'Sign in with your 16-digit Sync ID.'}
                         </DialogDescription>
                     </DialogHeader>
                     {phase === 'login' ? (
-                        <form onSubmit={handleWelcomeSignIn} className="space-y-6 md:space-y-8">
-                            <div className="space-y-3 md:space-y-4">
-                                <div className="text-xs md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-3 py-1">
+                        <form onSubmit={handleWelcomeSignIn} className="space-y-4 md:space-y-8 relative z-10">
+                            <div className="space-y-2 md:space-y-4">
+                                <div className="text-[2.5vw] md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-2 md:px-3 py-1">
                                     Sync ID
                                 </div>
                                 <Input
@@ -549,7 +594,7 @@ export function WelcomeView() {
                                     placeholder="0000-0000-0000-0000"
                                     value={syncId}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
-                                    className="h-14 md:h-20 font-mono text-xl md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white placeholder:text-white/20 font-black shadow-inner"
+                                    className="h-12 md:h-20 font-mono text-base md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white placeholder:text-white/10 font-black shadow-inner"
                                     maxLength={19}
                                     minLength={16}
                                     required
@@ -557,58 +602,60 @@ export function WelcomeView() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="w-full h-12 md:h-14 mt-2 text-xs md:text-sm gap-2 border-[3px] md:border-[4px] border-black rounded-none font-black uppercase hover:bg-primary hover:text-primary-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                    className="w-full h-10 md:h-14 mt-1 md:mt-2 text-[2.5vw] md:text-sm gap-2 border-[3px] md:border-[4px] border-black rounded-none font-black uppercase hover:bg-primary hover:text-primary-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
                                     onClick={handleGenerateId}
                                 >
-                                    <Shuffle weight="bold" className="size-4 md:size-5" />
+                                    <Shuffle weight="bold" className="size-3 md:size-5" />
                                     <span>Generate New ID</span>
                                 </Button>
                             </div>
-                            <div className="flex justify-center bg-zinc-100 dark:bg-zinc-900 p-4 md:p-6 border-[4px] md:border-[6px] border-black shadow-inner">
+                            <div className="flex justify-center bg-zinc-100 dark:bg-zinc-900 p-3 md:p-6 border-[4px] md:border-[6px] border-black shadow-inner">
                                 <div
                                     ref={containerRef}
-                                    className="min-h-[65px]"
+                                    className="min-h-[50px] md:min-h-[65px]"
                                 />
                             </div>
                             {error && (
-                                <div className="text-xs md:text-sm bg-red-500 text-white font-black p-4 uppercase border-[4px] border-black text-center animate-shake">
+                                <div className="text-[2.5vw] md:text-sm bg-red-500 text-white font-black p-2 md:p-4 uppercase border-[4px] border-black text-center animate-shake">
                                     {error}
                                 </div>
                             )}
                             <Button 
                                 type="submit" 
                                 disabled={isLoading || !captchaToken} 
-                                className="w-full h-16 md:h-24 bg-black text-white font-black text-xl md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                                className="w-full h-14 md:h-24 bg-black text-white font-black text-base md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.3)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.5)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                             >
                                 {isLoading ? "Verifying..." : "Continue"}
                             </Button>
                         </form>
                     ) : (
-                        <form onSubmit={handleTotpVerify} className="space-y-6 md:space-y-8">
-                            <div className="space-y-3 md:space-y-4">
-                                <div className="text-xs md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-3 py-1">
-                                    6-Digit Code
+                        <form onSubmit={handleTotpVerify} className="space-y-4 md:space-y-8 relative z-10">
+                            <div className="space-y-2 md:space-y-4">
+                                <div className="text-[2.5vw] md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-2 md:px-3 py-1">
+                                    Verification Code
                                 </div>
                                 <Input
                                     type="text"
                                     placeholder="000000"
                                     value={totpCode}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                    className="h-16 md:h-24 font-mono text-center text-3xl md:text-5xl tracking-[0.3em] md:tracking-[0.5em] bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white font-black shadow-inner"
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                                    className="h-12 md:h-20 font-mono text-xl md:text-5xl text-center bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white placeholder:text-white/10 font-black tracking-[0.5em] shadow-inner"
+                                    maxLength={6}
                                     required
+                                    autoFocus
                                 />
                             </div>
                             {error && (
-                                <div className="text-xs md:text-sm bg-red-500 text-white font-black p-4 uppercase border-[4px] border-black text-center animate-shake">
+                                <div className="text-[2.5vw] md:text-sm bg-red-500 text-white font-black p-2 md:p-4 uppercase border-[4px] border-black text-center animate-shake">
                                     {error}
                                 </div>
                             )}
                             <Button 
                                 type="submit" 
-                                disabled={isLoading} 
-                                className="w-full h-16 md:h-24 bg-black text-white font-black text-xl md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                                disabled={isLoading || totpCode.length !== 6} 
+                                className="w-full h-14 md:h-24 bg-black text-white font-black text-base md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.3)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.5)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                             >
-                                {isLoading ? "Checking..." : "Verify"}
+                                {isLoading ? "Verifying..." : "Verify & Access"}
                             </Button>
                         </form>
                     )}
@@ -616,10 +663,10 @@ export function WelcomeView() {
             </Dialog>
 
             <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
-                <DialogContent className="sm:max-w-md bg-background border-[6px] md:border-[10px] border-black rounded-none shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] p-6 md:p-10 gap-0">
-                    <DialogHeader className="mb-6 md:mb-10">
-                        <DialogTitle className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tighter">New Project</DialogTitle>
-                        <DialogDescription className="text-lg font-bold uppercase italic mt-3 text-foreground/80">
+                <DialogContent className="w-[95vw] sm:max-w-md bg-background border-[6px] md:border-[10px] border-black rounded-none shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] p-6 md:p-10 gap-0 overflow-y-auto max-h-[90vh]">
+                    <DialogHeader className="mb-6 md:mb-10 text-left">
+                        <DialogTitle className="text-3xl md:text-5xl font-black uppercase leading-none tracking-tighter">New Project</DialogTitle>
+                        <DialogDescription className="text-base md:text-lg font-bold uppercase italic mt-3 text-foreground/80">
                             Enter a name for your new archive.
                         </DialogDescription>
                     </DialogHeader>
@@ -632,13 +679,13 @@ export function WelcomeView() {
                                 placeholder="E.g. My Creative Work"
                                 value={newProjectName}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
-                                className="h-14 md:h-20 text-xl md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 font-black text-white placeholder:text-white/20 shadow-inner"
+                                className="h-14 md:h-20 text-lg md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 font-black text-white placeholder:text-white/20 shadow-inner"
                                 autoFocus
                             />
                         </div>
                         <Button 
                             type="submit"
-                            className="w-full h-16 md:h-24 bg-primary text-primary-foreground font-black text-xl md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-black hover:text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                            className="w-full h-16 md:h-24 bg-primary text-primary-foreground font-black text-lg md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-black hover:text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                         >
                             Create Project
                         </Button>
