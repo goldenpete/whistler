@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +12,7 @@ const CollectionsView = lazy(() => import("@/components/views/CollectionsView"))
 const SettingsView = lazy(() => import("@/components/views/SettingsView"));
 const HomeView = lazy(() => import("@/components/views/HomeView"));
 const WelcomeView = lazy(() => import("@/components/views/WelcomeView").then(module => ({ default: module.WelcomeView })));
+const LegalView = lazy(() => import("@/components/views/LegalView"));
 
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
@@ -45,6 +46,7 @@ const NotFoundView = () => {
 
 export default function App() {
   const [shouldThrow, setShouldThrow] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     // Expose debug function to window
@@ -213,34 +215,36 @@ export default function App() {
     }
   }, [baseTheme, customBaseThemes]);
 
-  if (projects.length === 0) {
-      return (
-        <Suspense fallback={<div className="h-screen w-screen bg-background" />}>
-          <WelcomeView />
-        </Suspense>
-      );
-    }
-  
-    useInitialData(); // This is now a no-op
+
+  const isLegalRoute = location.pathname.startsWith('/legal');
+  const showWelcome = projects.length === 0 && !isLegalRoute;
+
   return (
     <>
       <GlobalKeybinds />
       <SpotlightSearch />
       <DoubleTapMenu />
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomeView />} />
-          <Route path="/storage/:id?" element={<StorageView />} />
-          <Route path="/file/:id" element={<FileView />} />
-          <Route path="/docs/:id?" element={<DocsView />} />
-          <Route path="/graphs/:id?" element={<GraphView />} />
-          <Route path="/collection/:id" element={<CollectionView />} />
-          <Route path="/collections" element={<CollectionsView />} />
-          <Route path="/settings" element={<SettingsView />} />
-          <Route path="/welcome" element={<WelcomeView />} />
-          <Route path="*" element={<NotFoundView />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={<div className="h-screen w-screen bg-background" />}>
+        {showWelcome ? (
+          <WelcomeView />
+        ) : (
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<HomeView />} />
+              <Route path="/storage/:id?" element={<StorageView />} />
+              <Route path="/file/:id" element={<FileView />} />
+              <Route path="/docs/:id?" element={<DocsView />} />
+              <Route path="/graphs/:id?" element={<GraphView />} />
+              <Route path="/collection/:id" element={<CollectionView />} />
+              <Route path="/collections" element={<CollectionsView />} />
+              <Route path="/settings" element={<SettingsView />} />
+              <Route path="/welcome" element={<WelcomeView />} />
+              <Route path="/legal/:tab?" element={<LegalView />} />
+              <Route path="*" element={<NotFoundView />} />
+            </Route>
+          </Routes>
+        )}
+      </Suspense>
     </>
   );
 }

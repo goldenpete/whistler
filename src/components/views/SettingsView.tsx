@@ -1,5 +1,5 @@
 import { useState, useEffect, type ChangeEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES, DEFAULT_CUSTOM_THEMES, type SoundKey } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
@@ -2027,9 +2027,15 @@ export default function SettingsView() {
                                 <div className="space-y-4">
                                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Legal & Credits</h4>
                                     <div className="flex flex-wrap gap-x-6 gap-y-2">
-                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm">Terms</Button>
-                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm">Privacy</Button>
-                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm">License</Button>
+                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm" asChild>
+                                            <Link to="/legal/terms">Terms</Link>
+                                        </Button>
+                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm" asChild>
+                                            <Link to="/legal/privacy">Privacy</Link>
+                                        </Button>
+                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground text-sm" asChild>
+                                            <Link to="/legal/license">License</Link>
+                                        </Button>
                                     </div>
                                 </div>
                                 <div className="text-left md:text-right">

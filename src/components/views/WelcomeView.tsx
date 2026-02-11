@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, type ChangeEvent, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -435,6 +436,12 @@ export function WelcomeView() {
                         <Lightning size={20} weight="bold" className="mr-2" />
                         Load Demo Data
                     </Button>
+                </div>
+
+                <div className="flex justify-center gap-6 mt-8">
+                    <Link to="/legal/terms" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Terms</Link>
+                    <Link to="/legal/privacy" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Privacy</Link>
+                    <Link to="/legal/license" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">License</Link>
                 </div>
             </div>
 
