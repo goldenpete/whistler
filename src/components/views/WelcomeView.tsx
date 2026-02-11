@@ -549,7 +549,7 @@ export function WelcomeView() {
                                     placeholder="0000-0000-0000-0000"
                                     value={syncId}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
-                                    className="h-14 md:h-20 font-mono text-xl md:text-3xl bg-white border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-black placeholder:text-black/20 font-black shadow-inner"
+                                    className="h-14 md:h-20 font-mono text-xl md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white placeholder:text-white/20 font-black shadow-inner"
                                     maxLength={19}
                                     minLength={16}
                                     required
@@ -594,7 +594,7 @@ export function WelcomeView() {
                                     placeholder="000000"
                                     value={totpCode}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                    className="h-16 md:h-24 font-mono text-center text-3xl md:text-5xl tracking-[0.3em] md:tracking-[0.5em] bg-white border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-black font-black shadow-inner"
+                                    className="h-16 md:h-24 font-mono text-center text-3xl md:text-5xl tracking-[0.3em] md:tracking-[0.5em] bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white font-black shadow-inner"
                                     required
                                 />
                             </div>
@@ -632,7 +632,7 @@ export function WelcomeView() {
                                 placeholder="E.g. My Creative Work"
                                 value={newProjectName}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
-                                className="h-14 md:h-20 text-xl md:text-3xl bg-white border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 font-black text-black placeholder:text-black/20 shadow-inner"
+                                className="h-14 md:h-20 text-xl md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 font-black text-white placeholder:text-white/20 shadow-inner"
                                 autoFocus
                             />
                         </div>
