@@ -26,6 +26,7 @@ import {
     Sparkle,
     CaretRight
 } from "@phosphor-icons/react";
+import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
 import type { AccentTheme } from "@/types";
 
@@ -413,17 +414,26 @@ export function WelcomeView() {
 
     return (
         <div className="min-h-screen xl:h-screen bg-black text-foreground font-mono flex flex-col border-[4px] md:border-[8px] border-black overflow-x-hidden xl:overflow-hidden select-none">
-            <header className="bg-background border-b-[4px] md:border-b-[8px] border-black p-4 md:p-6 xl:p-8 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4 shrink-0 transition-all duration-300 relative overflow-hidden">
+            <header className="bg-background border-b-[4px] md:border-b-[8px] border-black p-3 md:p-4 xl:p-5 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 transition-all duration-300 relative overflow-hidden">
                 {/* Subtle header pattern */}
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
                 
-                <div className="max-w-4xl flex-shrink relative z-10">
-                    <h1 className="text-[12vw] md:text-7xl xl:text-9xl font-black uppercase tracking-tighter leading-[0.8] text-black dark:text-white transition-all">
-                        Whistler<span className="text-primary italic">box</span>
-                    </h1>
-                    <p className="text-[3vw] md:text-xl xl:text-2xl mt-2 md:mt-4 font-bold uppercase italic bg-primary text-primary-foreground inline-block px-2 md:px-3 py-1">
-                        Your creative media organizer.
-                    </p>
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 max-w-5xl flex-shrink relative z-10">
+                    <div className="shrink-0 bg-black p-1 md:p-1.5 border-[3px] md:border-[5px] border-black shadow-[3px_3px_0px_0px_rgba(var(--primary-rgb),0.5)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.7)] hover:-translate-x-1 hover:-translate-y-1 w-12 h-12 md:w-20 md:h-20 xl:w-28 xl:h-28 flex items-center justify-center">
+                        <WhistlerLogo 
+                            className="size-full object-contain" 
+                            width="100%" 
+                            height="100%" 
+                        />
+                    </div>
+                    <div className="flex-shrink">
+                        <h1 className="text-[10vw] md:text-6xl xl:text-8xl font-black uppercase tracking-tighter leading-[0.8] text-black dark:text-white transition-all">
+                            Whistler<span className="text-primary italic">box</span>
+                        </h1>
+                        <p className="text-[2.5vw] md:text-lg xl:text-xl mt-1 md:mt-2 font-bold uppercase italic bg-primary text-primary-foreground inline-block px-2 md:px-3 py-1">
+                            Your creative media organizer.
+                        </p>
+                    </div>
                 </div>
                 <div className="flex gap-4 w-full xl:w-auto shrink-0 relative z-10">
                     <Button 
@@ -437,7 +447,7 @@ export function WelcomeView() {
 
             <main className="grid grid-cols-1 xl:grid-cols-12 gap-0 flex-grow bg-black min-h-0 overflow-y-auto xl:overflow-hidden">
                 {/* Primary Action Card */}
-                <section className="xl:col-span-7 bg-background border-r-0 xl:border-r-[8px] md:border-r-[12px] border-b-[4px] xl:border-b-0 border-black p-6 md:p-8 xl:p-12 flex flex-col justify-center xl:justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-[300px] xl:min-h-0 shrink-0 xl:shrink">
+                <section className="xl:col-span-7 bg-background border-r-0 xl:border-r-[8px] md:border-r-[12px] border-b-[4px] xl:border-b-0 border-black p-4 md:p-6 xl:p-8 flex flex-col justify-center xl:justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-[300px] xl:min-h-0 shrink-0 xl:shrink">
                     {/* Themed shading/gradient */}
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 group-hover:from-primary/20 transition-all duration-500 pointer-events-none"></div>
                     
@@ -473,7 +483,7 @@ export function WelcomeView() {
 
                 {/* Secondary Action Cards */}
                 <div className="xl:col-span-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 xl:grid-rows-2 min-h-0 shrink-0 xl:shrink">
-                    <section className="bg-secondary border-b-[4px] md:border-b-[8px] xl:border-b-[8px] border-r-0 sm:border-r-[4px] xl:border-r-0 border-black p-4 md:p-6 xl:p-8 flex flex-col justify-between group hover:bg-secondary transition-colors relative overflow-hidden min-h-[250px] xl:min-h-0">
+                    <section className="bg-secondary border-b-[4px] md:border-b-[8px] xl:border-b-[8px] border-r-0 sm:border-r-[4px] xl:border-r-0 border-black p-3 md:p-4 xl:p-6 flex flex-col justify-between group hover:bg-secondary transition-colors relative overflow-hidden min-h-[250px] xl:min-h-0">
                         {/* Themed shading */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent group-hover:from-primary/30 transition-all duration-500 pointer-events-none"></div>
                         
@@ -486,7 +496,7 @@ export function WelcomeView() {
                                 Import
                             </h2>
                             <p className="text-[3.5vw] md:text-lg xl:text-2xl leading-tight mb-3 md:mb-4 font-bold max-w-md group-hover:text-primary transition-colors">
-                                Have an existing project? Import your JSON archive here.
+                                Have an existing project? Import your JSON project here.
                             </p>
                             {importError && (
                                 <div className="text-xs font-black bg-red-500 text-white px-3 py-2 border-[3px] border-black uppercase mb-4 animate-shake inline-block">
@@ -498,11 +508,11 @@ export function WelcomeView() {
                             onClick={handleImportProject}
                             className="w-full xl:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-sm md:text-xl xl:text-2xl py-3 md:py-5 xl:py-6 px-4 md:px-8 xl:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-2 md:gap-4"
                         >
-                            <DownloadSimple weight="bold" className="size-5 md:size-8" /> Import Archive
+                            <DownloadSimple weight="bold" className="size-5 md:size-8" /> Import Project
                         </Button>
                     </section>
 
-                    <section className="bg-background p-4 md:p-6 xl:p-8 flex flex-col justify-between group hover:bg-primary/10 transition-colors relative overflow-hidden border-b-[4px] sm:border-b-0 xl:border-b-0 border-black min-h-[250px] xl:min-h-0">
+                    <section className="bg-background p-3 md:p-4 xl:p-6 flex flex-col justify-between group hover:bg-primary/10 transition-colors relative overflow-hidden border-b-[4px] sm:border-b-0 xl:border-b-0 border-black min-h-[250px] xl:min-h-0">
                         {/* Themed shading */}
                         <div className="absolute inset-0 bg-gradient-to-bl from-primary/15 via-transparent to-transparent group-hover:from-primary/25 transition-all duration-500 pointer-events-none"></div>
 
@@ -528,7 +538,7 @@ export function WelcomeView() {
                 </div>
             </main>
 
-            <footer className="bg-black text-white p-4 md:p-8 xl:p-10 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-10 font-black uppercase text-[3vw] md:text-xl xl:text-2xl tracking-tight shrink-0 transition-all duration-300 relative overflow-hidden">
+            <footer className="bg-black text-white p-3 md:p-4 xl:p-6 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-10 font-black uppercase text-[3vw] md:text-xl xl:text-2xl tracking-tight shrink-0 transition-all duration-300 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(45deg, #ffffff 25%, transparent 25%, transparent 50%, #ffffff 50%, #ffffff 75%, transparent 75%, transparent)', backgroundSize: '4px 4px' }}></div>
                 
                 <div className="flex items-center gap-4 relative z-10">
@@ -577,16 +587,16 @@ export function WelcomeView() {
                         <DialogTitle className="text-[8vw] md:text-5xl xl:text-6xl font-black uppercase leading-none tracking-tighter">
                             {phase === 'totp' ? 'Security Check' : 'Sync Access'}
                         </DialogTitle>
-                        <DialogDescription className="text-sm md:text-lg font-bold uppercase italic mt-2 md:mt-3 text-foreground/80">
+                        <DialogDescription className="text-sm md:text-lg font-bold uppercase italic mt-2 md:mt-3 text-foreground/80 tracking-tight">
                             {phase === 'totp' 
                                 ? 'Enter the code from your authenticator app.' 
                                 : 'Sign in with your 16-digit Sync ID.'}
                         </DialogDescription>
                     </DialogHeader>
                     {phase === 'login' ? (
-                        <form onSubmit={handleWelcomeSignIn} className="space-y-4 md:space-y-8 relative z-10">
-                            <div className="space-y-2 md:space-y-4">
-                                <div className="text-[2.5vw] md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-2 md:px-3 py-1">
+                        <form onSubmit={handleWelcomeSignIn} className="space-y-3 md:space-y-4 relative z-10">
+                            <div className="space-y-2 md:space-y-3">
+                                <div className="text-[2.5vw] md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-2 md:px-3 py-1 shadow-[2px_2px_0px_0px_rgba(var(--primary-rgb),1)]">
                                     Sync ID
                                 </div>
                                 <Input
@@ -594,25 +604,25 @@ export function WelcomeView() {
                                     placeholder="0000-0000-0000-0000"
                                     value={syncId}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
-                                    className="h-12 md:h-20 font-mono text-base md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white placeholder:text-white/10 font-black shadow-inner"
+                                    className="h-12 md:h-20 font-mono text-base md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 focus:border-primary text-white placeholder:text-white/10 font-black shadow-inner transition-colors"
                                     maxLength={19}
                                     minLength={16}
                                     required
                                 />
                                 <Button
                                     type="button"
-                                    variant="outline"
-                                    className="w-full h-10 md:h-14 mt-1 md:mt-2 text-[2.5vw] md:text-sm gap-2 border-[3px] md:border-[4px] border-black rounded-none font-black uppercase hover:bg-primary hover:text-primary-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                    variant="ghost"
+                                    className="w-full h-10 md:h-12 text-base md:text-xl gap-3 rounded-none font-black uppercase text-white hover:text-primary hover:bg-white/5 transition-all"
                                     onClick={handleGenerateId}
                                 >
-                                    <Shuffle weight="bold" className="size-3 md:size-5" />
+                                    <Shuffle weight="bold" className="size-5 md:size-6" />
                                     <span>Generate New ID</span>
                                 </Button>
                             </div>
-                            <div className="flex justify-center bg-zinc-100 dark:bg-zinc-900 p-3 md:p-6 border-[4px] md:border-[6px] border-black shadow-inner">
+                            <div className="w-full min-h-[90px] md:min-h-[140px] bg-black/40 border-[4px] md:border-[6px] border-black shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] hover:-translate-x-1 hover:-translate-y-1 transition-all flex justify-center items-center group/turnstile py-2 md:py-4">
                                 <div
                                     ref={containerRef}
-                                    className="min-h-[50px] md:min-h-[65px]"
+                                    className="flex items-center justify-center scale-[1.05] md:scale-[1.2] transition-transform duration-500 origin-center"
                                 />
                             </div>
                             {error && (
@@ -623,7 +633,7 @@ export function WelcomeView() {
                             <Button 
                                 type="submit" 
                                 disabled={isLoading || !captchaToken} 
-                                className="w-full h-14 md:h-24 bg-black text-white font-black text-base md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.3)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.5)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                                className="w-full h-14 md:h-24 bg-white text-black font-black text-base md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                             >
                                 {isLoading ? "Verifying..." : "Continue"}
                             </Button>
@@ -631,7 +641,7 @@ export function WelcomeView() {
                     ) : (
                         <form onSubmit={handleTotpVerify} className="space-y-4 md:space-y-8 relative z-10">
                             <div className="space-y-2 md:space-y-4">
-                                <div className="text-[2.5vw] md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-2 md:px-3 py-1">
+                                <div className="text-[2.5vw] md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-2 md:px-3 py-1 shadow-[2px_2px_0px_0px_rgba(var(--primary-rgb),1)]">
                                     Verification Code
                                 </div>
                                 <Input
@@ -639,7 +649,7 @@ export function WelcomeView() {
                                     placeholder="000000"
                                     value={totpCode}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                                    className="h-12 md:h-20 font-mono text-xl md:text-5xl text-center bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-white placeholder:text-white/10 font-black tracking-[0.5em] shadow-inner"
+                                    className="h-12 md:h-20 font-mono text-xl md:text-5xl text-center bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 focus:border-primary text-white placeholder:text-white/10 font-black tracking-[0.5em] shadow-inner transition-colors"
                                     maxLength={6}
                                     required
                                     autoFocus
@@ -653,7 +663,7 @@ export function WelcomeView() {
                             <Button 
                                 type="submit" 
                                 disabled={isLoading || totpCode.length !== 6} 
-                                className="w-full h-14 md:h-24 bg-black text-white font-black text-base md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.3)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.5)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                                className="w-full h-14 md:h-24 bg-white text-black font-black text-base md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                             >
                                 {isLoading ? "Verifying..." : "Verify & Access"}
                             </Button>
@@ -664,28 +674,28 @@ export function WelcomeView() {
 
             <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
                 <DialogContent className="w-[95vw] sm:max-w-md bg-background border-[6px] md:border-[10px] border-black rounded-none shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] p-6 md:p-10 gap-0 overflow-y-auto max-h-[90vh]">
-                    <DialogHeader className="mb-6 md:mb-10 text-left">
+                    <DialogHeader className="mb-4 md:mb-6 text-left">
                         <DialogTitle className="text-3xl md:text-5xl font-black uppercase leading-none tracking-tighter">New Project</DialogTitle>
-                        <DialogDescription className="text-base md:text-lg font-bold uppercase italic mt-3 text-foreground/80">
-                            Enter a name for your new archive.
+                        <DialogDescription className="text-base md:text-lg font-bold uppercase italic mt-2 text-foreground/80 tracking-tight">
+                            Enter a name for your new project.
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleCreateProject} className="space-y-6 md:space-y-8">
-                        <div className="space-y-3 md:space-y-4">
-                            <div className="text-xs md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-3 py-1">
+                    <form onSubmit={handleCreateProject} className="space-y-4 md:space-y-6">
+                        <div className="space-y-2 md:space-y-3">
+                            <div className="text-xs md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-3 py-1 shadow-[2px_2px_0px_0px_rgba(var(--primary-rgb),1)]">
                                 Project Name
                             </div>
                             <Input
-                                placeholder="E.g. My Creative Work"
+                                placeholder="E.g. Cool Carrots"
                                 value={newProjectName}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
-                                className="h-14 md:h-20 text-lg md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 font-black text-white placeholder:text-white/20 shadow-inner"
+                                className="h-14 md:h-20 text-lg md:text-3xl bg-black border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 focus:border-primary font-black text-white placeholder:text-white/20 shadow-inner transition-colors"
                                 autoFocus
                             />
                         </div>
                         <Button 
                             type="submit"
-                            className="w-full h-16 md:h-24 bg-primary text-primary-foreground font-black text-lg md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-black hover:text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                            className="w-full h-16 md:h-24 bg-white text-black font-black text-lg md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                         >
                             Create Project
                         </Button>
