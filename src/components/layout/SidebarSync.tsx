@@ -868,6 +868,17 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                             >
                                                 {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
                                             </button>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    navigator.clipboard.writeText(accountId || user.id);
+                                                    // Optional: add toast notification here
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                                title="Copy ID"
+                                            >
+                                                <Copy size={12} />
+                                            </button>
                                         </div>
                                     </>
                                 )}
@@ -956,14 +967,26 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             <div className={`pt-2 px-2 space-y-3 transition-opacity ${autoSyncEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
                                 <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>Sync Interval</span>
-                                    <span>{Math.round(autoSyncInterval / 60000)} min</span>
+                                    <span>
+                                        {autoSyncInterval <= 60000 
+                                            ? `${Math.round(autoSyncInterval / 1000)}s` 
+                                            : `${Math.round(autoSyncInterval / 60000)}m`}
+                                    </span>
                                 </div>
                                 <Slider
-                                    value={[autoSyncInterval / 60000]}
-                                    min={1}
-                                    max={60}
+                                    value={[
+                                        autoSyncInterval <= 60000 
+                                            ? autoSyncInterval / 1000 
+                                            : (autoSyncInterval / 60000) + 59
+                                    ]}
+                                    min={5}
+                                    max={119}
                                     step={1}
-                                    onValueChange={(vals: number[]) => setAutoSyncInterval(vals[0] * 60000)}
+                                    onValueChange={(vals: number[]) => {
+                                        const v = vals[0];
+                                        const ms = v <= 60 ? v * 1000 : (v - 59) * 60000;
+                                        setAutoSyncInterval(ms);
+                                    }}
                                     disabled={!autoSyncEnabled}
                                     className="py-1"
                                 />
