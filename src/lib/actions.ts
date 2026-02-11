@@ -1,6 +1,6 @@
-import { NavigateFunction, Location } from "react-router-dom";
-import { AppStore } from "@/store/useStore";
-import { File, Collection } from "@/types";
+import type { NavigateFunction, Location } from "react-router-dom";
+import type { AppStore } from "@/store/useStore";
+import type { File, Collection } from "@/types";
 import { 
     House, 
     HardDrives, 

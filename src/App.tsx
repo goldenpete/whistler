@@ -11,7 +11,7 @@ const CollectionView = lazy(() => import("@/components/views/CollectionView"));
 const CollectionsView = lazy(() => import("@/components/views/CollectionsView"));
 const SettingsView = lazy(() => import("@/components/views/SettingsView"));
 const HomeView = lazy(() => import("@/components/views/HomeView"));
-const WelcomeView = lazy(() => import("@/components/views/WelcomeView").then(module => ({ default: module.WelcomeView })));
+const WelcomeView = lazy(() => import("@/components/views/WelcomeView").then(m => ({ default: m.WelcomeView })));
 const LegalView = lazy(() => import("@/components/views/LegalView"));
 
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";

@@ -12,7 +12,18 @@ import {
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import type { Project, File } from "@/types";
-import { Plus, DownloadSimple, Lightning, Shuffle, CaretLeft } from "@phosphor-icons/react";
+import { 
+    Plus, 
+    DownloadSimple, 
+    Lightning, 
+    Shuffle, 
+    SignIn, 
+    Info, 
+    FolderPlus, 
+    Database, 
+    Sparkle,
+    CaretRight
+} from "@phosphor-icons/react";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
 
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
@@ -61,7 +72,6 @@ export function WelcomeView() {
             if (window.turnstile && !widgetId) {
                 const container = containerRef.current;
                 if (container) {
-                    // Check if container already has content
                     if (container.hasChildNodes()) {
                         clearInterval(interval);
                         return;
@@ -94,7 +104,6 @@ export function WelcomeView() {
                 try {
                     window.turnstile.remove(widgetId);
                 } catch (e) {
-                    // Ignore removal errors
                 }
             }
             setTurnstileWidgetId(null);
@@ -134,8 +143,6 @@ export function WelcomeView() {
             }
             login({ id: cleanId, email: displayName || cleanId });
 
-            console.log(`Initial Sync (Pull) for account ${cleanId} with token ending in ...${token.slice(-6)}`);
-
             const pullResponse = await fetch(`${SYNC_API_URL}/data`, {
                 method: "GET",
                 headers: {
@@ -143,23 +150,18 @@ export function WelcomeView() {
                 },
             });
             
-            console.log(`Initial Pull Response Status: ${pullResponse.status} ${pullResponse.statusText}`);
-
             if (!pullResponse.ok) {
                 const body = await pullResponse.json().catch(() => null);
-                console.error("Initial Pull Error Body:", body);
                 setError(body?.error || "Failed to load data");
                 return;
             }
             const result = await pullResponse.json();
-            console.log("Initial Pull Result:", result ? "Data received" : "No data");
 
             const dataRow = Array.isArray(result.data)
                 ? result.data.find((d: any) => d.key === "whistler_data")
                 : null;
             if (dataRow && dataRow.value) {
                 const cloudData = typeof dataRow.value === "string" ? JSON.parse(dataRow.value) : dataRow.value;
-                console.log(`Restoring Initial Cloud Data: Projects: ${cloudData.projects?.length}, Files: ${cloudData.files?.length}`);
                 setState({
                     projects: cloudData.projects || [],
                     files: cloudData.files || [],
@@ -171,7 +173,6 @@ export function WelcomeView() {
                     docs: cloudData.docs || [],
                     storages: cloudData.storages || [],
                     history: cloudData.history || [],
-                    // Theme Settings
                     accentTheme: cloudData.accentTheme || 'orange',
                     baseTheme: cloudData.baseTheme || 'zinc',
                     enableDefaultColorControls: cloudData.enableDefaultColorControls || false,
@@ -274,6 +275,22 @@ export function WelcomeView() {
     const handleNewProject = () => {
         setNewProjectName("");
         setNewProjectOpen(true);
+    };
+
+    const handleCreateProject = (e: FormEvent) => {
+        e.preventDefault();
+        if (!newProjectName.trim()) return;
+        
+        const project: Project = {
+            id: crypto.randomUUID(),
+            name: newProjectName.trim(),
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+        
+        addProject(project);
+        setActiveProject(project.id);
+        setNewProjectOpen(false);
     };
 
     const handleImportProject = () => {
@@ -389,62 +406,119 @@ export function WelcomeView() {
     };
 
     return (
-        <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 text-white p-4">
-            <div className="max-w-md w-full space-y-8 text-center">
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tighter">Welcome to Whistlerbox</h1>
-                    <p className="text-zinc-400">Your creative media organizer.</p>
+        <div className="h-screen bg-black text-foreground font-mono flex flex-col border-[4px] md:border-[8px] border-black overflow-hidden select-none">
+            <header className="bg-background border-b-[4px] md:border-b-[8px] border-black p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 shrink-0 transition-all duration-300">
+                <div className="max-w-4xl flex-shrink">
+                    <h1 className="text-4xl md:text-7xl lg:text-9xl font-black uppercase tracking-tighter leading-[0.8] text-black dark:text-white transition-all">
+                        Whistler<span className="text-primary italic">box</span>
+                    </h1>
+                    <p className="text-sm md:text-xl lg:text-2xl mt-2 md:mt-4 font-bold uppercase italic bg-primary text-primary-foreground inline-block px-2 md:px-3 py-1">
+                        Your creative media organizer.
+                    </p>
                 </div>
-
-                <div className="grid gap-4">
-                    <Button
+                <div className="flex gap-4 w-full lg:w-auto shrink-0">
+                    <Button 
                         onClick={() => setSignInOpen(true)}
-                        variant="outline"
-                        className="h-12 text-lg border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-100"
+                        className="w-full lg:w-auto bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl lg:text-2xl px-4 md:px-10 py-4 md:py-8 rounded-none border-black font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.7)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all group"
                     >
-                        Sync Access Sign In
+                        <SignIn weight="fill" className="mr-2 md:mr-3 size-5 md:size-8 group-hover:rotate-12 transition-transform" /> Sync Access
                     </Button>
+                </div>
+            </header>
 
-                    <Button
-                        onClick={handleNewProject}
-                        className="h-12 text-lg bg-primary hover:bg-primary/90"
-                    >
-                        <Plus size={20} weight="bold" className="mr-2" />
-                        Create New Project
-                    </Button>
-
-                    <Button
-                        onClick={handleImportProject}
-                        variant="secondary"
-                        className="h-12 text-lg"
-                    >
-                        <DownloadSimple size={20} weight="bold" className="mr-2" />
-                        Import Project JSON
-                    </Button>
-
-                    {importError && (
-                        <div className="text-xs text-red-400 text-center px-2 -mt-2">
-                            {importError}
+            <main className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-grow bg-black min-h-0 overflow-hidden">
+                {/* Primary Action Card */}
+                <section className="lg:col-span-7 bg-background border-r-0 lg:border-r-[8px] md:border-r-[12px] border-black p-4 md:p-8 lg:p-12 flex flex-col justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-0 shrink">
+                    <div className="absolute top-[-5%] right-[-5%] opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+                        <FolderPlus weight="fill" className="size-[250px] md:size-[500px] -rotate-12" />
+                    </div>
+                    
+                    <div className="relative z-10 flex-shrink">
+                        <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-6">
+                            <div className="bg-black text-white p-2 md:p-3">
+                                <Plus weight="bold" className="size-6 md:size-10" />
+                            </div>
+                            <h2 className="text-2xl md:text-5xl lg:text-7xl font-black uppercase leading-none tracking-tight">
+                                Start Fresh
+                            </h2>
                         </div>
-                    )}
+                        <p className="text-base md:text-xl lg:text-3xl leading-tight mb-4 md:mb-8 font-bold max-w-2xl opacity-90">
+                            Create a new project and start organizing your files, highlights, and thoughts in a brutalist environment.
+                        </p>
+                    </div>
 
-                    <Button
-                        onClick={handleLoadDemo}
-                        variant="outline"
-                        className="h-12 text-lg border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-white"
+                    <Button 
+                        onClick={handleNewProject}
+                        className="w-full lg:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] md:border-[6px] border-black text-lg md:text-2xl lg:text-4xl py-6 md:py-10 lg:py-14 px-8 md:px-16 lg:px-20 rounded-none font-black uppercase shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),0.8)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center gap-3 md:gap-6 group/btn"
                     >
-                        <Lightning size={20} weight="bold" className="mr-2" />
-                        Load Demo Data
+                        Create Project <CaretRight weight="bold" className="size-6 md:size-10 group-hover/btn:translate-x-2 transition-transform" />
                     </Button>
-                </div>
+                </section>
 
-                <div className="flex justify-center gap-6 mt-8">
-                    <Link to="/legal/terms" state={{ from: 'welcome' }} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Terms</Link>
-                    <Link to="/legal/privacy" state={{ from: 'welcome' }} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Privacy</Link>
-                    <Link to="/legal/license" state={{ from: 'welcome' }} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">License</Link>
-                </div>
-            </div>
+                {/* Secondary Action Cards */}
+                <div className="lg:col-span-5 grid grid-rows-2 min-h-0 shrink">
+                    <section className="bg-secondary border-b-[4px] md:border-b-[8px] border-black p-4 md:p-6 lg:p-8 flex flex-col justify-between group hover:bg-secondary/80 transition-colors relative overflow-hidden min-h-0 shrink">
+                        <div className="absolute bottom-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
+                            <Database weight="fill" className="size-[150px] md:size-[300px]" />
+                        </div>
 
+                        <div className="relative z-10 flex-shrink">
+                            <h2 className="text-xl md:text-3xl lg:text-5xl font-black uppercase mb-2 md:mb-4 bg-black text-white inline-block px-2 md:px-3 py-1">
+                                Import
+                            </h2>
+                            <p className="text-sm md:text-lg lg:text-2xl leading-tight mb-2 md:mb-4 font-bold max-w-md">
+                                Have an existing project? Import your JSON archive here.
+                            </p>
+                        </div>
+                        <Button 
+                            onClick={handleImportProject}
+                            className="w-full lg:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl lg:text-2xl py-3 md:py-5 lg:py-6 px-5 md:px-8 lg:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center gap-2 md:gap-4"
+                        >
+                            <DownloadSimple weight="bold" className="size-5 md:size-8" /> Import JSON
+                        </Button>
+                        {importError && (
+                            <div className="text-[10px] md:text-sm bg-red-500 text-white font-black p-2 mt-2 uppercase inline-block border-2 border-black">
+                                {importError}
+                            </div>
+                        )}
+                    </section>
+
+                    <section className="bg-accent border-black p-4 md:p-6 lg:p-8 flex flex-col justify-between group hover:bg-accent/80 transition-colors relative overflow-hidden min-h-0 shrink">
+                        <div className="absolute top-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
+                            <Sparkle weight="fill" className="size-[150px] md:size-[300px] animate-pulse" />
+                        </div>
+
+                        <div className="relative z-10 flex-shrink">
+                            <h2 className="text-xl md:text-3xl lg:text-5xl font-black uppercase mb-2 md:mb-4 bg-black text-white inline-block px-2 md:px-3 py-1">
+                                Demo
+                            </h2>
+                            <p className="text-sm md:text-lg lg:text-2xl leading-tight mb-2 md:mb-4 font-bold max-w-md text-black/80">
+                                Just looking around? Load some sample data to see how it works.
+                            </p>
+                        </div>
+                        <Button 
+                            onClick={handleLoadDemo}
+                            className="w-full lg:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl lg:text-2xl py-3 md:py-5 lg:py-6 px-5 md:px-8 lg:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center gap-2 md:gap-4"
+                        >
+                            <Lightning weight="fill" className="size-5 md:size-8" /> Load Demo
+                        </Button>
+                    </section>
+                </div>
+            </main>
+
+            <footer className="bg-black text-white p-4 md:p-6 lg:p-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8 font-black uppercase text-base md:text-xl lg:text-2xl tracking-tight shrink-0 transition-all duration-300">
+                <div className="flex items-center gap-4">
+                    <span className="bg-white text-black px-3 py-1">&copy; {new Date().getFullYear()}</span>
+                    <span>WHISTLERBOX</span>
+                </div>
+                <div className="flex flex-wrap justify-center gap-x-12 gap-y-4">
+                    <Link to="/legal/terms" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">Terms</Link>
+                    <Link to="/legal/privacy" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">Privacy</Link>
+                    <Link to="/legal/license" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">License</Link>
+                </div>
+            </footer>
+
+            {/* Dialogs */}
             <Dialog open={signInOpen} onOpenChange={(open: boolean) => {
                 setSignInOpen(open);
                 if (!open) {
@@ -453,27 +527,29 @@ export function WelcomeView() {
                     setTotpCode("");
                 }
             }}>
-                <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800">
-                    <DialogHeader>
-                        <DialogTitle>{phase === 'totp' ? 'Two-Factor Authentication' : 'Sync Access'}</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="sm:max-w-md bg-background border-[6px] md:border-[10px] border-black rounded-none shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] p-6 md:p-10 gap-0">
+                    <DialogHeader className="mb-6 md:mb-10">
+                        <DialogTitle className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tighter">
+                            {phase === 'totp' ? 'Security Check' : 'Sync Access'}
+                        </DialogTitle>
+                        <DialogDescription className="text-lg font-bold uppercase italic mt-3 text-foreground/80">
                             {phase === 'totp' 
                                 ? 'Enter the code from your authenticator app.' 
-                                : 'Sign in with your 16-digit Sync ID to load existing Whistlerbox data.'}
+                                : 'Sign in with your 16-digit Sync ID.'}
                         </DialogDescription>
                     </DialogHeader>
                     {phase === 'login' ? (
-                        <form onSubmit={handleWelcomeSignIn} className="space-y-4">
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                        <form onSubmit={handleWelcomeSignIn} className="space-y-6 md:space-y-8">
+                            <div className="space-y-3 md:space-y-4">
+                                <div className="text-xs md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-3 py-1">
                                     Sync ID
                                 </div>
                                 <Input
                                     type="text"
-                                    placeholder="16-digit ID"
+                                    placeholder="0000-0000-0000-0000"
                                     value={syncId}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
-                                    className="h-9 font-mono text-sm bg-zinc-900 border-zinc-700"
+                                    className="h-14 md:h-20 font-mono text-xl md:text-3xl bg-white border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-black placeholder:text-black/20 font-black shadow-inner"
                                     maxLength={19}
                                     minLength={16}
                                     required
@@ -481,133 +557,92 @@ export function WelcomeView() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="w-full h-9 mt-1 text-xs gap-2 border-zinc-700"
+                                    className="w-full h-12 md:h-14 mt-2 text-xs md:text-sm gap-2 border-[3px] md:border-[4px] border-black rounded-none font-black uppercase hover:bg-primary hover:text-primary-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
                                     onClick={handleGenerateId}
-                                    title="Generate New Account ID"
                                 >
-                                    <Shuffle weight="bold" className="size-4" />
-                                    <span>Generate New Account ID</span>
+                                    <Shuffle weight="bold" className="size-4 md:size-5" />
+                                    <span>Generate New ID</span>
                                 </Button>
                             </div>
-                            <div className="flex justify-center">
+                            <div className="flex justify-center bg-zinc-100 dark:bg-zinc-900 p-4 md:p-6 border-[4px] md:border-[6px] border-black shadow-inner">
                                 <div
                                     ref={containerRef}
                                     className="min-h-[65px]"
                                 />
                             </div>
                             {error && (
-                                <div className="text-xs text-red-400 text-center px-2">
+                                <div className="text-xs md:text-sm bg-red-500 text-white font-black p-4 uppercase border-[4px] border-black text-center animate-shake">
                                     {error}
                                 </div>
                             )}
-                            <Button
-                                type="submit"
-                                className="w-full h-9"
-                                disabled={isLoading || getCleanAccountId(syncId).length < 16}
-                                data-sound-confirm
+                            <Button 
+                                type="submit" 
+                                disabled={isLoading || !captchaToken} 
+                                className="w-full h-16 md:h-24 bg-black text-white font-black text-xl md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                             >
-                                {isLoading ? "Connecting..." : "Connect & Load"}
+                                {isLoading ? "Verifying..." : "Continue"}
                             </Button>
                         </form>
                     ) : (
-                        <form onSubmit={handleTotpVerify} className="space-y-4">
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                    Authenticator Code
+                        <form onSubmit={handleTotpVerify} className="space-y-6 md:space-y-8">
+                            <div className="space-y-3 md:space-y-4">
+                                <div className="text-xs md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-3 py-1">
+                                    6-Digit Code
                                 </div>
                                 <Input
                                     type="text"
                                     placeholder="000000"
                                     value={totpCode}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                                        setTotpCode(val);
-                                    }}
-                                    className="h-9 font-mono text-sm bg-zinc-900 border-zinc-700 text-center tracking-widest"
-                                    maxLength={6}
-                                    minLength={6}
-                                    autoFocus
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    className="h-16 md:h-24 font-mono text-center text-3xl md:text-5xl tracking-[0.3em] md:tracking-[0.5em] bg-white border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 text-black font-black shadow-inner"
                                     required
                                 />
                             </div>
                             {error && (
-                                <div className="text-xs text-red-400 text-center px-2">
+                                <div className="text-xs md:text-sm bg-red-500 text-white font-black p-4 uppercase border-[4px] border-black text-center animate-shake">
                                     {error}
                                 </div>
                             )}
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="h-9 w-9 p-0 border-zinc-700"
-                                    onClick={() => setPhase('login')}
-                                    disabled={isLoading}
-                                    data-sound-back
-                                >
-                                    <CaretLeft size={16} />
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    className="flex-1 h-9"
-                                    disabled={isLoading || totpCode.length !== 6}
-                                >
-                                    {isLoading ? "Verifying..." : "Verify & Load"}
-                                </Button>
-                            </div>
+                            <Button 
+                                type="submit" 
+                                disabled={isLoading} 
+                                className="w-full h-16 md:h-24 bg-black text-white font-black text-xl md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-primary hover:text-primary-foreground disabled:opacity-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                            >
+                                {isLoading ? "Checking..." : "Verify"}
+                            </Button>
                         </form>
                     )}
                 </DialogContent>
             </Dialog>
 
             <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
-                <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800">
-                    <DialogHeader>
-                        <DialogTitle>New Project</DialogTitle>
-                        <DialogDescription>
-                            Enter a name for your new project.
+                <DialogContent className="sm:max-w-md bg-background border-[6px] md:border-[10px] border-black rounded-none shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] p-6 md:p-10 gap-0">
+                    <DialogHeader className="mb-6 md:mb-10">
+                        <DialogTitle className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tighter">New Project</DialogTitle>
+                        <DialogDescription className="text-lg font-bold uppercase italic mt-3 text-foreground/80">
+                            Enter a name for your new archive.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1 text-left">
-                            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <form onSubmit={handleCreateProject} className="space-y-6 md:space-y-8">
+                        <div className="space-y-3 md:space-y-4">
+                            <div className="text-xs md:text-sm font-black uppercase tracking-[0.2em] bg-black text-white inline-block px-3 py-1">
                                 Project Name
                             </div>
                             <Input
-                                type="text"
-                                placeholder="My Project"
+                                placeholder="E.g. My Creative Work"
                                 value={newProjectName}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
-                                className="h-9 bg-zinc-900 border-zinc-700"
+                                className="h-14 md:h-20 text-xl md:text-3xl bg-white border-[4px] md:border-[6px] border-black rounded-none focus-visible:ring-0 font-black text-black placeholder:text-black/20 shadow-inner"
                                 autoFocus
                             />
                         </div>
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-9"
-                                onClick={() => setNewProjectOpen(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="button"
-                                className="h-9 bg-primary hover:bg-primary/90"
-                                disabled={!newProjectName.trim()}
-                                onClick={() => {
-                                    const name = newProjectName.trim();
-                                    if (!name) return;
-                                    const project = addProject(name);
-                                    setActiveProject(project.id);
-                                    setNewProjectOpen(false);
-                                    setNewProjectName("");
-                                }}
-                                data-sound-confirm
-                            >
-                                Create
-                            </Button>
-                        </div>
-                    </div>
+                        <Button 
+                            type="submit"
+                            className="w-full h-16 md:h-24 bg-primary text-primary-foreground font-black text-xl md:text-3xl uppercase rounded-none border-[4px] md:border-[6px] border-black hover:bg-black hover:text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.15)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                        >
+                            Create Project
+                        </Button>
+                    </form>
                 </DialogContent>
             </Dialog>
         </div>
