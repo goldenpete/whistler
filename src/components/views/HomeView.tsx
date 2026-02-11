@@ -58,6 +58,7 @@ import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
+import { isValidUrl } from "@/utils/security";
 
 function getGreeting(username: string) {
     const hour = new Date().getHours();
@@ -511,6 +512,14 @@ export default function HomeView() {
 
     const handleAddFile = (url: string, name: string) => {
         if (!activeProjectId) return;
+        
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) return;
+
+        if (!isValidUrl(trimmedUrl)) {
+            alert("Invalid URL. Only http, https, blob, and data protocols are allowed.");
+            return;
+        }
 
         let targetStorageId = activeStorageId;
         if (!targetStorageId) {
@@ -779,7 +788,11 @@ export default function HomeView() {
         
         switch (type) {
             case 'file':
-                useStore.getState().updateFile(id, { name, description, url });
+                if (url && !isValidUrl(url.trim())) {
+                    alert("Invalid URL. Only http, https, blob, and data protocols are allowed.");
+                    return;
+                }
+                useStore.getState().updateFile(id, { name, description, url: url?.trim() });
                 break;
             case 'doc':
                 if (color || icon) {

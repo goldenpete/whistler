@@ -1,48 +1,34 @@
+import DOMPurify from 'dompurify';
 
 /**
  * Basic HTML Sanitizer
  * 
  * Removes dangerous tags and attributes to prevent XSS.
- * Note: For production use with high-risk input, consider using a library like DOMPurify.
+ * Uses DOMPurify for robust sanitization.
  */
 export function sanitizeHTML(html: string): string {
     if (!html) return "";
 
-    // Parse HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    // List of tags to remove entirely
-    const dangerousTags = [
-        'script', 'iframe', 'object', 'embed', 'link', 'style', 'meta', 'base', 'form', 'input', 'button'
-    ];
-
-    // Remove dangerous tags
-    dangerousTags.forEach(tag => {
-        const elements = doc.querySelectorAll(tag);
-        elements.forEach(el => el.remove());
+    return DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: [
+            'p', 'br', 'b', 'i', 'u', 'em', 'strong', 'a', 'ul', 'ol', 'li', 
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'span', 'div'
+        ],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
     });
+}
 
-    // Walk all elements to check attributes
-    const allElements = doc.body.querySelectorAll('*');
-    allElements.forEach(el => {
-        // Check all attributes
-        const attributes = Array.from(el.attributes);
-        attributes.forEach(attr => {
-            const name = attr.name.toLowerCase();
-            const value = attr.value.toLowerCase();
-
-            // Remove event handlers (on*)
-            if (name.startsWith('on')) {
-                el.removeAttribute(name);
-            }
-
-            // Remove javascript: protocol in href/src
-            if ((name === 'href' || name === 'src') && value.trim().startsWith('javascript:')) {
-                el.removeAttribute(name);
-            }
-        });
-    });
-
-    return doc.body.innerHTML;
+/**
+ * Validates a URL to ensure it uses safe protocols.
+ * Prevents javascript: and other URI-based attacks.
+ */
+export function isValidUrl(url: string): boolean {
+    if (!url) return false;
+    try {
+        const parsed = new URL(url);
+        return ['http:', 'https:', 'blob:', 'data:'].includes(parsed.protocol);
+    } catch {
+        // Fallback for relative URLs or partial URLs
+        return !url.toLowerCase().startsWith('javascript:');
+    }
 }

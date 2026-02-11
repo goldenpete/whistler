@@ -9,7 +9,7 @@ interface User {
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync';
-type SoundKey = 'cursor' | 'confirm' | 'error' | 'back' | 'search';
+export type SoundKey = 'cursor' | 'confirm' | 'error' | 'back' | 'search';
 
 interface SoundConfig {
     source: 'preset' | 'custom';
@@ -84,8 +84,11 @@ export interface AppStore extends AppState {
         search: boolean;
     };
     replaceSearchWithConfirm: boolean;
+    setReplaceSearchWithConfirm: (enabled: boolean) => void;
     replaceAllSoundsWithCursor: boolean;
+    setReplaceAllSoundsWithCursor: (enabled: boolean) => void;
     soundConfigs: Record<SoundKey, SoundConfig>;
+    setSoundConfig: (key: SoundKey, config: SoundConfig) => void;
 
     toggleThemingEnabled: boolean;
     setToggleThemingEnabled: (enabled: boolean) => void;
@@ -498,7 +501,9 @@ export const useStore = create<AppStore>()(
                 search: true,
             },
             replaceSearchWithConfirm: false,
+            setReplaceSearchWithConfirm: (enabled) => set({ replaceSearchWithConfirm: enabled }),
             replaceAllSoundsWithCursor: false,
+            setReplaceAllSoundsWithCursor: (enabled) => set({ replaceAllSoundsWithCursor: enabled }),
             soundConfigs: {
                 cursor: { source: 'preset', value: 'cursor' },
                 confirm: { source: 'preset', value: 'confirm' },
@@ -506,6 +511,9 @@ export const useStore = create<AppStore>()(
                 back: { source: 'preset', value: 'back' },
                 search: { source: 'preset', value: 'search' },
             },
+            setSoundConfig: (key, config) => set((state) => ({
+                soundConfigs: { ...state.soundConfigs, [key]: config }
+            })),
 
             toggleThemingEnabled: true,
     setToggleThemingEnabled: (enabled) => set({ toggleThemingEnabled: enabled }),
@@ -727,14 +735,6 @@ export const useStore = create<AppStore>()(
             }
         };
     }),
-    setReplaceSearchWithConfirm: (enabled) => set({ replaceSearchWithConfirm: enabled }),
-    setReplaceAllSoundsWithCursor: (enabled) => set({ replaceAllSoundsWithCursor: enabled }),
-    setSoundConfig: (key, config) => set((state) => ({
-        soundConfigs: {
-            ...state.soundConfigs,
-            [key]: config
-        }
-    })),
 
     setAutoSyncInterval: (interval) => set({ autoSyncInterval: interval }),
 

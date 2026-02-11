@@ -247,8 +247,8 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl bg-zinc-950 border-zinc-800 flex flex-col max-h-[85vh]">
-                <DialogHeader>
+            <DialogContent className="max-w-2xl bg-zinc-950 border-zinc-800 flex flex-col max-h-[85vh] p-0 overflow-hidden">
+                <DialogHeader className="p-6 pb-2">
                     <DialogTitle className="flex items-center gap-2">
                         <CornersOut className="text-primary" size={24} />
                         Keyboard Shortcuts
@@ -268,8 +268,8 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                 </DialogHeader>
 
                 {searchQuery ? (
-                    <ScrollArea className="flex-1 -mx-6 px-6">
-                        <div className="space-y-1 pb-4">
+                    <ScrollArea className="flex-1 px-6">
+                        <div className="space-y-1 pb-6">
                             {filteredItems.length === 0 ? (
                                 <div className="text-center py-8 text-zinc-500 text-sm">
                                     No shortcuts found for "{searchQuery}"
@@ -296,7 +296,7 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                     </ScrollArea>
                 ) : (
                     <Tabs defaultValue="global" className="flex-1 flex flex-col min-h-0">
-                        <TabsList className="w-full justify-start bg-zinc-900 border-b border-zinc-800 rounded-none h-auto p-0 flex-wrap shrink-0">
+                        <TabsList className="w-full justify-start bg-zinc-900 border-b border-zinc-800 rounded-none h-auto p-0 flex-wrap shrink-0 px-6">
                             {Object.keys(GUIDE_DATA).map(key => (
                                 <TabsTrigger 
                                     key={key} 
@@ -308,9 +308,9 @@ export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogP
                             ))}
                         </TabsList>
 
-                        <ScrollArea className="flex-1 -mx-6 px-6">
+                        <ScrollArea className="flex-1 px-6">
                             {Object.entries(GUIDE_DATA).map(([key, items]) => (
-                                <TabsContent key={key} value={key} className="mt-0 py-4 space-y-1">
+                                <TabsContent key={key} value={key} className="mt-0 py-4 space-y-1 pb-8">
                                     {items.map((item, i) => {
                                         if (item.type === 'header') {
                                             return (

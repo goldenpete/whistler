@@ -33,45 +33,48 @@ export function useSync() {
             if (type === "push") {
                 const state = useStore.getState();
                 const { syncOptions } = state;
+                const trashEnabled = syncOptions.trash ?? true;
+                const historyEnabled = syncOptions.history ?? true;
+
                 const data: any = {
                     lastModified: Date.now(),
                 };
 
                 if (syncOptions.projects) {
-                    data.projects = syncOptions.trash 
+                    data.projects = trashEnabled 
                         ? state.projects 
                         : state.projects.filter(p => !p.deleted);
                 }
                 if (syncOptions.files) {
-                    data.files = syncOptions.trash 
+                    data.files = trashEnabled 
                         ? state.files 
                         : state.files.filter(f => !f.deleted);
                 }
                 if (syncOptions.collections) {
-                    data.collections = syncOptions.trash 
+                    data.collections = trashEnabled 
                         ? state.collections 
                         : state.collections.filter(c => !c.deleted);
                 }
                 if (syncOptions.highlights) data.highlights = state.highlights;
                 if (syncOptions.graphs) {
-                    data.graphs = syncOptions.trash 
+                    data.graphs = trashEnabled 
                         ? state.graphs 
                         : state.graphs.filter(g => !g.deleted);
                     data.graphNodes = state.graphNodes;
                     data.graphEdges = state.graphEdges;
                 }
                 if (syncOptions.docs) {
-                    data.docs = syncOptions.trash 
+                    data.docs = trashEnabled 
                         ? state.docs 
                         : state.docs.filter(d => !d.deleted);
                 }
                 if (syncOptions.storages) {
-                    data.storages = syncOptions.trash 
+                    data.storages = trashEnabled 
                         ? state.storages 
                         : state.storages.filter(s => !s.deleted);
                 }
                 
-                if (syncOptions.history) data.history = state.history;
+                if (historyEnabled) data.history = state.history;
                 
                 if (syncOptions.settings) {
                     const adv = syncOptions.advancedSettings || {};
@@ -208,10 +211,12 @@ export function useSync() {
                     const serverData = json.value;
                     const state = useStore.getState();
                     const { syncOptions } = state;
+                    const trashEnabled = syncOptions.trash ?? true;
+                    const historyEnabled = syncOptions.history ?? true;
                     const updates: any = {};
                     
                     if (syncOptions.projects && serverData.projects) {
-                        if (syncOptions.trash) {
+                        if (trashEnabled) {
                             updates.projects = serverData.projects;
                         } else {
                             const localDeleted = state.projects.filter(p => p.deleted);
@@ -220,7 +225,7 @@ export function useSync() {
                         }
                     }
                     if (syncOptions.files && serverData.files) {
-                        if (syncOptions.trash) {
+                        if (trashEnabled) {
                             updates.files = serverData.files;
                         } else {
                             const localDeleted = state.files.filter(f => f.deleted);
@@ -229,7 +234,7 @@ export function useSync() {
                         }
                     }
                     if (syncOptions.collections && serverData.collections) {
-                        if (syncOptions.trash) {
+                        if (trashEnabled) {
                             updates.collections = serverData.collections;
                         } else {
                             const localDeleted = state.collections.filter(c => c.deleted);
@@ -240,7 +245,7 @@ export function useSync() {
                     if (syncOptions.highlights && serverData.highlights) updates.highlights = serverData.highlights;
                     if (syncOptions.graphs) {
                         if (serverData.graphs) {
-                            if (syncOptions.trash) {
+                            if (trashEnabled) {
                                 updates.graphs = serverData.graphs;
                             } else {
                                 const localDeleted = state.graphs.filter(g => g.deleted);
@@ -252,7 +257,7 @@ export function useSync() {
                         if (serverData.graphEdges) updates.graphEdges = serverData.graphEdges;
                     }
                     if (syncOptions.docs && serverData.docs) {
-                        if (syncOptions.trash) {
+                        if (trashEnabled) {
                             updates.docs = serverData.docs;
                         } else {
                             const localDeleted = state.docs.filter(d => d.deleted);
@@ -261,7 +266,7 @@ export function useSync() {
                         }
                     }
                     if (syncOptions.storages && serverData.storages) {
-                        if (syncOptions.trash) {
+                        if (trashEnabled) {
                             updates.storages = serverData.storages;
                         } else {
                             const localDeleted = state.storages.filter(s => s.deleted);
@@ -270,7 +275,7 @@ export function useSync() {
                         }
                     }
                     
-                    if (syncOptions.history && serverData.history) updates.history = serverData.history;
+                    if (historyEnabled && serverData.history) updates.history = serverData.history;
                     
                     if (syncOptions.settings) {
                         const adv = syncOptions.advancedSettings || {};

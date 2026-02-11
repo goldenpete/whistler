@@ -1,10 +1,9 @@
 import { useState, useEffect, type ChangeEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES, DEFAULT_CUSTOM_THEMES } from "@/store/useStore";
+import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES, DEFAULT_CUSTOM_THEMES, type SoundKey } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { SidebarHistory } from "@/components/layout/SidebarHistory";
 import { SidebarTrash } from "@/components/layout/SidebarTrash";
-import { ChangeEvent } from "react";
 import { 
     SpeakerHigh, 
     Palette, 
@@ -30,8 +29,17 @@ import {
     Graph,
     HardDrives,
     PencilSimple,
-    Gear
+    Gear,
+    Info,
+    GithubLogo,
+    DiscordLogo,
+    TwitterLogo,
+    EnvelopeSimple,
+    Heart,
+    Code,
+    Sparkle
 } from "@phosphor-icons/react";
+import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -89,7 +97,7 @@ const DEFAULT_COLOR_ENTITIES: { key: 'file' | 'collection' | 'storage' | 'graph'
     { key: 'node', label: 'Nodes' },
 ];
 
-type SettingsTab = 'appearance' | 'music' | 'keybinds' | 'actions' | 'system' | 'sync' | 'history' | 'trash';
+type SettingsTab = 'appearance' | 'music' | 'keybinds' | 'actions' | 'system' | 'sync' | 'history' | 'trash' | 'about';
 
 export default function SettingsView() {
     const {  
@@ -173,7 +181,7 @@ export default function SettingsView() {
 
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['appearance', 'music', 'keybinds', 'actions', 'system', 'sync', 'history', 'trash'].includes(tab)) {
+        if (tab && ['appearance', 'music', 'keybinds', 'actions', 'system', 'sync', 'history', 'trash', 'about'].includes(tab)) {
             setActiveTab(tab as SettingsTab);
         }
     }, [searchParams]);
@@ -454,6 +462,24 @@ export default function SettingsView() {
                             >
                                 <Gear size={18} weight={activeTab === 'system' ? "fill" : "regular"} />
                                 System
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Support</h3>
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => setActiveTab('about')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    activeTab === 'about' 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Info size={18} weight={activeTab === 'about' ? "fill" : "regular"} />
+                                About
                             </button>
                         </div>
                     </div>
@@ -1587,8 +1613,8 @@ export default function SettingsView() {
                                                         size="icon-sm"
                                                         className="absolute right-10 top-2 text-muted-foreground hover:text-foreground"
                                                         onClick={() => {
-                                                            ['cursor', 'confirm', 'error', 'back', 'search'].forEach((id) => {
-                                                                setSoundConfig(id as any, { source: 'preset', value: id });
+                                                            (['cursor', 'confirm', 'error', 'back', 'search'] as SoundKey[]).forEach((id) => {
+                                                                setSoundConfig(id, { source: 'preset', value: id });
                                                             });
                                                         }}
                                                         title="Reset all to default"
@@ -1609,9 +1635,10 @@ export default function SettingsView() {
                                                             { id: 'back', label: 'Back' },
                                                             { id: 'search', label: 'Search' },
                                                         ].map((sound) => {
-                                                            const config = soundConfigs?.[sound.id as any] || { source: 'preset', value: sound.id };
-                                                            const isSearchDisabled = sound.id === 'search' && replaceSearchWithConfirm && !replaceAllSoundsWithCursor;
-                                                            const isAllDisabled = sound.id !== 'cursor' && replaceAllSoundsWithCursor;
+                                                            const soundId = sound.id as SoundKey;
+                                                            const config = soundConfigs?.[soundId] || { source: 'preset', value: soundId };
+                                                            const isSearchDisabled = soundId === 'search' && replaceSearchWithConfirm && !replaceAllSoundsWithCursor;
+                                                            const isAllDisabled = soundId !== 'cursor' && replaceAllSoundsWithCursor;
                                                             const isDisabled = isSearchDisabled || isAllDisabled;
                                                             
                                                             const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -1620,7 +1647,7 @@ export default function SettingsView() {
                                                                     const reader = new FileReader();
                                                                     reader.onload = (event) => {
                                                                         const url = event.target?.result as string;
-                                                                        setSoundConfig(sound.id as any, {
+                                                                        setSoundConfig(soundId, {
                                                                             source: 'custom',
                                                                             value: url,
                                                                             name: file.name
@@ -1631,7 +1658,7 @@ export default function SettingsView() {
                                                             };
 
                                                             return (
-                                                                <div key={sound.id} className={cn("space-y-2", isDisabled && "opacity-50 pointer-events-none")}>
+                                                                <div key={soundId} className={cn("space-y-2", isDisabled && "opacity-50 pointer-events-none")}>
                                                                     <div className="flex items-center justify-between">
                                                                         <label className="text-sm font-medium">{sound.label} Sound</label>
                                                                         {config.source === 'custom' && (
@@ -1639,7 +1666,7 @@ export default function SettingsView() {
                                                                                 variant="ghost" 
                                                                                 size="sm" 
                                                                                 className="h-6 text-xs text-muted-foreground hover:text-destructive"
-                                                                                onClick={() => setSoundConfig(sound.id as any, { source: 'preset', value: sound.id })}
+                                                                                onClick={() => setSoundConfig(soundId, { source: 'preset', value: soundId })}
                                                                             >
                                                                                 Reset to Default
                                                                             </Button>
@@ -1648,12 +1675,12 @@ export default function SettingsView() {
                                                                     <div className="flex gap-2">
                                                                         <Select
                                                                             value={config.source === 'preset' ? config.value : 'custom'}
-                                                                            onValueChange={(val) => {
+                                                                            onValueChange={(val: string) => {
                                                                                 if (val === 'custom') {
                                                                                     // Trigger file input
-                                                                                    document.getElementById(`sound-upload-${sound.id}`)?.click();
+                                                                                    document.getElementById(`sound-upload-${soundId}`)?.click();
                                                                                 } else {
-                                                                                    setSoundConfig(sound.id as any, { source: 'preset', value: val });
+                                                                                    setSoundConfig(soundId, { source: 'preset', value: val });
                                                                                 }
                                                                             }}
                                                                         >
@@ -1907,6 +1934,100 @@ export default function SettingsView() {
                                     <Button variant="destructive" onClick={handleReset}>
                                         Reset all data
                                     </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* About Tab */}
+                    {activeTab === 'about' && (
+                        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {/* Hero Section */}
+                            <div className="relative group overflow-hidden rounded-3xl border border-border bg-card/30 p-12 flex flex-col items-center text-center gap-6">
+                                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                
+                                <div className="relative">
+                                    <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                    <WhistlerLogo width={100} height={100} className="relative drop-shadow-2xl transition-transform duration-700 group-hover:scale-110 group-hover:rotate-3" />
+                                </div>
+                                
+                                <div className="space-y-2 relative">
+                                    <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">Whistlerbox</h1>
+                                    <p className="text-muted-foreground font-medium flex items-center justify-center gap-2">
+                                        Version 2.4.0 <span className="w-1 h-1 rounded-full bg-muted-foreground/30" /> Stable Channel
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-3 relative">
+                                    <Button variant="outline" className="rounded-full px-6 border-primary/20 hover:border-primary/50 transition-colors" asChild>
+                                        <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+                                            <GithubLogo size={18} className="mr-2" />
+                                            GitHub
+                                        </a>
+                                    </Button>
+                                    <Button className="rounded-full px-6 shadow-lg shadow-primary/20" asChild>
+                                        <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
+                                            <DiscordLogo size={18} className="mr-2" weight="fill" />
+                                            Community
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Features / Mission */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {[
+                                    { icon: Sparkle, title: "Modern Design", desc: "Crafted with focus on aesthetics and fluid interactions." },
+                                    { icon: Code, title: "Open Source", desc: "Built by the community, for the community. Fully transparent." },
+                                    { icon: Heart, title: "Privacy First", desc: "Your data stays with you. No trackers, no bloat." }
+                                ].map((item, i) => (
+                                    <div key={i} className="p-6 rounded-2xl border border-border/50 bg-card/20 hover:bg-card/40 transition-colors space-y-3">
+                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                            <item.icon size={20} weight="duotone" />
+                                        </div>
+                                        <h3 className="font-semibold">{item.title}</h3>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Links & Info */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4">
+                                <div className="space-y-6">
+                                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Stay Connected</h4>
+                                    <div className="space-y-3">
+                                        <a href="#" className="flex items-center gap-4 group text-foreground/80 hover:text-primary transition-colors">
+                                            <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/5 transition-all">
+                                                <TwitterLogo size={20} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Follow us on X</span>
+                                                <span className="text-xs text-muted-foreground">@whistlerbox_app</span>
+                                            </div>
+                                        </a>
+                                        <a href="#" className="flex items-center gap-4 group text-foreground/80 hover:text-primary transition-colors">
+                                            <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/5 transition-all">
+                                                <EnvelopeSimple size={20} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Newsletter</span>
+                                                <span className="text-xs text-muted-foreground">Get the latest updates</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Legal & Credits</h4>
+                                    <div className="space-y-2">
+                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">Terms of Service</Button>
+                                        <div className="h-4 w-px bg-border inline-block mx-4" />
+                                        <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">Privacy Policy</Button>
+                                        <p className="text-xs text-muted-foreground pt-4">
+                                            © 2026 Whistlerbox Labs. All rights reserved. <br />
+                                            Inspired by Zen Browser and built with ❤️.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

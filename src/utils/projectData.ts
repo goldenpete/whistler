@@ -1,4 +1,5 @@
 import type { Project, File, Collection, Highlight, Graph, GraphNode, GraphEdge, Doc, Storage, AppState } from "@/types";
+import { isValidUrl } from "./security";
 
 export interface ProjectExportData {
     version: number;
@@ -79,14 +80,17 @@ export function importProject(data: ProjectExportData): Omit<ProjectExportData, 
         projectId: newProjectId
     }));
 
-    const newFiles = data.files.map(f => ({
-        ...f,
-        id: get(f.id),
-        projectId: newProjectId,
-        storageId: get(f.storageId), // Though storage is usually global in legacy, here it's per project in types? Check types. 
-        // Wait, types says Storage has projectId. So we map it.
-        parentId: f.parentId ? get(f.parentId) : null
-    }));
+    const newFiles = data.files.map(f => {
+        const safeUrl = f.url && isValidUrl(f.url) ? f.url : "";
+        return {
+            ...f,
+            id: get(f.id),
+            projectId: newProjectId,
+            storageId: get(f.storageId),
+            url: safeUrl,
+            parentId: f.parentId ? get(f.parentId) : null
+        };
+    });
 
     const newCollections = data.collections.map(c => ({
         ...c,

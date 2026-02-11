@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { type File } from "@/types";
+import { isValidUrl } from "@/utils/security";
 
 interface EditFileDialogProps {
     open: boolean;
@@ -28,7 +29,11 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
     }, [open, file]);
 
     const handleSubmit = () => {
-        onSave({ name, description, url });
+        if (url.trim() && !isValidUrl(url)) {
+            alert("Invalid or unsafe URL protocol.");
+            return;
+        }
+        onSave({ name: name.trim(), description: description.trim(), url: url.trim() });
         onOpenChange(false);
     };
 

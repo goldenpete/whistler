@@ -27,7 +27,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { sanitizeHTML } from "@/utils/security";
+import { sanitizeHTML, isValidUrl } from "@/utils/security";
 import { FilePickerDialog } from "@/components/dialogs/FilePickerDialog";
 
 export default function DocsView() {
@@ -267,6 +267,12 @@ function DocEditor({ doc }: DocEditorProps) {
         if (linkMode === "external") {
             const url = linkUrl.trim();
             if (!url) return;
+            
+            if (!isValidUrl(url)) {
+                alert("Invalid URL. Only http, https, blob, and data protocols are allowed.");
+                return;
+            }
+            
             execCommand("createLink", url);
         } else {
             let href = "";

@@ -1073,9 +1073,9 @@ export function SettingsSync() {
                                         <Trash size={18} />
                                     </Button>
                                     <Switch 
-                                        checked={syncOptions[item.id as keyof typeof syncOptions] as boolean}
-                                        onCheckedChange={(checked: boolean) => setSyncOptions({ [item.id]: checked })}
-                                    />
+                                    checked={(syncOptions[item.id as keyof typeof syncOptions] ?? true) as boolean}
+                                    onCheckedChange={(checked: boolean) => setSyncOptions({ [item.id]: checked })}
+                                />
                                 </div>
                             </div>
                         ))}

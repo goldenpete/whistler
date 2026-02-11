@@ -78,6 +78,7 @@ import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { useKeybind } from "@/hooks/use-keybind";
 import { playSfx } from "@/utils/sound";
+import { isValidUrl } from "@/utils/security";
 
 const ExpandableNote = ({ text }: { text: string }) => {
     const [expanded, setExpanded] = useState(false);
@@ -196,6 +197,11 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const handleUrlUpdate = () => {
         if (file && localUrl !== file.url) {
+            if (localUrl && !isValidUrl(localUrl)) {
+                alert("Invalid or unsafe URL protocol.");
+                setLocalUrl(file.url || "");
+                return;
+            }
             updateFile(file.id, { url: localUrl });
         }
     };
