@@ -37,17 +37,41 @@ export function useSync() {
                     lastModified: Date.now(),
                 };
 
-                if (syncOptions.projects) data.projects = state.projects;
-                if (syncOptions.files) data.files = state.files;
-                if (syncOptions.collections) data.collections = state.collections;
+                if (syncOptions.projects) {
+                    data.projects = syncOptions.trash 
+                        ? state.projects 
+                        : state.projects.filter(p => !p.deleted);
+                }
+                if (syncOptions.files) {
+                    data.files = syncOptions.trash 
+                        ? state.files 
+                        : state.files.filter(f => !f.deleted);
+                }
+                if (syncOptions.collections) {
+                    data.collections = syncOptions.trash 
+                        ? state.collections 
+                        : state.collections.filter(c => !c.deleted);
+                }
                 if (syncOptions.highlights) data.highlights = state.highlights;
                 if (syncOptions.graphs) {
-                    data.graphs = state.graphs;
+                    data.graphs = syncOptions.trash 
+                        ? state.graphs 
+                        : state.graphs.filter(g => !g.deleted);
                     data.graphNodes = state.graphNodes;
                     data.graphEdges = state.graphEdges;
                 }
-                if (syncOptions.docs) data.docs = state.docs;
-                if (syncOptions.storages) data.storages = state.storages;
+                if (syncOptions.docs) {
+                    data.docs = syncOptions.trash 
+                        ? state.docs 
+                        : state.docs.filter(d => !d.deleted);
+                }
+                if (syncOptions.storages) {
+                    data.storages = syncOptions.trash 
+                        ? state.storages 
+                        : state.storages.filter(s => !s.deleted);
+                }
+                
+                if (syncOptions.history) data.history = state.history;
                 
                 if (syncOptions.settings) {
                     const adv = syncOptions.advancedSettings || {};
@@ -186,17 +210,67 @@ export function useSync() {
                     const { syncOptions } = state;
                     const updates: any = {};
                     
-                    if (syncOptions.projects && serverData.projects) updates.projects = serverData.projects;
-                    if (syncOptions.files && serverData.files) updates.files = serverData.files;
-                    if (syncOptions.collections && serverData.collections) updates.collections = serverData.collections;
+                    if (syncOptions.projects && serverData.projects) {
+                        if (syncOptions.trash) {
+                            updates.projects = serverData.projects;
+                        } else {
+                            const localDeleted = state.projects.filter(p => p.deleted);
+                            const serverIds = new Set(serverData.projects.map((p: any) => p.id));
+                            updates.projects = [...serverData.projects, ...localDeleted.filter(p => !serverIds.has(p.id))];
+                        }
+                    }
+                    if (syncOptions.files && serverData.files) {
+                        if (syncOptions.trash) {
+                            updates.files = serverData.files;
+                        } else {
+                            const localDeleted = state.files.filter(f => f.deleted);
+                            const serverIds = new Set(serverData.files.map((f: any) => f.id));
+                            updates.files = [...serverData.files, ...localDeleted.filter(f => !serverIds.has(f.id))];
+                        }
+                    }
+                    if (syncOptions.collections && serverData.collections) {
+                        if (syncOptions.trash) {
+                            updates.collections = serverData.collections;
+                        } else {
+                            const localDeleted = state.collections.filter(c => c.deleted);
+                            const serverIds = new Set(serverData.collections.map((c: any) => c.id));
+                            updates.collections = [...serverData.collections, ...localDeleted.filter(c => !serverIds.has(c.id))];
+                        }
+                    }
                     if (syncOptions.highlights && serverData.highlights) updates.highlights = serverData.highlights;
                     if (syncOptions.graphs) {
-                        if (serverData.graphs) updates.graphs = serverData.graphs;
+                        if (serverData.graphs) {
+                            if (syncOptions.trash) {
+                                updates.graphs = serverData.graphs;
+                            } else {
+                                const localDeleted = state.graphs.filter(g => g.deleted);
+                                const serverIds = new Set(serverData.graphs.map((g: any) => g.id));
+                                updates.graphs = [...serverData.graphs, ...localDeleted.filter(g => !serverIds.has(g.id))];
+                            }
+                        }
                         if (serverData.graphNodes) updates.graphNodes = serverData.graphNodes;
                         if (serverData.graphEdges) updates.graphEdges = serverData.graphEdges;
                     }
-                    if (syncOptions.docs && serverData.docs) updates.docs = serverData.docs;
-                    if (syncOptions.storages && serverData.storages) updates.storages = serverData.storages;
+                    if (syncOptions.docs && serverData.docs) {
+                        if (syncOptions.trash) {
+                            updates.docs = serverData.docs;
+                        } else {
+                            const localDeleted = state.docs.filter(d => d.deleted);
+                            const serverIds = new Set(serverData.docs.map((d: any) => d.id));
+                            updates.docs = [...serverData.docs, ...localDeleted.filter(d => !serverIds.has(d.id))];
+                        }
+                    }
+                    if (syncOptions.storages && serverData.storages) {
+                        if (syncOptions.trash) {
+                            updates.storages = serverData.storages;
+                        } else {
+                            const localDeleted = state.storages.filter(s => s.deleted);
+                            const serverIds = new Set(serverData.storages.map((s: any) => s.id));
+                            updates.storages = [...serverData.storages, ...localDeleted.filter(s => !serverIds.has(s.id))];
+                        }
+                    }
+                    
+                    if (syncOptions.history && serverData.history) updates.history = serverData.history;
                     
                     if (syncOptions.settings) {
                         const adv = syncOptions.advancedSettings || {};

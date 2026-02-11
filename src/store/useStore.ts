@@ -34,6 +34,8 @@ export interface AppStore extends AppState {
         docs: boolean;
         graphs: boolean;
         storages: boolean;
+        history: boolean;
+        trash: boolean;
         settings: boolean;
         advancedSettings: {
             appearance: boolean;
@@ -446,6 +448,8 @@ export const useStore = create<AppStore>()(
                 docs: true,
                 graphs: true,
                 storages: true,
+                history: true,
+                trash: true,
                 settings: true,
                 advancedSettings: {
                     appearance: true,

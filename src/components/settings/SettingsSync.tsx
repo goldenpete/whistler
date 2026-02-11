@@ -21,6 +21,7 @@ import {
     Check,
     X,
     ArrowsClockwise,
+    ClockCounterClockwise,
     File,
     Folder,
     FileText,
@@ -196,6 +197,16 @@ export function SettingsSync() {
             if (itemToDelete.id === 'graphs') {
                 delete currentData.graphNodes;
                 delete currentData.graphEdges;
+            }
+
+            if (itemToDelete.id === 'trash') {
+                // Remove deleted items from all categories in the remote data
+                if (currentData.projects) currentData.projects = currentData.projects.filter((p: any) => !p.deleted);
+                if (currentData.files) currentData.files = currentData.files.filter((f: any) => !f.deleted);
+                if (currentData.collections) currentData.collections = currentData.collections.filter((c: any) => !c.deleted);
+                if (currentData.graphs) currentData.graphs = currentData.graphs.filter((g: any) => !g.deleted);
+                if (currentData.docs) currentData.docs = currentData.docs.filter((d: any) => !d.deleted);
+                if (currentData.storages) currentData.storages = currentData.storages.filter((s: any) => !s.deleted);
             }
 
             // 3. Put back
@@ -1023,6 +1034,8 @@ export function SettingsSync() {
                             { id: 'docs', label: 'Documents', desc: 'Text documents and notes', icon: FileText },
                             { id: 'graphs', label: 'Graphs', desc: 'Node graphs and connections', icon: Graph },
                             { id: 'storages', label: 'Storage Locations', desc: 'Local directory mappings', icon: HardDrives },
+                            { id: 'history', label: 'History', desc: 'Past actions and activity log', icon: ClockCounterClockwise },
+                            { id: 'trash', label: 'Trash', desc: 'Deleted items and recovery', icon: Trash },
                             { id: 'settings', label: 'Settings', desc: 'Themes, preferences, and layout', icon: Gear },
                         ].map((item) => (
                             <div key={item.id} className="flex items-center justify-between">
