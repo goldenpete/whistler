@@ -1100,6 +1100,22 @@ export function SettingsSync() {
                                 </div>
                             </div>
                         ))}
+                        {/* Placeholder Skeletons for empty slots */}
+                        {Array.from({ length: Math.max(0, 3 - sessions.length) }).map((_, i) => (
+                            <div key={`skeleton-${i}`} className="p-4 rounded-lg border border-border bg-card/50 flex flex-col gap-3 opacity-50">
+                                <div className="flex items-start justify-between">
+                                    <div className="h-8 w-8 rounded-full bg-muted/50 animate-pulse" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <div className="h-4 w-24 bg-muted/50 rounded animate-pulse" />
+                                    <div className="h-3 w-16 bg-muted/50 rounded animate-pulse" />
+                                </div>
+                                <div className="pt-2 border-t border-border/50 flex gap-2">
+                                    <div className="h-3 w-20 bg-muted/50 rounded animate-pulse" />
+                                    <div className="h-3 w-12 bg-muted/50 rounded animate-pulse" />
+                                </div>
+                            </div>
+                        ))}
                      </div>
                      <Button variant="outline" className="w-full" onClick={() => setViewSessions(true)}>
                         View more
