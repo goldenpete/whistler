@@ -346,6 +346,25 @@ export function useSync() {
 
                     if (Object.keys(updates).length > 0) {
                         setState(updates);
+
+                        // If activeProjectId is no longer valid after update, switch to the first available project
+                        const finalProjects = updates.projects || state.projects;
+                        if (finalProjects.length > 0) {
+                            const currentActiveId = useStore.getState().activeProjectId;
+                            const isStillValid = finalProjects.some((p: any) => p.id === currentActiveId);
+                            
+                            if (!isStillValid) {
+                                const firstProject = finalProjects[0];
+                                useStore.getState().setActiveProject(firstProject.id);
+                                
+                                // Also try to set a valid storage for this project
+                                const finalStorages = updates.storages || state.storages;
+                                const projectStorage = finalStorages.find((s: any) => s.projectId === firstProject.id);
+                                if (projectStorage) {
+                                    useStore.getState().setState({ activeStorageId: projectStorage.id });
+                                }
+                            }
+                        }
                     }
                 }
                 if (!silent) console.log("Pull Successful");
