@@ -74,53 +74,27 @@ interface Session {
     icon: React.ElementType;
 }
 
-const MOCK_SESSIONS: Session[] = [
-    {
-        id: '1',
-        browser: 'Chrome 120.0',
-        device: 'Windows 11',
-        location: 'London, UK',
-        lastActive: 'Just now',
-        isCurrent: true,
-        icon: Desktop
-    },
-    {
-        id: '2',
-        browser: 'Safari 17.2',
-        device: 'iPhone 15 Pro',
-        location: 'London, UK',
-        lastActive: '2 hours ago',
-        isCurrent: false,
-        icon: DeviceMobile
-    },
-    {
-        id: '3',
-        browser: 'Firefox 121.0',
-        device: 'MacOS Sonoma',
-        location: 'Manchester, UK',
-        lastActive: '1 day ago',
-        isCurrent: false,
-        icon: Laptop
-    },
-    {
-        id: '4',
-        browser: 'Edge 120.0',
-        device: 'Windows 10',
-        location: 'Leeds, UK',
-        lastActive: '3 days ago',
-        isCurrent: false,
-        icon: Desktop
-    },
-     {
-        id: '5',
-        browser: 'Chrome 119.0',
-        device: 'Android 14',
-        location: 'London, UK',
-        lastActive: '1 week ago',
-        isCurrent: false,
-        icon: DeviceMobile
-    }
-];
+const getBrowserInfo = () => {
+    const ua = navigator.userAgent;
+    let browser = "Unknown Browser";
+    let device = "Unknown Device";
+    let icon = Globe;
+
+    // Simple browser detection
+    if (ua.includes("Firefox")) browser = "Firefox";
+    else if (ua.includes("Chrome")) browser = "Chrome";
+    else if (ua.includes("Safari")) browser = "Safari";
+    else if (ua.includes("Edge")) browser = "Edge";
+
+    // Simple OS detection
+    if (ua.includes("Windows")) { device = "Windows"; icon = Desktop; }
+    else if (ua.includes("Mac")) { device = "MacOS"; icon = Laptop; }
+    else if (ua.includes("Linux")) { device = "Linux"; icon = Desktop; }
+    else if (ua.includes("Android")) { device = "Android"; icon = DeviceMobile; }
+    else if (ua.includes("iPhone") || ua.includes("iPad")) { device = "iOS"; icon = DeviceMobile; }
+
+    return { browser, device, icon };
+};
 
 export function SettingsSync() {
     const { 
@@ -177,6 +151,20 @@ export function SettingsSync() {
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState("");
     const [viewSessions, setViewSessions] = useState(false);
+    const [sessions, setSessions] = useState<Session[]>([]);
+
+    useEffect(() => {
+        const info = getBrowserInfo();
+        setSessions([{
+            id: 'current',
+            browser: info.browser,
+            device: info.device,
+            location: 'Current Device',
+            lastActive: 'Now',
+            isCurrent: true,
+            icon: info.icon
+        }]);
+    }, []);
 
     // Remote Deletion State
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -733,7 +721,7 @@ export function SettingsSync() {
                 </div>
 
                 <div className="space-y-3">
-                    {MOCK_SESSIONS.map((session) => (
+                    {sessions.map((session) => (
                         <div key={session.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
                             <div className="flex items-center gap-4">
                                 <div className={`h-10 w-10 rounded-full flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
@@ -1080,7 +1068,7 @@ export function SettingsSync() {
                 </h2>
                 <div className="space-y-4">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {MOCK_SESSIONS.slice(0, 3).map((session) => (
+                        {sessions.slice(0, 3).map((session) => (
                             <div key={session.id} className="p-4 rounded-lg border border-border bg-card/50 flex flex-col gap-3">
                                 <div className="flex items-start justify-between">
                                     <div className={`h-8 w-8 rounded-full flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
