@@ -551,13 +551,14 @@ export function WelcomeView() {
                 {/* Primary Action Card */}
                 <motion.section 
                     variants={cardVariants}
-                    className="xl:col-span-7 bg-background xl:border-r border-border p-3 md:p-5 xl:p-6 flex flex-col justify-center xl:justify-between group hover:bg-muted/10 transition-colors relative overflow-hidden min-h-[300px] xl:min-h-0 shrink-0 xl:shrink">
+                    className="xl:col-span-7 bg-background xl:border-r border-border p-3 md:p-5 xl:p-6 flex flex-col justify-center xl:justify-between group hover:bg-muted/10 transition-colors relative min-h-[300px] xl:min-h-0 shrink-0 xl:shrink">
                     
                     {/* Themed gradient highlight - originating from true corner */}
-                    <div className="absolute -top-20 -left-20 size-[500px] bg-primary/20 blur-[100px] rounded-full pointer-events-none group-hover:bg-primary/35 transition-all duration-500 z-0"></div>
-
-                    <div className="absolute top-[-5%] right-[-5%] opacity-[0.03] group-hover:opacity-[0.08] group-hover:scale-105 transition-all duration-700 pointer-events-none text-primary">
-                        <FolderPlus weight="fill" className="size-[200px] md:size-[500px] -rotate-12" />
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute -top-20 -left-20 size-[500px] bg-primary/20 blur-[100px] rounded-full group-hover:bg-primary/35 transition-all duration-500 z-0"></div>
+                        <div className="absolute top-[-5%] right-[-5%] opacity-[0.03] group-hover:opacity-[0.08] group-hover:scale-105 transition-all duration-700 text-primary">
+                            <FolderPlus weight="fill" className="size-[200px] md:size-[500px] -rotate-12" />
+                        </div>
                     </div>
                     
                     <div className="relative z-10 flex-shrink mb-4 xl:mb-0">
@@ -579,12 +580,15 @@ export function WelcomeView() {
                             <motion.div 
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="absolute left-full ml-4 top-1/2 -translate-y-1/2 hidden xl:flex items-center gap-4 text-primary whitespace-nowrap"
+                                className="absolute left-full ml-8 top-1/2 -translate-y-1/2 hidden xl:flex items-center gap-6 text-primary whitespace-nowrap z-20"
                             >
-                                <ArrowUpLeft weight="bold" className="size-12 -rotate-90" />
+                                <div className="relative">
+                                    <ArrowUpLeft weight="bold" className="size-16 -rotate-90 animate-pulse" />
+                                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                                </div>
                                 <div className="flex flex-col">
-                                    <span className="text-2xl font-black uppercase italic">Create your first project</span>
-                                    <span className="text-sm font-bold opacity-70 uppercase tracking-widest">Everything starts here.</span>
+                                    <span className="text-3xl font-black uppercase italic tracking-tighter">Create your first project</span>
+                                    <span className="text-sm font-bold opacity-80 uppercase tracking-[0.2em]">Click here to get started</span>
                                 </div>
                             </motion.div>
                         )}
@@ -592,7 +596,7 @@ export function WelcomeView() {
                         <Button 
                             onClick={handleNewProject}
                             variant="outline"
-                            className="w-full xl:w-fit text-lg md:text-2xl xl:text-4xl py-4 md:py-8 xl:py-10 px-6 md:px-16 xl:px-20 rounded-none font-bold uppercase hover:text-primary border-border hover:border-primary transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-6 group/btn"
+                            className="w-full xl:w-fit text-lg md:text-2xl xl:text-4xl py-4 md:py-8 xl:py-10 px-6 md:px-16 xl:px-20 rounded-none font-bold uppercase hover:text-primary border-border hover:border-primary transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-6 group/btn relative z-10"
                         >
                             Create Project <CaretRight weight="bold" className="size-6 md:size-10 group-hover/btn:translate-x-2 transition-transform" />
                         </Button>
@@ -601,10 +605,13 @@ export function WelcomeView() {
                             <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mt-4 flex xl:hidden items-center gap-3 text-primary"
+                                className="mt-6 flex xl:hidden items-center gap-4 text-primary bg-primary/5 p-4 border border-primary/20"
                             >
-                                <ArrowUpLeft weight="bold" className="size-6 rotate-180" />
-                                <span className="text-sm font-black uppercase italic">Create your first project to get started</span>
+                                <ArrowUpLeft weight="bold" className="size-8 rotate-180 animate-bounce" />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-black uppercase italic">Create your first project</span>
+                                    <span className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Everything starts here.</span>
+                                </div>
                             </motion.div>
                         )}
                     </div>
