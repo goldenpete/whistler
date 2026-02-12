@@ -618,12 +618,15 @@ export function SettingsSync() {
         if (!sessionToken) return;
         setIsPasskeyLoading(true);
         try {
-            const response = await fetch(`${SYNC_API_URL}/user/passkeys`, {
+            const response = await fetch(`${SYNC_API_URL}/passkeys`, {
                 headers: { Authorization: `Bearer ${sessionToken}` }
             });
             if (response.ok) {
                 const data = await response.json();
                 setPasskeys(data.passkeys || []);
+            } else if (response.status === 404) {
+                // Handle 404 as empty list if the server returns it for new accounts
+                setPasskeys([]);
             }
         } catch (err) {
             console.error("Failed to fetch passkeys:", err);
@@ -656,7 +659,7 @@ export function SettingsSync() {
         setError(null);
         try {
             // 1. Get registration options from server
-            const optionsResponse = await fetch(`${SYNC_API_URL}/user/passkeys/register/start`, {
+            const optionsResponse = await fetch(`${SYNC_API_URL}/passkeys/register/start`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -678,7 +681,7 @@ export function SettingsSync() {
             const credential = await startRegistration(options);
             
             // 3. Send credential to server to finish registration
-            const verifyResponse = await fetch(`${SYNC_API_URL}/user/passkeys/register/finish`, {
+            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/register/finish`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -707,7 +710,7 @@ export function SettingsSync() {
         if (!sessionToken) return;
         setIsPasskeyLoading(true);
         try {
-            const response = await fetch(`${SYNC_API_URL}/user/passkeys/${credentialId}`, {
+            const response = await fetch(`${SYNC_API_URL}/passkeys/${credentialId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${sessionToken}` }
             });
