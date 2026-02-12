@@ -575,7 +575,7 @@ export function WelcomeView() {
                     </div>
 
                     <div className="relative">
-                        {user && projects.length === 0 && (
+                        {projects.length === 0 && (
                             <motion.div 
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -597,7 +597,7 @@ export function WelcomeView() {
                             Create Project <CaretRight weight="bold" className="size-6 md:size-10 group-hover/btn:translate-x-2 transition-transform" />
                         </Button>
 
-                        {user && projects.length === 0 && (
+                        {projects.length === 0 && (
                             <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -836,8 +836,8 @@ export function WelcomeView() {
             />
 
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-zinc-950 border-zinc-800 text-white p-0">
-                    <div className="p-6">
+                <DialogContent className="sm:max-w-[900px] w-[95vw] max-h-[90vh] overflow-y-auto bg-zinc-950 border-zinc-800 text-white p-0">
+                    <div className="p-8">
                         <SettingsSync />
                     </div>
                 </DialogContent>
