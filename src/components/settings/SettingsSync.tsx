@@ -618,7 +618,7 @@ export function SettingsSync() {
         if (!sessionToken) return;
         setIsPasskeyLoading(true);
         try {
-            const response = await fetch(`${SYNC_API_URL}/passkeys`, {
+            const response = await fetch(`${SYNC_API_URL}/user/passkeys`, {
                 headers: { Authorization: `Bearer ${sessionToken}` }
             });
             if (response.ok) {
@@ -656,18 +656,15 @@ export function SettingsSync() {
         setError(null);
         try {
             // 1. Get registration options from server
-            const headers: Record<string, string> = { 
-                Authorization: `Bearer ${sessionToken}` 
-            };
-            
-            // Include TOTP code if 2FA is enabled
-            if (totpEnabled && passkeyTotpCode) {
-                headers["X-TOTP-Code"] = passkeyTotpCode;
-            }
-
-            const optionsResponse = await fetch(`${SYNC_API_URL}/passkeys/register/start`, {
+            const optionsResponse = await fetch(`${SYNC_API_URL}/user/passkeys/register/start`, {
                 method: "POST",
-                headers
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionToken}` 
+                },
+                body: JSON.stringify({
+                    totp_code: passkeyTotpCode || undefined
+                })
             });
             
             if (!optionsResponse.ok) {
@@ -681,7 +678,7 @@ export function SettingsSync() {
             const credential = await startRegistration(options);
             
             // 3. Send credential to server to finish registration
-            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/register/finish`, {
+            const verifyResponse = await fetch(`${SYNC_API_URL}/user/passkeys/register/finish`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -710,7 +707,7 @@ export function SettingsSync() {
         if (!sessionToken) return;
         setIsPasskeyLoading(true);
         try {
-            const response = await fetch(`${SYNC_API_URL}/passkeys/${credentialId}`, {
+            const response = await fetch(`${SYNC_API_URL}/user/passkeys/${credentialId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${sessionToken}` }
             });
