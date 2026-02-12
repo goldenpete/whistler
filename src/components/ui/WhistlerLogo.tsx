@@ -19,7 +19,7 @@ interface WhistlerLogoProps {
     height?: number | string;
 }
 
-export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLogoProps) {
+export function WhistlerLogo({ className, width, height }: WhistlerLogoProps) {
     const { accentTheme, customAccentThemes } = useStore();
 
     // If it's a preset theme, use the PNG directly
@@ -28,7 +28,7 @@ export function WhistlerLogo({ className, width = 32, height = 32 }: WhistlerLog
             <img 
                 src={LOGO_MAP[accentTheme]} 
                 alt="Whistler Logo" 
-                className={className}
+                className={cn("w-8 h-8", className)}
                 style={{ width, height }}
             />
         );

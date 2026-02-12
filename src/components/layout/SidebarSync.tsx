@@ -119,7 +119,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     try {
                         widgetId = window.turnstile.render(container, {
                             sitekey: TURNSTILE_SITE_KEY,
-                            theme: "dark",
+                            theme: "auto",
                             callback: (token: string) => {
                                 setCaptchaToken(token);
                                 setError(null);
@@ -559,7 +559,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 placeholder="16-digit ID" 
                                 value={syncId}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
-                                className="h-8 text-sm font-mono bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                                className="h-8 text-sm font-mono bg-sidebar-accent/50 border-sidebar-border text-sidebar-foreground placeholder:text-muted-foreground/50"
                                 maxLength={19}
                                 minLength={16}
                                 required
@@ -567,7 +567,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full h-8 mt-1 text-xs gap-2"
+                                className="w-full h-8 mt-1 text-xs gap-2 border-sidebar-border bg-sidebar-background hover:bg-sidebar-accent"
                                 onClick={handleGenerateId}
                                 title="Generate New Account ID"
                             >
@@ -575,16 +575,10 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 <span>Generate New Account ID</span>
                             </Button>
                         </div>
-                        <div className="flex justify-center relative min-h-[65px] bg-zinc-900/50 border border-zinc-800 rounded-md overflow-hidden">
-                            {/* Captcha Placeholder */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
-                                <p className="text-[10px] font-medium uppercase text-zinc-600 text-center tracking-wider leading-tight">
-                                    Captcha should be here, try reloading if not.
-                                </p>
-                            </div>
+                        <div className="flex justify-center items-center relative min-h-[65px]">
                             <div
                                 ref={containerRef}
-                                className="relative z-10"
+                                className="relative z-10 scale-[0.85] origin-center flex items-center justify-center"
                             />
                         </div>
                         {error && (

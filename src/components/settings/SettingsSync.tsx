@@ -249,7 +249,7 @@ export function SettingsSync() {
                     try {
                         widgetId = window.turnstile.render(container, {
                             sitekey: TURNSTILE_SITE_KEY,
-                            theme: "dark",
+                            theme: "auto",
                             callback: (token: string) => {
                                 setCaptchaToken(token);
                                 setError(null);
@@ -683,16 +683,10 @@ export function SettingsSync() {
                                     />
                                 </div>
                                 
-                                <div className="flex justify-center relative min-h-[65px] bg-zinc-900/50 border border-zinc-800 rounded-md overflow-hidden">
-                                    {/* Captcha Placeholder */}
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
-                                        <p className="text-[10px] font-medium uppercase text-zinc-600 text-center tracking-wider leading-tight">
-                                            Captcha should be here, try reloading if not.
-                                        </p>
-                                    </div>
+                                <div className="flex justify-center items-center relative min-h-[65px]">
                                     <div
                                         ref={containerRef}
-                                        className="relative z-10"
+                                        className="relative z-10 scale-[0.85] origin-center flex items-center justify-center"
                                     />
                                 </div>
                                 

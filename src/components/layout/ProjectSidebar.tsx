@@ -921,8 +921,8 @@ export default function ProjectSidebar() {
                                 >
                                     <WhistlerLogo
                                         className="rounded-md"
-                                        width={20}
-                                        height={20}
+                                        width={22}
+                                        height={22}
                                     />
                                 </button>
                             </TooltipTrigger>
@@ -1160,55 +1160,53 @@ export default function ProjectSidebar() {
                 ) : (
                     <>
                 {/* Header */}
-                <div className="flex items-center justify-between p-3 h-12 border-b border-border/40 shrink-0 relative">
+                <div className="flex items-center justify-between px-3 h-12 border-b border-border/40 shrink-0 relative">
                     <button
                         onClick={() => {
                             playSfx('cursor');
                             toggleSidebarCollapse();
                         }}
-                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors z-10"
+                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 z-10"
                         title="Collapse sidebar"
                     >
                         <SidebarSimple weight="bold" size={18} />
                     </button>
 
-                    {!isSidebarCollapsed && (
-                        <>
-                            {!isSlim && (
-                                <motion.button
-                                    onClick={() => {
-                                        playSfx('cursor');
-                                        navigate('/');
-                                        setSidebarView('main');
-                                    }}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
-                                >
-                                    <WhistlerLogo
-                                        className="rounded-md mt-[1px]"
-                                        width={24}
-                                        height={24}
-                                    />
-                                    <span className="font-bold text-lg tracking-tight truncate">
-                                        Whistlerbox
-                                    </span>
-                                </motion.button>
-                            )}
+                    {!isSidebarCollapsed && !isSlim && (
+                        <motion.button
+                            onClick={() => {
+                                playSfx('cursor');
+                                navigate('/');
+                                setSidebarView('main');
+                            }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden hover:opacity-80 transition-opacity max-w-[160px]"
+                        >
+                            <WhistlerLogo
+                                className="rounded-md mt-[1px] shrink-0"
+                                width={22}
+                                height={22}
+                            />
+                            <span className="font-bold text-xl tracking-tight truncate">
+                                Whistlerbox
+                            </span>
+                        </motion.button>
+                    )}
 
-                            <div className={cn("flex items-center gap-2 z-10", isSlim && "flex-col")}>
-                                <button
-                                    onClick={() => {
-                                        playSfx('cursor');
-                                        useStore.getState().setSpotlightOpen(true);
-                                    }}
-                                    className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    title="Search"
-                                >
-                                    <MagnifyingGlass weight="bold" size={18} />
-                                </button>
-                            </div>
-                        </>
+                    {!isSidebarCollapsed && (
+                        <div className="flex items-center shrink-0 z-10">
+                            <button
+                                onClick={() => {
+                                    playSfx('cursor');
+                                    useStore.getState().setSpotlightOpen(true);
+                                }}
+                                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                title="Search"
+                            >
+                                <MagnifyingGlass weight="bold" size={18} />
+                            </button>
+                        </div>
                     )}
                 </div>
 
