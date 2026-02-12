@@ -27,9 +27,12 @@ import {
     Check,
     X,
     Eye,
-    EyeSlash
+    EyeSlash,
+    Fingerprint
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
+
+import { startAuthentication } from "@/utils/webauthn";
 
 declare global {
     interface Window {
@@ -331,6 +334,75 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         logout();
     };
 
+    const handlePasskeyLogin = async () => {
+        const cleanId = getCleanAccountId(syncId);
+        if (cleanId.length !== 16) {
+            setError("Sync ID must be 16 digits");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            // 1. Get authentication options from server
+            const optionsResponse = await fetch(`${SYNC_API_URL}/passkeys/login/start`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ account_id: cleanId })
+            });
+            
+            if (!optionsResponse.ok) {
+                const errorData = await optionsResponse.json();
+                throw new Error(errorData.error || "Failed to start passkey login");
+            }
+            
+            const options = await optionsResponse.json();
+            
+            // 2. Get assertion using WebAuthn API
+            const assertion = await startAuthentication(options);
+            
+            // 3. Send assertion to server to finish login
+            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    account_id: cleanId,
+                    assertion
+                })
+            });
+            
+            if (!verifyResponse.ok) {
+                const errorData = await verifyResponse.json();
+                throw new Error(errorData.error || "Passkey login failed");
+            }
+            
+            const data = await verifyResponse.json();
+            const token: string = data.token;
+            const displayName: string | undefined = data.display_name;
+            
+            setAccountId(cleanId);
+            setSessionToken(token);
+            localStorage.setItem("whistler_account_id", cleanId);
+            localStorage.setItem("whistler_session_token", token);
+            if (displayName) {
+                localStorage.setItem("whistler_display_name", displayName);
+            }
+            
+            setTotpEnabled(data.totp_enabled || false);
+            if (data.totp_enabled) {
+                localStorage.setItem("whistler_totp_enabled", "true");
+            } else {
+                localStorage.removeItem("whistler_totp_enabled");
+            }
+            
+            login({ id: cleanId, email: displayName || cleanId });
+            setPhase("login");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Passkey login error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // handleSync is now provided by useSync hook
 
     const handleStartEditName = () => {
@@ -586,14 +658,31 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 {error}
                             </div>
                         )}
-                        <Button
-                            type="submit"
-                            className="w-full h-8"
-                            disabled={isLoading || getCleanAccountId(syncId).length < 16}
-                            data-sound-confirm
-                        >
-                            {isLoading ? "Connecting..." : "Connect"}
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                            <Button
+                                type="submit"
+                                className="w-full h-8"
+                                disabled={isLoading || getCleanAccountId(syncId).length < 16}
+                                data-sound-confirm
+                            >
+                                {isLoading ? "Connecting..." : "Connect"}
+                            </Button>
+                            <div className="flex items-center gap-2">
+                                <div className="h-[1px] flex-1 bg-border/40" />
+                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">or</span>
+                                <div className="h-[1px] flex-1 bg-border/40" />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full h-8"
+                                onClick={handlePasskeyLogin}
+                                disabled={isLoading}
+                            >
+                                <Fingerprint className="mr-2" size={16} />
+                                Use Passkey
+                            </Button>
+                        </div>
                     </form>
                     
                     <div className="text-center mt-4">
@@ -844,15 +933,39 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="text-sm font-medium truncate flex items-center gap-2 group-hover:text-foreground">
-                                            {user.email && user.email !== accountId ? user.email : "Anonymous"}
-                                            <button 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-foreground/70 hover:text-foreground"
-                                                onClick={(e: MouseEvent) => { e.stopPropagation(); handleStartEditName(); }}
-                                                title="Edit display name"
-                                            >
-                                                <PencilSimple size={12} />
-                                            </button>
+                                        <div className="flex items-center justify-between gap-2 group-hover:text-foreground">
+                                            <span className="text-sm font-medium truncate">
+                                                {user.email && user.email !== accountId ? user.email : "Anonymous"}
+                                            </span>
+                                            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                                <button 
+                                                    className="text-foreground/70 hover:text-foreground transition-colors"
+                                                    onClick={(e: MouseEvent) => { e.stopPropagation(); handleStartEditName(); }}
+                                                    title="Edit display name"
+                                                >
+                                                    <PencilSimple size={12} />
+                                                </button>
+
+                                                <div className="w-[1px] h-3 bg-border/40 mx-0.5" />
+
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); setIsSyncIdRevealed(!isSyncIdRevealed); }}
+                                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                                    title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
+                                                >
+                                                    {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
+                                                </button>
+                                                <button 
+                                                    onClick={(e) => { 
+                                                        e.stopPropagation(); 
+                                                        navigator.clipboard.writeText(accountId || user.id);
+                                                    }}
+                                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                                    title="Copy ID"
+                                                >
+                                                    <Copy size={12} />
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <div className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors font-mono">
@@ -861,24 +974,6 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                                     : "••••-••••-••••-••••"
                                                 }
                                             </div>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); setIsSyncIdRevealed(!isSyncIdRevealed); }}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-                                                title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
-                                            >
-                                                {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
-                                            </button>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    navigator.clipboard.writeText(accountId || user.id);
-                                                    // Optional: add toast notification here
-                                                }}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-                                                title="Copy ID"
-                                            >
-                                                <Copy size={12} />
-                                            </button>
                                         </div>
                                     </>
                                 )}

@@ -37,7 +37,9 @@ import {
     Clock,
     Laptop,
     CaretLeft,
-    Monitor
+    Monitor,
+    Fingerprint,
+    Key
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -64,6 +66,7 @@ const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
+import { startRegistration, startAuthentication } from "@/utils/webauthn";
 
 interface Session {
     id: string;
@@ -148,6 +151,13 @@ export function SettingsSync() {
     const [setupMode, setSetupMode] = useState<'enable' | 'disable'>('enable');
     const [setupSecret, setSetupSecret] = useState<string | null>(null);
     const [setupStep, setSetupStep] = useState<'intro' | 'scan' | 'verify'>('intro');
+
+    // Passkey Management State
+    const [showPasskeys, setShowPasskeys] = useState(false);
+    const [passkeys, setPasskeys] = useState<any[]>([]);
+    const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+    const [isVerifyingTotpForPasskey, setIsVerifyingTotpForPasskey] = useState(false);
+    const [passkeyTotpCode, setPasskeyTotpCode] = useState("");
 
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState("");
@@ -603,6 +613,191 @@ export function SettingsSync() {
         }
     };
 
+    // Passkey Logic
+    const fetchPasskeys = async () => {
+        if (!sessionToken) return;
+        setIsPasskeyLoading(true);
+        try {
+            const response = await fetch(`${SYNC_API_URL}/passkeys`, {
+                headers: { Authorization: `Bearer ${sessionToken}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setPasskeys(data.passkeys || []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch passkeys:", err);
+        } finally {
+            setIsPasskeyLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (showPasskeys && sessionToken) {
+            fetchPasskeys();
+        }
+    }, [showPasskeys, sessionToken]);
+
+    const handleAddPasskey = async () => {
+        if (!sessionToken) return;
+        
+        // Requirement: If 2FA is enabled, user must provide TOTP before adding a passkey
+        if (totpEnabled && !isVerifyingTotpForPasskey) {
+            setIsVerifyingTotpForPasskey(true);
+            return;
+        }
+
+        if (totpEnabled && passkeyTotpCode.length !== 6) {
+            setError("Please enter a valid 6-digit 2FA code");
+            return;
+        }
+
+        setIsPasskeyLoading(true);
+        setError(null);
+        try {
+            // 1. Get registration options from server
+            const headers: Record<string, string> = { 
+                Authorization: `Bearer ${sessionToken}` 
+            };
+            
+            // Include TOTP code if 2FA is enabled
+            if (totpEnabled && passkeyTotpCode) {
+                headers["X-TOTP-Code"] = passkeyTotpCode;
+            }
+
+            const optionsResponse = await fetch(`${SYNC_API_URL}/passkeys/register/start`, {
+                method: "POST",
+                headers
+            });
+            
+            if (!optionsResponse.ok) {
+                const errorData = await optionsResponse.json();
+                throw new Error(errorData.error || "Failed to start passkey registration");
+            }
+            
+            const options = await optionsResponse.json();
+            
+            // 2. Create credential using WebAuthn API
+            const credential = await startRegistration(options);
+            
+            // 3. Send credential to server to finish registration
+            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/register/finish`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionToken}` 
+                },
+                body: JSON.stringify(credential)
+            });
+            
+            if (!verifyResponse.ok) {
+                const errorData = await verifyResponse.json();
+                throw new Error(errorData.error || "Failed to verify passkey");
+            }
+            
+            // Success
+            setIsVerifyingTotpForPasskey(false);
+            setPasskeyTotpCode("");
+            await fetchPasskeys();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to add passkey");
+        } finally {
+            setIsPasskeyLoading(false);
+        }
+    };
+
+    const handleDeletePasskey = async (credentialId: string) => {
+        if (!sessionToken) return;
+        setIsPasskeyLoading(true);
+        try {
+            const response = await fetch(`${SYNC_API_URL}/passkeys/${credentialId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${sessionToken}` }
+            });
+            
+            if (response.ok) {
+                await fetchPasskeys();
+            } else {
+                const data = await response.json();
+                setError(data.error || "Failed to delete passkey");
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to delete passkey");
+        } finally {
+            setIsPasskeyLoading(false);
+        }
+    };
+
+    const handlePasskeyLogin = async () => {
+        const cleanId = getCleanAccountId(syncId);
+        if (cleanId.length !== 16) {
+            setError("Sync ID must be 16 digits");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            // 1. Get authentication options from server
+            const optionsResponse = await fetch(`${SYNC_API_URL}/passkeys/login/start`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ account_id: cleanId })
+            });
+            
+            if (!optionsResponse.ok) {
+                const errorData = await optionsResponse.json();
+                throw new Error(errorData.error || "Failed to start passkey login");
+            }
+            
+            const options = await optionsResponse.json();
+            
+            // 2. Get assertion using WebAuthn API
+            const assertion = await startAuthentication(options);
+            
+            // 3. Send assertion to server to finish login
+            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    account_id: cleanId,
+                    assertion
+                })
+            });
+            
+            if (!verifyResponse.ok) {
+                const errorData = await verifyResponse.json();
+                throw new Error(errorData.error || "Passkey login failed");
+            }
+            
+            const data = await verifyResponse.json();
+            const token: string = data.token;
+            const displayName: string | undefined = data.display_name;
+            
+            setAccountId(cleanId);
+            setSessionToken(token);
+            localStorage.setItem("whistler_account_id", cleanId);
+            localStorage.setItem("whistler_session_token", token);
+            if (displayName) {
+                localStorage.setItem("whistler_display_name", displayName);
+            }
+            
+            // Passkeys bypass 2FA, so we can assume it might be enabled but we are logged in
+            setTotpEnabled(data.totp_enabled || false);
+            if (data.totp_enabled) {
+                localStorage.setItem("whistler_totp_enabled", "true");
+            } else {
+                localStorage.removeItem("whistler_totp_enabled");
+            }
+            
+            login({ id: cleanId, email: displayName || cleanId });
+            setPhase("login");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Passkey login error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Render Logic
     
     // Login / 2FA / TOTP View
@@ -692,9 +887,26 @@ export function SettingsSync() {
                                 
                                 {error && <div className="text-sm text-red-400">{error}</div>}
                                 
-                                <Button type="submit" className="w-full" disabled={isLoading || !captchaToken}>
-                                    {isLoading ? "Connecting..." : "Connect"}
-                                </Button>
+                                <div className="flex flex-col gap-2">
+                                    <Button type="submit" className="w-full" disabled={isLoading || !captchaToken}>
+                                        {isLoading ? "Connecting..." : "Connect"}
+                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-[1px] flex-1 bg-border/40" />
+                                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">or</span>
+                                        <div className="h-[1px] flex-1 bg-border/40" />
+                                    </div>
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        className="w-full" 
+                                        onClick={handlePasskeyLogin} 
+                                        disabled={isLoading}
+                                    >
+                                        <Fingerprint className="mr-2" size={16} />
+                                        Sign in with Passkey
+                                    </Button>
+                                </div>
                             </form>
                         </div>
 
@@ -804,11 +1016,30 @@ export function SettingsSync() {
                                             </Button>
                                         </div>
                                     ) : (
-                                        <div className="font-semibold text-lg flex items-center gap-2">
+                                        <div className="font-semibold text-lg flex items-center gap-3">
                                             {user.email}
-                                            <button onClick={handleStartEditName} className="text-muted-foreground hover:text-foreground transition-colors">
-                                                <PencilSimple size={14} />
-                                            </button>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <button onClick={handleStartEditName} className="text-muted-foreground hover:text-foreground transition-colors" title="Edit display name">
+                                                    <PencilSimple size={16} />
+                                                </button>
+                                                
+                                                <div className="w-[1px] h-4 bg-border/40 mx-0.5" />
+                                                
+                                                <button 
+                                                    onClick={() => setIsSyncIdRevealed(!isSyncIdRevealed)}
+                                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                                    title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
+                                                >
+                                                    {isSyncIdRevealed ? <EyeSlash size={16} /> : <Eye size={16} />}
+                                                </button>
+                                                <button 
+                                                    onClick={() => navigator.clipboard.writeText(user.id)}
+                                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                                    title="Copy ID"
+                                                >
+                                                    <Copy size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -816,42 +1047,120 @@ export function SettingsSync() {
                                     <span className="font-mono">
                                         {isSyncIdRevealed ? formatAccountId(user.id) : "••••-••••-••••-••••"}
                                     </span>
-                                    <button 
-                                        onClick={() => setIsSyncIdRevealed(!isSyncIdRevealed)}
-                                        className="hover:text-foreground transition-colors"
-                                        title={isSyncIdRevealed ? "Hide ID" : "Reveal ID"}
-                                    >
-                                        {isSyncIdRevealed ? <EyeSlash size={12} /> : <Eye size={12} />}
-                                    </button>
-                                    <button 
-                                        onClick={() => navigator.clipboard.writeText(user.id)}
-                                        className="hover:text-foreground transition-colors"
-                                        title="Copy ID"
-                                    >
-                                        <Copy size={12} />
-                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                             <Button variant="outline" onClick={() => {
-                                 setShowTwoFactorSetup(true);
-                                 setSetupMode(totpEnabled ? 'disable' : 'enable');
-                                 setSetupStep('intro');
-                             }}>
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <Button variant="outline" onClick={() => {
+                                setShowPasskeys(!showPasskeys);
+                                setShowTwoFactorSetup(false);
+                            }}>
+                                <Fingerprint className="mr-2" size={16} />
+                                Manage Passkeys
+                            </Button>
+                            <Button variant="outline" onClick={() => {
+                                setShowTwoFactorSetup(!showTwoFactorSetup);
+                                setShowPasskeys(false);
+                                setSetupMode(totpEnabled ? 'disable' : 'enable');
+                                setSetupStep('intro');
+                            }}>
                                 <ShieldCheck className="mr-2" size={16} />
                                 {totpEnabled ? "Manage 2FA" : "Enable 2FA"}
-                             </Button>
-                             <Button variant="destructive" onClick={handleLogout}>
-                                 Sign Out
-                             </Button>
+                            </Button>
+                            <Button variant="destructive" onClick={handleLogout}>
+                                Sign Out
+                            </Button>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* 2FA Setup Dialog Area */}
-            {showTwoFactorSetup && (
+                    {/* Passkey Management UI */}
+                    {showPasskeys && (
+                        <div className="mt-6 p-5 rounded-lg border border-border bg-muted/30 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="text-sm font-medium">Passkeys</h3>
+                                    <p className="text-xs text-muted-foreground">Use biometric or hardware keys to sign in securely without 2FA.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {isVerifyingTotpForPasskey && (
+                                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
+                                            <Input
+                                                value={passkeyTotpCode}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/[^0-9]/g, "");
+                                                    if (val.length <= 6) setPasskeyTotpCode(val);
+                                                }}
+                                                placeholder="000000"
+                                                className="w-24 h-8 text-center font-mono tracking-widest text-sm"
+                                            />
+                                            <Button 
+                                                size="sm" 
+                                                variant="ghost" 
+                                                className="h-8 w-8 p-0"
+                                                onClick={() => {
+                                                    setIsVerifyingTotpForPasskey(false);
+                                                    setPasskeyTotpCode("");
+                                                }}
+                                            >
+                                                <X size={14} />
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <Button 
+                                        size="sm" 
+                                        onClick={handleAddPasskey} 
+                                        disabled={isPasskeyLoading}
+                                        className={isVerifyingTotpForPasskey ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                                    >
+                                        <Fingerprint className="mr-2" size={16} />
+                                        {isVerifyingTotpForPasskey ? "Verify & Add" : "Add Passkey"}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Separator className="bg-border/40" />
+
+                            {isPasskeyLoading && passkeys.length === 0 ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <ArrowsClockwise className="animate-spin text-muted-foreground" size={20} />
+                                </div>
+                            ) : passkeys.length === 0 ? (
+                                <div className="text-center py-4 space-y-2">
+                                    <Fingerprint className="mx-auto text-muted-foreground/40" size={32} />
+                                    <p className="text-sm text-muted-foreground">No passkeys added yet.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {passkeys.map((pk) => (
+                                        <div key={pk.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border border-border/40">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                                    <Key size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium">{pk.name || "Passkey"}</p>
+                                                    <p className="text-xs text-muted-foreground">Added {new Date(pk.created_at).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-muted-foreground hover:text-red-400"
+                                                onClick={() => handleDeletePasskey(pk.id)}
+                                                disabled={isPasskeyLoading}
+                                            >
+                                                <Trash size={16} />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {error && <p className="text-xs text-red-400">{error}</p>}
+                        </div>
+                    )}
+
+                    {/* 2FA Setup Dialog Area */}
+                    {showTwoFactorSetup && (
                 <div className="p-5 rounded-lg border border-yellow-500/30 bg-yellow-500/5 space-y-4 animate-in fade-in zoom-in-95">
                     <div className="flex items-center justify-between">
                         <h3 className="font-semibold flex items-center gap-2">

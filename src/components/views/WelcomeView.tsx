@@ -23,12 +23,14 @@ import {
     FolderPlus, 
     Database, 
     Sparkle,
-    CaretRight
+    CaretRight,
+    Fingerprint
 } from "@phosphor-icons/react";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { NewProjectDialog } from "@/components/dialogs/CreationDialogs";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
 import type { AccentTheme } from "@/types";
+import { startAuthentication } from "@/utils/webauthn";
 
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
@@ -316,6 +318,56 @@ export function WelcomeView() {
             await handleLoginSuccess(data.token, data.display_name);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Login error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePasskeyLogin = async () => {
+        const cleanId = getCleanAccountId(syncId);
+        if (cleanId.length !== 16) {
+            setError("Sync ID must be 16 digits");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            // 1. Get authentication options from server
+            const optionsResponse = await fetch(`${SYNC_API_URL}/passkeys/login/start`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ account_id: cleanId })
+            });
+            
+            if (!optionsResponse.ok) {
+                const errorData = await optionsResponse.json();
+                throw new Error(errorData.error || "Failed to start passkey login");
+            }
+            
+            const options = await optionsResponse.json();
+            
+            // 2. Get assertion using WebAuthn API
+            const assertion = await startAuthentication(options);
+            
+            // 3. Send assertion to server to finish login
+            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    account_id: cleanId,
+                    assertion
+                })
+            });
+            
+            if (!verifyResponse.ok) {
+                const errorData = await verifyResponse.json();
+                throw new Error(errorData.error || "Passkey login failed");
+            }
+            
+            const data = await verifyResponse.json();
+            await handleLoginSuccess(data.token, data.display_name);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Passkey login error");
         } finally {
             setIsLoading(false);
         }
@@ -677,13 +729,30 @@ export function WelcomeView() {
                                     {error}
                                 </div>
                             )}
-                            <Button 
-                                type="submit" 
-                                disabled={isLoading || !captchaToken} 
-                                className="w-full h-10 bg-primary text-primary-foreground hover:opacity-90"
-                            >
-                                {isLoading ? "Verifying..." : "Continue"}
-                            </Button>
+                            <div className="flex flex-col gap-3">
+                                <Button 
+                                    type="submit" 
+                                    disabled={isLoading || !captchaToken} 
+                                    className="w-full h-10 bg-primary text-primary-foreground hover:opacity-90"
+                                >
+                                    {isLoading ? "Verifying..." : "Continue"}
+                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-[1px] flex-1 bg-zinc-800" />
+                                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">or</span>
+                                    <div className="h-[1px] flex-1 bg-zinc-800" />
+                                </div>
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    className="w-full h-10 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900" 
+                                    onClick={handlePasskeyLogin} 
+                                    disabled={isLoading}
+                                >
+                                    <Fingerprint className="mr-2" size={16} />
+                                    Sign in with Passkey
+                                </Button>
+                            </div>
                         </form>
                     ) : (
                         <form onSubmit={handleTotpVerify} className="space-y-4">
