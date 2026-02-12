@@ -576,23 +576,6 @@ export function WelcomeView() {
                     </div>
 
                     <div className="relative">
-                        {projects.length === 0 && (
-                            <motion.div 
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="absolute left-full ml-8 top-1/2 -translate-y-1/2 hidden xl:flex items-center gap-6 text-primary whitespace-nowrap z-20"
-                            >
-                                <div className="relative">
-                                    <ArrowUpLeft weight="bold" className="size-16 -rotate-90 animate-pulse" />
-                                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-3xl font-black uppercase italic tracking-tighter">Create your first project</span>
-                                    <span className="text-sm font-bold opacity-80 uppercase tracking-[0.2em]">Click here to get started</span>
-                                </div>
-                            </motion.div>
-                        )}
-                        
                         <Button 
                             onClick={handleNewProject}
                             variant="outline"
@@ -602,17 +585,38 @@ export function WelcomeView() {
                         </Button>
 
                         {projects.length === 0 && (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="mt-6 flex xl:hidden items-center gap-4 text-primary bg-primary/5 p-4 border border-primary/20"
-                            >
-                                <ArrowUpLeft weight="bold" className="size-8 rotate-180 animate-bounce" />
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-black uppercase italic">Create your first project</span>
-                                    <span className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Everything starts here.</span>
-                                </div>
-                            </motion.div>
+                            <>
+                                {/* Desktop Arrow - Pointing from top right down to the button */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: -20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="absolute left-full top-0 ml-12 hidden xl:flex flex-col items-start gap-2 text-primary whitespace-nowrap z-20"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <ArrowUpLeft weight="bold" className="size-16 rotate-45 animate-pulse" />
+                                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-4xl font-black uppercase italic tracking-tighter">Start Here</span>
+                                            <span className="text-sm font-bold opacity-80 uppercase tracking-[0.2em]">Create your first project</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* Mobile Arrow - Simple bottom indicator */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mt-6 flex xl:hidden items-center gap-4 text-primary bg-primary/5 p-4 border border-primary/20"
+                                >
+                                    <ArrowUpLeft weight="bold" className="size-8 rotate-180 animate-bounce" />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-black uppercase italic">Create your first project</span>
+                                        <span className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Everything starts here.</span>
+                                    </div>
+                                </motion.div>
+                            </>
                         )}
                     </div>
                 </motion.section>
