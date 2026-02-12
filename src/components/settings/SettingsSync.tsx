@@ -683,10 +683,16 @@ export function SettingsSync() {
                                     />
                                 </div>
                                 
-                                <div className="flex justify-center">
+                                <div className="flex justify-center relative min-h-[65px] bg-zinc-900/50 border border-zinc-800 rounded-md overflow-hidden">
+                                    {/* Captcha Placeholder */}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+                                        <p className="text-[10px] font-medium uppercase text-zinc-600 text-center tracking-wider leading-tight">
+                                            Captcha should be here, try reloading if not.
+                                        </p>
+                                    </div>
                                     <div
                                         ref={containerRef}
-                                        className="min-h-[65px]"
+                                        className="relative z-10"
                                     />
                                 </div>
                                 
@@ -1174,7 +1180,10 @@ export function SettingsSync() {
                                 <Switch 
                                     checked={syncOptions.advancedSettings?.[option.id as keyof typeof syncOptions.advancedSettings] ?? true}
                                     onCheckedChange={(checked) => setSyncOptions({ 
-                                        advancedSettings: { [option.id]: checked } 
+                                        advancedSettings: { 
+                                            ...syncOptions.advancedSettings,
+                                            [option.id]: checked 
+                                        } 
                                     })}
                                 />
                             </div>

@@ -19,7 +19,7 @@ import {
     DownloadSimple, 
     Lightning, 
     Shuffle, 
-    SignIn, 
+    CloudArrowUp, 
     Info, 
     FolderPlus, 
     Database, 
@@ -413,54 +413,55 @@ export function WelcomeView() {
     };
 
     return (
-        <div className="min-h-screen xl:h-screen bg-black text-foreground font-mono flex flex-col border-[4px] md:border-[8px] border-black overflow-x-hidden xl:overflow-hidden select-none">
-            <header className="bg-background border-b-[4px] md:border-b-[8px] border-black p-3 md:p-4 xl:p-5 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 transition-all duration-300 relative overflow-hidden">
-                {/* Subtle header pattern */}
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-                
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 max-w-5xl flex-shrink relative z-10">
-                    <div className="shrink-0 bg-black p-1 md:p-1.5 border-[3px] md:border-[5px] border-black shadow-[3px_3px_0px_0px_rgba(var(--primary-rgb),0.5)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.7)] hover:-translate-x-1 hover:-translate-y-1 w-12 h-12 md:w-20 md:h-20 xl:w-28 xl:h-28 flex items-center justify-center">
-                        <WhistlerLogo 
-                            className="size-full object-contain" 
-                            width="100%" 
-                            height="100%" 
-                        />
-                    </div>
-                    <div className="flex-shrink">
-                        <h1 className="text-[10vw] md:text-6xl xl:text-8xl font-black uppercase tracking-tighter leading-[0.8] text-black dark:text-white transition-all">
-                            Whistler<span className="text-primary italic">box</span>
-                        </h1>
-                        <p className="text-[2.5vw] md:text-lg xl:text-xl mt-1 md:mt-2 font-bold uppercase italic bg-primary text-primary-foreground inline-block px-2 md:px-3 py-1">
-                            Your creative media organizer.
-                        </p>
+        <div className="min-h-screen xl:h-screen bg-background text-foreground font-mono flex flex-col border-x-[4px] md:border-x-[8px] border-b-[4px] md:border-b-[8px] border-black overflow-x-hidden xl:overflow-hidden select-none">
+            <header className="flex flex-row justify-between items-center p-2 md:p-4 xl:p-5 relative z-20">
+                <div className="flex items-center gap-3 xl:gap-5">
+                    <WhistlerLogo className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20" />
+                    <div className="flex flex-col">
+                        <h1 className="text-[6vw] md:text-4xl xl:text-5xl font-black uppercase leading-[0.8] tracking-tighter">Whistlerbox</h1>
+                        <p className="text-[2vw] md:text-xs xl:text-sm font-bold uppercase tracking-[0.2em] opacity-60">Creative Project Management</p>
                     </div>
                 </div>
-                <div className="flex gap-4 w-full xl:w-auto shrink-0 relative z-10">
-                    <Button 
-                        onClick={() => setSignInOpen(true)}
-                        className="w-full xl:w-auto bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-base md:text-xl xl:text-2xl px-4 md:px-10 py-4 md:py-8 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.7)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all group"
-                    >
-                        <SignIn weight="fill" className="mr-2 md:mr-3 size-5 md:size-8 group-hover:rotate-12 transition-transform" /> Sync Access
-                    </Button>
+
+                <div className="flex items-center gap-3 xl:gap-6">
+                    {/* Sync Access Card */}
+                    <div 
+                            onClick={() => setSignInOpen(true)}
+                            className="group/sync cursor-pointer bg-white text-black border-[3px] md:border-[4px] border-black p-1.5 md:p-2 flex items-center gap-2 md:gap-3 hover:bg-primary hover:text-primary-foreground transition-all relative overflow-hidden shadow-[-4px_4px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-none hover:-translate-x-[4px] hover:translate-y-[4px] max-w-xs xl:max-w-sm self-start md:self-center"
+                        >
+                            {/* Thick themed outline on edges */}
+                            <div className="absolute -inset-[2px] border-[4px] border-primary pointer-events-none transition-all duration-300 opacity-0 group-hover/sync:opacity-100 group-hover/sync:inset-0 z-10"></div>
+                            
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none group-hover/sync:opacity-0 transition-opacity"></div>
+                        <div className="bg-white text-black p-1 md:p-1.5 border-2 border-black group-hover/sync:bg-black group-hover/sync:text-white group-hover/sync:border-primary transition-colors shrink-0 flex items-center justify-center">
+                            <CloudArrowUp weight="bold" className="size-4 md:size-6 xl:size-7 group-hover/sync:animate-bounce group-hover/sync:translate-y-1 transition-transform" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <h3 className="text-sm md:text-lg xl:text-xl font-black uppercase leading-none group-hover/sync:text-inherit transition-colors truncate">Sync Access</h3>
+                            <p className="text-[7px] md:text-[9px] xl:text-xs font-bold uppercase italic opacity-60 group-hover/sync:opacity-100 transition-opacity leading-tight">Remote access</p>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            <main className="grid grid-cols-1 xl:grid-cols-12 gap-0 flex-grow bg-black min-h-0 overflow-y-auto xl:overflow-hidden">
+            <main className="flex-grow grid grid-cols-1 xl:grid-cols-12 min-h-0">
                 {/* Primary Action Card */}
-                <section className="xl:col-span-7 bg-background border-r-0 xl:border-r-[8px] md:border-r-[12px] border-b-[4px] xl:border-b-0 border-black p-4 md:p-6 xl:p-8 flex flex-col justify-center xl:justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-[300px] xl:min-h-0 shrink-0 xl:shrink">
+                <section className="xl:col-span-7 bg-background xl:border-r-[8px] md:border-r-[12px] border-black p-3 md:p-5 xl:p-6 flex flex-col justify-center xl:justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-[300px] xl:min-h-0 shrink-0 xl:shrink">
+                    {/* Thick themed outline on edges */}
+                    <div className="absolute -inset-[4px] border-[6px] border-primary pointer-events-none transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:inset-0 z-10"></div>
+                    
                     {/* Themed shading/gradient */}
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 group-hover:from-primary/20 transition-all duration-500 pointer-events-none"></div>
                     
                     {/* Abstract Shapes for "Colorfulness" */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-primary group-hover:h-2 transition-all"></div>
                     <div className="absolute top-20 -left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
                     
                     <div className="absolute top-[-5%] right-[-5%] opacity-[0.05] group-hover:opacity-[0.15] group-hover:scale-110 transition-all duration-700 pointer-events-none text-primary">
                         <FolderPlus weight="fill" className="size-[200px] md:size-[500px] -rotate-12" />
                     </div>
                     
-                    <div className="relative z-10 flex-shrink mb-6 xl:mb-0">
-                        <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-6">
+                    <div className="relative z-10 flex-shrink mb-4 xl:mb-0">
+                        <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-4">
                             <div className="bg-black text-white p-2 md:p-3 border-2 border-primary group-hover:bg-primary group-hover:text-black transition-colors">
                                 <Plus weight="bold" className="size-6 md:size-10" />
                             </div>
@@ -468,14 +469,14 @@ export function WelcomeView() {
                                 Start Fresh
                             </h2>
                         </div>
-                        <p className="text-[4vw] md:text-xl xl:text-3xl leading-tight mb-4 md:mb-8 font-bold max-w-2xl opacity-90 group-hover:opacity-100 transition-opacity">
+                        <p className="text-[4vw] md:text-xl xl:text-3xl leading-tight mb-3 md:mb-6 font-bold max-w-2xl opacity-90 group-hover:opacity-100 transition-opacity">
                             Create a new project and start organizing your files, highlights, and thoughts in a brutalist environment.
                         </p>
                     </div>
 
                     <Button 
                         onClick={handleNewProject}
-                        className="w-full xl:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] md:border-[6px] border-black text-lg md:text-2xl xl:text-4xl py-6 md:py-10 xl:py-14 px-6 md:px-16 xl:px-20 rounded-none font-black uppercase shadow-[8px_8px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),0.8)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-6 group/btn"
+                        className="w-full xl:w-fit bg-white text-black hover:bg-primary hover:text-primary-foreground border-[4px] md:border-[6px] border-black text-lg md:text-2xl xl:text-4xl py-4 md:py-8 xl:py-10 px-6 md:px-16 xl:px-20 rounded-none font-black uppercase shadow-[6px_-6px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-none hover:translate-x-[6px] hover:-translate-y-[6px] active:translate-x-[6px] active:-translate-y-[6px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-6 group/btn"
                     >
                         Create Project <CaretRight weight="bold" className="size-6 md:size-10 group-hover/btn:translate-x-2 transition-transform" />
                     </Button>
@@ -483,7 +484,10 @@ export function WelcomeView() {
 
                 {/* Secondary Action Cards */}
                 <div className="xl:col-span-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 xl:grid-rows-2 min-h-0 shrink-0 xl:shrink">
-                    <section className="bg-secondary border-b-[4px] md:border-b-[8px] xl:border-b-[8px] border-r-0 sm:border-r-[4px] xl:border-r-0 border-black p-3 md:p-4 xl:p-6 flex flex-col justify-between group hover:bg-secondary transition-colors relative overflow-hidden min-h-[250px] xl:min-h-0">
+                    <section className="bg-background sm:border-r-[4px] xl:border-r-0 border-black p-2 md:p-3 xl:p-4 flex flex-col justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-[250px] xl:min-h-0">
+                        {/* Thick themed outline on edges */}
+                        <div className="absolute -inset-[4px] border-[6px] border-primary pointer-events-none transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:inset-0 z-10"></div>
+                        
                         {/* Themed shading */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent group-hover:from-primary/30 transition-all duration-500 pointer-events-none"></div>
                         
@@ -492,53 +496,55 @@ export function WelcomeView() {
                         </div>
 
                         <div className="relative z-10 flex-shrink">
-                            <h2 className="text-[6vw] md:text-3xl xl:text-5xl font-black uppercase mb-2 md:mb-4 bg-black text-white inline-block px-2 py-1 border-l-4 border-primary group-hover:bg-primary group-hover:text-black transition-colors">
+                            <h2 className="text-[6vw] md:text-3xl xl:text-4xl font-black uppercase mb-1 md:mb-2 bg-black text-white inline-block px-2 py-1 border-l-4 border-primary group-hover:bg-primary group-hover:text-black transition-colors">
                                 Import
                             </h2>
-                            <p className="text-[3.5vw] md:text-lg xl:text-2xl leading-tight mb-3 md:mb-4 font-bold max-w-md group-hover:text-primary transition-colors">
+                            <p className="text-[3.5vw] md:text-lg xl:text-xl leading-tight mb-2 md:mb-3 font-bold max-w-md group-hover:text-primary transition-colors">
                                 Have an existing project? Import your JSON project here.
                             </p>
-                            {importError && (
-                                <div className="text-xs font-black bg-red-500 text-white px-3 py-2 border-[3px] border-black uppercase mb-4 animate-shake inline-block">
-                                    {importError}
-                                </div>
-                            )}
                         </div>
+
                         <Button 
                             onClick={handleImportProject}
-                            className="w-full xl:w-fit bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-sm md:text-xl xl:text-2xl py-3 md:py-5 xl:py-6 px-4 md:px-8 xl:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-2 md:gap-4"
+                            className="w-full xl:w-fit bg-white text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-lg md:text-xl xl:text-2xl py-3 md:py-6 xl:py-8 px-6 md:px-10 xl:px-12 rounded-none font-black uppercase shadow-[-4px_4px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-none hover:-translate-x-[4px] hover:translate-y-[4px] active:-translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-4 relative z-10 group/import"
                         >
-                            <DownloadSimple weight="bold" className="size-5 md:size-8" /> Import Project
+                            <DownloadSimple weight="bold" className="size-5 md:size-8 group-hover/import:scale-110 transition-transform" /> Import Project
                         </Button>
                     </section>
 
-                    <section className="bg-background p-3 md:p-4 xl:p-6 flex flex-col justify-between group hover:bg-primary/10 transition-colors relative overflow-hidden border-b-[4px] sm:border-b-0 xl:border-b-0 border-black min-h-[250px] xl:min-h-0">
+                    <section className="bg-background p-2 md:p-3 xl:p-4 flex flex-col justify-between group hover:bg-primary/5 transition-colors relative overflow-hidden min-h-[250px] xl:min-h-0">
+                        {/* Thick themed outline on edges */}
+                        <div className="absolute -inset-[4px] border-[6px] border-primary pointer-events-none transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:inset-0 z-10"></div>
+                        
                         {/* Themed shading */}
-                        <div className="absolute inset-0 bg-gradient-to-bl from-primary/15 via-transparent to-transparent group-hover:from-primary/25 transition-all duration-500 pointer-events-none"></div>
-
-                        <div className="absolute top-[-5%] left-[-5%] opacity-[0.08] group-hover:opacity-[0.2] group-hover:scale-110 transition-all duration-700 pointer-events-none rotate-12 text-primary">
-                            <Sparkle weight="fill" className="size-[120px] md:size-[300px]" />
+                        <div className="absolute inset-0 bg-gradient-to-bl from-primary/10 via-transparent to-transparent group-hover:from-primary/20 transition-all duration-500 pointer-events-none"></div>
+                        
+                        <div className="absolute top-[-10%] left-[-5%] opacity-[0.08] group-hover:opacity-[0.2] group-hover:scale-110 transition-all duration-700 pointer-events-none text-primary">
+                            <Sparkle weight="fill" className="size-[120px] md:size-[300px] rotate-12" />
                         </div>
 
-                        <div className="relative z-10 flex-shrink xl:text-right flex flex-col xl:items-end">
-                            <h2 className="text-[6vw] md:text-3xl xl:text-5xl font-black uppercase mb-2 md:mb-4 bg-primary text-primary-foreground inline-block px-2 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:bg-black group-hover:text-primary group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+                        <div className="relative z-10 flex flex-col items-end text-right flex-shrink">
+                            <h2 className="text-[6vw] md:text-3xl xl:text-4xl font-black uppercase mb-1 md:mb-2 bg-black text-white inline-block px-2 py-1 border-r-4 border-primary group-hover:bg-primary group-hover:text-black transition-colors">
                                 Quick Start
                             </h2>
-                            <p className="text-[3.5vw] md:text-lg xl:text-2xl leading-tight mb-3 md:mb-4 font-bold max-w-md group-hover:text-primary transition-colors">
+                            <p className="text-[3.5vw] md:text-lg xl:text-xl leading-tight mb-2 md:mb-3 font-bold max-w-md group-hover:text-primary transition-colors">
                                 Not ready to commit? Load a demo project to explore the features.
                             </p>
                         </div>
-                        <Button 
-                            onClick={handleLoadDemo}
-                            className="w-full xl:w-fit xl:self-end bg-black text-white dark:bg-white dark:text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-sm md:text-xl xl:text-2xl py-3 md:py-5 xl:py-6 px-4 md:px-8 xl:px-12 rounded-none font-black uppercase shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.4)] hover:shadow-[10px_10px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:-translate-x-1 hover:-translate-y-1 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-2 md:gap-4"
-                        >
-                            <Lightning weight="fill" className="size-5 md:size-8" /> Load Demo
-                        </Button>
+
+                        <div className="flex justify-end relative z-10">
+                            <Button 
+                                onClick={handleLoadDemo}
+                                className="w-full xl:w-fit bg-white text-black hover:bg-primary hover:text-primary-foreground border-[4px] border-black text-lg md:text-xl xl:text-2xl py-3 md:py-6 xl:py-8 px-6 md:px-10 xl:px-12 rounded-none font-black uppercase shadow-[-4px_-4px_0px_0px_rgba(var(--primary-rgb),0.5)] hover:shadow-none hover:-translate-x-[4px] hover:-translate-y-[4px] active:-translate-x-[4px] active:-translate-y-[4px] active:shadow-none transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-4 group/demo"
+                            >
+                                <Lightning weight="fill" className="size-5 md:size-8 group-hover/demo:animate-pulse" /> Load Demo
+                            </Button>
+                        </div>
                     </section>
                 </div>
             </main>
 
-            <footer className="bg-black text-white p-3 md:p-4 xl:p-6 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-10 font-black uppercase text-[3vw] md:text-xl xl:text-2xl tracking-tight shrink-0 transition-all duration-300 relative overflow-hidden">
+            <footer className="bg-black text-white p-2 md:p-3 xl:p-4 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-10 font-black uppercase text-[3vw] md:text-xl xl:text-2xl tracking-tight shrink-0 transition-all duration-300 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(45deg, #ffffff 25%, transparent 25%, transparent 50%, #ffffff 50%, #ffffff 75%, transparent 75%, transparent)', backgroundSize: '4px 4px' }}></div>
                 
                 <div className="flex items-center gap-4 relative z-10">
@@ -563,10 +569,10 @@ export function WelcomeView() {
                                 />
                             ))}
                         </div>
-                        <Link to="/legal/terms" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">Terms</Link>
+                        <Link to="/legal/terms" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-all inline-block">Terms</Link>
                     </div>
-                    <Link to="/legal/privacy" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">Privacy</Link>
-                    <Link to="/legal/license" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-colors">License</Link>
+                    <Link to="/legal/privacy" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-all inline-block">Privacy</Link>
+                    <Link to="/legal/license" state={{ from: 'welcome' }} className="hover:text-primary hover:line-through transition-all inline-block">License</Link>
                 </div>
             </footer>
 
@@ -619,10 +625,16 @@ export function WelcomeView() {
                                     <span>Generate New ID</span>
                                 </Button>
                             </div>
-                            <div className="w-full min-h-[90px] md:min-h-[140px] bg-black/40 border-[4px] md:border-[6px] border-black shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] hover:-translate-x-1 hover:-translate-y-1 transition-all flex justify-center items-center group/turnstile py-2 md:py-4">
+                            <div className="w-full min-h-[90px] md:min-h-[140px] bg-black/40 border-[4px] md:border-[6px] border-black shadow-[6px_6px_0px_0px_rgba(var(--primary-rgb),0.6)] hover:shadow-[12px_12px_0px_0px_rgba(var(--primary-rgb),1)] hover:-translate-x-1 hover:-translate-y-1 transition-all flex justify-center items-center group/turnstile py-2 md:py-4 relative overflow-hidden">
+                                {/* Captcha Placeholder */}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-6">
+                                    <p className="text-[2.5vw] md:text-xs font-black uppercase text-white/20 text-center tracking-[0.2em] leading-tight">
+                                        Captcha should be here, try reloading if not.
+                                    </p>
+                                </div>
                                 <div
                                     ref={containerRef}
-                                    className="flex items-center justify-center scale-[1.05] md:scale-[1.2] transition-transform duration-500 origin-center"
+                                    className="flex items-center justify-center scale-[1.05] md:scale-[1.2] transition-transform duration-500 origin-center relative z-10"
                                 />
                             </div>
                             {error && (
