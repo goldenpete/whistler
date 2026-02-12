@@ -24,10 +24,13 @@ import {
     Database, 
     Sparkle,
     CaretRight,
-    Fingerprint
+    Fingerprint,
+    User as UserIcon,
+    ArrowUpLeft
 } from "@phosphor-icons/react";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { NewProjectDialog } from "@/components/dialogs/CreationDialogs";
+import { SettingsSync } from "@/components/settings/SettingsSync";
 import { importProject, type ProjectExportData } from "@/utils/projectData";
 import type { AccentTheme } from "@/types";
 import { startAuthentication } from "@/utils/webauthn";
@@ -90,7 +93,9 @@ export function WelcomeView() {
         }
     };
 
-    const { addProject, setActiveProject, login, setLastSyncTime, setState, accentTheme, setAccentTheme } = useStore(useShallow((state: AppStore) => ({
+    const { projects, user, addProject, setActiveProject, login, setLastSyncTime, setState, accentTheme, setAccentTheme } = useStore(useShallow((state: AppStore) => ({
+        projects: state.projects,
+        user: state.user,
         addProject: state.addProject,
         setActiveProject: state.setActiveProject,
         login: state.login,
@@ -101,6 +106,7 @@ export function WelcomeView() {
     })));
 
     const [signInOpen, setSignInOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [phase, setPhase] = useState<'login' | 'totp'>('login');
     const [pendingToken, setPendingToken] = useState<string | null>(null);
     const [totpCode, setTotpCode] = useState("");
@@ -515,19 +521,27 @@ export function WelcomeView() {
              </div>
 
                 <div className="flex items-center gap-3 xl:gap-6">
-                    {/* Sync Access Card */}
+                    {/* Sync Access / Profile Button */}
                     <motion.div 
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setSignInOpen(true)}
-                            className="group/sync cursor-pointer bg-muted/30 text-foreground border border-border p-1.5 md:p-2 flex items-center gap-2 md:gap-3 hover:bg-muted/50 hover:border-primary/50 transition-all relative overflow-hidden max-w-xs xl:max-w-sm self-start md:self-center"
-                        >
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => user ? setSettingsOpen(true) : setSignInOpen(true)}
+                        className="group/sync cursor-pointer bg-muted/30 text-foreground border border-border p-1.5 md:p-2 flex items-center gap-2 md:gap-3 hover:bg-muted/50 hover:border-primary/50 transition-all relative overflow-hidden max-w-xs xl:max-w-sm self-start md:self-center"
+                    >
                         <div className="bg-background text-foreground p-1 md:p-1.5 border border-border group-hover/sync:border-primary transition-colors shrink-0 flex items-center justify-center">
-                            <CloudArrowUp weight="bold" className="size-4 md:size-6 xl:size-7 group-hover/sync:text-primary transition-colors" />
+                            {user ? (
+                                <UserIcon weight="bold" className="size-4 md:size-6 xl:size-7 group-hover/sync:text-primary transition-colors" />
+                            ) : (
+                                <CloudArrowUp weight="bold" className="size-4 md:size-6 xl:size-7 group-hover/sync:text-primary transition-colors" />
+                            )}
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <h3 className="text-sm md:text-lg xl:text-xl font-bold uppercase leading-none transition-colors truncate">Sync Access</h3>
-                            <p className="text-[7px] md:text-[9px] xl:text-xs font-normal uppercase italic opacity-60 group-hover/sync:opacity-100 transition-opacity leading-tight">Remote access</p>
+                            <h3 className="text-sm md:text-lg xl:text-xl font-bold uppercase leading-none transition-colors truncate">
+                                {user ? (user.email.split('@')[0]) : "Sync Access"}
+                            </h3>
+                            <p className="text-[7px] md:text-[9px] xl:text-xs font-normal uppercase italic opacity-60 group-hover/sync:opacity-100 transition-opacity leading-tight">
+                                {user ? "Sync Settings" : "Remote access"}
+                            </p>
                         </div>
                     </motion.div>
                 </div>
@@ -560,13 +574,40 @@ export function WelcomeView() {
                         </p>
                     </div>
 
-                    <Button 
-                        onClick={handleNewProject}
-                        variant="outline"
-                        className="w-full xl:w-fit text-lg md:text-2xl xl:text-4xl py-4 md:py-8 xl:py-10 px-6 md:px-16 xl:px-20 rounded-none font-bold uppercase hover:text-primary border-border hover:border-primary transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-6 group/btn"
-                    >
-                        Create Project <CaretRight weight="bold" className="size-6 md:size-10 group-hover/btn:translate-x-2 transition-transform" />
-                    </Button>
+                    <div className="relative">
+                        {user && projects.length === 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="absolute left-full ml-4 top-1/2 -translate-y-1/2 hidden xl:flex items-center gap-4 text-primary whitespace-nowrap"
+                            >
+                                <ArrowUpLeft weight="bold" className="size-12 -rotate-90" />
+                                <div className="flex flex-col">
+                                    <span className="text-2xl font-black uppercase italic">Create your first project</span>
+                                    <span className="text-sm font-bold opacity-70 uppercase tracking-widest">Everything starts here.</span>
+                                </div>
+                            </motion.div>
+                        )}
+                        
+                        <Button 
+                            onClick={handleNewProject}
+                            variant="outline"
+                            className="w-full xl:w-fit text-lg md:text-2xl xl:text-4xl py-4 md:py-8 xl:py-10 px-6 md:px-16 xl:px-20 rounded-none font-bold uppercase hover:text-primary border-border hover:border-primary transition-all flex items-center justify-center xl:justify-start gap-3 md:gap-6 group/btn"
+                        >
+                            Create Project <CaretRight weight="bold" className="size-6 md:size-10 group-hover/btn:translate-x-2 transition-transform" />
+                        </Button>
+
+                        {user && projects.length === 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mt-4 flex xl:hidden items-center gap-3 text-primary"
+                            >
+                                <ArrowUpLeft weight="bold" className="size-6 rotate-180" />
+                                <span className="text-sm font-black uppercase italic">Create your first project to get started</span>
+                            </motion.div>
+                        )}
+                    </div>
                 </motion.section>
 
                 {/* Secondary Action Cards */}
@@ -793,6 +834,14 @@ export function WelcomeView() {
                 onOpenChange={setNewProjectOpen} 
                 onSubmit={handleCreateProject} 
             />
+
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-zinc-950 border-zinc-800 text-white p-0">
+                    <div className="p-6">
+                        <SettingsSync />
+                    </div>
+                </DialogContent>
+            </Dialog>
         </motion.div>
     );
 }
