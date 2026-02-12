@@ -1017,7 +1017,7 @@ export function SettingsSync() {
                                         </div>
                                     ) : (
                                         <div className="font-semibold text-lg flex items-center gap-3">
-                                            {user.email}
+                                            {user?.email}
                                             <div className="flex items-center gap-2 shrink-0">
                                                 <button onClick={handleStartEditName} className="text-muted-foreground hover:text-foreground transition-colors" title="Edit display name">
                                                     <PencilSimple size={16} />
@@ -1045,7 +1045,7 @@ export function SettingsSync() {
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                     <span className="font-mono">
-                                        {isSyncIdRevealed ? formatAccountId(user.id) : "••••-••••-••••-••••"}
+                                        {isSyncIdRevealed ? formatAccountId(user?.id || "") : "••••-••••-••••-••••"}
                                     </span>
                                 </div>
                             </div>
@@ -1187,7 +1187,7 @@ export function SettingsSync() {
                             {setupStep === 'scan' && setupSecret && (
                                 <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-6">
                                     <div className="bg-white p-2 rounded-lg w-fit">
-                                        <QRCode value={`otpauth://totp/Whistler:${user.id}?secret=${setupSecret}&issuer=Whistler`} size={180} />
+                                        <QRCode value={`otpauth://totp/Whistler:${user?.id}?secret=${setupSecret}&issuer=Whistler`} size={180} />
                                     </div>
                                     <div className="space-y-4">
                                         <div>
@@ -1245,8 +1245,10 @@ export function SettingsSync() {
                     )}
                 </div>
             )}
+        </div>
+    </div>
 
-            <Separator />
+    <Separator />
 
             {/* Sync Status & Controls */}
             <div>
@@ -1484,7 +1486,7 @@ export function SettingsSync() {
                                     checked={syncOptions.advancedSettings?.[option.id as keyof typeof syncOptions.advancedSettings] ?? true}
                                     onCheckedChange={(checked) => setSyncOptions({ 
                                         advancedSettings: { 
-                                            ...syncOptions.advancedSettings,
+                                            ...(syncOptions.advancedSettings || {}),
                                             [option.id]: checked 
                                         } 
                                     })}
