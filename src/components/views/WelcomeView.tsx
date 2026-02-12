@@ -586,21 +586,19 @@ export function WelcomeView() {
 
                         {projects.length === 0 && (
                             <>
-                                {/* Desktop Arrow - Pointing from top right down to the button */}
+                                {/* Desktop Arrow - Positioned ABOVE the button, pointing DOWN */}
                                 <motion.div 
-                                    initial={{ opacity: 0, y: -20 }}
+                                    initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="absolute left-full top-0 ml-12 hidden xl:flex flex-col items-start gap-2 text-primary whitespace-nowrap z-20"
+                                    className="absolute bottom-full left-0 mb-8 hidden xl:flex items-center gap-6 text-primary whitespace-nowrap z-20"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <ArrowUpLeft weight="bold" className="size-16 rotate-45 animate-pulse" />
-                                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-4xl font-black uppercase italic tracking-tighter">Start Here</span>
-                                            <span className="text-sm font-bold opacity-80 uppercase tracking-[0.2em]">Create your first project</span>
-                                        </div>
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-5xl font-black uppercase italic tracking-tighter leading-none">Start Here</span>
+                                        <span className="text-sm font-bold opacity-80 uppercase tracking-[0.3em] mt-1">Create your first project</span>
+                                    </div>
+                                    <div className="relative">
+                                        <ArrowUpLeft weight="bold" className="size-16 rotate-[135deg] animate-bounce" />
+                                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
                                     </div>
                                 </motion.div>
 
