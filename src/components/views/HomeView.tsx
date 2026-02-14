@@ -446,7 +446,8 @@ export default function HomeView() {
         storages,
         projects,
         activeProjectId,
-        activeStorageId
+        activeStorageId,
+        activeCollectionId
     } = useStore();
     
     const navigate = useNavigate();
@@ -562,19 +563,46 @@ export default function HomeView() {
 
     const handleCreateCollection = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
+        
+        // Ensure we have a bucket to put this collection in
+        let targetBucketId = activeCollectionId;
+        
+        // If no active bucket, find the first one for this project
+        if (!targetBucketId) {
+            const firstBucket = collections.find((c: Collection) => 
+                c.projectId === activeProjectId && 
+                c.parentId === null && 
+                c.type === 'bucket' && 
+                !c.deleted
+            );
+            if (firstBucket) {
+                targetBucketId = firstBucket.id;
+            }
+        }
+
+        // If still no bucket, we cannot create a collection
+        if (!targetBucketId) {
+            // Ideally we would create a default bucket here, but let's at least prevent
+            // creating a root-level collection which breaks the hierarchy.
+            console.warn("No active bucket found for collection creation");
+            return;
+        }
+
         const newCollection: Collection = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
-            parentId: null,
+            parentId: targetBucketId,
             name,
             color,
             icon,
+            type: 'collection',
+            order: collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === targetBucketId).length,
             created: Date.now(),
             lastModified: Date.now()
         };
         useStore.setState((state: any) => ({ 
             collections: [...state.collections, newCollection],
-            activeCollectionId: newCollection.id 
+            activeCollectionId: targetBucketId // Keep the bucket active
         }));
         setPopoverOpen(false);
         navigate('/collections');

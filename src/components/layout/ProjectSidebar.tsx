@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import type { MouseEvent as ReactMouseEvent, ChangeEvent as ReactChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     SidebarSimple,
@@ -10,6 +10,7 @@ import {
     FolderOpen,
     Folder,
     FolderPlus,
+    FolderSimplePlus,
     Plus,
     Trash,
     MagnifyingGlass,
@@ -23,7 +24,12 @@ import {
     WarningCircle,
     CheckCircle,
     CloudCheck,
-    Cloud
+    Cloud,
+    Sparkle,
+    UploadSimple,
+    DownloadSimple,
+    ClockCounterClockwise,
+    ArrowSquareOut
 } from "@phosphor-icons/react";
 import {
     DndContext, 
@@ -31,7 +37,12 @@ import {
     KeyboardSensor,
     PointerSensor,
     useSensor,
-    useSensors
+    useSensors,
+    useDroppable,
+    pointerWithin,
+    rectIntersection,
+    type DragStartEvent,
+    DragOverlay
 } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -62,6 +73,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
     ContextMenu,
@@ -69,6 +81,9 @@ import {
     ContextMenuItem,
     ContextMenuTrigger,
     ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubTrigger,
+    ContextMenuSubContent,
 } from "@/components/ui/context-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +105,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { CreateCollectionDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
+import { CreateCollectionDialog, EditCollectionDialog, CreateFolderDialog } from "@/components/dialogs/CollectionDialogs";
 import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, EditDocDialog } from "@/components/dialogs/StorageDialogs";
 import { NewDocDialog, NewGraphDialog } from "@/components/dialogs/CreationDialogs";
 import { EditProjectDialog } from "@/components/dialogs/EditProjectDialog";
@@ -99,7 +114,6 @@ import { SidebarTrash } from "@/components/layout/SidebarTrash";
 import { SidebarSync } from "@/components/layout/SidebarSync";
 import { PiPPlayer } from "@/components/player/PiPPlayer";
 import { exportProject, importProject, type ProjectExportData } from "@/utils/projectData";
-import { UploadSimple, DownloadSimple, ClockCounterClockwise } from "@phosphor-icons/react";
 import { playSfx } from "@/utils/sound";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 
@@ -109,7 +123,7 @@ function SortableStorageItem({ storage, activeStorageId, handleSelectStorage, ha
     const Icon = getIcon(storage.icon);
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectStorage(storage.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer", activeStorageId === storage.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectStorage(storage.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer", activeStorageId === storage.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
             <Icon weight={activeStorageId === storage.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeStorageId === storage.id ? undefined : storage.color }} />
             <span className="truncate flex-1">{storage.name}</span>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -130,7 +144,7 @@ function SortableDocItem({ doc, activeDocId, handleSelectDoc, handleRenameDoc, h
     const DocIcon = getIcon(doc.icon);
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} data-doc-id={doc.id} onClick={() => handleSelectDoc(doc.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer", activeDocId === doc.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} data-doc-id={doc.id} onClick={() => handleSelectDoc(doc.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer", activeDocId === doc.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
             <DocIcon weight={activeDocId === doc.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeDocId === doc.id ? undefined : doc.color }} />
             <span className="truncate flex-1">{doc.name}</span>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -151,7 +165,7 @@ function SortableGraphItem({ graph, activeGraphId, handleSelectGraph, handleEdit
     const GraphIcon = getIcon(graph.icon);
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectGraph(graph.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors group cursor-pointer", activeGraphId === graph.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectGraph(graph.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer", activeGraphId === graph.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
             <GraphIcon weight={activeGraphId === graph.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeGraphId === graph.id ? undefined : graph.color }} />
             <span className="truncate flex-1">{graph.name}</span>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -162,6 +176,284 @@ function SortableGraphItem({ graph, activeGraphId, handleSelectGraph, handleEdit
                     <Trash weight="bold" />
                 </button>
             </div>
+        </div>
+    );
+}
+
+function SidebarFolderItem({
+    folder,
+    isSlim,
+    children,
+    onRename,
+    onDelete,
+    onMove,
+    folders,
+    handleAddCollection,
+    handleAddFolder,
+    depth = 0,
+    isRoot = false,
+    onToggleCollapse,
+    isCollapsed: isCollapsedProp
+}: any) {
+    const [isCollapsedInternal, setIsCollapsedInternal] = useState(true);
+    const isCollapsed = isRoot ? isCollapsedProp : isCollapsedInternal; 
+    
+    const navigate = useNavigate();
+    const { setSidebarView, activeCollectionId, collections } = useStore(useShallow((state: any) => ({
+        setSidebarView: state.setSidebarView,
+        activeCollectionId: state.activeCollectionId,
+        collections: state.collections
+    })));
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setSortableRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ 
+        id: isRoot ? "collections-root-header" : folder.id, 
+        data: { type: 'folder', folder: isRoot ? { ...folder, id: null } : folder } 
+    });
+
+    const { setNodeRef: setDroppableRef, isOver: isFolderOver } = useDroppable({
+        id: isRoot ? "folder-nest-root" : `folder-nest-${folder.id}`,
+        data: { type: 'folder', folderId: isRoot ? null : folder.id }
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        position: "relative" as const,
+        zIndex: isDragging ? 50 : "auto",
+    };
+
+    const handleToggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        playSfx('cursor');
+        if (isRoot) {
+            navigate('/collections');
+            if (onToggleCollapse) onToggleCollapse();
+        } else {
+            setIsCollapsedInternal(!isCollapsedInternal);
+        }
+    };
+
+    if (isSlim) {
+        return (
+            <div ref={setSortableRef} style={style} className="mb-1 flex justify-center">
+                <button
+                    ref={setDroppableRef}
+                    onClick={handleToggle}
+                    {...attributes}
+                    {...listeners}
+                    className={cn(
+                        "p-2 rounded-md transition-all group",
+                        (location.pathname === '/collections' || location.pathname.startsWith('/collection/')) ? "text-primary bg-primary/10" : "text-zinc-500 hover:text-zinc-300 hover:bg-secondary/40",
+                        (isFolderOver || (isRoot && isDragging)) && "bg-primary/20 ring-2 ring-primary ring-inset"
+                    )}
+                    title={isRoot ? (activeCollectionId ? (collections.find(c => c.id === activeCollectionId)?.name || "Bucket") : "Collections") : folder.name}
+                >
+                    {isRoot ? (activeCollectionId ? <HardDrives weight="fill" className="size-5" /> : <Folder weight="fill" className="size-5" />) : <FolderOpen weight="bold" className="size-4" />}
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div ref={setSortableRef} style={style} className={cn("mb-0.5", isRoot && "mb-2")}>
+            <ContextMenu>
+                <ContextMenuTrigger disabled={isRoot} asChild>
+                    <div
+                        ref={setDroppableRef}
+                        onClick={handleToggle}
+                        {...attributes}
+                        {...listeners}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleToggle();
+                            }
+                        }}
+                        className={cn(
+                            "w-full flex items-center gap-2 pr-0 pl-2 py-0 text-[11px] font-semibold tracking-wider rounded-none transition-all group border shadow-sm relative h-9 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                            isRoot 
+                                ? "bg-secondary/40 border-border/60 text-zinc-500 hover:text-zinc-300 hover:bg-secondary/60 uppercase" 
+                                : "bg-secondary/20 border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/30",
+                            depth > 0 && "ml-3 w-[calc(100%-12px)]",
+                            (isFolderOver || (isRoot && isDragging)) && "bg-primary/20 ring-2 ring-primary ring-inset"
+                        )}
+                    >
+                        <div className={cn(
+                            "transition-transform duration-200",
+                            isCollapsed ? "-rotate-90" : "rotate-0"
+                        )}>
+                            <CaretDown size={12} weight="bold" />
+                        </div>
+                        {isRoot && (
+                            activeCollectionId 
+                                ? <HardDrives weight="fill" className="text-primary size-4" />
+                                : <Folder weight="fill" className="text-primary size-4" />
+                        )}
+                        <span className="truncate flex-1 text-left py-1.5">{folder.name}</span>
+                        
+                        <div className="opacity-0 group-hover:opacity-100 h-full flex items-center transition-opacity">
+                            <button
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    playSfx('cursor');
+                                    if (isRoot) {
+                                        navigate('/collections');
+                                    } else {
+                                        navigate(`/collections?folderId=${folder.id}`);
+                                    }
+                                }}
+                                className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                title="Open Folder"
+                            >
+                                <ArrowSquareOut weight="bold" size={14} />
+                            </button>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                        title="Add Item"
+                                    >
+                                        <Plus weight="bold" size={14} />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={(e) => {
+                                        e.stopPropagation();
+                                        playSfx('cursor');
+                                        // Set the folder as the current folder before opening dialog
+                                        if (!isRoot) {
+                                            navigate(`/collections?folderId=${folder.id}`, { replace: true });
+                                        }
+                                        handleAddCollection(e as any);
+                                    }}>
+                                        <FolderPlus className="mr-2 h-4 w-4" />
+                                        Collection
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => {
+                                        e.stopPropagation();
+                                        playSfx('cursor');
+                                        // Set the folder as the current folder before opening dialog
+                                        if (!isRoot) {
+                                            navigate(`/collections?folderId=${folder.id}`, { replace: true });
+                                        }
+                                        handleAddFolder(e as any);
+                                    }}>
+                                        <FolderSimplePlus className="mr-2 h-4 w-4" />
+                                        Folder
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {isRoot && (
+                                <button
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        playSfx('cursor');
+                                        setSidebarView('collections');
+                                    }}
+                                    className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                    title="Manage Buckets"
+                                >
+                                    <Gear weight="bold" size={14} />
+                                </button>
+                            )}
+
+                            {!isRoot && (
+                                <>
+                                    <button
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            playSfx('cursor');
+                                            onRename();
+                                        }}
+                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                        title="Rename Folder"
+                                    >
+                                        <PencilSimple weight="bold" size={14} />
+                                    </button>
+                                    <button
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            playSfx('cursor');
+                                            onDelete();
+                                        }}
+                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-red-500/20 hover:text-red-500 transition-all border-l border-primary/10"
+                                        title="Delete Folder"
+                                    >
+                                        <Trash weight="bold" size={14} />
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </ContextMenuTrigger>
+                {!isRoot && (
+                    <ContextMenuContent className="w-48">
+                        <ContextMenuItem onClick={onRename}>
+                            <PencilSimple className="mr-2 h-4 w-4" />
+                            Rename Folder
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuSub>
+                            <ContextMenuSubTrigger>
+                                <FolderOpen className="mr-2 h-4 w-4" />
+                                Move to Folder
+                            </ContextMenuSubTrigger>
+                            <ContextMenuSubContent className="w-48">
+                                <ContextMenuItem onClick={() => onMove(null)}>
+                                    Root
+                                </ContextMenuItem>
+                                <ContextMenuSeparator />
+                                {folders.map((f: any) => (
+                                    <ContextMenuItem key={f.id} onClick={() => onMove(f.id)}>
+                                        {f.name}
+                                    </ContextMenuItem>
+                                ))}
+                            </ContextMenuSubContent>
+                        </ContextMenuSub>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={onDelete} className="text-red-500 focus:text-red-500">
+                            <Trash className="mr-2 h-4 w-4" />
+                            Delete Folder
+                        </ContextMenuItem>
+                    </ContextMenuContent>
+                )}
+            </ContextMenu>
+            
+            <AnimatePresence initial={false}>
+                {!isCollapsed && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={cn(
+                            "overflow-hidden border-l border-zinc-800/50 ml-2.5 pl-1.5 mt-0.5 space-y-0.5",
+                            depth > 0 && "ml-5.5",
+                            isRoot && "ml-3 border-l border-border/40 pl-2"
+                        )}
+                    >
+                        {children}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -179,6 +471,9 @@ function SortableCollectionItem({
     createMenuContent
 }: any) {
     const navigate = useNavigate();
+    const { activeCollectionId } = useStore(useShallow((state: any) => ({
+        activeCollectionId: state.activeCollectionId
+    })));
     const {
         attributes,
         listeners,
@@ -199,52 +494,74 @@ function SortableCollectionItem({
     const Icon = getIcon(collection.icon);
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <div ref={setNodeRef} style={style}>
             <ContextMenu>
-                <ContextMenuTrigger className="block w-full">
+                <ContextMenuTrigger className="block w-full" asChild>
                     <div
                         onClick={(e: ReactMouseEvent) => {
-                            e.preventDefault();
                             playSfx('cursor');
                             handleSelectCollection(collection.id);
-                            navigate(`/collection/${collection.id}`);
+                            if (collection.type === 'bucket') {
+                                navigate(`/collections`);
+                            } else {
+                                navigate(`/collection/${collection.id}`);
+                            }
                         }}
-                        className="block w-full group/item cursor-pointer"
+                        {...attributes}
+                        {...listeners}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleSelectCollection(collection.id);
+                                if (collection.type === 'bucket') {
+                                    navigate(`/collections`);
+                                } else {
+                                    navigate(`/collection/${collection.id}`);
+                                }
+                            }
+                        }}
+                        className="block w-full group/item cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         title={isSlim ? collection.name : undefined}
                     >
                         <div className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors relative",
-                            (location.pathname === `/collection/${collection.id}`)
-                                ? "bg-primary/20 text-primary font-medium"
-                                : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                            "flex items-center gap-3 pl-3 pr-0 py-0 rounded-none text-sm transition-all relative border shadow-sm h-9",
+                            (collection.type === 'bucket' ? (location.pathname === `/collections` && activeCollectionId === collection.id) : (location.pathname === `/collection/${collection.id}`))
+                                ? "bg-primary/20 text-primary font-medium border-primary/30"
+                                : "bg-secondary/10 text-muted-foreground border-border/20 hover:bg-secondary/30 hover:text-foreground hover:border-border/40",
                             isSlim && "justify-center px-1"
                         )}>
                             <Icon
                                 className={cn("text-lg transition-colors")}
                                 weight="fill"
-                                style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
+                                style={{ color: (collection.type === 'bucket' ? (location.pathname === `/collections` && activeCollectionId === collection.id) : (location.pathname === `/collection/${collection.id}`)) ? undefined : collection.color }}
                             />
-                            {!isSlim && <span className="truncate flex-1">{collection.name}</span>}
+                            {!isSlim && <span className="truncate flex-1 py-2">{collection.name}</span>}
 
                             {!isSlim && (
-                                <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <div className="flex items-center h-full opacity-0 group-hover/item:opacity-100 transition-opacity">
                                     <button
+                                        onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()}
                                         onClick={(e: ReactMouseEvent) => {
                                             playSfx('cursor');
                                             handleEditCollectionClick(e, collection);
                                         }}
-                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                        title="Edit Collection"
                                     >
-                                        <PencilSimple weight="bold" />
+                                        <PencilSimple weight="bold" size={14} />
                                     </button>
                                     <button
+                                        onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()}
                                         onClick={(e: ReactMouseEvent) => {
                                             playSfx('cursor');
                                             handleDeleteCollection(e, collection.id);
                                         }}
-                                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-red-500/20 hover:text-red-500 transition-all border-l border-primary/10"
+                                        title="Delete Collection"
                                     >
-                                        <Trash weight="bold" />
+                                        <Trash weight="bold" size={14} />
                                     </button>
                                 </div>
                             )}
@@ -252,8 +569,6 @@ function SortableCollectionItem({
                     </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-48">
-                    {createMenuContent}
-                    <ContextMenuSeparator />
                     <ContextMenuItem onClick={(e: ReactMouseEvent) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -261,7 +576,7 @@ function SortableCollectionItem({
                         setEditCollectionOpen(true);
                     }}>
                         <PencilSimple className="mr-2 h-4 w-4" />
-                        Rename Collection
+                        {collection.type === 'bucket' ? 'Rename Bucket' : 'Rename Collection'}
                     </ContextMenuItem>
                     <ContextMenuItem onClick={(e: ReactMouseEvent) => {
                         e.preventDefault();
@@ -269,7 +584,7 @@ function SortableCollectionItem({
                         trashCollection(collection.id);
                     }} className="text-red-500 focus:text-red-500">
                         <Trash className="mr-2 h-4 w-4" />
-                        Delete Collection
+                        {collection.type === 'bucket' ? 'Delete Bucket' : 'Delete Collection'}
                     </ContextMenuItem>
                 </ContextMenuContent>
             </ContextMenu>
@@ -280,6 +595,8 @@ function SortableCollectionItem({
 export default function ProjectSidebar() {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const currentFolderId = searchParams.get('folderId');
 
     const {
         projects,
@@ -358,7 +675,9 @@ export default function ProjectSidebar() {
 
     const [projectsOpen, setProjectsOpen] = useState(true);
     const [assetsOpen, setAssetsOpen] = useState(true);
+    const [rootCollectionsOpen, setRootCollectionsOpen] = useState(true);
     const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
+    const [createFolderOpen, setCreateFolderOpen] = useState(false);
     const [createStorageOpen, setCreateStorageOpen] = useState(false);
     // Edit State
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
@@ -375,6 +694,15 @@ export default function ProjectSidebar() {
     const [newProjectOpen, setNewProjectOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveDragId(event.active.id as string);
+    };
+
+    const handleDragCancel = () => {
+        setActiveDragId(null);
+    };
 
 
 
@@ -400,9 +728,10 @@ export default function ProjectSidebar() {
         trashDoc(id);
     };
 
-    const projectStorages = storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted);
-    const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
-    const projectGraphs = graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted);
+    const projectStorages = useMemo(() => storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted), [storages, activeProjectId]);
+    const projectDocs = useMemo(() => docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted), [docs, activeProjectId]);
+    const projectGraphs = useMemo(() => graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted), [graphs, activeProjectId]);
+    const projectCollections = useMemo(() => collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted), [collections, activeProjectId]);
 
     // Sidebar Tab Navigation (Unifying Keybind)
     useKeybind("nav.nextItem", () => {
@@ -521,14 +850,215 @@ export default function ProjectSidebar() {
 
         // Try Collections
         const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
-        const collectionOldIndex = projectCollections.findIndex((c: Collection) => c.id === active.id);
+        const activeCollection = projectCollections.find((c: Collection) => c.id === active.id);
         
-        if (collectionOldIndex !== -1) {
-            const collectionNewIndex = projectCollections.findIndex((c: Collection) => c.id === over.id);
-            if (collectionNewIndex !== -1) {
-                const reordered = arrayMove(projectCollections, collectionOldIndex, collectionNewIndex);
-                const otherCollections = collections.filter((c: Collection) => !(c.projectId === activeProjectId && !c.deleted));
-                useStore.setState({ collections: [...otherCollections, ...reordered] });
+        if (activeCollection) {
+            // Check for root drop zone or dropping on header
+            if (over.id === "folder-nest-root" || over.id === "collections-root-header") {
+                 // Move to current bucket root if not already there
+                 // If no bucket is active, we can't move items here
+                 if (!activeCollectionId) return;
+                 
+                 // If the item itself is a bucket (parentId is null), we don't move it inside another bucket via this drop zone
+                 if (activeCollection.parentId === null) return;
+
+                 if (activeCollection.parentId !== activeCollectionId) {
+                     // Remove from old parent list
+                     const oldSiblings = projectCollections
+                        .filter(c => c.parentId === activeCollection.parentId && c.id !== activeCollection.id)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                     // Insert into active bucket's root list (at end)
+                     const rootSiblings = projectCollections
+                        .filter(c => c.parentId === activeCollectionId)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                     const targetIndex = rootSiblings.length;
+
+                     // Prepare updates
+                     const updates: { id: string, changes: any }[] = [];
+
+                     // Update old siblings order
+                     oldSiblings.forEach((c, index) => {
+                         updates.push({ id: c.id, changes: { order: index } });
+                     });
+
+                     // Update active collection
+                     updates.push({ 
+                         id: activeCollection.id, 
+                         changes: { parentId: activeCollectionId, order: targetIndex, lastModified: Date.now() } 
+                     });
+
+                     // Apply updates
+                     useStore.setState((state: any) => ({
+                         collections: state.collections.map((c: Collection) => {
+                             const update = updates.find(u => u.id === c.id);
+                             return update ? { ...c, ...update.changes } : c;
+                         })
+                     }));
+                 }
+                 return;
+            }
+
+            // Check for nesting
+            if (over.id.toString().startsWith("folder-nest-")) {
+                const newParentId = over.id.toString().replace("folder-nest-", "");
+                // If dropping on "root" in the context of the sidebar tree, it means the active bucket
+                let effectiveParentId = newParentId === "root" ? activeCollectionId : newParentId;
+
+                // If no active bucket and we are dropping on root, find the first bucket
+                if (!effectiveParentId && newParentId === "root") {
+                    const firstBucket = projectCollections.find(c => c.type === 'bucket' && !c.deleted);
+                    if (firstBucket) {
+                        effectiveParentId = firstBucket.id;
+                        useStore.setState({ activeCollectionId: firstBucket.id });
+                    }
+                }
+
+                // NEVER move a non-bucket item to parentId null (which would make it a bucket)
+                if (!effectiveParentId) return;
+
+                // Prevent nesting into self
+                if (effectiveParentId !== activeCollection.id) {
+                     // Get target folder's children to determine order (put at end)
+                     const targetSiblings = projectCollections
+                        .filter(c => c.parentId === effectiveParentId)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                     
+                     const newOrder = targetSiblings.length;
+
+                     useStore.setState((state: any) => ({
+                        collections: state.collections.map((c: Collection) => 
+                            c.id === activeCollection.id 
+                                ? { 
+                                    ...c, 
+                                    parentId: effectiveParentId, 
+                                    order: newOrder, 
+                                    lastModified: Date.now() 
+                                  } 
+                                : c
+                        )
+                    }));
+                }
+                return;
+            }
+
+            const overCollection = projectCollections.find((c: Collection) => c.id === over.id);
+            if (overCollection) {
+                // NEVER move a bucket inside another item
+                if (activeCollection.type === 'bucket') {
+                    // Only allow reordering with other buckets
+                    if (overCollection.type === 'bucket') {
+                        const siblings = projectCollections
+                            .filter(c => c.type === 'bucket')
+                            .sort((a, b) => (a.order || 0) - (b.order || 0));
+                        
+                        const oldIndex = siblings.findIndex(c => c.id === activeCollection.id);
+                        const newIndex = siblings.findIndex(c => c.id === overCollection.id);
+                        
+                        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+                            const newSiblings = arrayMove(siblings, oldIndex, newIndex);
+                            const updates = newSiblings.map((c, index) => ({
+                                id: c.id,
+                                changes: { order: index }
+                            }));
+                            
+                            useStore.setState((state: any) => ({
+                                collections: state.collections.map((c: Collection) => {
+                                    const update = updates.find(u => u.id === c.id);
+                                    return update ? { ...c, ...update.changes } : c;
+                                })
+                            }));
+                        }
+                    }
+                    return;
+                }
+
+                // If dropping on a bucket, move inside it
+                if (overCollection.type === 'bucket') {
+                    // Move inside the bucket
+                    const targetSiblings = projectCollections
+                        .filter(c => c.parentId === overCollection.id)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    useStore.setState((state: any) => ({
+                        collections: state.collections.map((c: Collection) => 
+                            c.id === activeCollection.id 
+                                ? { ...c, parentId: overCollection.id, order: targetSiblings.length, lastModified: Date.now() } 
+                                : c
+                        )
+                    }));
+                    return;
+                }
+
+                // Reordering or Moving between lists
+                if (activeCollection.parentId === overCollection.parentId) {
+                    // Same parent: Reorder
+                    const siblings = projectCollections
+                        .filter(c => c.parentId === activeCollection.parentId)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    const oldIndex = siblings.findIndex(c => c.id === activeCollection.id);
+                    const newIndex = siblings.findIndex(c => c.id === overCollection.id);
+                    
+                    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+                        const newSiblings = arrayMove(siblings, oldIndex, newIndex);
+                        
+                        // Update order for all affected siblings
+                        const updates = newSiblings.map((c, index) => ({
+                            id: c.id,
+                            changes: { order: index }
+                        }));
+                        
+                        useStore.setState((state: any) => ({
+                            collections: state.collections.map((c: Collection) => {
+                                const update = updates.find(u => u.id === c.id);
+                                return update ? { ...c, ...update.changes } : c;
+                            })
+                        }));
+                    }
+                } else {
+                    // Different parent: Move item to new list
+                    // Remove from old parent list
+                    const oldSiblings = projectCollections
+                        .filter(c => c.parentId === activeCollection.parentId && c.id !== activeCollection.id)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    // Insert into new parent list
+                    const newSiblings = projectCollections
+                        .filter(c => c.parentId === overCollection.parentId)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    const targetIndex = newSiblings.findIndex(c => c.id === overCollection.id);
+                    
+                    // Insert before target
+                    newSiblings.splice(targetIndex, 0, { ...activeCollection, parentId: overCollection.parentId });
+                    
+                    // Prepare updates
+                    const updates: { id: string, changes: any }[] = [];
+                    
+                    // Update old siblings order
+                    oldSiblings.forEach((c, index) => {
+                        updates.push({ id: c.id, changes: { order: index } });
+                    });
+                    
+                    // Update new siblings order
+                    newSiblings.forEach((c, index) => {
+                        updates.push({ id: c.id, changes: { order: index, parentId: overCollection.parentId } });
+                    });
+                    
+                    // Apply all updates
+                    useStore.setState((state: any) => ({
+                        collections: state.collections.map((c: Collection) => {
+                            const update = updates.find(u => u.id === c.id);
+                            // Ensure we update activeCollection even if not in old/new lists (it's in newSiblings now)
+                            if (c.id === activeCollection.id) {
+                                return { ...c, parentId: overCollection.parentId, order: targetIndex, lastModified: Date.now() };
+                            }
+                            return update ? { ...c, ...update.changes } : c;
+                        })
+                    }));
+                }
                 return;
             }
         }
@@ -574,6 +1104,7 @@ export default function ProjectSidebar() {
                 return;
             }
         }
+        setActiveDragId(null);
     };
 
     const handleCreateStorage = () => {
@@ -738,37 +1269,159 @@ export default function ProjectSidebar() {
         if (activeProjectId && projectStorages.length > 0) {
             const isValid = projectStorages.some((s: Storage) => s.id === activeStorageId);
             if (!isValid) {
-                useStore.setState({ activeStorageId: projectStorages[0].id });
+                const firstStorageId = projectStorages[0].id;
+                if (activeStorageId !== firstStorageId) {
+                    useStore.setState({ activeStorageId: firstStorageId });
+                }
             }
         }
-    }, [activeProjectId, activeStorageId, projectStorages]);
+    }, [activeProjectId, activeStorageId, projectStorages.length]); // Use .length instead of array reference
 
-    const handleAddCollection = (e: ReactMouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+    // Ensure a valid bucket is always selected
+    useEffect(() => {
         if (!activeProjectId) return;
+        
+        // Find buckets for current project
+        const projectBuckets = projectCollections.filter((c: Collection) => 
+            c.parentId === null && 
+            c.type === 'bucket'
+        );
 
+        // If no buckets exist, clear activeCollectionId
+        if (projectBuckets.length === 0) {
+            if (activeCollectionId !== null) {
+                useStore.setState({ activeCollectionId: null });
+            }
+            return;
+        }
+
+        // Check if current activeCollectionId is valid for this project and IS a bucket
+        const currentIsBucket = projectBuckets.some((b: Collection) => b.id === activeCollectionId);
+        
+        // Only update if current activeCollectionId is NOT a valid bucket
+        if (!currentIsBucket) {
+            const firstBucketId = projectBuckets[0].id;
+            // IMPORTANT: Only call setState if the value is actually different to avoid loops
+            if (activeCollectionId !== firstBucketId) {
+                useStore.setState({ activeCollectionId: firstBucketId });
+            }
+        }
+    }, [activeProjectId, activeCollectionId, projectCollections.length]);
+
+    const handleAddCollection = (e?: ReactMouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (!activeProjectId) return;
         setCreateCollectionOpen(true);
+    };
+
+    const handleAddFolder = (e: ReactMouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        setCreateFolderOpen(true);
     };
 
     const handleCreateCollection = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
         if (name) {
+            // Buckets are only created in the management view (sidebarView === 'collections')
+            const isCreatingBucket = sidebarView === 'collections';
+            let parentId = isCreatingBucket ? null : (currentFolderId || activeCollectionId);
+            
+            // If not creating a bucket, ensure we have a parent (buckets are roots)
+            if (!isCreatingBucket && !parentId) {
+                // Try to find the first bucket if none is active
+                const firstBucket = collections.find((c: Collection) => 
+                    c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted
+                );
+                if (firstBucket) {
+                    parentId = firstBucket.id;
+                    useStore.setState({ activeCollectionId: firstBucket.id });
+                } else {
+                    // Cannot create a collection without a bucket
+                    return;
+                }
+            }
+
+            const sameParentCollections = collections.filter(c => c.parentId === parentId);
+            const maxOrder = sameParentCollections.length > 0 
+                ? Math.max(...sameParentCollections.map(c => c.order || 0)) 
+                : -1;
+
             const newCollection: Collection = {
                 id: crypto.randomUUID(),
                 projectId: activeProjectId,
-                parentId: null,
+                parentId: parentId,
                 name,
                 color,
                 icon,
+                type: isCreatingBucket ? 'bucket' : 'collection',
+                order: maxOrder + 1,
                 created: Date.now(),
                 lastModified: Date.now()
             };
+
             useStore.setState((state: any) => ({
                 collections: [...state.collections, newCollection],
-                activeCollectionId: newCollection.id
+                activeCollectionId: isCreatingBucket ? newCollection.id : state.activeCollectionId
             }));
-            navigate('/collections');
+            
+            if (isCreatingBucket) {
+                setSidebarView('main');
+                navigate(`/collections`); // Navigate to collections root for the new bucket
+            } else {
+                navigate(`/collection/${newCollection.id}`);
+            }
+        }
+    };
+
+    const handleCreateFolder = (name: string) => {
+        if (!activeProjectId) return;
+        if (name) {
+            // Folders MUST be inside a bucket or another folder
+            let parentId = currentFolderId || activeCollectionId;
+            if (!parentId) {
+                // Try to find the first bucket if none is active
+                const firstBucket = collections.find((c: Collection) => 
+                    c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted
+                );
+                if (firstBucket) {
+                    parentId = firstBucket.id;
+                    useStore.setState({ activeCollectionId: firstBucket.id });
+                } else {
+                    return; // Cannot create folder without a bucket unit
+                }
+            }
+
+            const sameParentItems = collections.filter(c => c.parentId === parentId);
+            const maxOrder = sameParentItems.length > 0 
+                ? Math.max(...sameParentItems.map(c => c.order || 0)) 
+                : -1;
+
+            const newFolder: Collection = {
+                id: crypto.randomUUID(),
+                projectId: activeProjectId,
+                parentId: parentId,
+                name,
+                color: "#71717a", // Default zinc color for folders
+                icon: "Folder",
+                type: 'folder',
+                order: maxOrder + 1,
+                created: Date.now(),
+                lastModified: Date.now()
+            };
+            
+            useStore.setState((state: any) => ({
+                collections: [...state.collections, newFolder]
+            }));
+            
+            setCreateFolderOpen(false);
+            // Navigate to the new folder
+            navigate(`/collections?folderId=${newFolder.id}`);
         }
     };
 
@@ -790,7 +1443,30 @@ export default function ProjectSidebar() {
     };
 
     const handleSelectCollection = (id: string) => {
-        useStore.setState({ activeCollectionId: id });
+        const collection = collections.find(c => c.id === id);
+        if (collection) {
+            // Find the root bucket for this item
+            let current = collection;
+            
+            // If the item itself is a bucket, select it
+            if (current.type === 'bucket') {
+                useStore.setState({ activeCollectionId: current.id });
+                return;
+            }
+
+            // Climb up to find the bucket (root unit)
+            while (current.parentId !== null) {
+                const parent = collections.find(p => p.id === current.parentId);
+                if (!parent) break;
+                current = parent;
+                if (current.type === 'bucket') break;
+            }
+            
+            // Only update if the root is actually a bucket
+            if (current.type === 'bucket') {
+                useStore.setState({ activeCollectionId: current.id });
+            }
+        }
     };
 
     const handleProjectChange = (value: string) => {
@@ -863,6 +1539,11 @@ export default function ProjectSidebar() {
                 <FolderPlus className="mr-2 h-4 w-4" />
                 New Collection
             </ContextMenuItem>
+            <ContextMenuItem onClick={() => setCreateFolderOpen(true)}>
+                <Folder className="mr-2 h-4 w-4" />
+                New Folder
+            </ContextMenuItem>
+            <ContextMenuSeparator />
             <ContextMenuItem onClick={handleCreateDoc}>
                 <NotePencil className="mr-2 h-4 w-4" />
                 New Doc
@@ -936,7 +1617,7 @@ export default function ProjectSidebar() {
                                         playSfx('cursor');
                                         useStore.getState().setSpotlightOpen(true);
                                     }}
-                                    className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                     <MagnifyingGlass weight="bold" size={18} />
                                 </button>
@@ -960,10 +1641,10 @@ export default function ProjectSidebar() {
                                             }
                                         }}
                                         className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
                                             location.pathname === '/storage' 
-                                                ? "bg-primary/20 text-primary" 
-                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                                ? "bg-primary/20 text-primary border-primary/30" 
+                                                : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                         )}
                                     >
                                         <HardDrives weight={location.pathname === '/storage' ? "fill" : "bold"} size={20} />
@@ -985,10 +1666,10 @@ export default function ProjectSidebar() {
                                             }
                                         }}
                                         className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
                                             location.pathname.startsWith('/docs')
-                                                ? "bg-primary/20 text-primary" 
-                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                                ? "bg-primary/20 text-primary border-primary/30" 
+                                                : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                         )}
                                     >
                                         <NotePencil weight={location.pathname.startsWith('/docs') ? "fill" : "bold"} size={20} />
@@ -1010,10 +1691,10 @@ export default function ProjectSidebar() {
                                             }
                                         }}
                                         className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                            "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
                                             location.pathname.startsWith('/graphs')
-                                                ? "bg-primary/20 text-primary" 
-                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                                ? "bg-primary/20 text-primary border-primary/30" 
+                                                : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                         )}
                                     >
                                         <Graph weight={location.pathname.startsWith('/graphs') ? "fill" : "bold"} size={20} />
@@ -1035,10 +1716,10 @@ export default function ProjectSidebar() {
                                                 navigate('/collections');
                                             }}
                                             className={cn(
-                                                "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
+                                                "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
                                                 location.pathname.startsWith('/collections')
-                                                    ? "bg-primary/20 text-primary" 
-                                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                                    ? "bg-primary/20 text-primary border-primary/30" 
+                                                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                             )}
                                         >
                                             <FolderOpen weight={location.pathname.startsWith('/collections') ? "fill" : "bold"} size={20} />
@@ -1047,35 +1728,33 @@ export default function ProjectSidebar() {
                                     <TooltipContent side="right">Collections</TooltipContent>
                                 </Tooltip>
 
-                                {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => {
+                                {collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted).map((collection: Collection) => {
                                     const Icon = getIcon(collection.icon);
                                     return (
                                         <ContextMenu key={collection.id}>
                                             <ContextMenuTrigger className="flex justify-center w-full">
                                                 <Link
-                                                    to={`/collection/${collection.id}`}
+                                                    to={`/collections`}
                                                     onClick={() => {
                                                         playSfx('cursor');
                                                         handleSelectCollection(collection.id);
                                                     }}
                                                     className={cn(
-                                                        "flex items-center justify-center w-9 h-9 rounded-md transition-colors relative",
-                                                        (location.pathname === `/collection/${collection.id}`)
-                                                            ? "bg-primary/20 text-primary"
-                                                            : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                                        "flex items-center justify-center w-9 h-9 rounded-none transition-colors relative border border-border/60 shadow-sm",
+                                                        (location.pathname === `/collections` && activeCollectionId === collection.id)
+                                                            ? "bg-primary/20 text-primary border-primary/30"
+                                                            : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                                     )}
                                                     title={collection.name}
                                                 >
                                                     <Icon
                                                         className="text-lg transition-colors"
                                                         weight="fill"
-                                                        style={{ color: (location.pathname === `/collection/${collection.id}`) ? undefined : collection.color }}
+                                                        style={{ color: (location.pathname === `/collections` && activeCollectionId === collection.id) ? undefined : collection.color }}
                                                     />
                                                 </Link>
                                             </ContextMenuTrigger>
                                             <ContextMenuContent className="w-48">
-                                                {createMenuContent}
-                                                <ContextMenuSeparator />
                                                 <ContextMenuItem onClick={(e: ReactMouseEvent) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -1083,7 +1762,7 @@ export default function ProjectSidebar() {
                                                     setEditCollectionOpen(true);
                                                 }}>
                                                     <PencilSimple className="mr-2 h-4 w-4" />
-                                                    Rename Collection
+                                                    Rename Bucket
                                                 </ContextMenuItem>
                                                 <ContextMenuItem onClick={(e: ReactMouseEvent) => {
                                                     e.preventDefault();
@@ -1091,7 +1770,7 @@ export default function ProjectSidebar() {
                                                     trashCollection(collection.id);
                                                 }} className="text-red-500 focus:text-red-500">
                                                     <Trash className="mr-2 h-4 w-4" />
-                                                    Delete Collection
+                                                    Delete Bucket
                                                 </ContextMenuItem>
                                             </ContextMenuContent>
                                         </ContextMenu>
@@ -1105,7 +1784,7 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => { setSidebarView('sync'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
                                         <ArrowsClockwise 
                                             weight="bold" 
@@ -1121,7 +1800,7 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => { setSidebarView('history'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
                                         <ClockCounterClockwise weight="bold" size={18} />
                                     </button>
@@ -1133,7 +1812,7 @@ export default function ProjectSidebar() {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => { setSidebarView('trash'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
                                         <Trash weight="bold" size={18} />
                                     </button>
@@ -1166,7 +1845,7 @@ export default function ProjectSidebar() {
                             playSfx('cursor');
                             toggleSidebarCollapse();
                         }}
-                        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 z-10"
+                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 z-10"
                         title="Collapse sidebar"
                     >
                         <SidebarSimple weight="bold" size={18} />
@@ -1184,7 +1863,7 @@ export default function ProjectSidebar() {
                             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 overflow-hidden hover:opacity-80 transition-opacity max-w-[160px]"
                         >
                             <WhistlerLogo
-                                className="rounded-md mt-[1px] shrink-0"
+                                className="rounded-none mt-[1px] shrink-0"
                                 width={22}
                                 height={22}
                             />
@@ -1201,7 +1880,7 @@ export default function ProjectSidebar() {
                                     playSfx('cursor');
                                     useStore.getState().setSpotlightOpen(true);
                                 }}
-                                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 title="Search"
                             >
                                 <MagnifyingGlass weight="bold" size={18} />
@@ -1243,48 +1922,102 @@ export default function ProjectSidebar() {
                                                 className="space-y-1 overflow-hidden"
                                             >
                                                 <div className={cn("flex gap-1 items-center pt-1", isSlim && "flex-col")}>
-                                        <Select value={activeProjectId || ""} onValueChange={handleProjectChange}>
-                                            <SelectTrigger className={cn("flex-1 h-8 bg-card border-border/60 shadow-sm", isSlim && "px-1 justify-center")}>
-                                                {isSlim ? <FolderOpen weight="bold" /> : <SelectValue placeholder="Select Project" />}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {projects.map((p: Project) => (
-                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                            ))}
-                                            <Separator className="my-1" />
-                                                <SelectItem value="new"><span className="text-primary flex items-center gap-2"><Plus className="size-3" /> New Project</span></SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                                    {projects.length > 0 ? (
+                                                        <>
+                                                            <Select value={activeProjectId || ""} onValueChange={handleProjectChange}>
+                                                                <SelectTrigger className={cn("flex-1 h-8 bg-card border-border/60 shadow-sm", isSlim && "px-1 justify-center")}>
+                                                                    {isSlim ? <FolderOpen weight="bold" /> : <SelectValue placeholder="Select Project" />}
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {projects.map((p: Project) => (
+                                                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                                    ))}
+                                                                    <Separator className="my-1" />
+                                                                    <SelectItem value="new"><span className="text-primary flex items-center gap-2"><Plus className="size-3" /> New Project</span></SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
 
-                                        <Button 
-                                            variant="outline" 
-                                            size="icon" 
-                                            className="h-8 w-8 shrink-0 bg-card border-border/60"
-                                            onClick={() => {
-                                                playSfx('cursor');
-                                                handleEditProjectName();
-                                            }}
-                                            title="Edit Project Name"
-                                        >
-                                            <PencilSimple className="text-muted-foreground" />
-                                        </Button>
+                                                            <Button 
+                                                                variant="outline" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 shrink-0 bg-card border-border/60"
+                                                                onClick={() => {
+                                                                    playSfx('cursor');
+                                                                    handleEditProjectName();
+                                                                }}
+                                                                title="Edit Project Name"
+                                                            >
+                                                                <PencilSimple className="text-muted-foreground" />
+                                                            </Button>
 
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 bg-card border-border/60" title="Share">
-                                                    <Share className="text-muted-foreground" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={handleExportProject} disabled={!activeProjectId}>
-                                                    <UploadSimple className="mr-2" /> Export Project
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={handleImportProject}>
-                                                    <DownloadSimple className="mr-2" /> Import Project
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 bg-card border-border/60" title="Share">
+                                                                        <Share className="text-muted-foreground" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuItem onClick={handleExportProject} disabled={!activeProjectId}>
+                                                                        <UploadSimple className="mr-2" /> Export Project
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem onClick={handleImportProject}>
+                                                                        <DownloadSimple className="mr-2" /> Import Project
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </>
+                                                    ) : (
+                                                        <div className={cn("flex gap-1 items-center w-full", isSlim && "flex-col")}>
+                                                            <Button 
+                                                                variant="outline" 
+                                                                className={cn("flex-1 h-8 bg-card border-border/60 shadow-sm text-[10px] text-muted-foreground uppercase tracking-wider", isSlim && "px-0 w-8 flex-none justify-center")}
+                                                                onClick={() => {
+                                                                    playSfx('cursor');
+                                                                    setNewProjectOpen(true);
+                                                                }}
+                                                            >
+                                                                {isSlim ? <Plus weight="bold" /> : "Create Project"}
+                                                            </Button>
+                                                            {!isSlim && (
+                                                                <Button 
+                                                                    variant="outline" 
+                                                                    size="icon"
+                                                                    className="h-8 w-8 shrink-0 bg-card border-border/60 shadow-sm group"
+                                                                    onClick={() => {
+                                                                        playSfx('cursor');
+                                                                        const p1: Project = { id: crypto.randomUUID(), name: 'Demo Project', created: Date.now(), lastModified: Date.now() };
+                                                                        const s1 = { id: crypto.randomUUID(), projectId: p1.id, name: 'Main Storage', created: Date.now(), lastModified: Date.now() };
+                                                                        const f1: any = { id: crypto.randomUUID(), projectId: p1.id, storageId: s1.id, parentId: null, name: 'Getting Started.mp4', url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4', type: 'video', order: 0, created: Date.now(), lastModified: Date.now() };
+                                                                        useStore.setState((state: any) => ({ 
+                                                                            projects: [...state.projects, p1], 
+                                                                            storages: [...state.storages, s1], 
+                                                                            files: [...state.files, f1], 
+                                                                            activeProjectId: p1.id, 
+                                                                            activeStorageId: s1.id 
+                                                                        }));
+                                                                    }}
+                                                                    title="Load Demo"
+                                                                >
+                                                                    <Sparkle weight="bold" className="size-4 text-primary group-hover:scale-110 transition-transform" />
+                                                                </Button>
+                                                            )}
+                                                            {!isSlim && (
+                                                                <Button 
+                                                                    variant="outline" 
+                                                                    size="icon"
+                                                                    className="h-8 w-8 shrink-0 bg-card border-border/60 shadow-sm group"
+                                                                    onClick={() => {
+                                                                        playSfx('cursor');
+                                                                        handleImportProject();
+                                                                    }}
+                                                                    title="Import Project"
+                                                                >
+                                                                    <DownloadSimple weight="bold" className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
 
                                     {importStatus && (
                                         <div
@@ -1360,13 +2093,13 @@ export default function ProjectSidebar() {
                                                             }}
                                                             title="Storage"
                                                             className={cn(
-                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full",
+                                                                "flex items-center justify-center rounded-none transition-all duration-200 group relative cursor-pointer px-2 w-full border border-border/60 shadow-sm",
                                                                 (isSidebarCollapsed || isSlim)
                                                                     ? "w-10 h-10 mx-auto"
                                                                     : "h-9",
                                                                 (location.pathname === "/storage")
-                                                                    ? "bg-primary/20 text-primary shadow-sm"
-                                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                                    ? "bg-primary/20 text-primary border-primary/30"
+                                                                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                                             )}
                                                         >
                                                             <HardDrives
@@ -1404,13 +2137,13 @@ export default function ProjectSidebar() {
                                                             }}
                                                             title="Docs"
                                                             className={cn(
-                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full",
+                                                                "flex items-center justify-center rounded-none transition-all duration-200 group relative cursor-pointer px-2 w-full border border-border/60 shadow-sm",
                                                                 (isSidebarCollapsed || isSlim)
                                                                     ? "w-10 h-10 mx-auto"
                                                                     : "h-9",
                                                                 location.pathname.startsWith("/docs")
-                                                                    ? "bg-primary/20 text-primary shadow-sm"
-                                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                                    ? "bg-primary/20 text-primary border-primary/30"
+                                                                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                                             )}
                                                         >
                                                             <NotePencil
@@ -1448,13 +2181,13 @@ export default function ProjectSidebar() {
                                                             }}
                                                             title="Graphs"
                                                             className={cn(
-                                                                "flex items-center justify-center rounded-md transition-all duration-200 group relative cursor-pointer px-2 w-full",
+                                                                "flex items-center justify-center rounded-none transition-all duration-200 group relative cursor-pointer px-2 w-full border border-border/60 shadow-sm",
                                                                 (isSidebarCollapsed || isSlim)
                                                                     ? "w-10 h-10 mx-auto"
                                                                     : "h-9",
                                                                 location.pathname.startsWith("/graphs")
-                                                                    ? "bg-primary/20 text-primary shadow-sm"
-                                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                                    ? "bg-primary/20 text-primary border-primary/30"
+                                                                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                                             )}
                                                         >
                                                             <Graph
@@ -1483,125 +2216,139 @@ export default function ProjectSidebar() {
 
                                 {/* Collections Section */}
                                 <div className="mb-6">
-                                    {(!isSidebarCollapsed && !isSlim) ? (
-                                        <div
-                                            className={cn(
-                                                "flex items-center justify-between mb-2 px-1 group gap-0 rounded-md border border-transparent overflow-hidden transition-colors",
-                                                location.pathname.startsWith('/collections')
-                                                    ? "bg-primary/20 border-primary/30 shadow-sm"
-                                                    : "hover:bg-primary/20 hover:border-border"
-                                            )}
-                                        >
-                                            <ContextMenu>
-                                                <ContextMenuTrigger className="flex-1">
-                                                    <button
-                                                        onClick={() => {
-                                                            playSfx('cursor');
-                                                            navigate('/collections');
-                                                        }}
-                                                        className={cn(
-                                                            "flex items-center justify-center rounded-l-md rounded-r-none transition-all duration-200 group relative cursor-pointer px-2 w-full h-9 border border-transparent",
-                                                            location.pathname.startsWith('/collections')
-                                                                ? "text-primary"
-                                                                : "text-muted-foreground group-hover:text-primary"
-                                                        )}
-                                                    >
-                                                        <FolderOpen
-                                                            weight={location.pathname.startsWith('/collections') ? "fill" : "regular"}
-                                                            size={18}
-                                                            className="transition-transform group-hover:scale-110"
-                                                        />
-                                                        <span className="ml-2 text-xs font-medium tracking-tight flex-1 text-left">
-                                                            Collections
-                                                        </span>
-                                                    </button>
-                                                </ContextMenuTrigger>
-                                                <ContextMenuContent className="w-48">
-                                                    {createMenuContent}
-                                                </ContextMenuContent>
-                                            </ContextMenu>
-                                            <button
-                                                onClick={(e: ReactMouseEvent) => {
-                                                    playSfx('cursor');
-                                                    e.stopPropagation();
-                                                    setCreateCollectionOpen(true);
-                                                }}
-                                                className="h-9 w-9 flex items-center justify-center rounded-r-md rounded-l-none border border-transparent border-l border-l-border/40 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                                                title="New Collection"
-                                                data-sound-confirm
-                                            >
-                                                <Plus weight="bold" className="size-4" />
-                                            </button>
-                                        </div>
-                                    ) : isSlim ? (
-                                        <div className="flex justify-center mb-2">
-                                            <ContextMenu>
-                                                <ContextMenuTrigger className="flex justify-center">
-                                                    <button
-                                                        onClick={() => {
-                                                            playSfx('cursor');
-                                                            navigate('/collections');
-                                                            setSidebarView('main');
-                                                        }}
-                                                        className={cn(
-                                                            "text-muted-foreground hover:text-primary transition-colors",
-                                                            location.pathname === '/collections' && "text-primary"
-                                                        )}
-                                                        title="All Collections"
-                                                    >
-                                                        <Folder weight="bold" className="size-5" />
-                                                    </button>
-                                                </ContextMenuTrigger>
-                                                <ContextMenuContent className="w-48">
-                                                    {createMenuContent}
-                                                </ContextMenuContent>
-                                            </ContextMenu>
-                                        </div>
-                                    ) : null}
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={(args) => {
+                                            // 1. Check for all Folder Nesting targets (including root)
+                                            // We use rectIntersection to make them easier targets than individual sortable items
+                                            const folderCollisions = rectIntersection({
+                                                ...args,
+                                                droppableContainers: args.droppableContainers.filter(c => 
+                                                    c.id.toString().startsWith("folder-nest-")
+                                                )
+                                            });
+                                            if (folderCollisions.length > 0) return folderCollisions;
 
-                                    <AnimatePresence initial={false}>
-                                        {(!isSidebarCollapsed || isSlim) && (
-                                            <motion.div
-                                                initial={isSlim ? false : { height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={isSlim ? undefined : { height: 0, opacity: 0 }}
-                                                className="space-y-1 overflow-visible"
-                                            >
-                                                <DndContext 
-                                                    sensors={sensors} 
-                                                    collisionDetection={closestCenter} 
-                                                    onDragEnd={handleDragEnd}
-                                                >
-                                                    <SortableContext 
-                                                        items={collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((c: Collection) => c.id)}
-                                                        strategy={verticalListSortingStrategy}
-                                                    >
-                                                        {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).map((collection: Collection) => (
-                                                            <SortableCollectionItem
-                                                                key={collection.id}
-                                                                collection={collection}
-                                                                location={location}
-                                                                isSlim={isSlim}
-                                                                handleSelectCollection={handleSelectCollection}
-                                                                handleEditCollectionClick={handleEditCollectionClick}
-                                                                handleDeleteCollection={handleDeleteCollection}
-                                                                setCollectionToEdit={setCollectionToEdit}
-                                                                setEditCollectionOpen={setEditCollectionOpen}
-                                                                trashCollection={trashCollection}
-                                                                createMenuContent={createMenuContent}
-                                                            />
-                                                        ))}
-                                                    </SortableContext>
-                                                </DndContext>
-                                                {collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted).length === 0 && (
-                                                    <div className={cn("px-3 py-4 text-xs text-muted-foreground/60 italic text-center border-2 border-dashed border-border/30 rounded-md", isSlim && "px-1 text-[10px]")}>
-                                                        {isSlim ? "No col." : "No collections"}
-                                                    </div>
-                                                )}
+                                            // 2. Fallback to pointer for sortable reordering
+                                            const pointerCollisions = pointerWithin(args);
+                                            if (pointerCollisions.length > 0) return pointerCollisions;
+                                            
+                                            return closestCenter(args);
+                                        }}
+                                        onDragStart={handleDragStart}
+                                        onDragEnd={handleDragEnd}
+                                        onDragCancel={handleDragCancel}
+                                    >
+                                        <SidebarFolderItem
+                                             isRoot
+                                             folder={{ 
+                                                 id: activeCollectionId || 'root',
+                                                 name: activeCollection ? activeCollection.name : "Collections" 
+                                             }}
+                                             isSlim={isSlim}
+                                             isCollapsed={!rootCollectionsOpen}
+                                             onToggleCollapse={() => {
+                                                  setRootCollectionsOpen(!rootCollectionsOpen);
+                                              }}
+                                             handleAddCollection={handleAddCollection}
+                                             handleAddFolder={handleAddFolder}
+                                          >
+                                              <div className="space-y-0.5">
+                                                  {!activeCollectionId ? (
+                                                      <div className="px-3 py-4 text-center">
+                                                          <p className="text-[10px] text-muted-foreground mb-2 uppercase tracking-tighter">No bucket selected</p>
+                                                          <Button 
+                                                              variant="outline" 
+                                                              size="sm" 
+                                                              className="h-7 text-[10px] w-full rounded-none border-border/60 bg-secondary/20"
+                                                              onClick={() => setSidebarView('collections')}
+                                                          >
+                                                              Open Buckets
+                                                          </Button>
+                                                      </div>
+                                                  ) : (() => {
+                                                      const renderCollectionTree = (parentId: string | null = null, depth = 0) => {
+                                                            const items = collections
+                                                                .filter(c => c.projectId === activeProjectId && !c.deleted && c.parentId === parentId)
+                                                                .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                                            const itemIds = items.map(c => c.id);
+
+                                                            return (
+                                                                <SortableContext 
+                                                                    items={itemIds} 
+                                                                    strategy={verticalListSortingStrategy}
+                                                                >
+                                                                    {items.map(item => {
+                                                                        if (item.type === 'folder') {
+                                                                            return (
+                                                                                <SidebarFolderItem
+                                                                                    key={item.id}
+                                                                                    folder={item}
+                                                                                    isSlim={isSlim}
+                                                                                    depth={depth}
+                                                                                    folders={projectCollections.filter(f => f.type === 'folder' && f.id !== item.id)}
+                                                                                    handleAddCollection={handleAddCollection}
+                                                                                    handleAddFolder={handleAddFolder}
+                                                                                    onRename={() => {
+                                                                                        setCollectionToEdit(item);
+                                                                                        setEditCollectionOpen(true);
+                                                                                    }}
+                                                                                    onDelete={() => trashCollection(item.id)}
+                                                                                    onMove={(newParentId: string | null) => {
+                                                                                        useStore.setState((state: any) => ({
+                                                                                            collections: state.collections.map((c: Collection) => 
+                                                                                                c.id === item.id ? { ...c, parentId: newParentId, lastModified: Date.now() } : c
+                                                                                            )
+                                                                                        }));
+                                                                                    }}
+                                                                                >
+                                                                                    {renderCollectionTree(item.id, depth + 1)}
+                                                                                </SidebarFolderItem>
+                                                                            );
+                                                                        }
+                                                                        return (
+                                                                            <SortableCollectionItem
+                                                                                key={item.id}
+                                                                                collection={item}
+                                                                                location={location}
+                                                                                isSlim={isSlim}
+                                                                                handleSelectCollection={handleSelectCollection}
+                                                                                handleEditCollectionClick={handleEditCollectionClick}
+                                                                                handleDeleteCollection={handleDeleteCollection}
+                                                                                setCollectionToEdit={setCollectionToEdit}
+                                                                                setEditCollectionOpen={setEditCollectionOpen}
+                                                                                trashCollection={trashCollection}
+                                                                                createMenuContent={createMenuContent}
+                                                                            />
+                                                                        );
+                                                                    })}
+                                                                </SortableContext>
+                                                            );
+                                                        };
+                                                        return renderCollectionTree(activeCollectionId);
+                                                  })()}
+                                              </div>
+                                              {activeCollectionId && collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted && c.parentId === activeCollectionId).length === 0 && (
+                                                  <div className={cn("px-3 py-4 text-xs text-muted-foreground/60 italic text-center border-2 border-dashed border-border/30 rounded-md", isSlim && "px-1 text-[10px]")}>
+                                                      {isSlim ? "Empty" : "Bucket is empty"}
+                                                  </div>
+                                              )}
+                                          </SidebarFolderItem>
+                                        <DragOverlay dropAnimation={null}>
+                                            {activeDragId ? (() => {
+                                                const item = collections.find(c => c.id === activeDragId);
+                                                if (!item) return null;
+                                                const Icon = getIcon(item.icon);
+                                                return (
+                                                     <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm bg-zinc-900 border border-zinc-800 shadow-xl opacity-90 w-48 pointer-events-none">
+                                                        <Icon className="text-lg shrink-0" weight="fill" style={{ color: item.color }} />
+                                                        <span className="truncate font-medium">{item.name}</span>
+                                                     </div>
+                                                );
+                                            })() : null}
+                                        </DragOverlay>
+                                    </DndContext>
                                 </div>
                             </ScrollArea>
                         </motion.div>
@@ -1758,6 +2505,86 @@ export default function ProjectSidebar() {
                             className="flex-1 flex flex-col min-h-0"
                         >
                             <SidebarSync onBack={() => setSidebarView('main')} />
+                        </motion.div>
+                    ) : sidebarView === 'collections' ? (
+                        <motion.div
+                            key="collections"
+                            initial={{ x: 20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 20, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex-1 flex flex-col min-h-0"
+                        >
+                            <div className="p-3 pb-2 border-b border-border/40 shrink-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            setSidebarView('main');
+                                        }}
+                                    >
+                                        <CaretLeft className="text-muted-foreground" />
+                                    </Button>
+                                    <div className="flex flex-col text-sm font-semibold text-foreground uppercase tracking-wider leading-tight">
+                                        <div className="flex items-center gap-2">
+                                            <Folder weight="bold" />
+                                            <span>Collection</span>
+                                        </div>
+                                        <span className="ml-6">Buckets</span>
+                                    </div>
+                                    <div className="flex-1" />
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => { 
+                                            playSfx('cursor'); 
+                                            handleAddCollection();
+                                        }} 
+                                        className="size-6"
+                                    >
+                                        <Plus weight="bold" className="size-3.5" />
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <ScrollArea className="flex-1 px-3 py-2">
+                                <div className="space-y-1">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                        <SortableContext items={collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted).map((c: Collection) => c.id)} strategy={verticalListSortingStrategy}>
+                                            {collections
+                                                .filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted)
+                                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                                .map((collection: Collection) => (
+                                                    <SortableCollectionItem
+                                                        key={collection.id}
+                                                        collection={collection}
+                                                        location={location}
+                                                        isSlim={false}
+                                                        handleSelectCollection={(id: string) => {
+                                                            handleSelectCollection(id);
+                                                            setSidebarView('main');
+                                                        }}
+                                                        handleEditCollectionClick={handleEditCollectionClick}
+                                                        handleDeleteCollection={handleDeleteCollection}
+                                                        setCollectionToEdit={setCollectionToEdit}
+                                                        setEditCollectionOpen={setEditCollectionOpen}
+                                                        trashCollection={trashCollection}
+                                                        createMenuContent={createMenuContent}
+                                                    />
+                                                ))}
+                                        </SortableContext>
+                                    </DndContext>
+
+                                    {collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted).length === 0 && (
+                                        <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">
+                                            No buckets created yet
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
                         </motion.div>
                     ) : (
                         <motion.div
@@ -1919,8 +2746,13 @@ export default function ProjectSidebar() {
                 open={createCollectionOpen}
                 onOpenChange={setCreateCollectionOpen}
                 onSubmit={handleCreateCollection}
+                title={sidebarView === 'collections' ? "New Bucket" : "New Collection"}
             />
-
+            <CreateFolderDialog
+                open={createFolderOpen}
+                onOpenChange={setCreateFolderOpen}
+                onSubmit={handleCreateFolder}
+            />
             <EditCollectionDialog
                 open={editCollectionOpen}
                 onOpenChange={setEditCollectionOpen}

@@ -31,6 +31,8 @@ export interface Collection {
     name: string;
     color: string;
     icon?: string;
+    type?: 'bucket' | 'folder' | 'collection';
+    order: number;
     created: number;
     lastModified: number;
     lastViewed?: number;

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import type { ReactElement, MouseEvent, ReactNode, CSSProperties, ChangeEvent, SyntheticEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
@@ -8,8 +8,9 @@ import {
     HardDrives, Folder, File as FileIcon, FilePdf, FileText, Image, MusicNote, VideoCamera,
     DotsThreeVertical, Trash, PencilSimple, DownloadSimple, ShareNetwork,
     MagnifyingGlass, Plus, CaretRight, FileVideo, CheckSquare, Square,
-    LinkSimple, CaretDown, ArrowsOutSimple,
-    SquaresFour, Rows, FolderOpen, ArrowSquareOut, X, Copy, Palette, Share
+    LinkSimple, CaretDown, CaretUp, ArrowsOutSimple, Clock, Tag,
+    SquaresFour, Rows, FolderOpen, ArrowSquareOut, X, Copy, Palette, Share,
+    Cards
 } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import { type File as AppFile } from "@/types";
@@ -33,6 +34,7 @@ import {
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
+    rectSortingStrategy,
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -49,6 +51,7 @@ import {
     BreadcrumbItem,
     BreadcrumbLink,
     BreadcrumbSeparator,
+    BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
 import {
     ContextMenu,
@@ -87,6 +90,44 @@ const STORAGE_COLORS = [
 
 
 
+type SortOption = "custom" | "name" | "date" | "type";
+type SortDirection = "asc" | "desc";
+
+function BreadcrumbDropTarget({ 
+    id, 
+    children, 
+    onClick, 
+    className,
+    isActive = false
+}: { 
+    id: string; 
+    children: React.ReactNode; 
+    onClick: () => void;
+    className?: string;
+    isActive?: boolean;
+}) {
+    const { isOver, setNodeRef } = useDroppable({
+        id: `breadcrumb-${id}`,
+        data: { type: 'breadcrumb', folderId: id === 'root' ? null : id }
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            onClick={onClick}
+            className={cn(
+                className,
+                "rounded px-1.5 py-0.5 transition-colors cursor-pointer",
+                isOver && "bg-primary/20 text-primary ring-1 ring-primary/30",
+                !isOver && !isActive && "hover:bg-accent/50 hover:text-accent-foreground",
+                isActive && "font-semibold text-foreground pointer-events-none"
+            )}
+        >
+            {children}
+        </div>
+    );
+}
+
 export default function StorageView() {
     const { id } = useParams();
     const {
@@ -113,7 +154,9 @@ export default function StorageView() {
         }
     }, [id, activeStorageId]);
 
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [viewMode, setViewMode] = useState<'grid' | 'list' | 'cards'>('list');
+    const [sortOption, setSortOption] = useState<SortOption>("custom");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [addFileOpen, setAddFileOpen] = useState(false);
     
     // Listen for action triggers
@@ -122,6 +165,16 @@ export default function StorageView() {
         window.addEventListener("trigger-storage-create-file", handleTriggerCreateFile);
         return () => window.removeEventListener("trigger-storage-create-file", handleTriggerCreateFile);
     }, []);
+
+    const getSortIcon = () => {
+        switch (sortOption) {
+            case "custom": return <Palette size={16} />;
+            case "name": return <FileText size={16} />;
+            case "date": return <Clock size={16} />;
+            case "type": return <Tag size={16} />;
+            default: return null;
+        }
+    };
 
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -188,7 +241,31 @@ export default function StorageView() {
         !f.deleted &&
         (normalizedQuery === "" || f.name.toLowerCase().includes(normalizedQuery))
     );
-    const orderedProjectFiles = [...projectFiles].sort((a, b) => a.order - b.order);
+
+    // Sort files based on option
+    const sortedProjectFiles = useMemo(() => {
+        if (sortOption === "custom") {
+            return [...projectFiles].sort((a, b) => a.order - b.order);
+        }
+
+        return [...projectFiles].sort((a, b) => {
+            let comparison = 0;
+            switch (sortOption) {
+                case "name":
+                    comparison = a.name.localeCompare(b.name);
+                    break;
+                case "date":
+                    comparison = (a.lastModified || a.created || 0) - (b.lastModified || b.created || 0);
+                    break;
+                case "type":
+                    comparison = a.type.localeCompare(b.type);
+                    break;
+            }
+            return sortDirection === "asc" ? comparison : -comparison;
+        });
+    }, [projectFiles, sortOption, sortDirection]);
+
+    const orderedProjectFiles = sortedProjectFiles;
 
     // Keyboard Navigation
     const getColumns = () => {
@@ -284,7 +361,7 @@ export default function StorageView() {
 
     // --- Shortcuts ---
     useKeybind("storage.selectAll", () => {
-        const ids = new Set(orderedProjectFiles.map(f => f.id));
+        const ids = new Set(orderedProjectFiles.map((f: AppFile) => f.id));
         setSelectedIds(ids);
         setSelectionMode(true);
     }, { preventDefault: true, disableInInput: true });
@@ -296,8 +373,8 @@ export default function StorageView() {
 
     useKeybind("storage.delete", () => {
         if (selectedIds.size > 0) {
-            selectedIds.forEach(id => trashFile(id));
-            setSelectedIds(new Set());
+            selectedIds.forEach((id: string) => trashFile(id));
+            setSelectedIds(new Set<string>());
             setSelectionMode(false);
         }
     }, { preventDefault: true, disableInInput: true });
@@ -426,6 +503,10 @@ export default function StorageView() {
         setActiveId(event.active.id as string);
     };
 
+    const handleDragCancel = () => {
+        setActiveId(null);
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over || active.id === over.id) {
@@ -433,11 +514,48 @@ export default function StorageView() {
             return;
         }
 
+        // Handle drop on breadcrumb
+        const overData = over.data.current;
+        if (overData?.type === 'breadcrumb') {
+            const targetFolderId = overData.folderId;
+            
+            // Don't move if it's already in that folder
+            const activeFile = files.find(f => f.id === active.id);
+            if (activeFile && activeFile.parentId === targetFolderId) {
+                setActiveId(null);
+                return;
+            }
+
+            useStore.setState(state => ({
+                files: state.files.map(f =>
+                    f.id === active.id
+                        ? { ...f, parentId: targetFolderId, lastModified: Date.now() }
+                        : f
+                )
+            }));
+            setActiveId(null);
+            return;
+        }
+
+        // If not in custom sort, don't allow reordering, but allow moving to folders
+        if (sortOption !== "custom") {
+            const overFile = files.find(f => f.id === over.id);
+            const isTargetFolder = over.id === 'root' || (overFile && overFile.type === 'folder');
+            
+            if (!isTargetFolder) {
+                setActiveId(null);
+                return;
+            }
+        }
+
         const targetFolderId = over.id === 'root' ? null : over.id as string;
 
         // Don't move if dropping on itself or same parent
         const activeFile = files.find(f => f.id === active.id);
-        if (activeFile?.parentId === targetFolderId) return;
+        if (activeFile?.parentId === targetFolderId) {
+            setActiveId(null);
+            return;
+        }
 
         // Verify target is a folder or root, not a file (unless dropping ON a folder in the grid)
         // If dropping on breadcrumb (which we assume over.id is), it's valid if it's a folder or root.
@@ -445,14 +563,27 @@ export default function StorageView() {
         // Grid folders are just normal IDs. Breadcrumb IDs match folder IDs (except root).
 
         // Check if dropping onto a folder
-        const overFile = files.find(f => f.id === over.id);
-        const isTargetFolder = over.id === 'root' || (overFile && overFile.type === 'folder');
+        let overId = over.id;
+        let isExplicitFolderDrop = false;
 
-        if (isTargetFolder) {
+        // Handle nested drop targets
+        if (overId.toString().startsWith("folder-nest-")) {
+            overId = overId.toString().replace("folder-nest-", "");
+            isExplicitFolderDrop = true;
+        }
+
+        const overFile = files.find(f => f.id === overId);
+        const isTargetFolder = overId === 'root' || (overFile && overFile.type === 'folder');
+
+        // Logic for dropping into folders (nesting)
+        // If it's an explicit folder drop (bullseye), or root, OR if we are not in custom sort (where everything is a drop target)
+        const isNestingDrop = isTargetFolder && (isExplicitFolderDrop || overId === 'root' || sortOption !== 'custom');
+
+        if (isNestingDrop) {
             useStore.setState(state => ({
                 files: state.files.map(f =>
                     f.id === active.id
-                        ? { ...f, parentId: targetFolderId, lastModified: Date.now() }
+                        ? { ...f, parentId: overId === 'root' ? null : overId as string, lastModified: Date.now() }
                         : f
                 )
             }));
@@ -508,13 +639,26 @@ export default function StorageView() {
             activationConstraint: {
                 distance: 8,
             },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
         })
     );
     const collisionDetection = (args: any) => {
+        // First, check if pointer is within any droppable
         const pointerCollisions = pointerWithin(args);
+        
+        // If we have pointer collisions, filter them
         if (pointerCollisions.length > 0) {
+            // Prioritize folder nest zones
+            const folderNest = pointerCollisions.find(c => c.id.toString().startsWith("folder-nest-"));
+            if (folderNest) {
+                return [folderNest];
+            }
             return pointerCollisions;
         }
+
+        // Fallback to closest center
         return closestCenter(args);
     };
 
@@ -541,17 +685,17 @@ export default function StorageView() {
     };
 
     const selectAll = () => {
-        const allIds = projectFiles.map(f => f.id);
+        const allIds = projectFiles.map((f: AppFile) => f.id);
         setSelectedIds(new Set(allIds));
     };
 
     const deselectAll = () => {
-        setSelectedIds(new Set());
+        setSelectedIds(new Set<string>());
     };
 
     const deleteSelected = () => {
-        selectedIds.forEach(id => trashFile(id));
-        setSelectedIds(new Set());
+        selectedIds.forEach((id: string) => trashFile(id));
+        setSelectedIds(new Set<string>());
         setSelectionMode(false);
     };
 
@@ -580,24 +724,10 @@ export default function StorageView() {
             ) : (
                 <div className="flex h-full bg-transparent text-foreground relative">
                     <div className="flex-1 flex flex-col">
-                        <div className="flex items-center gap-2 p-2 h-12 border-b border-border bg-card/30">
-                            <Breadcrumb className="flex-1 pl-2">
-                                <BreadcrumbList>
-                                    <DroppableBreadcrumb id="root" name={activeStorage?.name || "All Files"} isCurrent={!currentFolderId} onClick={() => handleNavigateFolder(null)} />
-
-                                    {breadcrumbs.map((folder, index) => (
-                                        <div key={folder.id} className="flex items-center">
-                                            <BreadcrumbSeparator />
-                                            <DroppableBreadcrumb
-                                                id={folder.id}
-                                                name={folder.name}
-                                                isCurrent={index === breadcrumbs.length - 1}
-                                                onClick={() => handleNavigateFolder(folder.id)}
-                                            />
-                                        </div>
-                                    ))}
-                                </BreadcrumbList>
-                            </Breadcrumb>
+                        <div className="flex items-center gap-2 px-4 h-12 border-b border-border bg-card/30">
+                            <h1 className="text-sm font-semibold tracking-tight">Storage</h1>
+                            
+                            <div className="flex-1" />
 
                             <div className="flex items-center gap-2">
                                 <div className="relative w-56">
@@ -610,20 +740,80 @@ export default function StorageView() {
                                     />
                                 </div>
                                 <Button
-                                    variant={selectionMode ? "secondary" : "ghost"}
+                                    variant="outline"
                                     size="icon"
-                                    className="size-8"
+                                    className={cn(
+                                        "size-8",
+                                        selectionMode && "bg-secondary border-secondary"
+                                    )}
                                     title="Selection mode"
                                     onClick={toggleSelectionMode}
                                 >
                                     <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="size-8" title="View as grid" onClick={() => setViewMode('grid')}>
-                                    <SquaresFour weight={viewMode === 'grid' ? "fill" : "regular"} size={16} className={viewMode === 'grid' ? "text-primary" : ""} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="size-8" title="View as list" onClick={() => setViewMode('list')}>
-                                    <Rows weight={viewMode === 'list' ? "fill" : "regular"} size={16} className={viewMode === 'list' ? "text-primary" : ""} />
-                                </Button>
+
+                                 <DropdownMenu>
+                                     <DropdownMenuTrigger asChild>
+                                         <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
+                                             {getSortIcon()}
+                                             Sort
+                                             {sortDirection === "asc" ? <CaretUp size={12} className="text-muted-foreground ml-auto" /> : <CaretDown size={12} className="text-muted-foreground ml-auto" />}
+                                         </Button>
+                                     </DropdownMenuTrigger>
+                                     <DropdownMenuContent align="end" className="w-40">
+                                         <DropdownMenuItem onClick={() => { setSortOption("custom"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                             <Palette size={16} weight={sortOption === "custom" ? "fill" : "regular"} className={sortOption === "custom" ? "text-primary" : ""} />
+                                             Custom Order
+                                         </DropdownMenuItem>
+                                         <DropdownMenuSeparator />
+                                         <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                             <FileText size={16} weight={sortOption === "name" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "asc" ? "text-primary" : ""} />
+                                             Name (A-Z)
+                                         </DropdownMenuItem>
+                                         <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("desc"); }} className="gap-2 text-xs">
+                                             <FileText size={16} weight={sortOption === "name" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "desc" ? "text-primary" : ""} />
+                                             Name (Z-A)
+                                         </DropdownMenuItem>
+                                         <DropdownMenuSeparator />
+                                         <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("desc"); }} className="gap-2 text-xs">
+                                             <Clock size={16} weight={sortOption === "date" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "desc" ? "text-primary" : ""} />
+                                             Newest First
+                                         </DropdownMenuItem>
+                                         <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                             <Clock size={16} weight={sortOption === "date" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "asc" ? "text-primary" : ""} />
+                                             Oldest First
+                                         </DropdownMenuItem>
+                                         <DropdownMenuSeparator />
+                                         <DropdownMenuItem onClick={() => { setSortOption("type"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                             <Tag size={16} weight={sortOption === "type" ? "fill" : "regular"} className={sortOption === "type" ? "text-primary" : ""} />
+                                             File Type
+                                         </DropdownMenuItem>
+                                     </DropdownMenuContent>
+                                 </DropdownMenu>
+
+                                 <DropdownMenu>
+                                     <DropdownMenuTrigger asChild>
+                                         <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
+                                             {viewMode === 'grid' ? <SquaresFour size={16} /> : viewMode === 'list' ? <Rows size={16} /> : <Cards size={16} />}
+                                             View
+                                             <CaretDown size={12} className="text-muted-foreground" />
+                                         </Button>
+                                     </DropdownMenuTrigger>
+                                     <DropdownMenuContent align="end" className="w-32">
+                                         <DropdownMenuItem onClick={() => setViewMode('grid')} className="gap-2 text-xs">
+                                             <SquaresFour size={16} weight={viewMode === 'grid' ? "fill" : "regular"} className={viewMode === 'grid' ? "text-primary" : ""} />
+                                             Grid
+                                         </DropdownMenuItem>
+                                         <DropdownMenuItem onClick={() => setViewMode('list')} className="gap-2 text-xs">
+                                             <Rows size={16} weight={viewMode === 'list' ? "fill" : "regular"} className={viewMode === 'list' ? "text-primary" : ""} />
+                                             List
+                                         </DropdownMenuItem>
+                                         <DropdownMenuItem onClick={() => setViewMode('cards')} className="gap-2 text-xs">
+                                             <Cards size={16} weight={viewMode === 'cards' ? "fill" : "regular"} className={viewMode === 'cards' ? "text-primary" : ""} />
+                                             Cards
+                                         </DropdownMenuItem>
+                                     </DropdownMenuContent>
+                                 </DropdownMenu>
                                 <div className="w-px h-5 bg-border mx-1" />
                                 <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => setAddFileOpen(true)}>
                                     <Plus weight="bold" size={14} />
@@ -634,6 +824,42 @@ export default function StorageView() {
                                     New Folder
                                 </Button>
                             </div>
+                        </div>
+
+                        {/* Breadcrumbs */}
+                        <div className="px-6 py-2 border-b bg-card/20 flex items-center gap-2">
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    <BreadcrumbItem>
+                                        <BreadcrumbDropTarget 
+                                            id="root" 
+                                            onClick={() => handleNavigateFolder(null)}
+                                            className="flex items-center gap-1.5 text-xs font-medium"
+                                            isActive={!currentFolderId}
+                                        >
+                                            <HardDrives size={14} weight="bold" className="text-muted-foreground/70" />
+                                            {activeStorage?.name || "Storage"}
+                                        </BreadcrumbDropTarget>
+                                    </BreadcrumbItem>
+                                    {breadcrumbs.map((folder, index) => (
+                                        <React.Fragment key={folder.id}>
+                                            <BreadcrumbSeparator>
+                                                <CaretRight size={12} weight="bold" className="text-muted-foreground/40" />
+                                            </BreadcrumbSeparator>
+                                            <BreadcrumbItem>
+                                                <BreadcrumbDropTarget 
+                                                    id={folder.id} 
+                                                    onClick={() => handleNavigateFolder(folder.id)}
+                                                    className="text-xs font-medium"
+                                                    isActive={index === breadcrumbs.length - 1}
+                                                >
+                                                    {folder.name}
+                                                </BreadcrumbDropTarget>
+                                            </BreadcrumbItem>
+                                        </React.Fragment>
+                                    ))}
+                                </BreadcrumbList>
+                            </Breadcrumb>
                         </div>
 
                         <AnimatePresence>
@@ -687,42 +913,85 @@ export default function StorageView() {
                         <div className="flex-1 overflow-auto p-4">
                             {viewMode === 'grid' ? (
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 pb-20">
-                                    {orderedProjectFiles.map(file => (
-                                        <FileCardGrid
-                                            key={file.id}
-                                            file={file}
-                                            onNavigate={handleNavigateFolder}
-                                            selectionMode={selectionMode}
-                                            isSelected={selectedIds.has(file.id)}
-                                            isFocused={focusedId === file.id}
-                                            onToggleSelect={toggleSelectItem}
-                                            onRename={handleRenameInit}
-                                            onMove={handleMoveInit}
-                                            onColorChange={handleColorChange}
-                                            onMouseEnter={() => setFocusedId(file.id)}
-                                        />
-                                    ))}
+                                    <SortableContext 
+                                        items={orderedProjectFiles.map(f => f.id)}
+                                        strategy={rectSortingStrategy}
+                                        disabled={sortOption !== "custom"}
+                                    >
+                                        {orderedProjectFiles.map((file: AppFile) => (
+                                            <FileCardGrid
+                                                key={file.id}
+                                                file={file}
+                                                onNavigate={handleNavigateFolder}
+                                                selectionMode={selectionMode}
+                                                isSelected={selectedIds.has(file.id)}
+                                                isFocused={focusedId === file.id}
+                                                onToggleSelect={toggleSelectItem}
+                                                onRename={handleRenameInit}
+                                                onMove={handleMoveInit}
+                                                onColorChange={handleColorChange}
+                                                onMouseEnter={() => setFocusedId(file.id)}
+                                                onMouseLeave={() => setFocusedId(null)}
+                                                sortOption={sortOption}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                    {orderedProjectFiles.length === 0 && <EmptyState />}
+                                </div>
+                            ) : viewMode === 'list' ? (
+                                <div className="flex flex-col gap-2 pb-10">
+                                    <SortableContext 
+                                        items={orderedProjectFiles.map(f => f.id)}
+                                        strategy={verticalListSortingStrategy}
+                                        disabled={sortOption !== "custom"}
+                                    >
+                                        {orderedProjectFiles.map((file: AppFile) => (
+                                            <FileCardList
+                                                key={file.id}
+                                                file={file}
+                                                onNavigate={handleNavigateFolder}
+                                                selectionMode={selectionMode}
+                                                isSelected={selectedIds.has(file.id)}
+                                                isFocused={focusedId === file.id}
+                                                onToggleSelect={toggleSelectItem}
+                                                onRename={handleRenameInit}
+                                                onMove={handleMoveInit}
+                                                onColorChange={handleColorChange}
+                                                onMouseEnter={() => setFocusedId(file.id)}
+                                                onMouseLeave={() => setFocusedId(null)}
+                                                sortOption={sortOption}
+                                            />
+                                        ))}
+                                    </SortableContext>
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
                                 </div>
                             ) : (
-                                <div className="flex flex-col gap-2 pb-10">
-                                    {orderedProjectFiles.map(file => (
-                                        <FileCardList
-                                            key={file.id}
-                                            file={file}
-                                            onNavigate={handleNavigateFolder}
-                                            selectionMode={selectionMode}
-                                            isSelected={selectedIds.has(file.id)}
-                                            isFocused={focusedId === file.id}
-                                            onToggleSelect={toggleSelectItem}
-                                            onRename={handleRenameInit}
-                                            onMove={handleMoveInit}
-                                            onColorChange={handleColorChange}
-                                            onMouseEnter={() => setFocusedId(file.id)}
-                                        />
-                                    ))}
-                                    {orderedProjectFiles.length === 0 && <EmptyState />}
-                                </div>
+                                <SortableContext 
+                                    items={orderedProjectFiles.map(f => f.id)}
+                                    strategy={rectSortingStrategy}
+                                    disabled={sortOption !== "custom"}
+                                >
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-20">
+                                        {orderedProjectFiles.map((file: AppFile) => (
+                                            <FileCardCards
+                                                key={file.id}
+                                                file={file}
+                                                onNavigate={handleNavigateFolder}
+                                                selectionMode={selectionMode}
+                                                isSelected={selectedIds.has(file.id)}
+                                                isFocused={focusedId === file.id}
+                                                onToggleSelect={toggleSelectItem}
+                                                onRename={handleRenameInit}
+                                                onMove={handleMoveInit}
+                                                onColorChange={handleColorChange}
+                                                onMouseEnter={() => setFocusedId(file.id)}
+                                                onMouseLeave={() => setFocusedId(null)}
+                                                sortOption={sortOption}
+                                            />
+                                        ))}
+                                        {orderedProjectFiles.length === 0 && <EmptyState />}
+                                    </div>
+                                </SortableContext>
                             )}
                         </div>
                     </div>
@@ -767,23 +1036,25 @@ export default function StorageView() {
                     (() => {
                         const file = files.find(f => f.id === activeId);
                         if (!file) return null;
-                        return viewMode === 'grid' ? (
-                            <FileCardGridInner 
+                        
+                        const Inner = viewMode === 'grid' 
+                            ? FileCardGridInner 
+                            : viewMode === 'list' 
+                                ? FileCardListInner 
+                                : FileCardCardsInner;
+                        
+                        return (
+                            <Inner 
                                 file={file} 
                                 isSelected={false} 
                                 isOver={false} 
                                 selectionMode={false} 
                                 showSelection={false}
-                                className="opacity-90 scale-105 shadow-2xl cursor-grabbing ring-2 ring-primary/50"
-                            />
-                        ) : (
-                            <FileCardListInner 
-                                file={file} 
-                                isSelected={false} 
-                                isOver={false} 
-                                selectionMode={false}
-                                showSelection={false}
-                                className="opacity-90 scale-105 shadow-2xl cursor-grabbing bg-card ring-2 ring-primary/50"
+                                className={cn(
+                                    "opacity-90 scale-105 shadow-2xl cursor-grabbing ring-2 ring-primary/50",
+                                    viewMode === 'list' && "bg-card",
+                                    viewMode === 'cards' && "w-[300px]" // Give it a fixed width in overlay for cards
+                                )}
                             />
                         );
                     })()
@@ -814,6 +1085,8 @@ interface FileCardProps {
     onMove: (file: AppFile) => void;
     onColorChange: (file: AppFile, color: string) => void;
     onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
+    sortOption?: string;
 }
 
 interface FileCardInnerProps {
@@ -840,7 +1113,7 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
             data-sound-cursor
             className={cn(
                 "flex flex-col gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/50 transition-all duration-200 aspect-[4/3] relative group hover:shadow-lg hover:shadow-primary/5 cursor-pointer select-none",
-                isOver && "ring-2 ring-primary bg-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.3)] scale-[1.02]",
+                isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.02]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
                 isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
@@ -869,6 +1142,17 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
                 <FileThumbnail file={file} iconSize={44} />
             </div>
             <div className="text-xs font-medium truncate px-1 text-center pointer-events-none">{file.name}</div>
+            
+            {/* Drop Target Overlay */}
+            {isOver && file.type === 'folder' && (
+                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
+                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                        <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
+                        <span className="text-xs font-semibold text-primary">Drop to move</span>
+                    </div>
+                </div>
+            )}
+            
             {children}
         </div>
     );
@@ -886,7 +1170,7 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
             data-sound-cursor
             className={cn(
                 "flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-md cursor-pointer select-none relative",
-                isOver && "ring-2 ring-primary bg-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.3)] scale-[1.01]",
+                isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.01]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
                 isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
@@ -896,6 +1180,16 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
                 ...(file.color ? { borderColor: file.color, boxShadow: `0 0 10px ${file.color}20` } : undefined)
             }}
         >
+            {/* Drop Target Overlay */}
+            {isOver && file.type === 'folder' && (
+                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
+                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                        <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
+                        <span className="text-xs font-semibold text-primary">Drop to move</span>
+                    </div>
+                </div>
+            )}
+
             {/* Selection checkbox */}
             {selectionMode && showSelection && (
                 <div className="mr-2">
@@ -936,27 +1230,126 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
     );
 }
 
-function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter }: FileCardProps) {
-    const Icon = getFileIcon(file.type);
+function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
+    const dateStr = new Date(file.created).toLocaleDateString();
+    
+    return (
+        <div
+            id={`file-card-${file.id}`}
+            onClick={onClick}
+            data-sound-cursor
+            className={cn(
+                "flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-xl cursor-pointer select-none relative h-full",
+                isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.02]",
+                isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
+                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
+                className
+            )}
+            style={{ 
+                ...style,
+                ...(file.color ? { borderColor: file.color, boxShadow: `0 0 20px ${file.color}15` } : undefined)
+            }}
+        >
+            {/* Selection checkbox */}
+            {selectionMode && showSelection && (
+                <div className="absolute top-3 left-3 z-10">
+                    {isSelected ? (
+                        <CheckSquare weight="fill" size={20} className="text-primary shadow-sm" />
+                    ) : (
+                        <Square weight="regular" size={20} className="text-white drop-shadow-md" />
+                    )}
+                </div>
+            )}
+
+            {!selectionMode && linkTo && (file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image') ? (
+                <Link to={linkTo} className="absolute inset-0 z-0" onClick={(e: MouseEvent) => { e.stopPropagation(); playSfx('cursor'); }} />
+            ) : null}
+
+            {/* Content Area (Top) */}
+            <div 
+                ref={domRef}
+                className="flex-1 min-h-[160px] bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors"
+            >
+                <FileThumbnail file={file} iconSize={48} />
+                
+                {/* Type Overlay */}
+                <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                    {file.type}
+                </div>
+
+                {/* Drop Target Overlay */}
+                {isOver && file.type === 'folder' && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20">
+                        <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                            <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
+                            <span className="text-xs font-semibold text-primary">Drop to move</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Details Area (Bottom) */}
+            <div className="p-4 flex flex-col gap-1.5 border-t border-border/50 bg-card/50 pointer-events-none">
+                <div className="font-bold text-sm truncate group-hover:text-primary transition-colors leading-tight">
+                    {file.name}
+                </div>
+                
+                <div className="flex items-center justify-between mt-1">
+                    <div className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-tighter">
+                        {dateStr}
+                    </div>
+                    {file.description && (
+                        <div className="text-[10px] text-muted-foreground/40 italic truncate max-w-[60%]">
+                            {file.description}
+                        </div>
+                    )}
+                </div>
+            </div>
+            {children}
+        </div>
+    );
+}
+
+function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    // Use sortable for reordering
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setSortableRef,
+        transition,
+        isDragging,
+        isOver: isSortableOver,
+        active,
+        over,
+        index
+    } = useSortable({
         id: file.id,
         data: file,
-        disabled: selectionMode,
+        disabled: selectionMode
     });
 
-    const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-        id: file.id,
-        disabled: selectionMode,
-        data: file
+    // Also use droppable for folder nesting
+    // "Bullseye" strategy:
+    // If Custom Sort: Inset drop zone to allow edge dragging for reorder.
+    // If Other Sort: Full drop zone.
+    const { setNodeRef: setDroppableRef, isOver: isFolderOver } = useDroppable({
+        id: `folder-nest-${file.id}`,
+        disabled: selectionMode || file.type !== 'folder',
+        data: { type: 'folder', folderId: file.id }
     });
 
-    const style = transform ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 999,
-        opacity: isDragging ? 0.5 : 1
-    } : undefined;
+    // Merge refs
+    const setNodeRef = (node: HTMLElement | null) => {
+        setSortableRef(node);
+        // We don't merge droppable ref here because it's a separate element now
+    };
+
+    const style = {
+        transition,
+        zIndex: isDragging ? 999 : undefined,
+    };
 
     const handleClick = (e: MouseEvent) => {
         if (selectionMode) {
@@ -970,19 +1363,66 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
         }
     };
 
+    // Calculate where the insertion line should be
+    // Only show line if we are over the Sortable (outer) but NOT the Nest (inner)
+    const showLine = isSortableOver && !isFolderOver && !isDragging && sortOption === "custom";
+    let linePosition: 'left' | 'right' | null = null;
+    
+    if (showLine && active && over) {
+        const activeIndex = active.data.current?.sortable?.index ?? -1;
+        const overIndex = over.data.current?.sortable?.index ?? index;
+        
+        if (activeIndex !== -1) {
+            linePosition = activeIndex > overIndex ? 'left' : 'right';
+        } else {
+            // If dragging from outside or something
+            linePosition = 'left';
+        }
+    }
+
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)} onMouseEnter={onMouseEnter}>
-                    <FileCardGridInner
+                <div 
+                    ref={setNodeRef} 
+                    style={style} 
+                    {...(selectionMode ? {} : listeners)} 
+                    {...(selectionMode ? {} : attributes)} 
+                    onMouseEnter={onMouseEnter}
+                    onMouseLeave={onMouseLeave}
+                    className="h-full touch-none relative"
+                >
+                    {/* Folder Nesting Bullseye */}
+                    {file.type === 'folder' && (
+                        <div
+                            ref={setDroppableRef}
+                            onClick={handleClick}
+                            className={cn(
+                                "absolute z-30 cursor-pointer",
+                                sortOption === "custom" ? "inset-4 rounded-lg" : "inset-0 rounded-xl"
+                            )}
+                        />
+                    )}
+
+                    {/* Visual line indicator for insertion */}
+                    {linePosition === 'left' && (
+                        <div className="absolute -left-3 top-0 bottom-0 w-1 bg-primary z-50 rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)] animate-pulse" />
+                    )}
+                    {linePosition === 'right' && (
+                        <div className="absolute -right-3 top-0 bottom-0 w-1 bg-primary z-50 rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)] animate-pulse" />
+                    )}
+
+                    <FileCardCardsInner
                         file={file}
-                        domRef={setDroppableRef}
                         isSelected={isSelected}
                         isFocused={isFocused}
-                        isOver={isOver}
+                        isOver={isFolderOver}
                         selectionMode={selectionMode}
                         onClick={handleClick}
                         linkTo={linkTo}
+                        className={cn(
+                            isDragging && "opacity-0"
+                        )}
                     />
                 </div>
             </ContextMenuTrigger>
@@ -997,28 +1437,43 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
     );
 }
 
-function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter }: FileCardProps) {
+function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
-    const dateStr = new Date(file.created).toLocaleDateString();
-    const typeLabel = file.type.toUpperCase();
 
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    // Use sortable for reordering
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setSortableRef,
+        transition,
+        isDragging,
+        isOver: isSortableOver,
+        active,
+        over,
+        index
+    } = useSortable({
         id: file.id,
         data: file,
-        disabled: selectionMode,
+        disabled: selectionMode
     });
 
-    const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-        id: file.id,
-        disabled: selectionMode,
-        data: file
+    // Also use droppable for folder nesting
+    const { setNodeRef: setDroppableRef, isOver: isFolderOver } = useDroppable({
+        id: `folder-nest-${file.id}`,
+        disabled: selectionMode || file.type !== 'folder',
+        data: { type: 'folder', folderId: file.id }
     });
 
-    const style = transform ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 999,
-        opacity: isDragging ? 0.5 : 1
-    } : undefined;
+    // Merge refs
+    const setNodeRef = (node: HTMLElement | null) => {
+        setSortableRef(node);
+        // Do NOT merge Droppable ref, it goes on the overlay
+    };
+
+    const style = {
+        transition,
+        zIndex: isDragging ? 999 : undefined,
+    };
 
     const handleClick = (e: MouseEvent) => {
         if (selectionMode) {
@@ -1032,19 +1487,186 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, 
         }
     };
 
+    // Calculate where the insertion line should be
+    const showLine = isSortableOver && !isFolderOver && !isDragging && sortOption === "custom";
+    let linePosition: 'left' | 'right' | null = null;
+    
+    if (showLine && active && over) {
+        const activeIndex = active.data.current?.sortable?.index ?? -1;
+        const overIndex = over.data.current?.sortable?.index ?? index;
+        
+        if (activeIndex !== -1) {
+            linePosition = activeIndex > overIndex ? 'left' : 'right';
+        } else {
+            linePosition = 'left';
+        }
+    }
+
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div ref={setNodeRef} style={style} {...(selectionMode ? {} : listeners)} {...(selectionMode ? {} : attributes)} onMouseEnter={onMouseEnter}>
-                    <FileCardListInner
+                <div 
+                    ref={setNodeRef} 
+                    style={style} 
+                    {...(selectionMode ? {} : listeners)} 
+                    {...(selectionMode ? {} : attributes)} 
+                    onMouseEnter={onMouseEnter}
+                    onMouseLeave={onMouseLeave}
+                    className="touch-none relative h-full"
+                >
+                    {/* Folder Nesting Bullseye */}
+                    {file.type === 'folder' && (
+                        <div
+                            ref={setDroppableRef}
+                            onClick={handleClick}
+                            className={cn(
+                                "absolute z-30 cursor-pointer",
+                                sortOption === "custom" ? "inset-3 rounded-md" : "inset-0 rounded-lg"
+                            )}
+                        />
+                    )}
+
+                    {/* Visual line indicator for insertion */}
+                    {linePosition === 'left' && (
+                        <div className="absolute -left-3 top-0 bottom-0 w-1 bg-primary z-50 rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)] animate-pulse" />
+                    )}
+                    {linePosition === 'right' && (
+                        <div className="absolute -right-3 top-0 bottom-0 w-1 bg-primary z-50 rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)] animate-pulse" />
+                    )}
+
+                    <FileCardGridInner
                         file={file}
-                        domRef={setDroppableRef}
                         isSelected={isSelected}
                         isFocused={isFocused}
-                        isOver={isOver}
+                        isOver={isFolderOver}
                         selectionMode={selectionMode}
                         onClick={handleClick}
                         linkTo={linkTo}
+                        className={cn(
+                            isDragging && "opacity-0"
+                        )}
+                    />
+                </div>
+            </ContextMenuTrigger>
+            <FileContextMenu 
+                file={file} 
+                onRename={() => onRename(file)}
+                onMove={() => onMove(file)}
+                onSelect={() => onToggleSelect(file.id)}
+                onColorChange={(color) => onColorChange(file, color)}
+            />
+        </ContextMenu>
+    );
+}
+
+function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
+    const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
+
+    // Use sortable for reordering
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setSortableRef,
+        transition,
+        isDragging,
+        isOver: isSortableOver,
+        active,
+        over,
+        index
+    } = useSortable({
+        id: file.id,
+        data: file,
+        disabled: selectionMode
+    });
+
+    // Also use droppable for folder nesting
+    const { setNodeRef: setDroppableRef, isOver: isFolderOver } = useDroppable({
+        id: `folder-nest-${file.id}`,
+        disabled: selectionMode || file.type !== 'folder',
+        data: { type: 'folder', folderId: file.id }
+    });
+
+    // Merge refs
+    const setNodeRef = (node: HTMLElement | null) => {
+        setSortableRef(node);
+        // Do NOT merge Droppable ref
+    };
+
+    const style = {
+        transition,
+        zIndex: isDragging ? 999 : undefined,
+    };
+
+    const handleClick = (e: MouseEvent) => {
+        if (selectionMode) {
+            e.preventDefault();
+            onToggleSelect(file.id);
+            return;
+        }
+        if (file.type === 'folder') {
+            e.preventDefault();
+            onNavigate(file.id);
+        }
+    };
+
+    // Calculate where the insertion line should be
+    const showLine = isSortableOver && !isFolderOver && !isDragging && sortOption === "custom";
+    let linePosition: 'top' | 'bottom' | null = null;
+    
+    if (showLine && active && over) {
+        const activeIndex = active.data.current?.sortable?.index ?? -1;
+        const overIndex = over.data.current?.sortable?.index ?? index;
+        
+        if (activeIndex !== -1) {
+            linePosition = activeIndex > overIndex ? 'top' : 'bottom';
+        } else {
+            linePosition = 'top';
+        }
+    }
+
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger asChild disabled={selectionMode}>
+                <div 
+                    ref={setNodeRef} 
+                    style={style} 
+                    {...(selectionMode ? {} : listeners)} 
+                    {...(selectionMode ? {} : attributes)} 
+                    onMouseEnter={onMouseEnter}
+                    onMouseLeave={onMouseLeave}
+                    className="touch-none relative"
+                >
+                    {/* Folder Nesting Bullseye */}
+                    {file.type === 'folder' && (
+                        <div
+                            ref={setDroppableRef}
+                            onClick={handleClick}
+                            className={cn(
+                                "absolute z-30 cursor-pointer",
+                                sortOption === "custom" ? "inset-y-1 inset-x-4 rounded-md" : "inset-0 rounded-lg"
+                            )}
+                        />
+                    )}
+
+                    {/* Visual line indicator for insertion */}
+                    {linePosition === 'top' && (
+                        <div className="absolute -top-1 left-0 right-0 h-1 bg-primary z-50 rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)] animate-pulse" />
+                    )}
+                    {linePosition === 'bottom' && (
+                        <div className="absolute -bottom-1 left-0 right-0 h-1 bg-primary z-50 rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)] animate-pulse" />
+                    )}
+
+                    <FileCardListInner
+                        file={file}
+                        isSelected={isSelected}
+                        isFocused={isFocused}
+                        isOver={isFolderOver}
+                        selectionMode={selectionMode}
+                        onClick={handleClick}
+                        linkTo={linkTo}
+                        className={cn(
+                            isDragging && "opacity-0"
+                        )}
                     />
                 </div>
             </ContextMenuTrigger>

@@ -8,7 +8,7 @@ interface User {
 }
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
-type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync';
+type SidebarView = 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync' | 'collections';
 export type SoundKey = 'cursor' | 'confirm' | 'error' | 'back' | 'search';
 
 interface SoundConfig {
@@ -1277,18 +1277,23 @@ export const useStore = create<AppStore>()(
                     timestamp: Date.now()
                 }, ...state.history]
             })),
-            trashCollection: (id) => set((state) => ({
-                collections: state.collections.map((c) => c.id === id ? { ...c, deleted: true, lastModified: Date.now() } : c),
-                history: [{
-                    id: crypto.randomUUID(),
-                    projectId: state.activeProjectId || 'global',
-                    action: 'delete',
-                    entityType: 'collection',
-                    entityId: id,
-                    entityName: state.collections.find(c => c.id === id)?.name,
-                    timestamp: Date.now()
-                }, ...state.history]
-            })),
+            trashCollection: (id) => set((state) => {
+                const collection = state.collections.find(c => c.id === id);
+                const isBucket = collection?.type === 'bucket';
+                return {
+                    collections: state.collections.map((c) => c.id === id ? { ...c, deleted: true, lastModified: Date.now() } : c),
+                    activeCollectionId: (isBucket && state.activeCollectionId === id) ? null : state.activeCollectionId,
+                    history: [{
+                        id: crypto.randomUUID(),
+                        projectId: state.activeProjectId || 'global',
+                        action: 'delete',
+                        entityType: 'collection',
+                        entityId: id,
+                        entityName: state.collections.find(c => c.id === id)?.name,
+                        timestamp: Date.now()
+                    }, ...state.history]
+                };
+            }),
             restoreCollection: (id) => set((state) => ({
                 collections: state.collections.map((c) => c.id === id ? { ...c, deleted: false, lastModified: Date.now() } : c),
                 history: [{

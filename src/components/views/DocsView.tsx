@@ -313,11 +313,11 @@ function DocEditor({ doc }: DocEditorProps) {
     return (
         <>
             {/* Toolbar */}
-            <div className="flex items-center gap-1 p-2 border-b border-border bg-card/30 flex-wrap">
+            <div className="flex items-center gap-1 px-4 h-12 border-b border-border bg-card/30 flex-wrap shrink-0">
                 <Input
                     value={docName}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setDocName(e.target.value)}
-                    className="max-w-xs font-medium border-none shadow-none focus-visible:ring-0 bg-transparent px-2 text-base mr-auto"
+                    className="max-w-xs font-medium border-none shadow-none focus-visible:ring-0 bg-transparent px-2 text-sm mr-auto"
                     placeholder="Untitled"
                 />
 

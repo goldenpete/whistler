@@ -55,6 +55,7 @@ export default function App() {
     };
   }, []);
 
+  /* 
   useEffect(() => {
     const removeTitles = (root: ParentNode) => {
       if (root instanceof Element && root.hasAttribute('title')) {
@@ -81,6 +82,7 @@ export default function App() {
     observer.observe(document.body, { attributes: true, attributeFilter: ['title'], childList: true, subtree: true });
     return () => observer.disconnect();
   }, []);
+  */
 
   if (shouldThrow) {
     throw new Error("Test error triggered manually via console");
@@ -222,28 +224,20 @@ export default function App() {
       <DoubleTapMenu />
       <Suspense fallback={<div className="h-screen w-screen bg-background" />}>
         <Routes>
-          {projects.length === 0 ? (
-            <>
-              <Route path="/" element={<WelcomeView />} />
-              <Route path="/legal/:tab?" element={<LegalView />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          ) : (
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<HomeView />} />
-              <Route path="/storage/:id?" element={<StorageView />} />
-              <Route path="/file/:id" element={<FileView />} />
-              <Route path="/docs/:id?" element={<DocsView />} />
-              <Route path="/graphs/:id?" element={<GraphView />} />
-              <Route path="/collection/:id" element={<CollectionView />} />
-              <Route path="/collections" element={<CollectionsView />} />
-              <Route path="/settings" element={<SettingsView />} />
-                <Route path="/settings/legal/:tab?" element={<SettingsView />} />
-                <Route path="/welcome" element={<WelcomeView />} />
-              <Route path="/legal/:tab?" element={<LegalView />} />
-              <Route path="*" element={<NotFoundView />} />
-            </Route>
-          )}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={projects.length === 0 ? <WelcomeView /> : <HomeView />} />
+            <Route path="/welcome" element={<WelcomeView />} />
+            <Route path="/storage/:id?" element={<StorageView />} />
+            <Route path="/file/:id" element={<FileView />} />
+            <Route path="/docs/:id?" element={<DocsView />} />
+            <Route path="/graphs/:id?" element={<GraphView />} />
+            <Route path="/collection/:id" element={<CollectionView />} />
+            <Route path="/collections" element={<CollectionsView />} />
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="/settings/legal/:tab?" element={<SettingsView />} />
+            <Route path="/legal/:tab?" element={<LegalView />} />
+            <Route path="*" element={<NotFoundView />} />
+          </Route>
         </Routes>
       </Suspense>
     </>

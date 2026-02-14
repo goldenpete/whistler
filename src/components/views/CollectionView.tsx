@@ -1,9 +1,9 @@
-import React, { useState, useRef, type ChangeEvent } from "react";
+import React, { useState, useRef, useMemo, useEffect, type ChangeEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useEffect } from "react";
 import {
+    HardDrives,
     Folder,
     FilmStrip,
     Trash,
@@ -14,13 +14,22 @@ import {
     MagnifyingGlass,
     FilePdf,
     MusicNote,
-    PencilSimple
+    PencilSimple,
+    CaretRight
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, formatTime } from "@/lib/utils";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -162,34 +171,47 @@ export default function CollectionView() {
     };
 
     const CollectionIcon = getIcon(activeCollection?.icon);
+    const activeBucket = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
+
+    const breadcrumbs = useMemo(() => {
+        const path: { id: string; name: string }[] = [];
+        let current = activeCollection?.parentId ? collections.find(c => c.id === activeCollection.parentId) : null;
+        while (current) {
+            // Stop if we reach the active bucket or an item with no parent
+            if (current.id === activeCollectionId) break;
+            
+            path.unshift({ id: current.id, name: current.name });
+            const parentId = current.parentId;
+            current = parentId ? collections.find(c => c.id === parentId) : null;
+        }
+        return path;
+    }, [activeCollection, collections, activeCollectionId]);
 
     return (
         <div className="flex flex-col h-full bg-transparent text-foreground">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border bg-card/30">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary">
-                        <CollectionIcon weight="fill" size={24} style={{ color: activeCollection?.color }} />
-                    </div>
-                    <div>
-                        <h1 className="text-lg font-semibold leading-none">{activeCollection?.name || "Collection"}</h1>
-                        <p className="text-xs text-muted-foreground mt-1">{collectionHighlights.length} highlights</p>
-                    </div>
+            <div className="flex items-center justify-between px-4 h-12 border-b border-border bg-card/30">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-sm font-semibold tracking-tight">Collection</h1>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="relative w-64 mr-2">
-                        <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+                    <div className="relative w-48 mr-1">
+                        <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
                         <Input
-                            placeholder="Search highlights..."
-                            className="pl-9 h-9"
+                            placeholder="Search..."
+                            className="pl-8 h-8 text-xs"
                             value={searchQuery}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <Button
-                        variant={selectionMode ? "secondary" : "ghost"}
+                        variant="outline"
                         size="icon"
+                        className={cn(
+                            "size-8",
+                            selectionMode && "bg-secondary border-secondary"
+                        )}
                         onClick={() => {
                             if (selectionMode) {
                                 setSelectionMode(false);
@@ -199,9 +221,50 @@ export default function CollectionView() {
                             }
                         }}
                     >
-                        <CheckSquare weight={selectionMode ? "fill" : "regular"} size={20} />
+                        <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
                     </Button>
                 </div>
+            </div>
+
+            {/* Breadcrumbs */}
+            <div className="px-6 py-2 border-b bg-card/20 flex items-center gap-2">
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink 
+                                className="cursor-pointer hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
+                                onClick={() => navigate('/collections')}
+                            >
+                                <HardDrives size={14} weight="bold" className="text-muted-foreground/70" />
+                                {activeBucket?.name || "Collections"}
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        {breadcrumbs.map((crumb) => (
+                            <React.Fragment key={crumb.id}>
+                                <BreadcrumbSeparator>
+                                    <CaretRight size={12} weight="bold" className="text-muted-foreground/40" />
+                                </BreadcrumbSeparator>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink 
+                                        className="cursor-pointer hover:text-primary transition-colors text-xs font-medium"
+                                        onClick={() => navigate(`/collections?folderId=${crumb.id}`)}
+                                    >
+                                        {crumb.name}
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                            </React.Fragment>
+                        ))}
+                        <BreadcrumbSeparator>
+                            <CaretRight size={12} weight="bold" className="text-muted-foreground/40" />
+                        </BreadcrumbSeparator>
+                        <BreadcrumbItem>
+                            <BreadcrumbPage className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                                <CollectionIcon weight="fill" size={14} style={{ color: activeCollection?.color }} />
+                                {activeCollection?.name}
+                            </BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
             </div>
 
             {/* Selection Toolbar */}
