@@ -205,6 +205,9 @@ function SidebarFolderItem({
         collections: state.collections
     })));
 
+    const activeCollection = activeCollectionId ? collections.find((c: Collection) => c.id === activeCollectionId) : null;
+    const CollectionIcon = activeCollection ? getIcon(activeCollection.icon) : Folder;
+
     const {
         attributes,
         listeners,
@@ -263,7 +266,7 @@ function SidebarFolderItem({
                     )}
                     title={isRoot ? (activeCollectionId ? (collections.find(c => c.id === activeCollectionId)?.name || "Bucket") : "Collections") : folder.name}
                 >
-                    {isRoot ? (activeCollectionId ? <HardDrives weight="fill" className="size-5" /> : <Folder weight="fill" className="size-5" />) : <FolderOpen weight="bold" className="size-4" />}
+                    {isRoot ? (activeCollectionId ? <CollectionIcon weight="fill" className="size-5" /> : <Folder weight="fill" className="size-5" />) : <FolderOpen weight="bold" className="size-4" />}
                 </button>
             </div>
         );
@@ -303,12 +306,17 @@ function SidebarFolderItem({
                         </div>
                         {isRoot && (
                             activeCollectionId 
-                                ? <HardDrives weight="fill" className="flex-shrink-0 text-primary size-4" />
+                                ? <CollectionIcon weight="fill" className="flex-shrink-0 text-primary size-4" />
                                 : <Folder weight="fill" className="flex-shrink-0 text-primary size-4" />
                         )}
-                        <span title={folder.name} className="truncate w-0 flex-1 text-left py-1.5">{folder.name}</span>
+                        <span title={folder.name} className="truncate w-0 flex-1 text-left py-1.5 max-w-[calc(100%-60px)]">{folder.name}</span>
                         
-                        <div className="hidden group-hover:flex h-full flex-shrink-0 items-center transition-opacity">
+                        <div className={cn(
+                            "h-full flex-shrink-0 items-center transition-opacity",
+                            isRoot
+                                ? "flex opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+                                : "hidden group-hover:flex"
+                        )}>
                             <button
                                 onPointerDown={(e) => e.stopPropagation()}
                                 onClick={(e) => {
@@ -320,7 +328,7 @@ function SidebarFolderItem({
                                         navigate(`/collections?folderId=${folder.id}`);
                                     }
                                 }}
-                                className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all border-l border-primary/10"
                                 title="Open Folder"
                             >
                                 <ArrowSquareOut weight="bold" size={14} />
@@ -334,7 +342,7 @@ function SidebarFolderItem({
                                         playSfx('cursor');
                                         setSidebarView('collections');
                                     }}
-                                    className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                    className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all border-l border-primary/10"
                                     title="Manage Buckets"
                                 >
                                     <Gear weight="bold" size={14} />
@@ -346,13 +354,13 @@ function SidebarFolderItem({
                                     <button
                                         onPointerDown={(e) => e.stopPropagation()}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                        className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all border-l border-primary/10"
                                         title="Add Item"
                                     >
                                         <Plus weight="bold" size={14} />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuContent loop side="bottom" align="start" sideOffset={4} className="w-40">
                                     <DropdownMenuItem onClick={(e) => {
                                         e.stopPropagation();
                                         playSfx('cursor');
@@ -389,7 +397,7 @@ function SidebarFolderItem({
                                             playSfx('cursor');
                                             onRename();
                                         }}
-                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                        className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all border-l border-primary/10"
                                         title="Rename Folder"
                                     >
                                         <PencilSimple weight="bold" size={14} />
@@ -401,7 +409,7 @@ function SidebarFolderItem({
                                             playSfx('cursor');
                                             onDelete();
                                         }}
-                                        className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-red-500/20 hover:text-red-500 transition-all border-l border-primary/10"
+                                        className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-red-500/20 hover:text-red-500 transition-all border-l border-primary/10"
                                         title="Delete Folder"
                                     >
                                         <Trash weight="bold" size={14} />
@@ -412,7 +420,7 @@ function SidebarFolderItem({
                     </div>
                 </ContextMenuTrigger>
                 {!isRoot && (
-                    <ContextMenuContent className="w-48">
+                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
                         <ContextMenuItem onClick={onRename}>
                             <PencilSimple className="mr-2 h-4 w-4" />
                             Rename Folder
@@ -533,7 +541,7 @@ function SortableCollectionItem({
                         title={isSlim ? collection.name : undefined}
                     >
                         <div className={cn(
-                            "flex items-center gap-3 pl-3 pr-0 py-0 rounded-none text-sm transition-all relative border shadow-sm h-9",
+                            "flex items-center gap-3 pl-3 pr-0 py-0 rounded-none text-sm transition-all relative border shadow-sm h-9 overflow-hidden",
                             (collection.type === 'bucket' ? (location.pathname === `/collections` && activeCollectionId === collection.id) : (location.pathname === `/collection/${collection.id}`))
                                 ? "bg-primary/20 text-primary font-medium border-primary/30"
                                 : "bg-secondary/10 text-muted-foreground border-border/20 hover:bg-secondary/30 hover:text-foreground hover:border-border/40",
@@ -544,7 +552,7 @@ function SortableCollectionItem({
                                 weight="fill"
                                 style={{ color: (collection.type === 'bucket' ? (location.pathname === `/collections` && activeCollectionId === collection.id) : (location.pathname === `/collection/${collection.id}`)) ? undefined : collection.color }}
                             />
-                            {!isSlim && <span title={collection.name} className="truncate flex-1 py-2 min-w-0">{collection.name}</span>}
+                            {!isSlim && <span title={collection.name} className="truncate w-0 flex-1 py-2 max-w-[calc(100%-50px)] group-hover/item:max-w-[calc(100%-95px)]">{collection.name}</span>}
 
                             {!isSlim && (
                                 <div className="absolute inset-y-0 right-0 flex items-center h-full opacity-0 group-hover/item:opacity-100 transition-opacity">
@@ -575,7 +583,7 @@ function SortableCollectionItem({
                         </div>
                     </div>
                 </ContextMenuTrigger>
-                <ContextMenuContent className="w-48">
+                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
                     <ContextMenuItem onClick={(e: ReactMouseEvent) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -1756,7 +1764,7 @@ export default function ProjectSidebar() {
                                                     />
                                                 </Link>
                                             </ContextMenuTrigger>
-                                            <ContextMenuContent className="w-48">
+                                            <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
                                                 <ContextMenuItem onClick={(e: ReactMouseEvent) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -2118,7 +2126,7 @@ export default function ProjectSidebar() {
                                                             )}
                                                         </button>
                                                     </ContextMenuTrigger>
-                                                    <ContextMenuContent className="w-48">
+                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
                                                         {createMenuContent}
                                                     </ContextMenuContent>
                                                 </ContextMenu>
@@ -2162,7 +2170,7 @@ export default function ProjectSidebar() {
                                                             )}
                                                         </button>
                                                     </ContextMenuTrigger>
-                                                    <ContextMenuContent className="w-48">
+                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
                                                         {createMenuContent}
                                                     </ContextMenuContent>
                                                 </ContextMenu>
@@ -2206,7 +2214,7 @@ export default function ProjectSidebar() {
                                                             )}
                                                         </button>
                                                     </ContextMenuTrigger>
-                                                    <ContextMenuContent className="w-48">
+                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
                                                         {createMenuContent}
                                                     </ContextMenuContent>
                                                 </ContextMenu>
