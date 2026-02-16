@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import type { ReactElement, MouseEvent, ReactNode, CSSProperties, ChangeEvent, SyntheticEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
+import { useStableRef } from "@/lib/use-stable-ref";
 import { useNavigate, useSearchParams, Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,7 @@ import { formatDistanceToNow } from "date-fns";
 import { type File as AppFile } from "@/types";
 import { playSfx } from "@/utils/sound";
 import {
-    DndContext, 
+    DndContext,
     closestCenter,
     pointerWithin,
     KeyboardSensor,
@@ -93,15 +94,15 @@ const STORAGE_COLORS = [
 type SortOption = "custom" | "name" | "date" | "type";
 type SortDirection = "asc" | "desc";
 
-function BreadcrumbDropTarget({ 
-    id, 
-    children, 
-    onClick, 
+function BreadcrumbDropTarget({
+    id,
+    children,
+    onClick,
     className,
     isActive = false
-}: { 
-    id: string; 
-    children: React.ReactNode; 
+}: {
+    id: string;
+    children: React.ReactNode;
     onClick: () => void;
     className?: string;
     isActive?: boolean;
@@ -158,7 +159,7 @@ export default function StorageView() {
     const [sortOption, setSortOption] = useState<SortOption>("custom");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [addFileOpen, setAddFileOpen] = useState(false);
-    
+
     // Listen for action triggers
     useEffect(() => {
         const handleTriggerCreateFile = () => setAddFileOpen(true);
@@ -279,7 +280,7 @@ export default function StorageView() {
 
     const handleMoveFocus = (direction: number) => {
         if (orderedProjectFiles.length === 0) return;
-        
+
         let newIndex = 0;
         if (!focusedId) {
             newIndex = 0;
@@ -304,10 +305,10 @@ export default function StorageView() {
         } else if (file.type === 'folder') {
             handleNavigateFolder(file.id);
         } else {
-             // Open file
+            // Open file
             const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : null;
             if (linkTo) {
-                 navigate(linkTo);
+                navigate(linkTo);
             }
         }
     };
@@ -387,11 +388,11 @@ export default function StorageView() {
         }
 
         if (currentFolderId) {
-             if (currentFolder && currentFolder.parentId) {
-                 setSearchParams({ folderId: currentFolder.parentId });
-             } else {
-                 setSearchParams({});
-             }
+            if (currentFolder && currentFolder.parentId) {
+                setSearchParams({ folderId: currentFolder.parentId });
+            } else {
+                setSearchParams({});
+            }
         }
     }, { preventDefault: true, disableInInput: true });
 
@@ -402,7 +403,7 @@ export default function StorageView() {
             if (file) handleRenameInit(file);
         }
     }, { preventDefault: true, disableInInput: true });
-    
+
     useKeybind("storage.clearSelection", () => {
         if (selectionMode || selectedIds.size > 0) {
             setSelectedIds(new Set());
@@ -518,7 +519,7 @@ export default function StorageView() {
         const overData = over.data.current;
         if (overData?.type === 'breadcrumb') {
             const targetFolderId = overData.folderId;
-            
+
             // Don't move if it's already in that folder
             const activeFile = files.find(f => f.id === active.id);
             if (activeFile && activeFile.parentId === targetFolderId) {
@@ -541,7 +542,7 @@ export default function StorageView() {
         if (sortOption !== "custom") {
             const overFile = files.find(f => f.id === over.id);
             const isTargetFolder = over.id === 'root' || (overFile && overFile.type === 'folder');
-            
+
             if (!isTargetFolder) {
                 setActiveId(null);
                 return;
@@ -613,7 +614,7 @@ export default function StorageView() {
                 }));
             }
         }
-        
+
         setActiveId(null);
     };
 
@@ -647,7 +648,7 @@ export default function StorageView() {
     const collisionDetection = (args: any) => {
         // First, check if pointer is within any droppable
         const pointerCollisions = pointerWithin(args);
-        
+
         // If we have pointer collisions, filter them
         if (pointerCollisions.length > 0) {
             // Prioritize folder nest zones
@@ -674,7 +675,7 @@ export default function StorageView() {
         if (!selectionMode) {
             setSelectionMode(true);
         }
-        
+
         const newSet = new Set(selectedIds);
         if (newSet.has(id)) {
             newSet.delete(id);
@@ -726,7 +727,7 @@ export default function StorageView() {
                     <div className="flex-1 flex flex-col">
                         <div className="flex items-center gap-2 px-4 h-12 border-b border-border bg-card/30">
                             <h1 className="text-sm font-semibold tracking-tight">Storage</h1>
-                            
+
                             <div className="flex-1" />
 
                             <div className="flex items-center gap-2">
@@ -752,68 +753,68 @@ export default function StorageView() {
                                     <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
                                 </Button>
 
-                                 <DropdownMenu>
-                                     <DropdownMenuTrigger asChild>
-                                         <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
-                                             {getSortIcon()}
-                                             Sort
-                                             {sortDirection === "asc" ? <CaretUp size={12} className="text-muted-foreground ml-auto" /> : <CaretDown size={12} className="text-muted-foreground ml-auto" />}
-                                         </Button>
-                                     </DropdownMenuTrigger>
-                                     <DropdownMenuContent align="end" className="w-40">
-                                         <DropdownMenuItem onClick={() => { setSortOption("custom"); setSortDirection("asc"); }} className="gap-2 text-xs">
-                                             <Palette size={16} weight={sortOption === "custom" ? "fill" : "regular"} className={sortOption === "custom" ? "text-primary" : ""} />
-                                             Custom Order
-                                         </DropdownMenuItem>
-                                         <DropdownMenuSeparator />
-                                         <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("asc"); }} className="gap-2 text-xs">
-                                             <FileText size={16} weight={sortOption === "name" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "asc" ? "text-primary" : ""} />
-                                             Name (A-Z)
-                                         </DropdownMenuItem>
-                                         <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("desc"); }} className="gap-2 text-xs">
-                                             <FileText size={16} weight={sortOption === "name" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "desc" ? "text-primary" : ""} />
-                                             Name (Z-A)
-                                         </DropdownMenuItem>
-                                         <DropdownMenuSeparator />
-                                         <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("desc"); }} className="gap-2 text-xs">
-                                             <Clock size={16} weight={sortOption === "date" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "desc" ? "text-primary" : ""} />
-                                             Newest First
-                                         </DropdownMenuItem>
-                                         <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("asc"); }} className="gap-2 text-xs">
-                                             <Clock size={16} weight={sortOption === "date" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "asc" ? "text-primary" : ""} />
-                                             Oldest First
-                                         </DropdownMenuItem>
-                                         <DropdownMenuSeparator />
-                                         <DropdownMenuItem onClick={() => { setSortOption("type"); setSortDirection("asc"); }} className="gap-2 text-xs">
-                                             <Tag size={16} weight={sortOption === "type" ? "fill" : "regular"} className={sortOption === "type" ? "text-primary" : ""} />
-                                             File Type
-                                         </DropdownMenuItem>
-                                     </DropdownMenuContent>
-                                 </DropdownMenu>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
+                                            {getSortIcon()}
+                                            Sort
+                                            {sortDirection === "asc" ? <CaretUp size={12} className="text-muted-foreground ml-auto" /> : <CaretDown size={12} className="text-muted-foreground ml-auto" />}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                        <DropdownMenuItem onClick={() => { setSortOption("custom"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                            <Palette size={16} weight={sortOption === "custom" ? "fill" : "regular"} className={sortOption === "custom" ? "text-primary" : ""} />
+                                            Custom Order
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                            <FileText size={16} weight={sortOption === "name" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "asc" ? "text-primary" : ""} />
+                                            Name (A-Z)
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("desc"); }} className="gap-2 text-xs">
+                                            <FileText size={16} weight={sortOption === "name" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "desc" ? "text-primary" : ""} />
+                                            Name (Z-A)
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("desc"); }} className="gap-2 text-xs">
+                                            <Clock size={16} weight={sortOption === "date" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "desc" ? "text-primary" : ""} />
+                                            Newest First
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                            <Clock size={16} weight={sortOption === "date" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "asc" ? "text-primary" : ""} />
+                                            Oldest First
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => { setSortOption("type"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                            <Tag size={16} weight={sortOption === "type" ? "fill" : "regular"} className={sortOption === "type" ? "text-primary" : ""} />
+                                            File Type
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
 
-                                 <DropdownMenu>
-                                     <DropdownMenuTrigger asChild>
-                                         <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
-                                             {viewMode === 'grid' ? <SquaresFour size={16} /> : viewMode === 'list' ? <Rows size={16} /> : <Cards size={16} />}
-                                             View
-                                             <CaretDown size={12} className="text-muted-foreground" />
-                                         </Button>
-                                     </DropdownMenuTrigger>
-                                     <DropdownMenuContent align="end" className="w-32">
-                                         <DropdownMenuItem onClick={() => setViewMode('grid')} className="gap-2 text-xs">
-                                             <SquaresFour size={16} weight={viewMode === 'grid' ? "fill" : "regular"} className={viewMode === 'grid' ? "text-primary" : ""} />
-                                             Grid
-                                         </DropdownMenuItem>
-                                         <DropdownMenuItem onClick={() => setViewMode('list')} className="gap-2 text-xs">
-                                             <Rows size={16} weight={viewMode === 'list' ? "fill" : "regular"} className={viewMode === 'list' ? "text-primary" : ""} />
-                                             List
-                                         </DropdownMenuItem>
-                                         <DropdownMenuItem onClick={() => setViewMode('cards')} className="gap-2 text-xs">
-                                             <Cards size={16} weight={viewMode === 'cards' ? "fill" : "regular"} className={viewMode === 'cards' ? "text-primary" : ""} />
-                                             Cards
-                                         </DropdownMenuItem>
-                                     </DropdownMenuContent>
-                                 </DropdownMenu>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
+                                            {viewMode === 'grid' ? <SquaresFour size={16} /> : viewMode === 'list' ? <Rows size={16} /> : <Cards size={16} />}
+                                            View
+                                            <CaretDown size={12} className="text-muted-foreground" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-32">
+                                        <DropdownMenuItem onClick={() => setViewMode('grid')} className="gap-2 text-xs">
+                                            <SquaresFour size={16} weight={viewMode === 'grid' ? "fill" : "regular"} className={viewMode === 'grid' ? "text-primary" : ""} />
+                                            Grid
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setViewMode('list')} className="gap-2 text-xs">
+                                            <Rows size={16} weight={viewMode === 'list' ? "fill" : "regular"} className={viewMode === 'list' ? "text-primary" : ""} />
+                                            List
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setViewMode('cards')} className="gap-2 text-xs">
+                                            <Cards size={16} weight={viewMode === 'cards' ? "fill" : "regular"} className={viewMode === 'cards' ? "text-primary" : ""} />
+                                            Cards
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <div className="w-px h-5 bg-border mx-1" />
                                 <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => setAddFileOpen(true)}>
                                     <Plus weight="bold" size={14} />
@@ -831,8 +832,8 @@ export default function StorageView() {
                             <Breadcrumb>
                                 <BreadcrumbList>
                                     <BreadcrumbItem>
-                                        <BreadcrumbDropTarget 
-                                            id="root" 
+                                        <BreadcrumbDropTarget
+                                            id="root"
                                             onClick={() => handleNavigateFolder(null)}
                                             className="flex items-center gap-1.5 text-xs font-medium"
                                             isActive={!currentFolderId}
@@ -847,8 +848,8 @@ export default function StorageView() {
                                                 <CaretRight size={12} weight="bold" className="text-muted-foreground/40" />
                                             </BreadcrumbSeparator>
                                             <BreadcrumbItem>
-                                                <BreadcrumbDropTarget 
-                                                    id={folder.id} 
+                                                <BreadcrumbDropTarget
+                                                    id={folder.id}
                                                     onClick={() => handleNavigateFolder(folder.id)}
                                                     className="text-xs font-medium"
                                                     isActive={index === breadcrumbs.length - 1}
@@ -913,7 +914,7 @@ export default function StorageView() {
                         <div className="flex-1 overflow-auto p-4">
                             {viewMode === 'grid' ? (
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 pb-20">
-                                    <SortableContext 
+                                    <SortableContext
                                         items={orderedProjectFiles.map(f => f.id)}
                                         strategy={rectSortingStrategy}
                                         disabled={sortOption !== "custom"}
@@ -940,7 +941,7 @@ export default function StorageView() {
                                 </div>
                             ) : viewMode === 'list' ? (
                                 <div className="flex flex-col gap-2 pb-10">
-                                    <SortableContext 
+                                    <SortableContext
                                         items={orderedProjectFiles.map(f => f.id)}
                                         strategy={verticalListSortingStrategy}
                                         disabled={sortOption !== "custom"}
@@ -966,7 +967,7 @@ export default function StorageView() {
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
                                 </div>
                             ) : (
-                                <SortableContext 
+                                <SortableContext
                                     items={orderedProjectFiles.map(f => f.id)}
                                     strategy={rectSortingStrategy}
                                     disabled={sortOption !== "custom"}
@@ -1036,19 +1037,19 @@ export default function StorageView() {
                     (() => {
                         const file = files.find(f => f.id === activeId);
                         if (!file) return null;
-                        
-                        const Inner = viewMode === 'grid' 
-                            ? FileCardGridInner 
-                            : viewMode === 'list' 
-                                ? FileCardListInner 
+
+                        const Inner = viewMode === 'grid'
+                            ? FileCardGridInner
+                            : viewMode === 'list'
+                                ? FileCardListInner
                                 : FileCardCardsInner;
-                        
+
                         return (
-                            <Inner 
-                                file={file} 
-                                isSelected={false} 
-                                isOver={false} 
-                                selectionMode={false} 
+                            <Inner
+                                file={file}
+                                isSelected={false}
+                                isOver={false}
+                                selectionMode={false}
                                 showSelection={false}
                                 className={cn(
                                     "opacity-90 scale-105 shadow-2xl cursor-grabbing ring-2 ring-primary/50",
@@ -1118,7 +1119,7 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
                 isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
             )}
-            style={{ 
+            style={{
                 ...style,
                 ...(file.color ? { borderColor: file.color, boxShadow: `0 0 10px ${file.color}20` } : undefined)
             }}
@@ -1142,7 +1143,7 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
                 <FileThumbnail file={file} iconSize={44} />
             </div>
             <div className="text-xs font-medium truncate px-1 text-center pointer-events-none">{file.name}</div>
-            
+
             {/* Drop Target Overlay */}
             {isOver && file.type === 'folder' && (
                 <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
@@ -1152,7 +1153,7 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
                     </div>
                 </div>
             )}
-            
+
             {children}
         </div>
     );
@@ -1161,7 +1162,7 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
 function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
-    
+
     return (
         <div
             ref={domRef}
@@ -1175,7 +1176,7 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
                 isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
             )}
-            style={{ 
+            style={{
                 ...style,
                 ...(file.color ? { borderColor: file.color, boxShadow: `0 0 10px ${file.color}20` } : undefined)
             }}
@@ -1232,7 +1233,7 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
 
 function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
-    
+
     return (
         <div
             id={`file-card-${file.id}`}
@@ -1245,7 +1246,7 @@ function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode
                 isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
             )}
-            style={{ 
+            style={{
                 ...style,
                 ...(file.color ? { borderColor: file.color, boxShadow: `0 0 20px ${file.color}15` } : undefined)
             }}
@@ -1266,12 +1267,12 @@ function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode
             ) : null}
 
             {/* Content Area (Top) */}
-            <div 
+            <div
                 ref={domRef}
                 className="flex-1 min-h-[160px] bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors"
             >
                 <FileThumbnail file={file} iconSize={48} />
-                
+
                 {/* Type Overlay */}
                 <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
                     {file.type}
@@ -1293,7 +1294,7 @@ function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode
                 <div className="font-bold text-sm truncate group-hover:text-primary transition-colors leading-tight">
                     {file.name}
                 </div>
-                
+
                 <div className="flex items-center justify-between mt-1">
                     <div className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-tighter">
                         {dateStr}
@@ -1340,11 +1341,8 @@ function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused,
         data: { type: 'folder', folderId: file.id }
     });
 
-    // Merge refs
-    const setNodeRef = (node: HTMLElement | null) => {
-        setSortableRef(node);
-        // We don't merge droppable ref here because it's a separate element now
-    };
+    // Stable ref to prevent React 19 detach/reattach infinite loop with dnd-kit setState
+    const setNodeRef = useStableRef(setSortableRef);
 
     const style = {
         transition,
@@ -1367,11 +1365,11 @@ function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused,
     // Only show line if we are over the Sortable (outer) but NOT the Nest (inner)
     const showLine = isSortableOver && !isFolderOver && !isDragging && sortOption === "custom";
     let linePosition: 'left' | 'right' | null = null;
-    
+
     if (showLine && active && over) {
         const activeIndex = active.data.current?.sortable?.index ?? -1;
         const overIndex = over.data.current?.sortable?.index ?? index;
-        
+
         if (activeIndex !== -1) {
             linePosition = activeIndex > overIndex ? 'left' : 'right';
         } else {
@@ -1383,11 +1381,11 @@ function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused,
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div 
-                    ref={setNodeRef} 
-                    style={style} 
-                    {...(selectionMode ? {} : listeners)} 
-                    {...(selectionMode ? {} : attributes)} 
+                <div
+                    ref={setNodeRef}
+                    style={style}
+                    {...(selectionMode ? {} : listeners)}
+                    {...(selectionMode ? {} : attributes)}
                     onMouseEnter={onMouseEnter}
                     onMouseLeave={onMouseLeave}
                     className="h-full touch-none relative"
@@ -1426,8 +1424,8 @@ function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused,
                     />
                 </div>
             </ContextMenuTrigger>
-            <FileContextMenu 
-                file={file} 
+            <FileContextMenu
+                file={file}
                 onRename={() => onRename(file)}
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
@@ -1464,11 +1462,8 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
         data: { type: 'folder', folderId: file.id }
     });
 
-    // Merge refs
-    const setNodeRef = (node: HTMLElement | null) => {
-        setSortableRef(node);
-        // Do NOT merge Droppable ref, it goes on the overlay
-    };
+    // Stable ref to prevent React 19 detach/reattach infinite loop with dnd-kit setState
+    const setNodeRef = useStableRef(setSortableRef);
 
     const style = {
         transition,
@@ -1490,11 +1485,11 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
     // Calculate where the insertion line should be
     const showLine = isSortableOver && !isFolderOver && !isDragging && sortOption === "custom";
     let linePosition: 'left' | 'right' | null = null;
-    
+
     if (showLine && active && over) {
         const activeIndex = active.data.current?.sortable?.index ?? -1;
         const overIndex = over.data.current?.sortable?.index ?? index;
-        
+
         if (activeIndex !== -1) {
             linePosition = activeIndex > overIndex ? 'left' : 'right';
         } else {
@@ -1505,11 +1500,11 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div 
-                    ref={setNodeRef} 
-                    style={style} 
-                    {...(selectionMode ? {} : listeners)} 
-                    {...(selectionMode ? {} : attributes)} 
+                <div
+                    ref={setNodeRef}
+                    style={style}
+                    {...(selectionMode ? {} : listeners)}
+                    {...(selectionMode ? {} : attributes)}
                     onMouseEnter={onMouseEnter}
                     onMouseLeave={onMouseLeave}
                     className="touch-none relative h-full"
@@ -1548,8 +1543,8 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
                     />
                 </div>
             </ContextMenuTrigger>
-            <FileContextMenu 
-                file={file} 
+            <FileContextMenu
+                file={file}
                 onRename={() => onRename(file)}
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
@@ -1586,11 +1581,8 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, 
         data: { type: 'folder', folderId: file.id }
     });
 
-    // Merge refs
-    const setNodeRef = (node: HTMLElement | null) => {
-        setSortableRef(node);
-        // Do NOT merge Droppable ref
-    };
+    // Stable ref to prevent React 19 detach/reattach infinite loop with dnd-kit setState
+    const setNodeRef = useStableRef(setSortableRef);
 
     const style = {
         transition,
@@ -1612,11 +1604,11 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, 
     // Calculate where the insertion line should be
     const showLine = isSortableOver && !isFolderOver && !isDragging && sortOption === "custom";
     let linePosition: 'top' | 'bottom' | null = null;
-    
+
     if (showLine && active && over) {
         const activeIndex = active.data.current?.sortable?.index ?? -1;
         const overIndex = over.data.current?.sortable?.index ?? index;
-        
+
         if (activeIndex !== -1) {
             linePosition = activeIndex > overIndex ? 'top' : 'bottom';
         } else {
@@ -1627,11 +1619,11 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, 
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div 
-                    ref={setNodeRef} 
-                    style={style} 
-                    {...(selectionMode ? {} : listeners)} 
-                    {...(selectionMode ? {} : attributes)} 
+                <div
+                    ref={setNodeRef}
+                    style={style}
+                    {...(selectionMode ? {} : listeners)}
+                    {...(selectionMode ? {} : attributes)}
                     onMouseEnter={onMouseEnter}
                     onMouseLeave={onMouseLeave}
                     className="touch-none relative"
@@ -1670,8 +1662,8 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, 
                     />
                 </div>
             </ContextMenuTrigger>
-            <FileContextMenu 
-                file={file} 
+            <FileContextMenu
+                file={file}
                 onRename={() => onRename(file)}
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
@@ -1725,17 +1717,17 @@ export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChang
             <ContextMenuItem onClick={onSelect} className="gap-2">
                 <CheckSquare size={16} /> Select
             </ContextMenuItem>
-            
+
             <ContextMenuSeparator />
             <ContextMenuLabel>Edit</ContextMenuLabel>
-            
+
             <ContextMenuItem onClick={onRename} className="gap-2">
                 <PencilSimple size={16} /> Edit Title/Desc
             </ContextMenuItem>
             <ContextMenuItem onClick={onMove} className="gap-2">
                 <ArrowSquareOut size={16} /> Move to Folder
             </ContextMenuItem>
-            
+
             <ContextMenuSub>
                 <ContextMenuSubTrigger className="gap-2">
                     <Palette size={16} /> Change Color
@@ -1854,11 +1846,11 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
     const youtubeId = getYouTubeId(file.url);
     if (youtubeId) {
         return (
-            <img 
-                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`} 
-                alt={file.name} 
-                className="w-full h-full object-cover" 
-                onError={() => setError(true)} 
+            <img
+                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                alt={file.name}
+                className="w-full h-full object-cover"
+                onError={() => setError(true)}
             />
         );
     }
@@ -1869,12 +1861,12 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
 
     if (file.type === 'video') {
         if (cachedThumbnail) {
-             return (
-                <img 
-                    src={cachedThumbnail} 
-                    alt={file.name} 
-                    className="w-full h-full object-cover" 
-                    onError={() => setCachedThumbnail(null)} 
+            return (
+                <img
+                    src={cachedThumbnail}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                    onError={() => setCachedThumbnail(null)}
                 />
             );
         }
@@ -1898,10 +1890,10 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
                     }
                 }}
                 onSeeked={async (e: SyntheticEvent<HTMLVideoElement>) => {
-                     const video = e.currentTarget;
-                     const key = `${file.url}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
-                     
-                     try {
+                    const video = e.currentTarget;
+                    const key = `${file.url}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
+
+                    try {
                         const canvas = document.createElement('canvas');
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
@@ -1914,9 +1906,9 @@ function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) 
                                 }
                             }, 'image/jpeg', 0.7);
                         }
-                     } catch (err) {
-                         console.error("Failed to capture thumbnail", err);
-                     }
+                    } catch (err) {
+                        console.error("Failed to capture thumbnail", err);
+                    }
                 }}
             />
         );

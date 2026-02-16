@@ -25,6 +25,8 @@ import { useShallow } from "@/lib/zustand-shallow";
 import type { AccentTheme } from "@/types";
 
 import { preloadSounds, playSfx } from "@/utils/sound";
+import { GlobalErrorBoundary } from "@/components/ui/global-error-boundary";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const NotFoundView = () => {
   const navigate = useNavigate();
@@ -218,7 +220,7 @@ export default function App() {
 
 
   return (
-    <>
+    <TooltipProvider>
       <GlobalKeybinds />
       <SpotlightSearch />
       <DoubleTapMenu />
@@ -240,6 +242,6 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
-    </>
+    </TooltipProvider>
   );
 }

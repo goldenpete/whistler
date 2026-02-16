@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, memo, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
+import { findRootBucketId } from "@/utils/collectionUtils";
 import type { AccentTheme, File as AppFile, Doc, Collection } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { formatTime } from "@/lib/utils";
@@ -582,11 +583,14 @@ export default function HomeView() {
 
         // If still no bucket, we cannot create a collection
         if (!targetBucketId) {
-            // Ideally we would create a default bucket here, but let's at least prevent
-            // creating a root-level collection which breaks the hierarchy.
             console.warn("No active bucket found for collection creation");
             return;
         }
+
+        const sameParentItems = collections.filter(c => c.parentId === targetBucketId);
+        const maxOrder = sameParentItems.length > 0 
+            ? Math.max(...sameParentItems.map(c => c.order || 0)) 
+            : -1;
 
         const newCollection: Collection = {
             id: crypto.randomUUID(),
@@ -596,7 +600,7 @@ export default function HomeView() {
             color,
             icon,
             type: 'collection',
-            order: collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === targetBucketId).length,
+            order: maxOrder + 1,
             created: Date.now(),
             lastModified: Date.now()
         };
@@ -605,7 +609,7 @@ export default function HomeView() {
             activeCollectionId: targetBucketId // Keep the bucket active
         }));
         setPopoverOpen(false);
-        navigate('/collections');
+        navigate(`/collection/${newCollection.id}`);
     };
 
     const handleCreateDoc = (name: string, color: string, icon: string) => {
@@ -785,7 +789,10 @@ export default function HomeView() {
                 navigate(`/docs/${item.id}`);
                 break;
             case 'collection':
-                useStore.getState().setActiveCollection(item.id);
+                const bucketId = findRootBucketId(useStore.getState().collections, item.id);
+                if (bucketId) {
+                    useStore.getState().setActiveCollection(bucketId);
+                }
                 navigate(`/collection/${item.id}`);
                 break;
             case 'graph':

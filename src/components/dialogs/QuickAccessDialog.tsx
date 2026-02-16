@@ -18,6 +18,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { findRootBucketId } from "@/utils/collectionUtils";
 
 export type QuickAccessType = 'file' | 'highlight' | 'collection' | 'doc' | 'graph' | 'storage' | 'project';
 
@@ -107,8 +108,16 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
                 }
                 break;
             case 'collection':
-                setActiveCollection(item.id);
-                navigate('/collections');
+                const bucketId = findRootBucketId(collections, item.id);
+                if (bucketId) {
+                    setActiveCollection(bucketId);
+                }
+                if (item.type === 'collection') {
+                    navigate(`/collection/${item.id}`);
+                } else {
+                    // It's a folder or bucket
+                    navigate(`/collections${item.type === 'folder' ? `?folderId=${item.id}` : ''}`);
+                }
                 break;
             case 'doc':
                 setActiveDoc(item.id);

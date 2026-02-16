@@ -58,6 +58,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useKeybind } from "@/hooks/use-keybind";
+import { findRootBucketId } from "@/utils/collectionUtils";
 
 import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
 import { getIcon } from "@/utils/iconMap";
@@ -100,7 +101,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -123,14 +123,14 @@ function SortableStorageItem({ storage, activeStorageId, handleSelectStorage, ha
     const Icon = getIcon(storage.icon);
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectStorage(storage.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer", activeStorageId === storage.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectStorage(storage.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer relative", activeStorageId === storage.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
             <Icon weight={activeStorageId === storage.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeStorageId === storage.id ? undefined : storage.color }} />
-            <span className="truncate flex-1">{storage.name}</span>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleEditStorageClick(e, storage)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+            <span title={storage.name} className="truncate flex-1 min-w-0">{storage.name}</span>
+            <div className="absolute inset-y-0 right-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/50">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleEditStorageClick(e, storage)} className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
                     <PencilSimple weight="bold" />
                 </button>
-                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteStorage(e, storage.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteStorage(e, storage.id)} className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
                     <Trash weight="bold" />
                 </button>
             </div>
@@ -144,14 +144,14 @@ function SortableDocItem({ doc, activeDocId, handleSelectDoc, handleRenameDoc, h
     const DocIcon = getIcon(doc.icon);
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} data-doc-id={doc.id} onClick={() => handleSelectDoc(doc.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer", activeDocId === doc.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} data-doc-id={doc.id} onClick={() => handleSelectDoc(doc.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer relative", activeDocId === doc.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
             <DocIcon weight={activeDocId === doc.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeDocId === doc.id ? undefined : doc.color }} />
-            <span className="truncate flex-1">{doc.name}</span>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleRenameDoc(e, doc)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+            <span title={doc.name} className="truncate flex-1 min-w-0">{doc.name}</span>
+            <div className="absolute inset-y-0 right-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/50">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleRenameDoc(e, doc)} className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
                     <PencilSimple weight="bold" />
                 </button>
-                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteDoc(e, doc.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteDoc(e, doc.id)} className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
                     <Trash weight="bold" />
                 </button>
             </div>
@@ -165,14 +165,14 @@ function SortableGraphItem({ graph, activeGraphId, handleSelectGraph, handleEdit
     const GraphIcon = getIcon(graph.icon);
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectGraph(graph.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer", activeGraphId === graph.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => handleSelectGraph(graph.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer relative", activeGraphId === graph.id ? "bg-primary/20 text-primary font-medium" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground")}>
             <GraphIcon weight={activeGraphId === graph.id ? "fill" : "regular"} className="text-lg shrink-0 transition-colors" style={{ color: activeGraphId === graph.id ? undefined : graph.color }} />
-            <span className="truncate flex-1">{graph.name}</span>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleEditGraph(e, graph)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+            <span title={graph.name} className="truncate flex-1 min-w-0">{graph.name}</span>
+            <div className="absolute inset-y-0 right-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/50">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleEditGraph(e, graph)} className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
                     <PencilSimple weight="bold" />
                 </button>
-                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteGraph(e, graph.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
+                <button onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()} onClick={(e: ReactMouseEvent) => handleDeleteGraph(e, graph.id)} className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors">
                     <Trash weight="bold" />
                 </button>
             </div>
@@ -230,14 +230,21 @@ function SidebarFolderItem({
         zIndex: isDragging ? 50 : "auto",
     };
 
-    const handleToggle = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleToggle = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         playSfx('cursor');
         if (isRoot) {
-            navigate('/collections');
+            // In slim mode, the main icon should still navigate since there's no open button
+            if (isSlim) {
+                navigate('/collections');
+            }
             if (onToggleCollapse) onToggleCollapse();
         } else {
-            setIsCollapsedInternal(!isCollapsedInternal);
+            if (isSlim) {
+                navigate(`/collections?folderId=${folder.id}`);
+            } else {
+                setIsCollapsedInternal(!isCollapsedInternal);
+            }
         }
     };
 
@@ -289,19 +296,19 @@ function SidebarFolderItem({
                         )}
                     >
                         <div className={cn(
-                            "transition-transform duration-200",
+                            "flex-shrink-0 transition-transform duration-200",
                             isCollapsed ? "-rotate-90" : "rotate-0"
                         )}>
                             <CaretDown size={12} weight="bold" />
                         </div>
                         {isRoot && (
                             activeCollectionId 
-                                ? <HardDrives weight="fill" className="text-primary size-4" />
-                                : <Folder weight="fill" className="text-primary size-4" />
+                                ? <HardDrives weight="fill" className="flex-shrink-0 text-primary size-4" />
+                                : <Folder weight="fill" className="flex-shrink-0 text-primary size-4" />
                         )}
-                        <span className="truncate flex-1 text-left py-1.5">{folder.name}</span>
+                        <span title={folder.name} className="truncate w-0 flex-1 text-left py-1.5">{folder.name}</span>
                         
-                        <div className="opacity-0 group-hover:opacity-100 h-full flex items-center transition-opacity">
+                        <div className="hidden group-hover:flex h-full flex-shrink-0 items-center transition-opacity">
                             <button
                                 onPointerDown={(e) => e.stopPropagation()}
                                 onClick={(e) => {
@@ -318,6 +325,21 @@ function SidebarFolderItem({
                             >
                                 <ArrowSquareOut weight="bold" size={14} />
                             </button>
+
+                            {isRoot && (
+                                <button
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        playSfx('cursor');
+                                        setSidebarView('collections');
+                                    }}
+                                    className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
+                                    title="Manage Buckets"
+                                >
+                                    <Gear weight="bold" size={14} />
+                                </button>
+                            )}
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -357,21 +379,6 @@ function SidebarFolderItem({
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-
-                            {isRoot && (
-                                <button
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        playSfx('cursor');
-                                        setSidebarView('collections');
-                                    }}
-                                    className="h-full px-2.5 rounded-none bg-primary/10 text-primary hover:bg-primary/20 transition-all border-l border-primary/10"
-                                    title="Manage Buckets"
-                                >
-                                    <Gear weight="bold" size={14} />
-                                </button>
-                            )}
 
                             {!isRoot && (
                                 <>
@@ -537,10 +544,10 @@ function SortableCollectionItem({
                                 weight="fill"
                                 style={{ color: (collection.type === 'bucket' ? (location.pathname === `/collections` && activeCollectionId === collection.id) : (location.pathname === `/collection/${collection.id}`)) ? undefined : collection.color }}
                             />
-                            {!isSlim && <span className="truncate flex-1 py-2">{collection.name}</span>}
+                            {!isSlim && <span title={collection.name} className="truncate flex-1 py-2 min-w-0">{collection.name}</span>}
 
                             {!isSlim && (
-                                <div className="flex items-center h-full opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <div className="absolute inset-y-0 right-0 flex items-center h-full opacity-0 group-hover/item:opacity-100 transition-opacity">
                                     <button
                                         onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()}
                                         onClick={(e: ReactMouseEvent) => {
@@ -676,6 +683,7 @@ export default function ProjectSidebar() {
     const [projectsOpen, setProjectsOpen] = useState(true);
     const [assetsOpen, setAssetsOpen] = useState(true);
     const [rootCollectionsOpen, setRootCollectionsOpen] = useState(true);
+    const [collectionsSectionOpen, setCollectionsSectionOpen] = useState(true);
     const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
     const [createFolderOpen, setCreateFolderOpen] = useState(false);
     const [createStorageOpen, setCreateStorageOpen] = useState(false);
@@ -1277,16 +1285,15 @@ export default function ProjectSidebar() {
         }
     }, [activeProjectId, activeStorageId, projectStorages.length]); // Use .length instead of array reference
 
+    // Memoize buckets specifically to use in effects
+    const projectBuckets = useMemo(() => projectCollections.filter((c: Collection) => 
+        c.parentId === null && c.type === 'bucket'
+    ), [projectCollections]);
+
     // Ensure a valid bucket is always selected
     useEffect(() => {
         if (!activeProjectId) return;
         
-        // Find buckets for current project
-        const projectBuckets = projectCollections.filter((c: Collection) => 
-            c.parentId === null && 
-            c.type === 'bucket'
-        );
-
         // If no buckets exist, clear activeCollectionId
         if (projectBuckets.length === 0) {
             if (activeCollectionId !== null) {
@@ -1306,7 +1313,7 @@ export default function ProjectSidebar() {
                 useStore.setState({ activeCollectionId: firstBucketId });
             }
         }
-    }, [activeProjectId, activeCollectionId, projectCollections.length]);
+    }, [activeProjectId, activeCollectionId, projectBuckets.length]);
 
     const handleAddCollection = (e?: ReactMouseEvent) => {
         if (e) {
@@ -1328,13 +1335,15 @@ export default function ProjectSidebar() {
     const handleCreateCollection = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
         if (name) {
-            // Buckets are only created in the management view (sidebarView === 'collections')
+            // Buckets are ONLY created in the management view (sidebarView === 'collections')
+            // AND they must have no parentId.
             const isCreatingBucket = sidebarView === 'collections';
             let parentId = isCreatingBucket ? null : (currentFolderId || activeCollectionId);
             
-            // If not creating a bucket, ensure we have a parent (buckets are roots)
+            // SECURITY: If we are not in the buckets view, we MUST have a parentId.
+            // If parentId is null here, it means activeCollectionId was null and currentFolderId was null.
+            // We should default to the first available bucket instead of creating a new bucket.
             if (!isCreatingBucket && !parentId) {
-                // Try to find the first bucket if none is active
                 const firstBucket = collections.find((c: Collection) => 
                     c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted
                 );
@@ -1342,9 +1351,22 @@ export default function ProjectSidebar() {
                     parentId = firstBucket.id;
                     useStore.setState({ activeCollectionId: firstBucket.id });
                 } else {
-                    // Cannot create a collection without a bucket
-                    return;
+                    // If no buckets exist at all, we HAVE to create one first, 
+                    // but let's assume the user should have been in the bucket view.
+                    // To be safe, if we are in main view, we force type: 'collection' 
+                    // and if parentId is still null, we just don't create anything or we force a bucket.
+                    // Actually, let's just ensure type is 'collection' if not in bucket view.
                 }
+            }
+
+            const typeToCreate = isCreatingBucket ? 'bucket' : 'collection';
+            
+            // If we are creating a collection but parentId is STILL null, 
+            // it means there are no buckets. We should probably not allow this 
+            // or create a default bucket. The current logic returns early if no bucket.
+            if (typeToCreate === 'collection' && !parentId) {
+                console.error("Cannot create collection: No bucket found to house it.");
+                return;
             }
 
             const sameParentCollections = collections.filter(c => c.parentId === parentId);
@@ -1359,7 +1381,7 @@ export default function ProjectSidebar() {
                 name,
                 color,
                 icon,
-                type: isCreatingBucket ? 'bucket' : 'collection',
+                type: typeToCreate,
                 order: maxOrder + 1,
                 created: Date.now(),
                 lastModified: Date.now()
@@ -1372,7 +1394,7 @@ export default function ProjectSidebar() {
             
             if (isCreatingBucket) {
                 setSidebarView('main');
-                navigate(`/collections`); // Navigate to collections root for the new bucket
+                navigate(`/collections`);
             } else {
                 navigate(`/collection/${newCollection.id}`);
             }
@@ -1443,29 +1465,9 @@ export default function ProjectSidebar() {
     };
 
     const handleSelectCollection = (id: string) => {
-        const collection = collections.find(c => c.id === id);
-        if (collection) {
-            // Find the root bucket for this item
-            let current = collection;
-            
-            // If the item itself is a bucket, select it
-            if (current.type === 'bucket') {
-                useStore.setState({ activeCollectionId: current.id });
-                return;
-            }
-
-            // Climb up to find the bucket (root unit)
-            while (current.parentId !== null) {
-                const parent = collections.find(p => p.id === current.parentId);
-                if (!parent) break;
-                current = parent;
-                if (current.type === 'bucket') break;
-            }
-            
-            // Only update if the root is actually a bucket
-            if (current.type === 'bucket') {
-                useStore.setState({ activeCollectionId: current.id });
-            }
+        const bucketId = findRootBucketId(collections, id);
+        if (bucketId) {
+            useStore.setState({ activeCollectionId: bucketId });
         }
     };
 
@@ -1582,7 +1584,7 @@ export default function ProjectSidebar() {
                                         playSfx('cursor');
                                         toggleSidebarCollapse();
                                     }}
-                                    className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                 >
                                     <SidebarSimple weight="bold" size={18} />
                                 </button>
@@ -1617,7 +1619,7 @@ export default function ProjectSidebar() {
                                         playSfx('cursor');
                                         useStore.getState().setSpotlightOpen(true);
                                     }}
-                                    className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                 >
                                     <MagnifyingGlass weight="bold" size={18} />
                                 </button>
@@ -1845,7 +1847,7 @@ export default function ProjectSidebar() {
                             playSfx('cursor');
                             toggleSidebarCollapse();
                         }}
-                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 z-10"
+                        className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200 shrink-0 z-10"
                         title="Collapse sidebar"
                     >
                         <SidebarSimple weight="bold" size={18} />
@@ -1880,7 +1882,7 @@ export default function ProjectSidebar() {
                                     playSfx('cursor');
                                     useStore.getState().setSpotlightOpen(true);
                                 }}
-                                className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                 title="Search"
                             >
                                 <MagnifyingGlass weight="bold" size={18} />
@@ -1901,16 +1903,17 @@ export default function ProjectSidebar() {
                         >
                             {/* Project Switcher */}
                             {!isSidebarCollapsed && (
-                                <div className="p-3 pb-2 animate-in fade-in duration-300 shrink-0 space-y-1">
+                                <div className="p-3 pb-0 animate-in fade-in duration-300 shrink-0">
                                     <button
                                         onClick={() => {
                                             playSfx('cursor');
                                             setProjectsOpen(!projectsOpen);
                                         }}
-                                        className={cn("flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 hover:text-foreground transition-colors w-full text-left", isSlim && "justify-center")}
+                                        className={cn("flex items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full text-left relative", isSlim && "justify-center")}
                                     >
-                                        <CaretDown weight="bold" className={cn("transition-transform text-xs", !projectsOpen && "-rotate-90")} />
-                                        {!isSlim && "Project"}
+                                        <CaretDown weight="bold" className={cn("transition-transform text-xs mr-1", !projectsOpen && "-rotate-90")} />
+                                        {!isSlim && <span>Project</span>}
+                                        <div className="flex-grow border-t border-border/40 ml-1"></div>
                                     </button>
                                     
                                     <AnimatePresence initial={false}>
@@ -1919,7 +1922,7 @@ export default function ProjectSidebar() {
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: "auto", opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
-                                                className="space-y-1 overflow-hidden"
+                                                className="overflow-hidden"
                                             >
                                                 <div className={cn("flex gap-1 items-center pt-1", isSlim && "flex-col")}>
                                                     {projects.length > 0 ? (
@@ -2051,18 +2054,19 @@ export default function ProjectSidebar() {
                             {/* Scrollable Content */}
                             <ScrollArea className="flex-1 px-3 py-2">
                                 {/* Assets Section */}
-                                <div className="mb-4">
+                                <div className="mb-2">
                                     {!isSidebarCollapsed && (
-                                        <div className="flex items-center justify-between mb-2 px-1">
+                                        <div className="flex items-center">
                                             <button
                                                 onClick={() => {
                                                     playSfx('cursor');
                                                     setAssetsOpen(!assetsOpen);
                                                 }}
-                                                className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full text-left"
+                                                className="flex items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full text-left relative"
                                             >
-                                                <CaretDown weight="bold" className={cn("transition-transform text-xs", !assetsOpen && "-rotate-90")} />
-                                                Assets
+                                                <CaretDown weight="bold" className={cn("transition-transform text-xs mr-1", !assetsOpen && "-rotate-90")} />
+                                                <span>Assets</span>
+                                                <div className="flex-grow border-t border-border/40 ml-1"></div>
                                             </button>
                                         </div>
                                     )}
@@ -2073,7 +2077,7 @@ export default function ProjectSidebar() {
                                                 initial={!isSidebarCollapsed ? { height: 0, opacity: 0 } : undefined}
                                                 animate={!isSidebarCollapsed ? { height: "auto", opacity: 1 } : undefined}
                                                 exit={!isSidebarCollapsed ? { height: 0, opacity: 0 } : undefined}
-                                                className={cn("flex gap-1 overflow-hidden", (isSidebarCollapsed || isSlim) ? "flex-col space-y-2" : "flex-row")}
+                                                className={cn("flex gap-1 overflow-hidden mt-1", (isSidebarCollapsed || isSlim) ? "flex-col space-y-2" : "flex-row")}
                                             >
                                                 <ContextMenu>
                                                     <ContextMenuTrigger className={cn("flex-1", (isSidebarCollapsed || isSlim) && "w-full flex justify-center")}>
@@ -2212,11 +2216,37 @@ export default function ProjectSidebar() {
                                 </div>
 
 
-                                <Separator className="my-4 bg-border/40" />
+                                <button
+                                    onClick={() => {
+                                        playSfx('cursor');
+                                        setCollectionsSectionOpen(!collectionsSectionOpen);
+                                    }}
+                                    className="flex items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full text-left my-1 relative"
+                                >
+                                    <div className={cn(
+                                        "transition-transform duration-200 mr-1",
+                                        !collectionsSectionOpen ? "-rotate-90" : "rotate-0"
+                                    )}>
+                                        <CaretDown weight="bold" className="text-xs transition-colors" />
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider transition-colors">
+                                        Collections
+                                    </span>
+                                    <div className="flex-grow border-t border-border/40 ml-1"></div>
+                                </button>
 
                                 {/* Collections Section */}
-                                <div className="mb-6">
-                                    <DndContext
+                                <div className="mb-4 mt-1">
+                                    <AnimatePresence initial={false}>
+                                        {collectionsSectionOpen && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                                                className="overflow-hidden"
+                                            >
+                                                <DndContext
                                         sensors={sensors}
                                         collisionDetection={(args) => {
                                             // 1. Check for all Folder Nesting targets (including root)
@@ -2349,6 +2379,9 @@ export default function ProjectSidebar() {
                                             })() : null}
                                         </DragOverlay>
                                     </DndContext>
+                                             </motion.div>
+                                         )}
+                                     </AnimatePresence>
                                 </div>
                             </ScrollArea>
                         </motion.div>
@@ -2735,7 +2768,7 @@ export default function ProjectSidebar() {
                         playSfx('cursor');
                         toggleSidebarCollapse();
                     }}
-                    className="fixed top-1/2 -translate-y-1/2 left-4 z-30 h-10 w-8 rounded-md bg-sidebar border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60 shadow-sm flex items-center justify-center"
+                    className="fixed top-1/2 -translate-y-1/2 left-4 z-30 h-10 w-8 rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all duration-200 flex items-center justify-center"
                     title="Show sidebar"
                 >
                     <SidebarSimple weight="bold" size={18} />

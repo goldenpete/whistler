@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
+import { useStableRef } from "@/lib/use-stable-ref";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ import {
     Palette,
     Share
 } from "@phosphor-icons/react";
+import { findRootBucketId } from "@/utils/collectionUtils";
 import { type Collection } from "@/types";
 import { playSfx } from "@/utils/sound";
 import {
@@ -158,7 +160,7 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
                 isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
             )}
-            style={{ 
+            style={{
                 ...style,
                 ...(collection.color ? { borderColor: collection.color, boxShadow: `0 0 10px ${collection.color}20` } : undefined)
             }}
@@ -174,7 +176,7 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
             )}
 
             <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none">
-                <div 
+                <div
                     className="flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 w-16 h-16"
                     style={{ backgroundColor: `${collection.color}20`, color: collection.color }}
                 >
@@ -182,7 +184,7 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
                 </div>
             </div>
             <div className="text-xs font-medium truncate px-1 text-center pointer-events-none">{collection.name}</div>
-            
+
             {/* Drop Target Overlay */}
             {isOver && (
                 <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
@@ -192,7 +194,7 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
                     </div>
                 </div>
             )}
-            
+
             {children}
         </div>
     );
@@ -200,7 +202,7 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
 
 function CollectionCardListInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
     const dateStr = new Date(collection.lastModified).toLocaleDateString();
-    
+
     return (
         <div
             ref={domRef}
@@ -214,7 +216,7 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
                 isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
                 className
             )}
-            style={{ 
+            style={{
                 ...style,
                 ...(collection.color ? { borderColor: collection.color, boxShadow: `0 0 10px ${collection.color}20` } : undefined)
             }}
@@ -239,7 +241,7 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
                 </div>
             )}
 
-            <div 
+            <div
                 className="w-12 h-10 rounded-md flex items-center justify-center shrink-0 overflow-hidden pointer-events-none"
                 style={{ backgroundColor: `${collection.color}15`, color: collection.color }}
             >
@@ -284,11 +286,8 @@ function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isF
         data: { type: 'folder', folderId: collection.id }
     });
 
-    // Merge refs
-    const setNodeRef = (node: HTMLElement | null) => {
-        setSortableRef(node);
-        // Do not merge droppable ref
-    };
+    // Stable ref to prevent React 19 detach/reattach infinite loop with dnd-kit setState
+    const setNodeRef = useStableRef(setSortableRef);
 
     const style = {
         transition,
@@ -308,11 +307,11 @@ function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isF
     // Calculate where the insertion line should be
     const showLine = isSortableOver && !isDragging && !isFolderOver && sortOption === "custom";
     let linePosition: 'left' | 'right' | 'top' | 'bottom' | null = null;
-    
+
     if (showLine && active && over) {
         const activeIndex = active.data.current?.sortable?.index ?? -1;
         const overIndex = over.data.current?.sortable?.index ?? index;
-        
+
         if (activeIndex !== -1) {
             if (viewMode === 'grid') {
                 linePosition = activeIndex > overIndex ? 'left' : 'right';
@@ -329,11 +328,11 @@ function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isF
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild disabled={selectionMode}>
-                <div 
-                    ref={setNodeRef} 
-                    style={style} 
-                    {...(selectionMode ? {} : listeners)} 
-                    {...(selectionMode ? {} : attributes)} 
+                <div
+                    ref={setNodeRef}
+                    style={style}
+                    {...(selectionMode ? {} : listeners)}
+                    {...(selectionMode ? {} : attributes)}
                     onMouseEnter={onMouseEnter}
                     onMouseLeave={onMouseLeave}
                     className="relative touch-none"
@@ -420,6 +419,16 @@ export default function CollectionsView() {
     const [searchParams, setSearchParams] = useSearchParams();
     const currentFolderId = searchParams.get('folderId');
 
+    // Sync activeCollectionId with the bucket containing currentFolderId
+    useEffect(() => {
+        if (currentFolderId) {
+            const bucketId = findRootBucketId(collections, currentFolderId);
+            if (bucketId && bucketId !== activeCollectionId) {
+                useStore.setState({ activeCollectionId: bucketId });
+            }
+        }
+    }, [currentFolderId, activeCollectionId, collections.length]);
+
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [sortOption, setSortOption] = useState<SortOption>("custom");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -435,19 +444,27 @@ export default function CollectionsView() {
     const currentFolder = currentFolderId ? collections.find(c => c.id === currentFolderId) : null;
     const activeBucket = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
 
-    // Breadcrumbs
-    const getBreadcrumbs = () => {
+    // Breadcrumbs with memoization and protection
+    const breadcrumbs = useMemo(() => {
         const path = [];
         let curr = currentFolder;
-        
+        const visited = new Set<string>();
+
         // If we have a current folder, climb up to find the breadcrumb path
         while (curr) {
-            path.unshift(curr);
+            // Circular reference protection
+            if (visited.has(curr.id)) {
+                console.error("Circular reference detected in collections hierarchy at:", curr.id);
+                break;
+            }
+            visited.add(curr.id);
             
+            path.unshift(curr);
+
             // Stop climbing if we reach the active bucket or an item with no parent
             if (curr.parentId && curr.parentId !== activeCollectionId) {
                 const parent = collections.find(c => c.id === curr!.parentId);
-                // Security check: if parent is not found, break to avoid infinite loop
+                // Security check: if parent is not found or is itself, break
                 if (!parent || parent.id === curr.id) break;
                 curr = parent;
             } else {
@@ -455,11 +472,10 @@ export default function CollectionsView() {
             }
         }
         return path;
-    };
-    const breadcrumbs = getBreadcrumbs();
+    }, [currentFolder, collections, activeCollectionId]);
 
     const normalizedQuery = searchQuery.toLowerCase();
-    
+
     // Logic: If we are at the root (currentFolderId is null), we should show 
     // items that belong to the active bucket (parentId === activeCollectionId).
     // We should NEVER show buckets in this view.
@@ -467,8 +483,8 @@ export default function CollectionsView() {
         return collections.filter(c =>
             c.projectId === activeProjectId &&
             c.type !== 'bucket' &&
-            (currentFolderId 
-                ? c.parentId === currentFolderId 
+            (currentFolderId
+                ? c.parentId === currentFolderId
                 : (activeCollectionId ? c.parentId === activeCollectionId : c.parentId === null)) &&
             !c.deleted &&
             (normalizedQuery === "" || c.name.toLowerCase().includes(normalizedQuery))
@@ -529,23 +545,23 @@ export default function CollectionsView() {
         }
 
         const overCollection = collections.find(c => c.id === overId);
-        
+
         // Check if we should nest
         // Always nest if explicit drop or sort != custom
         // If sort == custom, only nest if explicit drop
         if (overCollection && (isExplicitFolderDrop || sortOption !== "custom")) {
-             if (overId !== activeId) {
+            if (overId !== activeId) {
                 updateCollection(activeId, { parentId: overId, lastModified: Date.now() });
                 playSfx('confirm');
-             }
-             return;
+            }
+            return;
         }
 
         // Handle reordering
         if (sortOption === "custom" && active.id !== over.id) {
             const oldIndex = sortedCollections.findIndex(c => c.id === active.id);
             const newIndex = sortedCollections.findIndex(c => c.id === over.id);
-            
+
             if (oldIndex !== -1 && newIndex !== -1) {
                 const newOrder = arrayMove(sortedCollections, oldIndex, newIndex);
                 newOrder.forEach((c, index) => {
@@ -585,13 +601,13 @@ export default function CollectionsView() {
 
     const handleCreateCollection = (name: string, color: string, icon?: string) => {
         if (!activeProjectId) return;
-        
+
         // Items created in this view should be parented to either the current folder or the active bucket
         let targetParentId = currentFolderId || activeCollectionId;
 
         // If no bucket is active, try to find the first one
         if (!targetParentId) {
-            const firstBucket = collections.find((c: Collection) => 
+            const firstBucket = collections.find((c: Collection) =>
                 c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted
             );
             if (firstBucket) {
@@ -606,7 +622,12 @@ export default function CollectionsView() {
             console.warn("Cannot create collection: No active bucket found.");
             return;
         }
-        
+
+        const sameParentItems = collections.filter(c => c.parentId === targetParentId);
+        const maxOrder = sameParentItems.length > 0 
+            ? Math.max(...sameParentItems.map(c => c.order || 0)) 
+            : -1;
+
         const newCollection: Collection = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
@@ -614,15 +635,17 @@ export default function CollectionsView() {
             name,
             color,
             icon,
-            order: filteredCollections.length,
+            order: maxOrder + 1,
             created: Date.now(),
             lastModified: Date.now(),
             type: 'collection' // Default to collection in this view
         };
-        
+
         useStore.setState(state => ({
             collections: [...state.collections, newCollection]
         }));
+        setAddCollectionOpen(false);
+        navigate(`/collection/${newCollection.id}`);
         playSfx('confirm');
     };
 
@@ -696,7 +719,7 @@ export default function CollectionsView() {
             <header className="flex flex-col border-b border-border bg-card/30">
                 <div className="flex items-center gap-2 px-4 h-12">
                     <h1 className="text-sm font-semibold tracking-tight">Collections</h1>
-                    
+
                     <div className="flex-1" />
 
                     <div className="flex items-center gap-2">
@@ -779,7 +802,7 @@ export default function CollectionsView() {
 
                         <div className="w-px h-5 bg-border mx-1" />
 
-                        <Button 
+                        <Button
                             className="h-8 gap-2 text-xs shadow-lg shadow-primary/20"
                             onClick={() => {
                                 setCollectionToEdit(null);
@@ -874,114 +897,114 @@ export default function CollectionsView() {
 
             {/* Content */}
             <ScrollArea className="flex-1 p-6">
-        <DndContext
-            sensors={sensors}
-            collisionDetection={(args: any) => {
-                // First, check if pointer is within any droppable
-                const pointerCollisions = pointerWithin(args);
-                
-                // If we have pointer collisions, filter them
-                if (pointerCollisions.length > 0) {
-                    // Prioritize folder nest zones
-                    const folderNest = pointerCollisions.find(c => c.id.toString().startsWith("folder-nest-"));
-                    if (folderNest) {
-                        return [folderNest];
-                    }
-                    return pointerCollisions;
-                }
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={(args: any) => {
+                        // First, check if pointer is within any droppable
+                        const pointerCollisions = pointerWithin(args);
 
-                // Fallback to closest center
-                return closestCenter(args);
-            }}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragCancel={() => setActiveId(null)}
-        >
-            <SortableContext 
-                items={sortedCollections.map(c => c.id)}
-                strategy={verticalListSortingStrategy}
-                disabled={sortOption !== "custom"}
-            >
-                <div className={cn(
-                    "grid gap-4",
-                    viewMode === 'grid' 
-                        ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8" 
-                        : "grid-cols-1"
-                )}>
-                    <AnimatePresence mode="popLayout">
-                        {sortedCollections.length > 0 ? (
-                            sortedCollections.map((collection) => (
-                                <motion.div
-                                    key={collection.id}
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <CollectionCard
-                                        collection={collection}
-                                        viewMode={viewMode}
-                                        sortOption={sortOption}
-                                        isSelected={selectedIds.has(collection.id)}
-                                        isFocused={focusedId === collection.id}
-                                        onToggleSelect={toggleSelectItem}
-                                        onNavigate={handleNavigate}
-                                        onRename={handleRenameInit}
-                                        onDelete={(id) => {
-                                            trashCollection(id);
-                                            playSfx('back');
-                                        }}
-                                        onColorChange={(c, color) => updateCollection(c.id, { color })}
-                                        onMouseEnter={() => setFocusedId(collection.id)}
-                                        onMouseLeave={() => setFocusedId(null)}
-                                        selectionMode={selectionMode}
-                                    />
-                                </motion.div>
-                            ))
-                        ) : (
-                            <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
-                                <Folder size={64} weight="thin" className="opacity-20 mb-4" />
-                                <p className="text-sm">No collections found</p>
-                                {searchQuery && (
-                                    <Button 
-                                        variant="link" 
-                                        onClick={() => setSearchQuery("")}
-                                        className="mt-2 text-primary"
-                                    >
-                                        Clear search
-                                    </Button>
+                        // If we have pointer collisions, filter them
+                        if (pointerCollisions.length > 0) {
+                            // Prioritize folder nest zones
+                            const folderNest = pointerCollisions.find(c => c.id.toString().startsWith("folder-nest-"));
+                            if (folderNest) {
+                                return [folderNest];
+                            }
+                            return pointerCollisions;
+                        }
+
+                        // Fallback to closest center
+                        return closestCenter(args);
+                    }}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={() => setActiveId(null)}
+                >
+                    <SortableContext
+                        items={sortedCollections.map(c => c.id)}
+                        strategy={verticalListSortingStrategy}
+                        disabled={sortOption !== "custom"}
+                    >
+                        <div className={cn(
+                            "grid gap-4",
+                            viewMode === 'grid'
+                                ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8"
+                                : "grid-cols-1"
+                        )}>
+                            <AnimatePresence mode="popLayout">
+                                {sortedCollections.length > 0 ? (
+                                    sortedCollections.map((collection) => (
+                                        <motion.div
+                                            key={collection.id}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <CollectionCard
+                                                collection={collection}
+                                                viewMode={viewMode}
+                                                sortOption={sortOption}
+                                                isSelected={selectedIds.has(collection.id)}
+                                                isFocused={focusedId === collection.id}
+                                                onToggleSelect={toggleSelectItem}
+                                                onNavigate={handleNavigate}
+                                                onRename={handleRenameInit}
+                                                onDelete={(id) => {
+                                                    trashCollection(id);
+                                                    playSfx('back');
+                                                }}
+                                                onColorChange={(c, color) => updateCollection(c.id, { color })}
+                                                onMouseEnter={() => setFocusedId(collection.id)}
+                                                onMouseLeave={() => setFocusedId(null)}
+                                                selectionMode={selectionMode}
+                                            />
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
+                                        <Folder size={64} weight="thin" className="opacity-20 mb-4" />
+                                        <p className="text-sm">No collections found</p>
+                                        {searchQuery && (
+                                            <Button
+                                                variant="link"
+                                                onClick={() => setSearchQuery("")}
+                                                className="mt-2 text-primary"
+                                            >
+                                                Clear search
+                                            </Button>
+                                        )}
+                                    </div>
                                 )}
-                            </div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </SortableContext>
+                            </AnimatePresence>
+                        </div>
+                    </SortableContext>
 
-            <DragOverlay>
-                {activeId ? (
-                    (() => {
-                        const collection = collections.find(c => c.id === activeId);
-                        if (!collection) return null;
-                        
-                        const Inner = viewMode === 'grid' ? CollectionCardGridInner : CollectionCardListInner;
-                        
-                        return (
-                            <Inner
-                                collection={collection}
-                                isSelected={false}
-                                isFocused={false}
-                                isOver={false}
-                                selectionMode={false}
-                                showSelection={false}
-                                viewMode={viewMode}
-                                className="opacity-90 scale-105 shadow-2xl cursor-grabbing ring-2 ring-primary/50"
-                            />
-                        );
-                    })()
-                ) : null}
-            </DragOverlay>
-        </DndContext>
+                    <DragOverlay>
+                        {activeId ? (
+                            (() => {
+                                const collection = collections.find(c => c.id === activeId);
+                                if (!collection) return null;
+
+                                const Inner = viewMode === 'grid' ? CollectionCardGridInner : CollectionCardListInner;
+
+                                return (
+                                    <Inner
+                                        collection={collection}
+                                        isSelected={false}
+                                        isFocused={false}
+                                        isOver={false}
+                                        selectionMode={false}
+                                        showSelection={false}
+                                        viewMode={viewMode}
+                                        className="opacity-90 scale-105 shadow-2xl cursor-grabbing ring-2 ring-primary/50"
+                                    />
+                                );
+                            })()
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
 
 
             </ScrollArea>

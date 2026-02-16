@@ -48,6 +48,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { findRootBucketId } from "@/utils/collectionUtils";
 import type { Highlight } from "@/types";
 import { EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { getIcon } from "@/utils/iconMap";
@@ -88,11 +89,26 @@ export default function CollectionView() {
     const navigate = useNavigate();
     const { id } = useParams();
 
+    // Update lastViewed for the specific collection
     useEffect(() => {
-        if (id && id !== activeCollectionId) {
-            setActiveCollection(id);
+        if (id) {
+            useStore.setState(state => ({
+                collections: state.collections.map(c => 
+                    c.id === id ? { ...c, lastViewed: Date.now() } : c
+                )
+            }));
         }
-    }, [id, activeCollectionId, setActiveCollection]);
+    }, [id]);
+
+    // Find the root bucket for this collection to keep the sidebar in sync
+    useEffect(() => {
+        if (id) {
+            const bucketId = findRootBucketId(collections, id);
+            if (bucketId && bucketId !== activeCollectionId) {
+                setActiveCollection(bucketId);
+            }
+        }
+    }, [id, activeCollectionId, collections.length, setActiveCollection]);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [selectionMode, setSelectionMode] = useState(false);
@@ -176,10 +192,18 @@ export default function CollectionView() {
     const breadcrumbs = useMemo(() => {
         const path: { id: string; name: string }[] = [];
         let current = activeCollection?.parentId ? collections.find(c => c.id === activeCollection.parentId) : null;
+        const visited = new Set<string>();
+
         while (current) {
+            if (visited.has(current.id)) {
+                console.error("Cycle detected in collection structure:", current);
+                break;
+            }
+            visited.add(current.id);
+
             // Stop if we reach the active bucket or an item with no parent
             if (current.id === activeCollectionId) break;
-            
+
             path.unshift({ id: current.id, name: current.name });
             const parentId = current.parentId;
             current = parentId ? collections.find(c => c.id === parentId) : null;
@@ -231,7 +255,7 @@ export default function CollectionView() {
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
-                            <BreadcrumbLink 
+                            <BreadcrumbLink
                                 className="cursor-pointer hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
                                 onClick={() => navigate('/collections')}
                             >
@@ -245,7 +269,7 @@ export default function CollectionView() {
                                     <CaretRight size={12} weight="bold" className="text-muted-foreground/40" />
                                 </BreadcrumbSeparator>
                                 <BreadcrumbItem>
-                                    <BreadcrumbLink 
+                                    <BreadcrumbLink
                                         className="cursor-pointer hover:text-primary transition-colors text-xs font-medium"
                                         onClick={() => navigate(`/collections?folderId=${crumb.id}`)}
                                     >
@@ -352,9 +376,9 @@ export default function CollectionView() {
                                                     />
                                                 ) : file.type === 'pdf' ? (
                                                     <div className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity">
-                                                        <PdfThumbnail 
-                                                            url={file.url} 
-                                                            onError={() => {}} 
+                                                        <PdfThumbnail
+                                                            url={file.url}
+                                                            onError={() => { }}
                                                             width={300}
                                                             page={h.start || 1}
                                                             rect={h.rect || undefined}
