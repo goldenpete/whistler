@@ -951,6 +951,13 @@ export default function GraphView() {
                             onSave={handleSaveNode}
                         />
                     </>
+                ) : !activeProjectId ? (
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                        <div className="text-center">
+                            <Circle size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
+                            <p>Select a project to create graphs</p>
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">

@@ -96,7 +96,14 @@ export default function DocsView() {
         <div className="flex h-full bg-transparent overflow-hidden">
             {/* Main Editor Area */}
             <div className="flex-1 flex flex-col min-h-0">
-                {activeDoc ? (
+                {!activeProjectId ? (
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                        <div className="text-center">
+                            <NotePencil size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
+                            <p>Select a project to create documents</p>
+                        </div>
+                    </div>
+                ) : activeDoc ? (
                     <DocEditor doc={activeDoc} />
                 ) : (
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">

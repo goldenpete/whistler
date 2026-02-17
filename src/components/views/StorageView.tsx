@@ -732,7 +732,7 @@ export default function StorageView() {
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
                             <HardDrives size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p className="mb-4">Select or create a storage</p>
+                            <p className="mb-4">{!activeProjectId ? "Select a project to use storage" : "Select or create a storage"}</p>
                             {activeProject && (
                                 <Button onClick={handleCreateStorage}>
                                     <Plus className="mr-2" /> Create Storage
