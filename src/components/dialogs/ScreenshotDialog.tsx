@@ -1,3 +1,17 @@
+/**
+ * ─── ScreenshotDialog.tsx ───────────────────────────────────────────
+ *
+ * A screenshot preview and crop dialog. Displays a captured image
+ * and lets the user draw a rectangular crop region before
+ * downloading the result.
+ *
+ * Features / Responsibilities:
+ *   - Full-resolution image preview inside a scrollable dialog
+ *   - Click-and-drag crop rectangle with visual overlay
+ *   - One-click download of the original or cropped image as PNG
+ *   - Supports custom portal containers for panel embedding
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect, type MouseEvent } from "react";

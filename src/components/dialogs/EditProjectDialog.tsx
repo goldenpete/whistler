@@ -1,3 +1,14 @@
+/**
+ * ─── EditProjectDialog.tsx ──────────────────────────────────────────
+ *
+ * Dialog for renaming or deleting an existing Whistler project.
+ *
+ * Features / Responsibilities:
+ *   - Editable project name with Enter-to-submit support
+ *   - Optional delete action guarded by an AlertDialog confirmation
+ *   - Controlled open/close state via props
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +74,7 @@ export function EditProjectDialog({ open, onOpenChange, currentName, onSave, onD
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
-                            className="bg-zinc-900 border-zinc-800 focus:border-primary/50 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-border/60 focus:border-primary/50 text-white placeholder:text-zinc-500"
                         />
                     </div>
                     {onDelete && (

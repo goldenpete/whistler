@@ -1,3 +1,16 @@
+/**
+ * ─── security.ts ───────────────────────────────────────────────────
+ *
+ * Security utilities for sanitizing user-generated content and
+ * validating URLs to prevent XSS and URI-based injection attacks.
+ *
+ * Exports:
+ *   - sanitizeHTML() – Cleans HTML via DOMPurify with an allow-list
+ *     of safe tags and attributes for rich-text content
+ *   - isValidUrl()   – Validates URLs against safe protocol schemes
+ *     (http, https, blob, data), blocking javascript: URIs
+ * ───────────────────────────────────────────────────────────────────
+ */
 import DOMPurify from 'dompurify';
 
 /**

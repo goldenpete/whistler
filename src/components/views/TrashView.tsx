@@ -1,3 +1,20 @@
+/**
+ * ─── TrashView.tsx ─────────────────────────────────────────────────
+ *
+ * Trash / recycle bin view for reviewing and managing soft-deleted
+ * items (files, collections, graphs, and docs) within a project.
+ *
+ * Features:
+ *   - Lists all trashed items with type-specific icons
+ *   - Individual restore and permanent delete actions
+ *   - "Empty Trash" bulk-delete with confirmation dialog
+ *   - Grouped display by item type
+ *   - Shows deletion timestamp via date-fns formatting
+ *
+ * Exports: default TrashView component
+ * Related: useStore (restore/permanentDelete actions)
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useMemo, useState, useEffect } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";

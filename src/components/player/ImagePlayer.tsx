@@ -1,3 +1,23 @@
+/**
+ * ─── ImagePlayer.tsx ─────────────────────────────────────────────────────────
+ *
+ * Image viewer with pan, zoom, and region-based highlights.
+ *
+ * Features:
+ *   - Pan by clicking and dragging
+ *   - Zoom via mouse wheel, pinch, or toolbar buttons
+ *   - Region-based highlights: draw a rectangle on the image to create
+ *     spatial annotations (stored as normalized 0–1 rect coordinates)
+ *   - Fullscreen mode
+ *   - Sidebar toggle for highlight list in FileView
+ *   - Click-to-draw highlight mode with visual overlay
+ *   - Navigate highlights (click to zoom/pan to highlighted region)
+ *
+ * Uses forwardRef + useImperativeHandle to expose control methods
+ * (zoomIn, zoomOut, addHighlight, toggleFullscreen) to parent FileView.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, type MouseEvent, type WheelEvent, type SyntheticEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -9,6 +29,7 @@ import {
     CornersOut
 } from '@phosphor-icons/react';
 import { useStore, type AppStore } from '@/store/useStore';
+import { useShallow } from '@/lib/zustand-shallow';
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -57,7 +78,12 @@ export const ImagePlayer = forwardRef<ImagePlayerHandle, ImagePlayerProps>(({
     highlights: passedHighlights
 }, ref) => {
     const navigate = useNavigate();
-    const { highlights: storeHighlights, addImageHighlight, trashFile, collections } = useStore();
+    const { highlights: storeHighlights, addImageHighlight, trashFile, collections } = useStore(useShallow((state) => ({
+        highlights: state.highlights,
+        addImageHighlight: state.addImageHighlight,
+        trashFile: state.trashFile,
+        collections: state.collections,
+    })));
     
     // State
     const [scale, setScale] = useState<number>(1.0);

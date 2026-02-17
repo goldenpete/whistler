@@ -1,3 +1,21 @@
+/**
+ * ─── CollectionsView.tsx ───────────────────────────────────────────
+ *
+ * Top-level collections browser for viewing, creating, and managing
+ * buckets and nested collections within a project.
+ *
+ * Features:
+ *   - Drag-and-drop collection reordering (dnd-kit)
+ *   - Grid and list view modes with sorting/filtering
+ *   - Multi-select with bulk actions
+ *   - Context menus for rename, delete, color, and share
+ *   - Search across all collections
+ *   - Nested folder hierarchy with root bucket detection
+ *
+ * Exports: default CollectionsView component
+ * Related: CollectionView, CollectionDialogs, collectionUtils
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { useState, useEffect, useMemo } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";

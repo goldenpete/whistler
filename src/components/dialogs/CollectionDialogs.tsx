@@ -1,3 +1,20 @@
+/**
+ * ─── CollectionDialogs.tsx ──────────────────────────────────────────
+ *
+ * Dialog components for creating and editing collections and
+ * collection folders within the Whistler project.
+ *
+ * Features / Responsibilities:
+ *   - CreateCollectionDialog – create a new collection with a custom
+ *     name, accent colour, and icon
+ *   - CreateFolderDialog – lightweight variant for creating plain
+ *     collection folders
+ *   - EditCollectionDialog – modify the name, colour, and icon of an
+ *     existing collection
+ *   - Shared CollectionForm with colour-picker and icon-grid
+ *   - Predefined ICONS constant used across the collection UI
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useEffect, type ChangeEvent, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
@@ -37,6 +54,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { type Collection } from "@/types";
 
 
@@ -107,7 +125,7 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                     onKeyDown={handleKeyDown}
                     autoFocus
-                    className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                    className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                 />
             </div>
 
@@ -165,7 +183,11 @@ interface CreateCollectionDialogProps {
 }
 
 export function CreateCollectionDialog({ open, onOpenChange, onSubmit, initialData, title = "New Collection" }: CreateCollectionDialogProps) {
-    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
+    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore(useShallow((state) => ({
+        accentTheme: state.accentTheme,
+        enableDefaultColorControls: state.enableDefaultColorControls,
+        defaultColors: state.defaultColors,
+    })));
     const accentKey = (accentTheme || "orange") as keyof typeof ACCENT_COLOR_MAP;
     const accentColor = ACCENT_COLOR_MAP[accentKey] ?? PRESET_COLORS[0];
     const collectionColor = enableDefaultColorControls && defaultColors?.collection !== undefined
@@ -243,7 +265,7 @@ export function CreateFolderDialog({ open, onOpenChange, onSubmit }: CreateFolde
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
-                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                         />
                     </div>
                 </div>

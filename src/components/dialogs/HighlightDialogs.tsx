@@ -1,3 +1,22 @@
+/**
+ * ─── HighlightDialogs.tsx ───────────────────────────────────────────
+ *
+ * Full-featured highlight playback and editing dialogs. The
+ * HighlightPlayerDialog renders an inline or floating media player
+ * for video, audio, image, PDF, and YouTube highlights, while the
+ * EditHighlightDialog provides a form for updating highlight metadata.
+ *
+ * Features / Responsibilities:
+ *   - HighlightPlayerDialog – multi-format media player with
+ *     play/pause, seek, volume, loop, fullscreen, and Picture-in-
+ *     Picture controls; supports minimise and drag handles
+ *   - EditHighlightDialog – edit highlight name, description, start/
+ *     end times, type, colour, and associated collection
+ *   - Time parsing helpers for mm:ss input
+ *   - Integrates VideoPlayer, AudioPlayer, PDFPlayer, ImagePlayer,
+ *     and YouTubePlayer components
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -10,6 +29,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { type Highlight, type File, type Collection } from "@/types";
 import { playSfx } from "@/utils/sound";
 import { 
@@ -59,7 +79,20 @@ interface HighlightPlayerDialogProps {
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
     const navigate = useNavigate();
-    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile } = useStore();
+    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile } = useStore(useShallow((state) => ({
+        setPipFile: state.setPipFile,
+        setFileProgress: state.setFileProgress,
+        addAmbientMusicSuppression: state.addAmbientMusicSuppression,
+        removeAmbientMusicSuppression: state.removeAmbientMusicSuppression,
+        highlights: state.highlights,
+        addFloatingPlayer: state.addFloatingPlayer,
+        setFloatingPlayerMinimized: state.setFloatingPlayerMinimized,
+        windowOutlineEnabled: state.windowOutlineEnabled,
+        videoZoomByFile: state.videoZoomByFile,
+        setVideoZoomForFile: state.setVideoZoomForFile,
+        videoZoomManualByFile: state.videoZoomManualByFile,
+        setVideoZoomManualForFile: state.setVideoZoomManualForFile,
+    })));
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeRef = useRef<YouTubePlayerHandle>(null);

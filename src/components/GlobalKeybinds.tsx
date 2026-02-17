@@ -1,8 +1,28 @@
+/**
+ * ─── GlobalKeybinds.tsx ─────────────────────────────────────────────
+ *
+ * Central handler for application-wide keyboard shortcuts that
+ * operate regardless of the active view or focused element.
+ *
+ * Features:
+ *   - Navigation shortcuts (home, storage, docs, graphs, etc.)
+ *   - Sidebar toggle and view switching
+ *   - Double-tap "G" key sequences for quick go-to navigation
+ *   - Shift double-tap for DoubleTapMenu activation
+ *   - Spotlight search trigger (Cmd/Ctrl+K)
+ *   - Shortcut guide dialog toggle
+ *   - Respects custom keybind overrides and disabled keybinds
+ *
+ * Exports: GlobalKeybinds component
+ * Related: useKeybind hook, KEYBIND_REGISTRY, ShortcutGuideDialog
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useEffect, useRef } from "react";
 import { useKeybind } from "@/hooks/use-keybind";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ShortcutGuideDialog } from "@/components/dialogs/ShortcutGuideDialog";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { KEYBIND_REGISTRY } from "@/constants/keybinds";
 
 /**
@@ -25,7 +45,16 @@ export function GlobalKeybinds() {
         toggleSidebar, toggleSidebarCollapse, isSidebarOpen, setSidebarView, 
         setDoubleTapMenuOpen, isDoubleTapMenuOpen,
         customKeybinds, disabledKeybinds
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        toggleSidebar: state.toggleSidebar,
+        toggleSidebarCollapse: state.toggleSidebarCollapse,
+        isSidebarOpen: state.isSidebarOpen,
+        setSidebarView: state.setSidebarView,
+        setDoubleTapMenuOpen: state.setDoubleTapMenuOpen,
+        isDoubleTapMenuOpen: state.isDoubleTapMenuOpen,
+        customKeybinds: state.customKeybinds,
+        disabledKeybinds: state.disabledKeybinds,
+    })));
 
     const handleNavigation = (path: string, targetView: 'storage' | 'docs' | 'graphs' | 'main') => {
         navigate(path);

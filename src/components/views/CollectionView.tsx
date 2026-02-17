@@ -1,3 +1,21 @@
+/**
+ * ─── CollectionView.tsx ────────────────────────────────────────────
+ *
+ * Detail view for a single collection, displaying its contained
+ * media files with search, selection, and context menu interactions.
+ *
+ * Features:
+ *   - Breadcrumb navigation within collection hierarchy
+ *   - File listing with thumbnails, duration, and metadata
+ *   - Search/filter files within the collection
+ *   - Context menus for file actions (open, copy, delete, share)
+ *   - Multi-select and bulk operations
+ *   - Delete collection confirmation dialog
+ *
+ * Exports: default CollectionView component
+ * Related: CollectionsView, collectionUtils, useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { useState, useRef, useMemo, useEffect, type ChangeEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";

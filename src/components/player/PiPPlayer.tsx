@@ -1,5 +1,24 @@
+/**
+ * ─── PiPPlayer.tsx ─────────────────────────────────────────────────
+ *
+ * Picture-in-Picture mini video player that appears as a compact
+ * overlay, allowing playback to continue while browsing other views.
+ *
+ * Features:
+ *   - Compact video overlay with play/pause and mute toggles
+ *   - Progress restoration from saved file progress state
+ *   - Expand to full file view or close PiP
+ *   - Sidebar-collapse-aware positioning
+ *   - Continuous progress tracking via timeupdate events
+ *
+ * Props: isCollapsed (sidebar state for layout adjustment)
+ * Exports: PiPPlayer component
+ * Related: useStore (pipFileId, isPipOpen), VideoPlayer
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useRef, useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, X, ArrowsOutSimple, SpeakerSimpleHigh, SpeakerSimpleSlash } from "@phosphor-icons/react";
@@ -11,7 +30,15 @@ interface PiPPlayerProps {
 
 export function PiPPlayer({ isCollapsed }: PiPPlayerProps) {
     const navigate = useNavigate();
-    const { pipFileId, isPipOpen, setPipFile, togglePip, files, fileProgress, setFileProgress } = useStore();
+    const { pipFileId, isPipOpen, setPipFile, togglePip, files, fileProgress, setFileProgress } = useStore(useShallow((state) => ({
+        pipFileId: state.pipFileId,
+        isPipOpen: state.isPipOpen,
+        setPipFile: state.setPipFile,
+        togglePip: state.togglePip,
+        files: state.files,
+        fileProgress: state.fileProgress,
+        setFileProgress: state.setFileProgress,
+    })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(true);
     const [isMuted, setIsMuted] = useState(false);

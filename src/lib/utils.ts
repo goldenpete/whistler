@@ -1,3 +1,15 @@
+/**
+ * ─── utils.ts ──────────────────────────────────────────────────────
+ *
+ * General-purpose utility functions shared across the application.
+ *
+ * Exports:
+ *   - cn()         – Merges Tailwind CSS class names via clsx + twMerge
+ *   - formatTime() – Converts seconds to "m:ss" display string
+ *   - formatKey()  – Maps keyboard event key names to display symbols
+ *                    (e.g. "ArrowUp" → "↑")
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 

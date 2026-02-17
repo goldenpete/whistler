@@ -1,3 +1,24 @@
+/**
+ * ─── AudioPlayer.tsx ─────────────────────────────────────────────────────────
+ *
+ * Audio playback component with custom controls.
+ *
+ * Features:
+ *   - Play/pause, seek bar, volume control
+ *   - Playback speed adjustment (0.5x–2x)
+ *   - Skip forward/backward (10s)
+ *   - Loop mode toggle
+ *   - Waveform-style visual progress bar
+ *   - Time-range highlights: create and navigate audio annotations
+ *   - Collection association for highlights
+ *   - Per-file volume persistence
+ *   - Auto-resume from last playback position
+ *
+ * Uses forwardRef + useImperativeHandle to expose control methods
+ * (play, pause, seek, addHighlight) to the parent FileView component.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -20,6 +41,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
+import { useShallow } from '@/lib/zustand-shallow';
 import { playSfx } from '@/utils/sound';
 
 import type { Highlight, Collection } from "@/types";
@@ -56,7 +78,16 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
         rememberMediaVolume,
         audioVolumeByFile,
         setAudioVolumeForFile
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        addAmbientMusicSuppression: state.addAmbientMusicSuppression,
+        removeAmbientMusicSuppression: state.removeAmbientMusicSuppression,
+        fileProgress: state.fileProgress,
+        setFileProgress: state.setFileProgress,
+        collections: state.collections,
+        rememberMediaVolume: state.rememberMediaVolume,
+        audioVolumeByFile: state.audioVolumeByFile,
+        setAudioVolumeForFile: state.setAudioVolumeForFile,
+    })));
     
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);

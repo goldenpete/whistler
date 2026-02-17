@@ -1,3 +1,18 @@
+/**
+ * ─── FilePickerDialog.tsx ───────────────────────────────────────────
+ *
+ * A browsable file-picker dialog that lets the user select a file
+ * from the current project's storages and folder hierarchy.
+ *
+ * Features / Responsibilities:
+ *   - Navigable storage → folder tree with breadcrumb-style back
+ *     navigation
+ *   - Filters files to the active project and excludes deleted items
+ *   - Highlights the currently selected file and supports an optional
+ *     initial selection
+ *   - Used by EditNodeDialog to link a graph node to a file
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useMemo, useEffect } from "react";
 import {
     Dialog,
@@ -10,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { 
     File as FileIcon, Folder, HardDrives, CaretLeft 
 } from "@phosphor-icons/react";
@@ -30,7 +46,12 @@ export function FilePickerDialog({
     initialFileId,
     title = "Select File"
 }: FilePickerDialogProps) {
-    const { files, storages, activeProjectId, activeStorageId } = useStore();
+    const { files, storages, activeProjectId, activeStorageId } = useStore(useShallow((state) => ({
+        files: state.files,
+        storages: state.storages,
+        activeProjectId: state.activeProjectId,
+        activeStorageId: state.activeStorageId,
+    })));
     
     // Internal selection state
     const [selectedFileId, setSelectedFileId] = useState<string>("");

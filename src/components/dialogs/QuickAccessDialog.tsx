@@ -1,5 +1,21 @@
+/**
+ * ─── QuickAccessDialog.tsx ──────────────────────────────────────────
+ *
+ * A searchable quick-access dialog that surfaces project entities
+ * (files, highlights, collections, docs, graphs, storages, and
+ * projects) in a filterable, sortable list.
+ *
+ * Features / Responsibilities:
+ *   - Type-scoped browsing with a dedicated QuickAccessType filter
+ *   - Real-time fuzzy search across entity names
+ *   - Ascending / descending sort by last-modified date
+ *   - Single-click navigation: sets the active entity and routes to
+ *     the appropriate view
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useMemo } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { 
@@ -43,7 +59,21 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
         setActiveCollection,
         setActiveGraph,
         setActiveProject
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        files: state.files,
+        highlights: state.highlights,
+        collections: state.collections,
+        docs: state.docs,
+        graphs: state.graphs,
+        storages: state.storages,
+        projects: state.projects,
+        activeProjectId: state.activeProjectId,
+        setActiveFile: state.setActiveFile,
+        setActiveDoc: state.setActiveDoc,
+        setActiveCollection: state.setActiveCollection,
+        setActiveGraph: state.setActiveGraph,
+        setActiveProject: state.setActiveProject,
+    })));
     
     const navigate = useNavigate();
     const [search, setSearch] = useState("");

@@ -1,8 +1,23 @@
+/**
+ * ─── MoveFileDialog.tsx ─────────────────────────────────────────────
+ *
+ * Dialog for moving one or more files to a different storage or
+ * folder within the active Whistler project.
+ *
+ * Features / Responsibilities:
+ *   - Browsable storage and folder hierarchy with back navigation
+ *   - Supports batch-moving multiple files at once
+ *   - Prevents moving a folder into itself or its own descendants
+ *   - Highlights the current location context and updates the store
+ *     on confirmation
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import type { File, Storage } from "@/types";
 import { Folder, HardDrives, CaretLeft } from "@phosphor-icons/react";
 
@@ -20,7 +35,13 @@ export function MoveFileDialog({ open, onOpenChange, fileIds, container }: MoveF
         updateFile, 
         activeProjectId, 
         activeStorageId: globalActiveStorageId 
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        files: state.files,
+        storages: state.storages,
+        updateFile: state.updateFile,
+        activeProjectId: state.activeProjectId,
+        activeStorageId: state.activeStorageId,
+    })));
 
     const [selectedStorageId, setSelectedStorageId] = useState<string | null>(null);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);

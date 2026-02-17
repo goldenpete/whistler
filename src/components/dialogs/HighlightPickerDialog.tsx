@@ -1,3 +1,16 @@
+/**
+ * ─── HighlightPickerDialog.tsx ──────────────────────────────────────
+ *
+ * A selection dialog that lets the user pick a highlight from the
+ * current project, organised by collection.
+ *
+ * Features / Responsibilities:
+ *   - Groups highlights by their parent collection for easy browsing
+ *   - Displays highlight type icon, time range, and parent file name
+ *   - Supports an optional initial selection and a configurable title
+ *   - Used by EditNodeDialog to link a graph node to a highlight
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
     Dialog,
@@ -10,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import type { Highlight, Collection, File } from "@/types";
 import { Clock, Folder, Tag, FilmStrip, TextT } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -35,7 +49,12 @@ export function HighlightPickerDialog({
     initialHighlightId,
     title = "Select Highlight"
 }: HighlightPickerDialogProps) {
-    const { highlights, collections, files, activeProjectId } = useStore();
+    const { highlights, collections, files, activeProjectId } = useStore(useShallow((state) => ({
+        highlights: state.highlights,
+        collections: state.collections,
+        files: state.files,
+        activeProjectId: state.activeProjectId,
+    })));
 
     const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
     const [selectedHighlightId, setSelectedHighlightId] = useState<string>("");

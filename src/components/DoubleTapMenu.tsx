@@ -1,12 +1,33 @@
+/**
+ * ─── DoubleTapMenu.tsx ─────────────────────────────────────────────
+ *
+ * Quick-access navigation overlay triggered by a double-tap gesture
+ * (Shift+Shift), presenting a menu of top-level application views.
+ *
+ * Features:
+ *   - Animated modal dialog with view shortcuts
+ *   - Items: Home, Collections, Storage, Documents, Graphs
+ *   - Displays keyboard shortcut hints (G+H, G+C, etc.)
+ *   - Framer Motion entrance/exit animations
+ *   - Auto-closes on navigation selection
+ *
+ * Exports: DoubleTapMenu component
+ * Related: GlobalKeybinds (trigger), useStore (open/close state)
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { HardDrives, FileText, Graph, ArrowRight, House, Folders } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export function DoubleTapMenu() {
-    const { isDoubleTapMenuOpen, setDoubleTapMenuOpen } = useStore();
+    const { isDoubleTapMenuOpen, setDoubleTapMenuOpen } = useStore(useShallow((state) => ({
+        isDoubleTapMenuOpen: state.isDoubleTapMenuOpen,
+        setDoubleTapMenuOpen: state.setDoubleTapMenuOpen,
+    })));
     const navigate = useNavigate();
 
     const menuItems = [

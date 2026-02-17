@@ -1,3 +1,17 @@
+/**
+ * ─── ShortcutGuideDialog.tsx ────────────────────────────────────────
+ *
+ * An interactive keyboard-shortcut reference dialog. Displays all
+ * registered keybindings organised by category with a live search
+ * filter.
+ *
+ * Features / Responsibilities:
+ *   - Tabbed categories (General, Navigation, Playback, etc.)
+ *   - Real-time search filtering across shortcut labels
+ *   - Renders user-customised keybinds from the KEYBIND_REGISTRY
+ *   - Styled keyboard-key badges for consistent visual presentation
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { type ReactNode, useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -5,6 +19,7 @@ import { CaretRight, CaretLeft, CornersOut, CornersIn, SpeakerHigh, Image, FilmS
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { KEYBIND_REGISTRY } from "@/constants/keybinds";
 import { formatKey } from "@/lib/utils";
 
@@ -49,7 +64,9 @@ const ShortcutRow = ({ label, keys, icon: Icon }: { label: string, keys: ReactNo
 
 // Helper to render dynamic row based on IDs
 const DynamicShortcutRow = ({ ids, label, icon: Icon, customKeys, extraKeys }: { ids?: string[], label?: string, icon?: any, customKeys?: ReactNode[], extraKeys?: ReactNode[] }) => {
-    const { customKeybinds } = useStore();
+    const { customKeybinds } = useStore(useShallow((state) => ({
+        customKeybinds: state.customKeybinds,
+    })));
 
     if (customKeys) {
         return <ShortcutRow label={label!} icon={Icon} keys={customKeys} />;
@@ -203,7 +220,9 @@ const GUIDE_DATA: Record<string, GuideItem[]> = {
 
 export function ShortcutGuideDialog({ open, onOpenChange }: ShortcutGuideDialogProps) {
     const [searchQuery, setSearchQuery] = useState("");
-    const { customKeybinds } = useStore();
+    const { customKeybinds } = useStore(useShallow((state) => ({
+        customKeybinds: state.customKeybinds,
+    })));
 
     // Reset search when dialog opens/closes
     if (!open && searchQuery) setSearchQuery("");

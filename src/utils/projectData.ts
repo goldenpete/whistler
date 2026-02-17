@@ -1,3 +1,23 @@
+/**
+ * ─── projectData.ts ──────────────────────────────────────────────────────────
+ *
+ * Project import/export utilities.
+ *
+ * Export: Serializes all entities belonging to a single project into a
+ *   `ProjectExportData` JSON blob that can be saved to a file.
+ *
+ * Import: Deserializes the blob, re-generates all IDs (to avoid collisions),
+ *   remaps all cross-entity references (storageId, parentId, graphId, etc.),
+ *   and returns a clean set of entities ready to merge into the store.
+ *
+ * ID remapping strategy:
+ *   1. Generate new UUIDs for every entity
+ *   2. Build an oldId → newId map
+ *   3. Walk every entity and replace all ID references using the map
+ *   4. URLs are validated via `isValidUrl()` to prevent XSS on import
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import type { Project, File, Collection, Highlight, Graph, GraphNode, GraphEdge, Doc, Storage, AppState } from "@/types";
 import { isValidUrl } from "./security";
 
@@ -15,8 +35,13 @@ export interface ProjectExportData {
     storages: Storage[];
 }
 
+/** Current export format version (for future migration support). */
 export const EXPORT_VERSION = 1;
 
+/**
+ * Export a single project and all its entities as a portable JSON object.
+ * Excludes soft-deleted entities.
+ */
 export function exportProject(state: AppState, projectId: string): ProjectExportData | null {
     const project = state.projects.find(p => p.id === projectId);
     if (!project) return null;
@@ -45,6 +70,11 @@ export function exportProject(state: AppState, projectId: string): ProjectExport
     };
 }
 
+/**
+ * Import a previously exported project. All IDs are regenerated and
+ * cross-references remapped so the import won't collide with existing data.
+ * The project name is suffixed with " (Imported)".
+ */
 export function importProject(data: ProjectExportData): Omit<ProjectExportData, 'version' | 'exportedAt'> {
     // 1. Generate ID Maps
     const idMap = new Map<string, string>();

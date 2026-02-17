@@ -1,4 +1,5 @@
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { cn } from "@/lib/utils";
 import whistlerLogoOrange from "../../../whistlerlogo.png";
 import whistlerLogoEmerald from "../../../whistlerlogo-emerald.png";
@@ -20,7 +21,10 @@ interface WhistlerLogoProps {
 }
 
 export function WhistlerLogo({ className, width, height }: WhistlerLogoProps) {
-    const { accentTheme, customAccentThemes } = useStore();
+    const { accentTheme, customAccentThemes } = useStore(useShallow((state) => ({
+        accentTheme: state.accentTheme,
+        customAccentThemes: state.customAccentThemes,
+    })));
 
     // If it's a preset theme, use the PNG directly
     if (accentTheme && LOGO_MAP[accentTheme]) {

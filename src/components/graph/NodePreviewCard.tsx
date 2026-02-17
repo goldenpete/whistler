@@ -1,4 +1,5 @@
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import type { GraphNode } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +23,12 @@ interface NodePreviewCardProps {
 }
 
 export function NodePreviewCard({ node, onClose, onEdit, style, className }: NodePreviewCardProps) {
-    const { files, collections, highlights, docs } = useStore();
+    const { files, collections, highlights, docs } = useStore(useShallow((state) => ({
+        files: state.files,
+        collections: state.collections,
+        highlights: state.highlights,
+        docs: state.docs,
+    })));
     const navigate = useNavigate();
 
     const type = node.type;

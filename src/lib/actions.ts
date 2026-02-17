@@ -1,3 +1,31 @@
+/**
+ * ─── actions.ts ──────────────────────────────────────────────────────────────
+ *
+ * Central action registry for the Whistler application.
+ *
+ * Each ActionDefinition describes a named, executable command with:
+ *   - id: unique identifier (e.g. "nav.home", "create.folder")
+ *   - labels: human-readable trigger phrases for spotlight search
+ *   - description: tooltip/help text
+ *   - icon: Phosphor icon component
+ *   - execute: function that performs the action
+ *   - available: optional predicate to show/hide based on current route
+ *
+ * Used by:
+ *   - SpotlightSearch.tsx → fuzzy-matches query against labels/keywords
+ *   - GlobalKeybinds.tsx → maps keyboard shortcuts to action IDs
+ *   - ActionsSettings.tsx → displays all available actions
+ *   - KeybindsSettings.tsx → maps keybinds to action IDs
+ *
+ * Action categories:
+ *   - Creation: create files, folders, nodes, collections
+ *   - Navigation: go to home, storage, docs, graphs, settings, trash
+ *   - File operations: open highlights, take screenshot, reprocess
+ *   - Playback: play/pause, mute/unmute, zoom, seek
+ *   - UI toggles: sidebar, theme switching, fullscreen
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import type { NavigateFunction, Location } from "react-router-dom";
 import type { AppStore } from "@/store/useStore";
 import type { File, Collection } from "@/types";

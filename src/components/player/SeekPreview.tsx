@@ -1,3 +1,21 @@
+/**
+ * ─── SeekPreview.tsx ───────────────────────────────────────────────
+ *
+ * Thumbnail preview tooltip displayed above the video seek bar when
+ * the user hovers over the timeline, showing a frame at that time.
+ *
+ * Features:
+ *   - Hidden <video> element seeks to hovered timestamp
+ *   - Positioned horizontally to follow cursor along the bar
+ *   - Fade-in/out opacity transitions for smooth appearance
+ *   - Formatted time label below the thumbnail
+ *   - Loading skeleton while video metadata loads
+ *
+ * Props: file, time, x (horizontal pixel offset), visible
+ * Exports: SeekPreview component
+ * Related: VideoPlayer (parent), formatTime from utils
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useRef, useEffect, useState } from "react";
 import { type File } from "@/types";
 import { cn, formatTime } from "@/lib/utils";

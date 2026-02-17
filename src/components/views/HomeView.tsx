@@ -1,3 +1,21 @@
+/**
+ * ─── HomeView.tsx ──────────────────────────────────────────────────
+ *
+ * Project dashboard and overview page serving as the landing view
+ * after selecting a project, with quick access to recent content.
+ *
+ * Features:
+ *   - Recent files, docs, collections, and graphs overview
+ *   - Quick-action buttons for creating new content
+ *   - Activity feed with recently modified items
+ *   - Content type filtering and search
+ *   - Breadcrumb navigation and context menus
+ *   - Dialogs for adding/renaming files, docs, graphs, and storage
+ *
+ * Exports: default HomeView component
+ * Related: StorageDialogs, CollectionDialogs, useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useRef, useEffect, memo, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
@@ -449,7 +467,20 @@ export default function HomeView() {
         activeProjectId,
         activeStorageId,
         activeCollectionId
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        accentTheme: state.accentTheme,
+        user: state.user,
+        files: state.files,
+        docs: state.docs,
+        collections: state.collections,
+        highlights: state.highlights,
+        graphs: state.graphs,
+        storages: state.storages,
+        projects: state.projects,
+        activeProjectId: state.activeProjectId,
+        activeStorageId: state.activeStorageId,
+        activeCollectionId: state.activeCollectionId,
+    })));
     
     const navigate = useNavigate();
 

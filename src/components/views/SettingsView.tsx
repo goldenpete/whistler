@@ -1,3 +1,22 @@
+/**
+ * ─── SettingsView.tsx ──────────────────────────────────────────────
+ *
+ * Application settings panel with tabbed sections for customizing
+ * appearance, sounds, UI behavior, sync, and about information.
+ *
+ * Features:
+ *   - Theme and accent color customization with custom CSS themes
+ *   - Sound effect toggles and ambient music configuration
+ *   - UI layout options (sidebar, player, cursor effects)
+ *   - History and trash management sub-views
+ *   - Cloud sync settings
+ *   - About page with credits, links, and legal info
+ *   - Searchable settings with URL-based section navigation
+ *
+ * Exports: default SettingsView component
+ * Related: SidebarHistory, SidebarTrash, LegalView, useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useEffect, type ChangeEvent } from "react";
 import { useSearchParams, Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { useStore, ambientMusicStorage, DEFAULT_CUSTOM_ACCENT_THEMES, DEFAULT_CUSTOM_THEMES, type SoundKey } from "@/store/useStore";
@@ -72,6 +91,7 @@ import { SettingsSync } from "@/components/settings/SettingsSync";
 import { KeybindsSettings } from "@/components/settings/KeybindsSettings";
 import { ActionsSettings } from "@/components/settings/ActionsSettings";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
+import { useShallow } from "@/lib/zustand-shallow";
 import type { AccentTheme, BaseTheme, CustomBaseTheme } from "@/types";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
 import { Keyboard, Lightning } from "@phosphor-icons/react";
@@ -175,7 +195,81 @@ export default function SettingsView() {
         setReplaceAllSoundsWithCursor,
         soundConfigs,
         setSoundConfig
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        accentTheme: state.accentTheme,
+        setAccentTheme: state.setAccentTheme,
+        accentThemeMode: state.accentThemeMode,
+        setAccentThemeMode: state.setAccentThemeMode,
+        customAccentThemes: state.customAccentThemes,
+        setCustomAccentTheme: state.setCustomAccentTheme,
+        baseTheme: state.baseTheme,
+        setBaseTheme: state.setBaseTheme,
+        baseThemeMode: state.baseThemeMode,
+        setBaseThemeMode: state.setBaseThemeMode,
+        customBaseThemes: state.customBaseThemes,
+        setCustomBaseTheme: state.setCustomBaseTheme,
+        backgroundImageOpacity: state.backgroundImageOpacity,
+        setBackgroundImageOpacity: state.setBackgroundImageOpacity,
+        backgroundImageUrl: state.backgroundImageUrl,
+        setBackgroundImageUrl: state.setBackgroundImageUrl,
+        backgroundColor: state.backgroundColor,
+        setBackgroundColor: state.setBackgroundColor,
+        backgroundGradient: state.backgroundGradient,
+        setBackgroundGradient: state.setBackgroundGradient,
+        backgroundIsGradient: state.backgroundIsGradient,
+        setBackgroundIsGradient: state.setBackgroundIsGradient,
+        backgroundOverlayOpacity: state.backgroundOverlayOpacity,
+        setBackgroundOverlayOpacity: state.setBackgroundOverlayOpacity,
+        setAmbientMusicUrl: state.setAmbientMusicUrl,
+        ambientMusicUrl: state.ambientMusicUrl,
+        setAmbientMusicVolume: state.setAmbientMusicVolume,
+        ambientMusicVolume: state.ambientMusicVolume,
+        ambientMusicName: state.ambientMusicName,
+        ambientMusicPaused: state.ambientMusicPaused,
+        setAmbientMusicPaused: state.setAmbientMusicPaused,
+        muteNewVideosUntilUnmuted: state.muteNewVideosUntilUnmuted,
+        setMuteNewVideosUntilUnmuted: state.setMuteNewVideosUntilUnmuted,
+        muteHighlightsUntilUnmuted: state.muteHighlightsUntilUnmuted,
+        setMuteHighlightsUntilUnmuted: state.setMuteHighlightsUntilUnmuted,
+        rememberMediaVolume: state.rememberMediaVolume,
+        setRememberMediaVolume: state.setRememberMediaVolume,
+        disableMediaAutoplay: state.disableMediaAutoplay,
+        setDisableMediaAutoplay: state.setDisableMediaAutoplay,
+        useMiddleFrameForPreviews: state.useMiddleFrameForPreviews,
+        setUseMiddleFrameForPreviews: state.setUseMiddleFrameForPreviews,
+        cacheFiles: state.cacheFiles,
+        setCacheFiles: state.setCacheFiles,
+        cacheCollections: state.cacheCollections,
+        setCacheCollections: state.setCacheCollections,
+        cacheHighlights: state.cacheHighlights,
+        setCacheHighlights: state.setCacheHighlights,
+        sfxEnabled: state.sfxEnabled,
+        setSfxEnabled: state.setSfxEnabled,
+        enabledSounds: state.enabledSounds,
+        toggleSound: state.toggleSound,
+        enableDefaultColorControls: state.enableDefaultColorControls,
+        setEnableDefaultColorControls: state.setEnableDefaultColorControls,
+        defaultColors: state.defaultColors,
+        setDefaultColor: state.setDefaultColor,
+        sidebarMode: state.sidebarMode,
+        setSidebarMode: state.setSidebarMode,
+        windowOutlineEnabled: state.windowOutlineEnabled,
+        setWindowOutlineEnabled: state.setWindowOutlineEnabled,
+        toggleThemingEnabled: state.toggleThemingEnabled,
+        setToggleThemingEnabled: state.setToggleThemingEnabled,
+        largeTogglesThemingEnabled: state.largeTogglesThemingEnabled,
+        setLargeTogglesThemingEnabled: state.setLargeTogglesThemingEnabled,
+        setState: state.setState,
+        setAmbientMusicStorageKey: state.setAmbientMusicStorageKey,
+        alwaysShowMuteOverlay: state.alwaysShowMuteOverlay,
+        setAlwaysShowMuteOverlay: state.setAlwaysShowMuteOverlay,
+        replaceSearchWithConfirm: state.replaceSearchWithConfirm,
+        setReplaceSearchWithConfirm: state.setReplaceSearchWithConfirm,
+        replaceAllSoundsWithCursor: state.replaceAllSoundsWithCursor,
+        setReplaceAllSoundsWithCursor: state.setReplaceAllSoundsWithCursor,
+        soundConfigs: state.soundConfigs,
+        setSoundConfig: state.setSoundConfig,
+    })));
 
     const [searchParams] = useSearchParams();
     const location = useLocation();

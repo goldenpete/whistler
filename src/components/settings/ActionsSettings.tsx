@@ -1,3 +1,17 @@
+/**
+ * ─── ActionsSettings.tsx ─────────────────────────────────────────────────────
+ *
+ * Action browser UI within the Settings view.
+ *
+ * Displays all actions from ACTION_REGISTRY grouped by category
+ * (Creation, Navigation, Video, PDF, Graph, UI, Other).
+ * Supports category filtering and text search.
+ *
+ * This is a read-only reference view — actions are executed via
+ * SpotlightSearch or keyboard shortcuts, not from this page.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useState } from "react";
 import { ACTION_REGISTRY } from "@/lib/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

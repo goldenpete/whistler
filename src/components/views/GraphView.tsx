@@ -1,3 +1,22 @@
+/**
+ * ─── GraphView.tsx ─────────────────────────────────────────────────
+ *
+ * Interactive canvas-based node graph visualization for mapping
+ * relationships between files, notes, and concepts in a project.
+ *
+ * Features:
+ *   - HTML5 Canvas rendering with pan and zoom controls
+ *   - Node creation, editing, and deletion via dialogs
+ *   - Edge drawing between nodes with drag interactions
+ *   - Color-coded nodes with icon support (iconMap)
+ *   - Context menus for node/edge actions
+ *   - Node preview cards with linked content
+ *   - Keyboard shortcuts for graph manipulation
+ *
+ * Exports: default GraphView component
+ * Related: EditNodeDialog, NodePreviewCard, iconMap, useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { useRef, useState, useEffect, useCallback, type MouseEvent, type WheelEvent, type KeyboardEvent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";

@@ -1,3 +1,23 @@
+/**
+ * ─── StorageDialogs.tsx ─────────────────────────────────────────────
+ *
+ * A comprehensive suite of dialogs for managing storages, folders,
+ * files, graphs, and docs within a Whistler project. Also exports
+ * the reusable EntityForm component and the shared ICONS constant.
+ *
+ * Features / Responsibilities:
+ *   - EntityForm – generic name / description / colour / icon form
+ *     reused by many creation and editing dialogs
+ *   - AddFileDialog – import a file via URL, local file, or folder
+ *   - NewFolderDialog / EditFolderDialog – create and rename folders
+ *   - CreateStorageDialog / EditStorageDialog – manage storage
+ *     volumes with name, colour, and icon
+ *   - RenameFileDialog – update file name, description, and URL
+ *   - EditGraphDialog / EditDocDialog – edit graph and document
+ *     metadata
+ *   - Shared ICONS array of Phosphor icons used across the app
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useEffect } from "react";
 import type { KeyboardEvent, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -122,7 +142,7 @@ export function EntityForm({
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                     onKeyDown={handleKeyDown}
                     autoFocus
-                    className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                    className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                 />
             </div>
 
@@ -136,7 +156,7 @@ export function EntityForm({
                         placeholder="Add a description..."
                         value={description}
                         onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-                        className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 resize-none h-24"
+                        className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500 resize-none h-24"
                     />
                 </div>
             )}
@@ -264,7 +284,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                             onChange={(e: ChangeEvent<HTMLInputElement>) => handleUrlChange(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
-                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                         />
                     </div>
                     <div className="space-y-2">
@@ -277,7 +297,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                             value={name}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-white text-white placeholder:text-zinc-500"
                         />
                     </div>
                 </div>
@@ -483,7 +503,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
-                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                         />
                     </div>
 
@@ -497,7 +517,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                             value={url}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="bg-zinc-900 border-zinc-800 font-mono text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-white text-white placeholder:text-zinc-500"
                         />
                     </div>
 
@@ -511,7 +531,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                                 placeholder="Add a description..."
                                 value={description}
                                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-                                className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 resize-none h-24"
+                                className="bg-zinc-900 border-white text-white placeholder:text-zinc-500 resize-none h-24"
                             />
                         </div>
                     )}

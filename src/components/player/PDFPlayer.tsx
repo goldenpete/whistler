@@ -1,3 +1,25 @@
+/**
+ * ─── PDFPlayer.tsx ───────────────────────────────────────────────────────────
+ *
+ * PDF document viewer using react-pdf.
+ *
+ * Features:
+ *   - Page-by-page navigation (prev/next buttons + keyboard)
+ *   - Zoom in/out with mouse wheel support
+ *   - Fullscreen mode
+ *   - Text selection highlights: select text on a PDF page to create
+ *     text-based Highlight annotations (stored as pdfRange + text)
+ *   - Sidebar toggle: shows/hides the highlight list panel in FileView
+ *   - Debounced rendering to avoid excessive re-renders during zoom
+ *
+ * Uses forwardRef + useImperativeHandle to expose control methods
+ * (jumpToPage, prevPage, nextPage, zoomIn, zoomOut, addHighlightFromSelection)
+ * to the parent FileView component.
+ *
+ * PDF.js worker is configured globally in src/pdf-worker.ts.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import React, { useState, useRef, useEffect, useMemo, useImperativeHandle, forwardRef, useCallback, type MouseEvent } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +39,7 @@ import {
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useStore } from '@/store/useStore';
+import { useShallow } from '@/lib/zustand-shallow';
 import type { Highlight } from "@/types";
 import { cn } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
@@ -92,7 +115,11 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const pageWrapperRef = useRef<HTMLDivElement>(null);
 
     // --- Store Access ---
-    const { addHighlight, activeCollectionId, highlights } = useStore();
+    const { addHighlight, activeCollectionId, highlights } = useStore(useShallow((state) => ({
+        addHighlight: state.addHighlight,
+        activeCollectionId: state.activeCollectionId,
+        highlights: state.highlights,
+    })));
 
     // --- Derived State ---
     const options = useMemo(() => ({

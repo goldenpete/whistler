@@ -1,3 +1,20 @@
+/**
+ * ─── FloatingPlayer.tsx ────────────────────────────────────────────
+ *
+ * Manages one or more floating (detached) video player windows that
+ * persist across view navigation, with minimize and z-ordering.
+ *
+ * Features:
+ *   - Multiple simultaneous floating player windows
+ *   - Per-window minimize/restore with taskbar-style buttons
+ *   - Z-index management for window focus ordering
+ *   - Exit-floating to navigate back to full file view
+ *   - Delegates rendering to VideoPlayer with floating props
+ *
+ * Exports: FloatingPlayer component
+ * Related: VideoPlayer, useStore (floatingPlayerWindows state)
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useNavigate } from "react-router-dom";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";

@@ -1,3 +1,19 @@
+/**
+ * ─── EditNodeDialog.tsx ─────────────────────────────────────────────
+ *
+ * Unified dialog for creating and editing graph nodes. Supports
+ * multiple node types (note, file, collection, highlight, link, doc)
+ * and adapts its form fields accordingly.
+ *
+ * Features / Responsibilities:
+ *   - Dual-mode operation: 'create' and 'edit'
+ *   - Dynamic form that changes based on the selected node type
+ *   - Integrates FilePickerDialog and HighlightPickerDialog for
+ *     linking nodes to existing files or highlights
+ *   - Colour picker and icon selector for visual customisation
+ *   - Validates inputs and delegates persistence via an onSave callback
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useState, useEffect, type ChangeEvent } from "react";
 import {
     Dialog,
@@ -19,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import type { GraphNode, File, Highlight, Collection, Doc } from "@/types";
 import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon } from "@phosphor-icons/react";
 import { FilePickerDialog } from "./FilePickerDialog";
@@ -53,7 +70,16 @@ export function NodeDialog({
         accentTheme,
         enableDefaultColorControls,
         defaultColors,
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        files: state.files,
+        collections: state.collections,
+        highlights: state.highlights,
+        docs: state.docs,
+        activeProjectId: state.activeProjectId,
+        accentTheme: state.accentTheme,
+        enableDefaultColorControls: state.enableDefaultColorControls,
+        defaultColors: state.defaultColors,
+    })));
     const navigate = useNavigate();
     
     // Form State

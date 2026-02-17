@@ -1,3 +1,22 @@
+/**
+ * ─── StorageView.tsx ───────────────────────────────────────────────
+ *
+ * File system browser view for navigating, managing, and organizing
+ * media files and folders within a project's storage hierarchy.
+ *
+ * Features:
+ *   - Hierarchical folder navigation with breadcrumbs
+ *   - Drag-and-drop file reordering and folder moves (dnd-kit)
+ *   - Grid and list view modes with sorting options
+ *   - Multi-select with bulk actions (delete, move, share)
+ *   - Context menus and inline rename/edit actions
+ *   - Search/filter within current folder
+ *   - File type icons and metadata display
+ *
+ * Exports: default StorageView component
+ * Related: StorageDialogs, collectionUtils, useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import type { ReactElement, MouseEvent, ReactNode, CSSProperties, ChangeEvent, SyntheticEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";

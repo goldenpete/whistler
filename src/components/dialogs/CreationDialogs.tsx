@@ -1,3 +1,18 @@
+/**
+ * ─── CreationDialogs.tsx ────────────────────────────────────────────
+ *
+ * Quick-creation dialogs for bootstrapping new top-level entities
+ * (documents, graphs, and projects) inside a Whistler project.
+ *
+ * Features / Responsibilities:
+ *   - NewDocDialog – create a new document with name, colour, and icon
+ *   - NewGraphDialog – create a new graph with name, colour, and icon
+ *   - NewProjectDialog – create a new project with a name
+ *   - All dialogs delegate to the shared EntityForm component from
+ *     StorageDialogs for consistent UX
+ *   - Respects the user's accent-theme and default-colour preferences
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -5,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityForm } from "@/components/dialogs/StorageDialogs";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 
 interface NewDocDialogProps {
@@ -14,7 +30,11 @@ interface NewDocDialogProps {
 }
 
 export function NewDocDialog({ open, onOpenChange, onSubmit }: NewDocDialogProps) {
-    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
+    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore(useShallow((state) => ({
+        accentTheme: state.accentTheme,
+        enableDefaultColorControls: state.enableDefaultColorControls,
+        defaultColors: state.defaultColors,
+    })));
     const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
     const docColor = enableDefaultColorControls && defaultColors?.file !== undefined
         ? defaultColors.file
@@ -52,7 +72,11 @@ interface NewGraphDialogProps {
 }
 
 export function NewGraphDialog({ open, onOpenChange, onSubmit }: NewGraphDialogProps) {
-    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore();
+    const { accentTheme, enableDefaultColorControls, defaultColors } = useStore(useShallow((state) => ({
+        accentTheme: state.accentTheme,
+        enableDefaultColorControls: state.enableDefaultColorControls,
+        defaultColors: state.defaultColors,
+    })));
     const accentColor = ACCENT_COLOR_MAP[(accentTheme as keyof typeof ACCENT_COLOR_MAP) || "orange"] ?? PRESET_COLORS[0];
     const graphColor = enableDefaultColorControls && defaultColors?.graph !== undefined
         ? defaultColors.graph
@@ -119,7 +143,7 @@ export function NewProjectDialog({ open, onOpenChange, onSubmit }: NewProjectDia
                             value={name}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             autoFocus
-                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && handleSubmit()}
                         />
                     </div>

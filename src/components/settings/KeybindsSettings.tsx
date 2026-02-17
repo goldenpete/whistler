@@ -1,5 +1,26 @@
+/**
+ * ─── KeybindsSettings.tsx ────────────────────────────────────────────────────
+ *
+ * Keybind customization UI in the Settings view.
+ *
+ * Features:
+ *   - Lists all registered keyboard shortcuts grouped by category
+ *   - Click-to-edit remapping (captures next key combination)
+ *   - Conflict detection (warns when two actions share a key)
+ *   - Import/Export keybind configurations as JSON
+ *   - Reset individual or all keybinds to defaults
+ *   - Enable/disable individual keybinds
+ *   - Search/filter by action name or key
+ *
+ * Data flow:
+ *   Reads KEYBIND_REGISTRY for defaults,
+ *   reads/writes customKeybinds + disabledKeybinds from the store.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { KEYBIND_REGISTRY, KEYBIND_CATEGORIES, type KeybindDefinition } from "@/constants/keybinds";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -27,7 +48,13 @@ const KeyDisplay = ({ k }: { k: string }) => {
 };
 
 export function KeybindsSettings() {
-    const { customKeybinds, disabledKeybinds, setKeybind, toggleKeybind, resetKeybinds } = useStore();
+    const { customKeybinds, disabledKeybinds, setKeybind, toggleKeybind, resetKeybinds } = useStore(useShallow((state) => ({
+        customKeybinds: state.customKeybinds,
+        disabledKeybinds: state.disabledKeybinds,
+        setKeybind: state.setKeybind,
+        toggleKeybind: state.toggleKeybind,
+        resetKeybinds: state.resetKeybinds,
+    })));
     const [editingId, setEditingId] = useState<string | null>(null);
     const [capturedKey, setCapturedKey] = useState<string>("");
     const [conflictId, setConflictId] = useState<string | null>(null);

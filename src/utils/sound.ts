@@ -1,7 +1,36 @@
+/**
+ * ─── sound.ts ────────────────────────────────────────────────────────────────
+ *
+ * Sound effect (SFX) playback utility for Whistler UI interactions.
+ *
+ * Architecture:
+ *   - 5 built-in sound types: cursor, confirm, error, back, search
+ *   - Sounds are preloaded as HTMLAudioElement objects on app start
+ *   - playSfx() reads from the Zustand store (not React state) so it can
+ *     be called from anywhere — event handlers, utilities, even outside React
+ *
+ * User configuration (from soundSlice):
+ *   - sfxEnabled: master on/off toggle
+ *   - enabledSounds: per-sound enable/disable map
+ *   - replaceAllSoundsWithCursor: maps all sounds → cursor
+ *   - replaceSearchWithConfirm: maps search sound → confirm
+ *   - soundConfigs: per-sound overrides (custom audio file or remap to another preset)
+ *
+ * Usage:
+ *   import { playSfx } from '@/utils/sound';
+ *   playSfx('cursor');   // play click sound
+ *   playSfx('confirm');  // play confirmation sound
+ *
+ * Also used by App.tsx's global click handler via data-sound-* attributes.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useStore } from "@/store/useStore";
 
+/** The 5 built-in sound effect types. */
 type SoundType = 'cursor' | 'confirm' | 'error' | 'back' | 'search';
 
+/** Maps each sound type to its default audio file path. */
 const SOUNDS: Record<SoundType, string> = {
     cursor: '/sounds/cursor.wav',
     confirm: '/sounds/confirm.wav',
@@ -10,8 +39,10 @@ const SOUNDS: Record<SoundType, string> = {
     search: '/sounds/search.wav',
 };
 
+/** In-memory cache of HTMLAudioElement instances for instant playback. */
 const audioCache: Record<string, HTMLAudioElement> = {};
 
+/** Preload all default sounds into the audio cache. Call once on app start. */
 export const preloadSounds = () => {
     Object.entries(SOUNDS).forEach(([key, url]) => {
         const audio = new Audio(url);
@@ -20,6 +51,10 @@ export const preloadSounds = () => {
     });
 };
 
+/**
+ * Play a sound effect. Reads user preferences from the Zustand store.
+ * Safe to call from any context (inside or outside React components).
+ */
 export const playSfx = (type: SoundType) => {
     const { sfxEnabled, enabledSounds, replaceSearchWithConfirm, replaceAllSoundsWithCursor, soundConfigs } = useStore.getState();
     if (!sfxEnabled) return;

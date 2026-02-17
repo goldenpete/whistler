@@ -1,5 +1,36 @@
+/**
+ * ─── VideoPlayer.tsx ─────────────────────────────────────────────────────────
+ *
+ * Full-featured video player component with custom UI controls.
+ *
+ * Features:
+ *   - Custom play/pause, seek bar, volume, fullscreen controls
+ *   - Highlight/timestamp system: create, edit, delete time-range annotations
+ *   - Seek preview thumbnails on hover over the progress bar
+ *   - Picture-in-Picture (PiP) support
+ *   - Per-file zoom level (manual or auto-fit)
+ *   - Playback speed control (0.25x–4x)
+ *   - Looping with optional A–B loop range
+ *   - Keyboard shortcuts (space, arrows, etc.)
+ *   - Collection association for highlights
+ *   - Per-file volume + mute state persistence
+ *   - Auto-resume from last playback position
+ *   - Ambient music suppression while video plays
+ *
+ * Props pattern:
+ *   Receives url, fileId, optional highlight list and callbacks.
+ *   Uses forwardRef + useImperativeHandle to expose control methods
+ *   (play, pause, seek, zoom, addHighlight) to parent FileView.
+ *
+ * Largest component in the app (~1,700 lines).
+ * Consider extracting: HighlightPanel, ControlBar, SeekBar as sub-components
+ * if this file becomes difficult to edit.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn, formatTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -157,7 +188,46 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         setVideoVolumeForFile,
         setVideoUnmutedForFile,
         alwaysShowMuteOverlay
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        files: state.files,
+        highlights: state.highlights,
+        collections: state.collections,
+        addVideoHighlight: state.addVideoHighlight,
+        removeHighlight: state.removeHighlight,
+        updateHighlight: state.updateHighlight,
+        updateFile: state.updateFile,
+        activeCollectionId: state.activeCollectionId,
+        activeProjectId: state.activeProjectId,
+        activeHighlightId: state.activeHighlightId,
+        setActiveHighlight: state.setActiveHighlight,
+        setPipFile: state.setPipFile,
+        togglePip: state.togglePip,
+        isPipOpen: state.isPipOpen,
+        pipFileId: state.pipFileId,
+        fileProgress: state.fileProgress,
+        setFileProgress: state.setFileProgress,
+        isSidebarOpen: state.isSidebarOpen,
+        toggleSidebar: state.toggleSidebar,
+        addAmbientMusicSuppression: state.addAmbientMusicSuppression,
+        removeAmbientMusicSuppression: state.removeAmbientMusicSuppression,
+        trashFile: state.trashFile,
+        addFloatingPlayer: state.addFloatingPlayer,
+        setFloatingPlayerMinimized: state.setFloatingPlayerMinimized,
+        windowOutlineEnabled: state.windowOutlineEnabled,
+        videoZoomByFile: state.videoZoomByFile,
+        setVideoZoomForFile: state.setVideoZoomForFile,
+        videoZoomManualByFile: state.videoZoomManualByFile,
+        setVideoZoomManualForFile: state.setVideoZoomManualForFile,
+        muteNewVideosUntilUnmuted: state.muteNewVideosUntilUnmuted,
+        muteHighlightsUntilUnmuted: state.muteHighlightsUntilUnmuted,
+        rememberMediaVolume: state.rememberMediaVolume,
+        disableMediaAutoplay: state.disableMediaAutoplay,
+        videoVolumeByFile: state.videoVolumeByFile,
+        videoUnmutedByFile: state.videoUnmutedByFile,
+        setVideoVolumeForFile: state.setVideoVolumeForFile,
+        setVideoUnmutedForFile: state.setVideoUnmutedForFile,
+        alwaysShowMuteOverlay: state.alwaysShowMuteOverlay,
+    })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeRef = useRef<YouTubePlayerHandle>(null);
     const isYouTube = fileId ? (files.find(f => f.id === fileId)?.url?.includes('youtube.com') || files.find(f => f.id === fileId)?.url?.includes('youtu.be')) : false;

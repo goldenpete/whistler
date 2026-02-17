@@ -1,3 +1,16 @@
+/**
+ * ─── FileDialogs.tsx ────────────────────────────────────────────────
+ *
+ * Dialog for editing the metadata of an existing file entry,
+ * including its display name, description, and associated URL.
+ *
+ * Features / Responsibilities:
+ *   - EditFileDialog – inline form for updating file name, description,
+ *     and URL with real-time state management
+ *   - URL validation via the shared isValidUrl utility
+ *   - Supports custom portal containers for embedding inside panels
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

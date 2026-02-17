@@ -1,3 +1,14 @@
+/**
+ * ─── collectionUtils.ts ────────────────────────────────────────────
+ *
+ * Utility helpers for working with the nested collection/bucket
+ * hierarchy used to organize media files within projects.
+ *
+ * Exports:
+ *   - findRootBucketId() – Recursively climbs the collection tree
+ *     to find the root bucket ancestor of a given collection.
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { type Collection } from "@/types";
 
 /**

@@ -1,3 +1,31 @@
+/**
+ * ─── keybinds.ts ─────────────────────────────────────────────────────────────
+ *
+ * Keyboard shortcut registry for all actions in Whistler.
+ *
+ * Each entry in KEYBIND_REGISTRY maps an action ID to:
+ *   - label: human-readable name
+ *   - defaultKey: default key combination (e.g. "ctrl+k", "g+h")
+ *   - category: grouping for the settings UI
+ *   - icon: Phosphor icon for display
+ *   - isSequence: true for key sequences like "g+h" (two keys in succession)
+ *
+ * Categories: Global, Navigation, Storage, Video, Audio, PDF, Image, Docs, Graph
+ *
+ * Key format:
+ *   - Modifier + key: "ctrl+s", "shift+?", "alt+arrowdown"
+ *   - Sequence: "g+h" (press g, then h) — handled by GlobalKeybinds.tsx
+ *   - Single key: "space", "f", "escape"
+ *
+ * Users can override these in Settings → Keybinds. Overrides are stored
+ * in the keybindSlice (customKeybinds / disabledKeybinds).
+ *
+ * Used by:
+ *   - hooks/use-keybind.ts → resolves action ID to actual key combo
+ *   - components/GlobalKeybinds.tsx → registers all global shortcuts
+ *   - components/settings/KeybindsSettings.tsx → keybind editor UI
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 
 import { 
     CornersOut, 

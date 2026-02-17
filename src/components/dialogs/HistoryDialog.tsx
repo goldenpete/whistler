@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "@/lib/zustand-shallow";
 import { format } from "date-fns";
 import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,10 @@ interface HistoryDialogProps {
 }
 
 export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
-    const { history, clearHistory } = useStore();
+    const { history, clearHistory } = useStore(useShallow((state) => ({
+        history: state.history,
+        clearHistory: state.clearHistory,
+    })));
 
     // Group history by date
     const groupedHistory = history.reduce((groups, entry) => {

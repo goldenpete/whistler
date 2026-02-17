@@ -1,3 +1,22 @@
+/**
+ * ─── DocsView.tsx ──────────────────────────────────────────────────
+ *
+ * Rich-text document editor view for creating and editing notes
+ * within a project, with a formatting toolbar and file linking.
+ *
+ * Features:
+ *   - ContentEditable-based rich text editing
+ *   - Formatting toolbar (bold, italic, underline, strikethrough,
+ *     lists, alignment, headings, links)
+ *   - File picker dialog for embedding file references
+ *   - Split-pane and full-screen editor layouts
+ *   - Auto-save and URL-based document selection
+ *   - HTML sanitization via security utilities
+ *
+ * Exports: default DocsView component
+ * Related: FilePickerDialog, security (sanitizeHTML), useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { useRef, useState, useEffect, useCallback, type ChangeEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import type { Doc, File as AppFile, Collection, Highlight } from "@/types";
@@ -32,7 +51,11 @@ import { FilePickerDialog } from "@/components/dialogs/FilePickerDialog";
 
 export default function DocsView() {
     const { id } = useParams();
-    const { docs, activeDocId, activeProjectId } = useStore();
+    const { docs, activeDocId, activeProjectId } = useStore(useShallow((state) => ({
+        docs: state.docs,
+        activeDocId: state.activeDocId,
+        activeProjectId: state.activeProjectId,
+    })));
     const activeDoc = docs.find((d: Doc) => d.id === activeDocId && !d.deleted);
 
     // Sync URL to store

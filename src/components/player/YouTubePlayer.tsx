@@ -1,3 +1,20 @@
+/**
+ * ─── YouTubePlayer.tsx ─────────────────────────────────────────────
+ *
+ * YouTube video player component using the IFrame Player API,
+ * providing a controlled interface matching the native video element.
+ *
+ * Features:
+ *   - YouTube IFrame API integration with dynamic script loading
+ *   - Imperative handle (ref) for play, pause, seek, volume, rate
+ *   - Time update and duration change event callbacks
+ *   - YouTube URL/ID extraction utility (getYouTubeId)
+ *   - Auto-play with initial time seek support
+ *
+ * Exports: YouTubePlayerComponent (forwardRef), YouTubePlayerHandle,
+ *          getYouTubeId utility
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 
 declare global {

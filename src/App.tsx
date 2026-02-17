@@ -1,8 +1,36 @@
+/**
+ * ─── App.tsx ──────────────────────────────────────────────────────────────────
+ *
+ * Root component of the Whistler application.
+ *
+ * Responsibilities:
+ *   1. Defines all routes (React Router v7) with lazy-loaded view components
+ *   2. Initializes global SFX (click sounds via delegated event listener)
+ *   3. Applies the active accent & base theme to <html> via CSS custom props
+ *   4. Swaps favicon to match the accent color
+ *   5. Mounts global overlays: SpotlightSearch, DoubleTapMenu, GlobalKeybinds
+ *   6. Starts the cloud sync hook (useSync)
+ *
+ * Route map:
+ *   /                → HomeView (or WelcomeView if no projects)
+ *   /welcome         → WelcomeView (onboarding)
+ *   /storage/:id?    → StorageView (file browser inside a storage)
+ *   /file/:id        → FileView (media player – video/audio/pdf/image)
+ *   /docs/:id?       → DocsView (rich-text editor)
+ *   /graphs/:id?     → GraphView (node-edge canvas)
+ *   /collection/:id  → CollectionView (single collection viewer)
+ *   /collections     → CollectionsView (collection tree browser)
+ *   /settings        → SettingsView (app configuration)
+ *   /legal/:tab?     → LegalView (privacy, terms)
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useEffect, useState, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 
+// ── Lazy-loaded view components (code-split per route) ───────────────────────
 const StorageView = lazy(() => import("@/components/views/StorageView"));
 const FileView = lazy(() => import("@/components/views/FileView"));
 const DocsView = lazy(() => import("@/components/views/DocsView"));
@@ -46,11 +74,15 @@ const NotFoundView = () => {
   );
 };
 
+/**
+ * Main application component.
+ * Manages theme application, SFX initialization, routing, and global overlays.
+ */
 export default function App() {
   const [shouldThrow, setShouldThrow] = useState(false);
 
   useEffect(() => {
-    // Expose debug function to window
+    // Expose debug function to window (call window.triggerError() in console to test error boundary)
     (window as any).triggerError = () => setShouldThrow(true);
     return () => {
       delete (window as any).triggerError;
@@ -99,6 +131,11 @@ export default function App() {
   })));
   useSync();
 
+  // ── Global SFX: attach a delegated click listener to play UI sounds ──────
+  // Uses data attributes to override default sound:
+  //   data-sound-confirm  → plays 'confirm' sound
+  //   data-sound-back     → plays 'back' sound
+  //   data-no-sfx         → suppresses click sound entirely
   useEffect(() => {
     preloadSounds();
 
@@ -122,6 +159,7 @@ export default function App() {
     return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
+  // ── Apply accent theme: sets CSS custom properties or data-accent attribute ──
   useEffect(() => {
     const root = document.documentElement;
     if (accentTheme) {
@@ -152,6 +190,7 @@ export default function App() {
     }
   }, [accentTheme, customAccentThemes]);
 
+  // ── Swap favicon to match accent color ─────────────────────────────────────
   useEffect(() => {
     const map: Partial<Record<AccentTheme, string>> = {
       emerald: "whistler-green-favicon",
@@ -193,6 +232,7 @@ export default function App() {
     );
   }, [accentTheme]);
 
+  // ── Apply base (neutral) theme: sets CSS custom properties or data-base ────
   useEffect(() => {
     const root = document.documentElement;
     if (baseTheme) {

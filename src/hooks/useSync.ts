@@ -1,6 +1,37 @@
+/**
+ * ─── useSync.ts ──────────────────────────────────────────────────────────────
+ *
+ * Cloud sync hook for Whistler.
+ *
+ * Handles bidirectional synchronization with a Cloudflare Workers backend
+ * at SYNC_API_URL. Supports push (upload local state) and pull (download
+ * remote state and merge).
+ *
+ * Architecture:
+ *   - Auth is token-based: session token + account ID stored in localStorage
+ *   - Push: serializes selected state slices per syncOptions config
+ *   - Pull: downloads remote state and performs per-entity merge with
+ *     timestamp-based conflict resolution (newest wins)
+ *   - Auto-sync: optional timer-based push at configurable intervals
+ *   - Encryption: data is encrypted client-side before upload (see encrypt/decrypt)
+ *
+ * Sync options (from store.syncOptions):
+ *   - projects, files, collections, highlights, graphs, graphNodes,
+ *     graphEdges, docs, storages, history, trash
+ *   - Each can be toggled on/off independently
+ *
+ * Used by:
+ *   - App.tsx (mounted once at app root)
+ *   - SidebarSync.tsx (manual push/pull buttons + status display)
+ *   - SettingsSync.tsx (sync configuration UI)
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useStore } from '@/store/useStore';
+import { useShallow } from '@/lib/zustand-shallow';
 
+/** Cloudflare Workers API endpoint for sync operations. */
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 
 export function useSync() {
@@ -13,7 +44,16 @@ export function useSync() {
         logout,
         autoSyncEnabled,
         autoSyncInterval
-    } = useStore();
+    } = useStore(useShallow((state) => ({
+        setLastSyncTime: state.setLastSyncTime,
+        setState: state.setState,
+        setSyncStatus: state.setSyncStatus,
+        syncStatus: state.syncStatus,
+        user: state.user,
+        logout: state.logout,
+        autoSyncEnabled: state.autoSyncEnabled,
+        autoSyncInterval: state.autoSyncInterval,
+    })));
     const [error, setError] = useState<string | null>(null);
     const syncIntervalRef = useRef<number | null>(null);
 

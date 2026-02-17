@@ -1,3 +1,25 @@
+/**
+ * ─── MainLayout.tsx ───────────────────────────────────────────────────────────
+ *
+ * Root layout wrapper rendered inside the React Router <Route> tree.
+ * Every non-player view is wrapped in this layout.
+ *
+ * Responsibilities:
+ *   1. Renders the ProjectSidebar (animated show/hide when entering/leaving player)
+ *   2. Renders the main content area with animated route transitions
+ *   3. Manages ambient background music (load from IndexedDB, play/pause,
+ *      suppress when media is playing, resume on user interaction if autoplay blocked)
+ *   4. Renders background image + color overlay behind all content
+ *   5. Mounts the FloatingPlayer overlay (detached media windows)
+ *
+ * Layout structure:
+ *   ┌──────────────────────────────────────────────────────┐
+ *   │ [ProjectSidebar] │ [main: route outlet + background] │
+ *   │                  │ [FloatingPlayer overlay]           │
+ *   └──────────────────────────────────────────────────────┘
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";

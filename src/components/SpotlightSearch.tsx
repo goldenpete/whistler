@@ -1,3 +1,22 @@
+/**
+ * ─── SpotlightSearch.tsx ───────────────────────────────────────────
+ *
+ * Command palette / spotlight-style search dialog for quickly
+ * finding and navigating to files, collections, highlights,
+ * pages, and registered actions across the application.
+ *
+ * Features:
+ *   - Fuzzy search across files, collections, highlights, and pages
+ *   - Action registry integration for executable commands
+ *   - Keyboard-driven navigation (Cmd/Ctrl+K trigger)
+ *   - Grouped results with type-specific icons
+ *   - Nested sub-pages for filtered browsing
+ *   - Sound effects on navigation actions
+ *
+ * Exports: SpotlightSearch component
+ * Related: CommandDialog (cmdk), ACTION_REGISTRY, useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -38,7 +57,6 @@ export function SpotlightSearch() {
     const [inputValue, setInputValue] = useState("");
     const [pages, setPages] = useState<string[]>([]);
 
-    const store = useStore();
     const {
         files,
         collections,
@@ -148,7 +166,7 @@ export function SpotlightSearch() {
         // Remove "/" and trim
         const query = inputValue.slice(1).trim().toLowerCase();
         
-        const context: ActionContext = { navigate, location, store, query };
+        const context: ActionContext = { navigate, location, store: useStore.getState(), query };
         
         return ACTION_REGISTRY.filter(action => {
             // Check availability
@@ -160,13 +178,13 @@ export function SpotlightSearch() {
             return action.labels.some(label => label.toLowerCase().includes(query)) ||
                    action.keywords?.some(kw => kw.toLowerCase().includes(query));
         });
-    }, [inputValue, location, store, navigate]);
+    }, [inputValue, location, navigate]);
 
     const executeAction = (actionId: string) => {
         const action = ACTION_REGISTRY.find(a => a.id === actionId);
         if (!action) return;
 
-        const context: ActionContext = { navigate, location, store, query: inputValue.slice(1).trim().toLowerCase() };
+        const context: ActionContext = { navigate, location, store: useStore.getState(), query: inputValue.slice(1).trim().toLowerCase() };
         
         // Parse arguments: everything after the command label
         // This is a naive implementation; complex args would need better parsing
