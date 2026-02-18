@@ -36,13 +36,15 @@ import {
     CaretUp,
     Clock,
     Tag,
+    FileText,
     SquaresFour,
     Rows,
     FolderOpen,
     ArrowSquareOut,
     X,
     Palette,
-    Share
+    Share,
+    Cards
 } from "@phosphor-icons/react";
 import { findRootBucketId } from "@/utils/collectionUtils";
 import { type Collection } from "@/types";
@@ -92,10 +94,10 @@ import {
 } from "@/components/ui/context-menu";
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useKeybind } from "@/hooks/use-keybind";
-import { CreateCollectionDialog } from "@/components/dialogs/CollectionDialogs";
+import { CreateCollectionDialog, CreateFolderDialog } from "@/components/dialogs/CollectionDialogs";
+import { getIcon } from "@/utils/iconMap";
 
 type SortOption = "custom" | "name" | "date";
 type SortDirection = "asc" | "desc";
@@ -161,10 +163,11 @@ interface CollectionCardInnerProps {
     style?: React.CSSProperties;
     className?: string;
     showSelection?: boolean;
-    viewMode: 'grid' | 'list';
+    viewMode: 'grid' | 'list' | 'cards';
 }
 
 function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+    const c = collection.color;
     return (
         <div
             ref={domRef}
@@ -172,15 +175,18 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
             onClick={onClick}
             data-sound-cursor
             className={cn(
-                "flex flex-col gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/50 transition-all duration-200 aspect-square relative group hover:shadow-lg hover:shadow-primary/5 cursor-pointer select-none",
+                "flex flex-col gap-2 p-3 rounded-none border border-border bg-card transition-all duration-200 aspect-square relative group cursor-pointer select-none",
                 isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.02]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
-                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
+                isFocused && !isSelected && !c && "border-primary/50 bg-accent/10 shadow-lg shadow-primary/5",
                 className
             )}
             style={{
                 ...style,
-                ...(collection.color ? { borderColor: collection.color, boxShadow: `0 0 10px ${collection.color}20` } : undefined)
+                ...(c ? {
+                    borderColor: c,
+                    ...(isFocused && !isSelected ? { backgroundColor: c + '18', boxShadow: `0 0 12px ${c}30` } : {})
+                } : undefined)
             }}
         >
             {selectionMode && showSelection && (
@@ -194,19 +200,19 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
             )}
 
             <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none">
-                <div
-                    className="flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 w-16 h-16"
-                    style={{ backgroundColor: `${collection.color}20`, color: collection.color }}
-                >
-                    <Folder size={32} weight="duotone" />
-                </div>
+                {React.createElement(getIcon(collection.icon), {
+                    size: 44,
+                    weight: "regular",
+                    className: "text-muted-foreground group-hover:text-primary transition-colors",
+                    style: collection.color ? { color: collection.color } : undefined
+                })}
             </div>
             <div className="text-xs font-medium truncate px-1 text-center pointer-events-none">{collection.name}</div>
 
             {/* Drop Target Overlay */}
             {isOver && (
-                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
-                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-none">
+                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-none shadow-lg border border-primary/20 flex items-center gap-2">
                         <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
                         <span className="text-xs font-semibold text-primary">Drop to move</span>
                     </div>
@@ -220,6 +226,7 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
 
 function CollectionCardListInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
     const dateStr = new Date(collection.lastModified).toLocaleDateString();
+    const c = collection.color;
 
     return (
         <div
@@ -228,21 +235,24 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
             onClick={onClick}
             data-sound-cursor
             className={cn(
-                "flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-md cursor-pointer select-none relative",
+                "flex items-center gap-4 px-4 py-3 rounded-none border border-border bg-card transition-all group cursor-pointer select-none relative",
                 isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.01]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
-                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
+                isFocused && !isSelected && !c && "border-primary/50 bg-accent/10 shadow-md shadow-primary/5",
                 className
             )}
             style={{
                 ...style,
-                ...(collection.color ? { borderColor: collection.color, boxShadow: `0 0 10px ${collection.color}20` } : undefined)
+                ...(c ? {
+                    borderColor: c,
+                    ...(isFocused && !isSelected ? { backgroundColor: c + '18', boxShadow: `0 0 12px ${c}30` } : {})
+                } : undefined)
             }}
         >
             {/* Drop Target Overlay */}
             {isOver && (
-                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
-                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-none">
+                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-none shadow-lg border border-primary/20 flex items-center gap-2">
                         <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
                         <span className="text-xs font-semibold text-primary">Drop to move</span>
                     </div>
@@ -259,15 +269,22 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
                 </div>
             )}
 
-            <div
-                className="w-12 h-10 rounded-md flex items-center justify-center shrink-0 overflow-hidden pointer-events-none"
-                style={{ backgroundColor: `${collection.color}15`, color: collection.color }}
-            >
-                <Folder size={24} weight="duotone" />
+            <div className="w-16 h-12 rounded-none bg-muted flex items-center justify-center shrink-0 overflow-hidden pointer-events-none">
+                {React.createElement(getIcon(collection.icon), {
+                    size: 28,
+                    weight: "regular",
+                    className: "text-muted-foreground group-hover:text-primary transition-colors",
+                    style: collection.color ? { color: collection.color } : undefined
+                })}
             </div>
 
             <div className="flex-1 min-w-0 pointer-events-none">
                 <div className="font-medium text-sm truncate group-hover:text-primary transition-colors">{collection.name}</div>
+            </div>
+
+            {/* Type Badge */}
+            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary rounded-none pointer-events-none">
+                {(collection.type || 'collection').toUpperCase()}
             </div>
 
             <div className="text-xs text-muted-foreground/60 w-24 text-right shrink-0 pointer-events-none">
@@ -278,7 +295,83 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
     );
 }
 
-function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onDelete, onColorChange, onMouseEnter, onMouseLeave, viewMode, sortOption }: CollectionCardProps & { viewMode: 'grid' | 'list', sortOption: string }) {
+function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+    const dateStr = new Date(collection.lastModified).toLocaleDateString();
+    const c = collection.color;
+
+    return (
+        <div
+            ref={domRef}
+            id={`collection-card-${collection.id}`}
+            onClick={onClick}
+            data-sound-cursor
+            className={cn(
+                "flex flex-col rounded-none border border-border bg-card overflow-hidden transition-all group cursor-pointer select-none relative h-full",
+                isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.02]",
+                isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
+                isFocused && !isSelected && !c && "border-primary/50 bg-accent/10 shadow-xl shadow-primary/5",
+                className
+            )}
+            style={{
+                ...style,
+                ...(c ? {
+                    borderColor: c,
+                    ...(isFocused && !isSelected ? { backgroundColor: c + '18', boxShadow: `0 0 12px ${c}30` } : {})
+                } : undefined)
+            }}
+        >
+            {selectionMode && showSelection && (
+                <div className="absolute top-3 left-3 z-10">
+                    {isSelected ? (
+                        <CheckSquare weight="fill" size={20} className="text-primary shadow-sm" />
+                    ) : (
+                        <Square weight="regular" size={20} className="text-white drop-shadow-md" />
+                    )}
+                </div>
+            )}
+
+            {/* Content Area (Top) */}
+            <div className="flex-1 min-h-[160px] bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors">
+                {React.createElement(getIcon(collection.icon), {
+                    size: 48,
+                    weight: "regular",
+                    className: "text-muted-foreground group-hover:text-primary transition-colors",
+                    style: collection.color ? { color: collection.color } : undefined
+                })}
+
+                {/* Type Overlay */}
+                <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-none bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wide pointer-events-none">
+                    {(collection.type || 'collection').toUpperCase()}
+                </div>
+
+                {/* Drop Target Overlay */}
+                {isOver && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20">
+                        <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-none shadow-lg border border-primary/20 flex items-center gap-2">
+                            <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
+                            <span className="text-xs font-semibold text-primary">Drop to move</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Details Area (Bottom) */}
+            <div className="p-4 flex flex-col gap-1.5 border-t border-border/50 bg-card/50 pointer-events-none">
+                <div className="font-bold text-sm truncate group-hover:text-primary transition-colors leading-tight">
+                    {collection.name}
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                    <div className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-tighter">
+                        {dateStr}
+                    </div>
+                </div>
+            </div>
+            {children}
+        </div>
+    );
+}
+
+function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onDelete, onColorChange, onMouseEnter, onMouseLeave, viewMode, sortOption }: CollectionCardProps & { viewMode: 'grid' | 'list' | 'cards', sortOption: string }) {
     const {
         attributes,
         listeners,
@@ -341,7 +434,7 @@ function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isF
         }
     }
 
-    const Inner = viewMode === 'grid' ? CollectionCardGridInner : CollectionCardListInner;
+    const Inner = viewMode === 'grid' ? CollectionCardGridInner : viewMode === 'list' ? CollectionCardListInner : CollectionCardCardsInner;
 
     return (
         <ContextMenu>
@@ -447,7 +540,8 @@ export default function CollectionsView() {
         }
     }, [currentFolderId, activeCollectionId, collections.length]);
 
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const viewMode = useStore(state => state.collectionViewMode);
+    const setViewMode = (mode: 'grid' | 'list' | 'cards') => useStore.setState({ collectionViewMode: mode });
     const [sortOption, setSortOption] = useState<SortOption>("custom");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [searchQuery, setSearchQuery] = useState("");
@@ -456,6 +550,7 @@ export default function CollectionsView() {
     const [focusedId, setFocusedId] = useState<string | null>(null);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [addCollectionOpen, setAddCollectionOpen] = useState(false);
+    const [addFolderOpen, setAddFolderOpen] = useState(false);
     const [collectionToEdit, setCollectionToEdit] = useState<Collection | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
@@ -674,6 +769,50 @@ export default function CollectionsView() {
         playSfx('confirm');
     };
 
+    const handleCreateFolder = (name: string) => {
+        if (!activeProjectId) return;
+        if (!name) return;
+
+        let targetParentId = currentFolderId || activeCollectionId;
+        if (!targetParentId) {
+            const firstBucket = collections.find((c: Collection) =>
+                c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted
+            );
+            if (firstBucket) {
+                targetParentId = firstBucket.id;
+                useStore.setState({ activeCollectionId: firstBucket.id });
+            } else {
+                return;
+            }
+        }
+
+        const sameParentItems = collections.filter(c => c.parentId === targetParentId);
+        const maxOrder = sameParentItems.length > 0
+            ? Math.max(...sameParentItems.map(c => c.order || 0))
+            : -1;
+
+        const newFolder: Collection = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            parentId: targetParentId,
+            name,
+            color: "#71717a",
+            icon: "Folder",
+            type: 'folder',
+            order: maxOrder + 1,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState((state: any) => ({
+            collections: [...state.collections, newFolder]
+        }));
+
+        setAddFolderOpen(false);
+        setSearchParams({ folderId: newFolder.id });
+        playSfx('confirm');
+    };
+
     // Keyboard navigation
     useKeybind("collections.navUp", () => {
         if (sortedCollections.length === 0) return;
@@ -733,21 +872,21 @@ export default function CollectionsView() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-transparent text-foreground">
-            <header className="flex flex-col border-b border-border bg-card/30">
-                <div className="flex items-center gap-2 px-4 h-12">
+        <div className="flex h-full bg-transparent text-foreground relative">
+            <div className="flex-1 flex flex-col">
+                <div className="flex items-center gap-2 px-4 h-12 border-b border-border bg-card/30">
                     <h1 className="text-sm font-semibold tracking-tight">Collections</h1>
 
                     <div className="flex-1" />
 
                     <div className="flex items-center gap-2">
-                        <div className="relative w-56 group">
-                            <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <div className="relative w-56">
+                            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
                             <Input
                                 placeholder="Search collections..."
+                                className="pl-8 h-8 text-xs"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-8 h-8 text-xs bg-background/40 border-border/40 focus:bg-background/60 transition-all rounded-md"
                             />
                         </div>
 
@@ -755,7 +894,7 @@ export default function CollectionsView() {
                             variant="outline"
                             size="icon"
                             className={cn(
-                                "size-8 bg-background/40 border-border/40 hover:bg-background/60",
+                                "size-8",
                                 selectionMode && "bg-secondary border-secondary"
                             )}
                             title="Selection mode"
@@ -766,10 +905,10 @@ export default function CollectionsView() {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs bg-background/40 border-border/40 hover:bg-background/60">
-                                    {sortOption === "custom" ? <Palette size={14} /> : sortOption === "name" ? <Tag size={14} /> : <Clock size={14} />}
+                                <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
+                                    {sortOption === "custom" ? <Palette size={16} /> : sortOption === "name" ? <FileText size={16} /> : <Clock size={16} />}
                                     Sort
-                                    {sortDirection === "asc" ? <CaretUp size={10} className="text-muted-foreground ml-auto" /> : <CaretDown size={10} className="text-muted-foreground ml-auto" />}
+                                    {sortDirection === "asc" ? <CaretUp size={12} className="text-muted-foreground ml-auto" /> : <CaretDown size={12} className="text-muted-foreground ml-auto" />}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40">
@@ -779,11 +918,11 @@ export default function CollectionsView() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("asc"); }} className="gap-2 text-xs">
-                                    <Tag size={16} weight={sortOption === "name" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "asc" ? "text-primary" : ""} />
+                                    <FileText size={16} weight={sortOption === "name" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "asc" ? "text-primary" : ""} />
                                     Name (A-Z)
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("desc"); }} className="gap-2 text-xs">
-                                    <Tag size={16} weight={sortOption === "name" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "desc" ? "text-primary" : ""} />
+                                    <FileText size={16} weight={sortOption === "name" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "desc" ? "text-primary" : ""} />
                                     Name (Z-A)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -800,10 +939,10 @@ export default function CollectionsView() {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs bg-background/40 border-border/40 hover:bg-background/60">
-                                    {viewMode === 'grid' ? <SquaresFour size={14} /> : <Rows size={14} />}
+                                <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
+                                    {viewMode === 'grid' ? <SquaresFour size={16} /> : viewMode === 'list' ? <Rows size={16} /> : <Cards size={16} />}
                                     View
-                                    <CaretDown size={10} className="text-muted-foreground" />
+                                    <CaretDown size={12} className="text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-32">
@@ -815,20 +954,35 @@ export default function CollectionsView() {
                                     <Rows size={16} weight={viewMode === 'list' ? "fill" : "regular"} className={viewMode === 'list' ? "text-primary" : ""} />
                                     List
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setViewMode('cards')} className="gap-2 text-xs">
+                                    <Cards size={16} weight={viewMode === 'cards' ? "fill" : "regular"} className={viewMode === 'cards' ? "text-primary" : ""} />
+                                    Cards
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
                         <div className="w-px h-5 bg-border mx-1" />
 
                         <Button
-                            className="h-8 gap-2 text-xs shadow-lg shadow-primary/20"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-2 text-xs"
                             onClick={() => {
                                 setCollectionToEdit(null);
                                 setAddCollectionOpen(true);
                             }}
                         >
                             <Plus size={14} weight="bold" />
-                            New Collection
+                            Add Collection
+                        </Button>
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 gap-2 text-xs"
+                            onClick={() => setAddFolderOpen(true)}
+                        >
+                            <FolderOpen weight="bold" size={14} />
+                            New Folder
                         </Button>
                     </div>
                 </div>
@@ -878,7 +1032,7 @@ export default function CollectionsView() {
                             exit={{ height: 0, opacity: 0 }}
                             className="border-b border-border bg-primary/5 overflow-hidden"
                         >
-                            <div className="flex items-center gap-3 px-6 py-2">
+                            <div className="flex items-center gap-3 px-4 py-2">
                                 <span className="text-sm font-medium text-primary">
                                     {selectedIds.size} selected
                                 </span>
@@ -911,10 +1065,9 @@ export default function CollectionsView() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </header>
 
-            {/* Content */}
-            <ScrollArea className="flex-1 p-6">
+                {/* Content */}
+                <div className="flex-1 overflow-auto p-4">
                 <DndContext
                     sensors={sensors}
                     collisionDetection={(args: any) => {
@@ -944,46 +1097,39 @@ export default function CollectionsView() {
                         disabled={sortOption !== "custom"}
                     >
                         <div className={cn(
-                            "grid gap-4",
+                            "grid gap-4 pb-20",
                             viewMode === 'grid'
                                 ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8"
-                                : "grid-cols-1"
+                                : viewMode === 'list'
+                                    ? "grid-cols-1"
+                                    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
                         )}>
-                            <AnimatePresence mode="popLayout">
                                 {sortedCollections.length > 0 ? (
                                     sortedCollections.map((collection) => (
-                                        <motion.div
+                                        <CollectionCard
                                             key={collection.id}
-                                            layout
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.9 }}
-                                            transition={{ duration: 0.2 }}
-                                        >
-                                            <CollectionCard
-                                                collection={collection}
-                                                viewMode={viewMode}
-                                                sortOption={sortOption}
-                                                isSelected={selectedIds.has(collection.id)}
-                                                isFocused={focusedId === collection.id}
-                                                onToggleSelect={toggleSelectItem}
-                                                onNavigate={handleNavigate}
-                                                onRename={handleRenameInit}
-                                                onDelete={(id) => {
-                                                    trashCollection(id);
-                                                    playSfx('back');
-                                                }}
-                                                onColorChange={(c, color) => updateCollection(c.id, { color })}
-                                                onMouseEnter={() => setFocusedId(collection.id)}
-                                                onMouseLeave={() => setFocusedId(null)}
-                                                selectionMode={selectionMode}
-                                            />
-                                        </motion.div>
+                                            collection={collection}
+                                            viewMode={viewMode}
+                                            sortOption={sortOption}
+                                            isSelected={selectedIds.has(collection.id)}
+                                            isFocused={focusedId === collection.id}
+                                            onToggleSelect={toggleSelectItem}
+                                            onNavigate={handleNavigate}
+                                            onRename={handleRenameInit}
+                                            onDelete={(id) => {
+                                                trashCollection(id);
+                                                playSfx('back');
+                                            }}
+                                            onColorChange={(c, color) => updateCollection(c.id, { color })}
+                                            onMouseEnter={() => setFocusedId(collection.id)}
+                                            onMouseLeave={() => setFocusedId(null)}
+                                            selectionMode={selectionMode}
+                                        />
                                     ))
                                 ) : (
-                                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
-                                        <Folder size={64} weight="thin" className="opacity-20 mb-4" />
-                                        <p className="text-sm">No collections found</p>
+                                    <div className="col-span-full flex flex-col items-center justify-center p-16 text-muted-foreground border-2 border-dashed border-border rounded-none">
+                                        <Folder size={56} weight="thin" className="mb-3 opacity-40" />
+                                        <p className="font-medium">No collections found</p>
                                         {searchQuery && (
                                             <Button
                                                 variant="link"
@@ -995,7 +1141,6 @@ export default function CollectionsView() {
                                         )}
                                     </div>
                                 )}
-                            </AnimatePresence>
                         </div>
                     </SortableContext>
 
@@ -1005,7 +1150,7 @@ export default function CollectionsView() {
                                 const collection = collections.find(c => c.id === activeId);
                                 if (!collection) return null;
 
-                                const Inner = viewMode === 'grid' ? CollectionCardGridInner : CollectionCardListInner;
+                                const Inner = viewMode === 'grid' ? CollectionCardGridInner : viewMode === 'list' ? CollectionCardListInner : CollectionCardCardsInner;
 
                                 return (
                                     <Inner
@@ -1023,9 +1168,8 @@ export default function CollectionsView() {
                         ) : null}
                     </DragOverlay>
                 </DndContext>
-
-
-            </ScrollArea>
+                </div>
+            </div>
 
             <CreateCollectionDialog
                 open={addCollectionOpen}
@@ -1037,6 +1181,11 @@ export default function CollectionsView() {
                     icon: collectionToEdit.icon || "FolderPlus"
                 } : undefined}
                 title={collectionToEdit ? "Edit Collection" : "New Collection"}
+            />
+            <CreateFolderDialog
+                open={addFolderOpen}
+                onOpenChange={setAddFolderOpen}
+                onSubmit={handleCreateFolder}
             />
         </div>
     );

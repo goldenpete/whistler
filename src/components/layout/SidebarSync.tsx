@@ -539,12 +539,15 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         if (phase === "totp") {
             return (
                 <div className="flex flex-col h-full bg-sidebar-background">
-                    <div className="p-3 border-b border-sidebar-border flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack}>
-                            <CaretLeft className="text-muted-foreground" />
-                        </Button>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-                            <SignIn weight="bold" />
+                    <div className="px-3 py-2 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+                        <button
+                            onClick={onBack}
+                            className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                        >
+                            <CaretLeft weight="bold" size={12} />
+                        </button>
+                        <div className="flex-1 flex items-center justify-center gap-2 text-xs font-medium text-sidebar-foreground">
+                            <SignIn weight="bold" size={12} />
                             Sync 2FA
                         </div>
                     </div>
@@ -603,12 +606,15 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         }
         return (
             <div className="flex flex-col h-full bg-sidebar-background">
-                <div className="p-3 border-b border-sidebar-border flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack}>
-                        <CaretLeft className="text-muted-foreground" />
-                    </Button>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-                        <SignIn weight="bold" />
+                <div className="px-3 py-2 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+                    <button
+                        onClick={onBack}
+                        className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                    >
+                        <CaretLeft weight="bold" size={12} />
+                    </button>
+                    <div className="flex-1 flex items-center justify-center gap-2 text-xs font-medium text-sidebar-foreground">
+                        <SignIn weight="bold" size={12} />
                         Sync Access
                     </div>
                 </div>
@@ -699,11 +705,8 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
     if (showTwoFactorSetup) {
         return (
             <div className="flex flex-col h-full bg-sidebar-background">
-                <div className="p-3 border-b border-sidebar-border flex items-center gap-2">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 -ml-1" 
+                <div className="px-3 py-2 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+                    <button
                         onClick={() => {
                             setShowTwoFactorSetup(false);
                             setSetupStep('intro');
@@ -711,11 +714,12 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                             setError(null);
                         }}
                         data-sound-back
+                        className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                     >
-                        <CaretLeft className="text-muted-foreground" />
-                    </Button>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-                        <ShieldCheck weight="bold" />
+                        <CaretLeft weight="bold" size={12} />
+                    </button>
+                    <div className="flex-1 flex items-center justify-center gap-2 text-xs font-medium text-sidebar-foreground">
+                        <ShieldCheck weight="bold" size={12} />
                         {setupMode === 'enable' ? 'Setup 2FA' : 'Disable 2FA'}
                     </div>
                 </div>
@@ -844,19 +848,24 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
 
     return (
         <div className="flex flex-col h-full bg-sidebar-background">
-            <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack}>
-                        <CaretLeft className="text-muted-foreground" />
-                    </Button>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-                        <Cloud weight="fill" className="text-primary" />
-                        Sync
-                    </div>
+            <div className="px-3 py-2 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+                <button
+                    onClick={onBack}
+                    className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                >
+                    <CaretLeft weight="bold" size={12} />
+                </button>
+                <div className="flex-1 flex items-center justify-center gap-2 text-xs font-medium text-sidebar-foreground">
+                    <Cloud weight="fill" size={12} className="text-primary" />
+                    Sync
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" title="Settings" onClick={() => navigate('/settings?tab=sync')}>
-                    <Gear weight="bold" className="text-muted-foreground" />
-                </Button>
+                <button
+                    title="Settings"
+                    onClick={() => navigate('/settings?tab=sync')}
+                    className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                >
+                    <Gear weight="bold" size={12} />
+                </button>
             </div>
 
             <ScrollArea className="flex-1 p-3">

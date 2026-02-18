@@ -185,6 +185,8 @@ export interface AppStore extends AppState {
   isSidebarCollapsed: boolean;
   sidebarMode: 'full' | 'slim';
   sidebarView: SidebarView;
+  storageViewMode: 'grid' | 'list' | 'cards';
+  collectionViewMode: 'grid' | 'list' | 'cards';
 
   // ═══════════════════════════════════════════════════════════════════════
   // ACTIONS — grouped by domain slice
@@ -209,6 +211,8 @@ export interface AppStore extends AppState {
   setSidebarMode: (mode: 'full' | 'slim') => void;
   setSidebarView: (view: SidebarView) => void;
   setDocViewMode: (mode: 'page' | 'pageless' | 'pageless-wide') => void;
+  setStorageViewMode: (mode: 'grid' | 'list' | 'cards') => void;
+  setCollectionViewMode: (mode: 'grid' | 'list' | 'cards') => void;
 
   // ── Data Setters (bulk replace arrays) ────────────────────────────────
   setProjects: (projects: Project[]) => void;

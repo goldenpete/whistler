@@ -1966,35 +1966,30 @@ export default function ProjectSidebar() {
                             transition={{ duration: 0.2 }}
                             className="flex-1 flex flex-col min-h-0"
                         >
-                            <div className="p-3 pb-2 border-b border-border/40 shrink-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
+                            <div className="px-3 py-2 border-b border-border/40 bg-card/20 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <button
                                         onClick={() => {
                                             playSfx('cursor');
                                             setSidebarView('main');
                                         }}
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                     >
-                                        <CaretLeft className="text-muted-foreground" />
-                                    </Button>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                        <CaretLeft weight="bold" size={14} />
+                                    </button>
+                                    <div className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
                                         <NotePencil weight="bold" />
                                         Documents
                                     </div>
-                                    <div className="flex-1" />
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
+                                    <button
                                         onClick={() => {
                                             playSfx('cursor');
                                             handleCreateDoc();
-                                        }} 
-                                        className="size-6"
+                                        }}
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                     >
-                                        <Plus weight="bold" className="size-3.5" />
-                                    </Button>
+                                        <Plus weight="bold" size={14} />
+                                    </button>
                                 </div>
                             </div>
                             
@@ -2033,24 +2028,21 @@ export default function ProjectSidebar() {
                             transition={{ duration: 0.2 }}
                             className="flex-1 flex flex-col min-h-0"
                         >
-                            <div className="p-3 pb-2 border-b border-border/40 shrink-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
+                            <div className="px-3 py-2 border-b border-border/40 bg-card/20 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <button
                                         onClick={() => setSidebarView('main')}
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                     >
-                                        <CaretLeft className="text-muted-foreground" />
-                                    </Button>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                        <CaretLeft weight="bold" size={14} />
+                                    </button>
+                                    <div className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
                                         <Graph weight="bold" />
                                         Graphs
                                     </div>
-                                    <div className="flex-1" />
-                                    <Button variant="ghost" size="icon" onClick={handleCreateGraph} className="size-6">
-                                        <Plus weight="bold" className="size-3.5" />
-                                    </Button>
+                                    <button onClick={handleCreateGraph} className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200">
+                                        <Plus weight="bold" size={14} />
+                                    </button>
                                 </div>
                             </div>
                             
@@ -2121,38 +2113,30 @@ export default function ProjectSidebar() {
                             transition={{ duration: 0.2 }}
                             className="flex-1 flex flex-col min-h-0"
                         >
-                            <div className="p-3 pb-2 border-b border-border/40 shrink-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
+                            <div className="px-3 py-2 border-b border-border/40 bg-card/20 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <button
                                         onClick={() => {
                                             playSfx('cursor');
                                             setSidebarView('main');
                                         }}
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                     >
-                                        <CaretLeft className="text-muted-foreground" />
-                                    </Button>
-                                    <div className="flex flex-col text-sm font-semibold text-foreground uppercase tracking-wider leading-tight">
-                                        <div className="flex items-center gap-2">
-                                            <Folder weight="bold" />
-                                            <span>Collection</span>
-                                        </div>
-                                        <span className="ml-6">Buckets</span>
+                                        <CaretLeft weight="bold" size={14} />
+                                    </button>
+                                    <div className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
+                                        <Folder weight="bold" />
+                                        Buckets
                                     </div>
-                                    <div className="flex-1" />
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
+                                    <button 
                                         onClick={() => { 
                                             playSfx('cursor'); 
                                             handleAddCollection();
                                         }} 
-                                        className="size-6"
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                     >
-                                        <Plus weight="bold" className="size-3.5" />
-                                    </Button>
+                                        <Plus weight="bold" size={14} />
+                                    </button>
                                 </div>
                             </div>
                             
@@ -2202,62 +2186,63 @@ export default function ProjectSidebar() {
                             transition={{ duration: 0.2 }}
                             className="flex-1 flex flex-col min-h-0"
                         >
-                            <div className="p-3 pb-2 border-b border-border/40 shrink-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6"
-                                            onClick={() => {
-                                                playSfx('cursor');
-                                                setSidebarView('main');
-                                                // Optional: Navigate back to home or stay on storage page?
-                                                // Usually back button implies going up a level, so maybe back to main view but stay on page?
-                                                // But if we are on storage page, main view doesn't make much sense unless we navigate away.
-                                                // Let's just switch view for now.
-                                            }}
-                                            data-sound-back
-                                        >
-                                            <CaretLeft className="text-muted-foreground" />
-                                        </Button>
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                            <HardDrives weight="bold" />
-                                            Storages
-                                        </div>
-                                        <div className="flex-1" />
-                                        <Button variant="ghost" size="icon" onClick={() => { playSfx('cursor'); handleCreateStorage(); }} className="size-6">
-                                            <Plus weight="bold" className="size-3.5" />
-                                        </Button>
+                            <div className="px-3 py-2 border-b border-border/40 bg-card/20 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            setSidebarView('main');
+                                        }}
+                                        data-sound-back
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                    >
+                                        <CaretLeft weight="bold" size={14} />
+                                    </button>
+                                    <div className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
+                                        <HardDrives weight="bold" />
+                                        Storages
                                     </div>
+                                    <button
+                                        onClick={() => {
+                                            playSfx('cursor');
+                                            handleCreateStorage();
+                                        }}
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                    >
+                                        <Plus weight="bold" size={14} />
+                                    </button>
                                 </div>
-                                
-                                <ScrollArea className="flex-1 px-3 py-2">
-                                    <div className="space-y-1">
-                                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                            <SortableContext items={projectStorages.map((s: Storage) => s.id)} strategy={verticalListSortingStrategy}>
-                                                {projectStorages.map((storage: Storage) => (
-                                                    <SortableEntityItem
-                                                        key={storage.id}
-                                                        entity={storage}
-                                                        isActive={activeStorageId === storage.id}
-                                                        onSelect={() => handleSelectStorage(storage.id)}
-                                                        onEdit={(e) => handleEditStorageClick(e, storage)}
-                                                        onDelete={(e) => handleDeleteStorage(e, storage.id)}
-                                                    />
-                                                ))}
-                                            </SortableContext>
-                                        </DndContext>
+                            </div>
 
-                                        {projectStorages.length === 0 && (
-                                            <div className={cn(
+                            <ScrollArea className="flex-1 px-3 py-2">
+                                <div className="space-y-1">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                        <SortableContext items={projectStorages.map((s: Storage) => s.id)} strategy={verticalListSortingStrategy}>
+                                            {projectStorages.map((storage: Storage) => (
+                                                <SortableEntityItem
+                                                    key={storage.id}
+                                                    entity={storage}
+                                                    isActive={activeStorageId === storage.id}
+                                                    onSelect={() => handleSelectStorage(storage.id)}
+                                                    onEdit={(e) => handleEditStorageClick(e, storage)}
+                                                    onDelete={(e) => handleDeleteStorage(e, storage.id)}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
+
+                                    {projectStorages.length === 0 && (
+                                        <div
+                                            className={cn(
                                                 "text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2 flex items-center justify-center",
                                                 isSlim ? "p-2 h-10" : "p-4 text-center text-xs"
-                                            )}>
-                                                {isSlim ? <HardDrives className="opacity-50" /> : "No storages created yet"}
-                                            </div>
-                                        )}
-                                    </div>
-                                </ScrollArea>
+                                            )}
+                                        >
+                                            {isSlim ? <HardDrives className="opacity-50" /> : "No storages created yet"}
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
                         </motion.div>
                     )}
                 </AnimatePresence>

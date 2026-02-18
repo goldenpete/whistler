@@ -45,7 +45,7 @@ import {
     Trash,
     PencilSimple,
     CaretDown,
-    Gear,
+    HardDrives,
     ArrowSquareOut,
 } from "@phosphor-icons/react";
 import { useSortable } from '@dnd-kit/sortable';
@@ -299,12 +299,7 @@ export function SidebarFolderItem({
                         <span title={folder.name} className="truncate w-0 flex-1 text-left py-0.5 max-w-[calc(100%-60px)]">{folder.name}</span>
 
                         {/* ── Hover-reveal action buttons ──────────────────────────── */}
-                        <div className={cn(
-                            "h-full flex-shrink-0 items-center transition-opacity",
-                            isRoot
-                                ? "flex opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-                                : "hidden group-hover:flex"
-                        )}>
+                        <div className="h-full flex-shrink-0 flex items-center transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
                             {/* Open folder button */}
                             <button
                                 onPointerDown={(e) => e.stopPropagation()}
@@ -317,7 +312,7 @@ export function SidebarFolderItem({
                                         navigate(`/collections?folderId=${folder.id}`);
                                     }
                                 }}
-                                className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-all border-l border-border/20"
+                                className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                 title="Open Folder"
                             >
                                 <ArrowSquareOut weight="bold" size={14} />
@@ -332,44 +327,42 @@ export function SidebarFolderItem({
                                         playSfx('cursor');
                                         setSidebarView('collections');
                                     }}
-                                    className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-all border-l border-border/20"
+                                    className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                     title="Manage Buckets"
                                 >
-                                    <Gear weight="bold" size={14} />
+                                    <HardDrives weight="bold" size={14} />
                                 </button>
                             )}
 
                             {/* Add item dropdown (collection or folder) */}
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         onPointerDown={(e) => e.stopPropagation()}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-all border-l border-border/20"
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                         title="Add Item"
                                     >
                                         <Plus weight="bold" size={14} />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent loop side="bottom" align="start" sideOffset={4} className="w-40">
-                                    <DropdownMenuItem onClick={(e: any) => {
-                                        e.stopPropagation();
+                                <DropdownMenuContent loop side="bottom" align="start" sideOffset={4} className="w-40" onCloseAutoFocus={(e: Event) => e.preventDefault()} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                                    <DropdownMenuItem onSelect={() => {
                                         playSfx('cursor');
                                         if (!isRoot) {
                                             navigate(`/collections?folderId=${folder.id}`, { replace: true });
                                         }
-                                        handleAddCollection(e as any);
+                                        handleAddCollection();
                                     }}>
                                         <FolderPlus className="mr-2 h-4 w-4" />
                                         Collection
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e: any) => {
-                                        e.stopPropagation();
+                                    <DropdownMenuItem onSelect={() => {
                                         playSfx('cursor');
                                         if (!isRoot) {
                                             navigate(`/collections?folderId=${folder.id}`, { replace: true });
                                         }
-                                        handleAddFolder(e as any);
+                                        handleAddFolder(undefined as any);
                                     }}>
                                         <FolderSimplePlus className="mr-2 h-4 w-4" />
                                         Folder
@@ -387,7 +380,7 @@ export function SidebarFolderItem({
                                             playSfx('cursor');
                                             onRename?.();
                                         }}
-                                        className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-all border-l border-border/20"
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                         title="Rename Folder"
                                     >
                                         <PencilSimple weight="bold" size={14} />
@@ -399,7 +392,7 @@ export function SidebarFolderItem({
                                             playSfx('cursor');
                                             onDelete?.();
                                         }}
-                                        className="h-full px-2.5 rounded-none text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-all border-l border-border/20"
+                                        className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                         title="Delete Folder"
                                     >
                                         <Trash weight="bold" size={14} />

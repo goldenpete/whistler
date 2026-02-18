@@ -264,22 +264,24 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
     const Header = () => {
         if (variant === 'sidebar') {
             return (
-                <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack} data-sound-back>
-                            <CaretLeft className="text-muted-foreground" />
-                        </Button>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-                            <Trash weight="fill" className="text-red-400" />
-                            Trash
-                        </div>
+                <div className="px-3 py-2 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+                    <button
+                        onClick={onBack}
+                        className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                        data-sound-back
+                    >
+                        <CaretLeft weight="bold" size={12} />
+                    </button>
+                    <div className="flex-1 flex items-center justify-center gap-2 text-xs font-medium text-sidebar-foreground">
+                        <Trash weight="fill" size={12} className="text-red-400" />
+                        Trash
                     </div>
                     {hasTrash && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-400/10 uppercase tracking-wider font-bold px-2">
-                                    Empty
-                                </Button>
+                                <button className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-red-400 hover:bg-secondary/60 hover:text-red-300 transition-all duration-200">
+                                    <Trash weight="fill" size={12} />
+                                </button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-white">
                                 <AlertDialogHeader>

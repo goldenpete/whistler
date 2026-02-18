@@ -34,6 +34,12 @@ export const createUiSlice = (set: StoreSet, _get: StoreGet) => ({
   /** Document editor view mode */
   docViewMode: 'page' as 'page' | 'pageless' | 'pageless-wide',
 
+  /** Storage view mode (grid/list/cards) */
+  storageViewMode: 'list' as 'grid' | 'list' | 'cards',
+
+  /** Collections view mode (grid/list/cards) */
+  collectionViewMode: 'grid' as 'grid' | 'list' | 'cards',
+
   /* ── Actions ──────────────────────────────────────────────────────────── */
 
   setDoubleTapMenuOpen: (open: boolean) => set({ isDoubleTapMenuOpen: open }),
@@ -44,6 +50,8 @@ export const createUiSlice = (set: StoreSet, _get: StoreGet) => ({
   setSidebarView: (view: 'main' | 'storage' | 'docs' | 'graphs' | 'history' | 'trash' | 'sync' | 'collections') =>
     set({ sidebarView: view }),
   setDocViewMode: (mode: 'page' | 'pageless' | 'pageless-wide') => set({ docViewMode: mode }),
+  setStorageViewMode: (mode: 'grid' | 'list' | 'cards') => set({ storageViewMode: mode }),
+  setCollectionViewMode: (mode: 'grid' | 'list' | 'cards') => set({ collectionViewMode: mode }),
 
   /* ── Meta-actions (generic state access) ──────────────────────────────── */
 

@@ -166,17 +166,17 @@ export function SortableCollectionItem({
 
                             {/* Hover-reveal action buttons (hidden in slim mode) */}
                             {!isSlim && (
-                                <div className="absolute inset-y-0 right-0 flex items-center h-full opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <div className="absolute inset-y-0 right-0 flex items-center h-full gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity pr-1">
                                     <button
                                         onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()}
                                         onClick={(e: ReactMouseEvent) => {
                                             playSfx('cursor');
                                             handleEditCollectionClick(e, collection);
                                         }}
-                                        className="h-full px-2.5 rounded-none bg-secondary/20 text-muted-foreground hover:bg-secondary/40 hover:text-foreground transition-all border-l border-border/20"
+                                        className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                         title="Edit Collection"
                                     >
-                                        <PencilSimple weight="bold" size={14} />
+                                        <PencilSimple weight="bold" size={12} />
                                     </button>
                                     <button
                                         onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()}
@@ -184,10 +184,10 @@ export function SortableCollectionItem({
                                             playSfx('cursor');
                                             handleDeleteCollection(e, collection.id);
                                         }}
-                                        className="h-full px-2.5 rounded-none bg-secondary/20 text-muted-foreground hover:bg-secondary/40 hover:text-foreground transition-all border-l border-border/20"
+                                        className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
                                         title="Delete Collection"
                                     >
-                                        <Trash weight="bold" size={14} />
+                                        <Trash weight="bold" size={12} />
                                     </button>
                                 </div>
                             )}

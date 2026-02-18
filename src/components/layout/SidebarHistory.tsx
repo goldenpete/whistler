@@ -2,11 +2,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { format } from "date-fns";
-import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase, ShareNetwork, Circle, LineSegment, Article } from "@phosphor-icons/react";
+import { ClockCounterClockwise, File, Folder, FilmStrip, NotePencil, Briefcase, ShareNetwork, Circle, LineSegment, Article, Trash, CaretLeft } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { HistoryEntry } from "@/types";
-
-import { CaretLeft } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 interface SidebarHistoryProps {
@@ -62,22 +60,24 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
     const Header = () => {
         if (variant === 'sidebar') {
             return (
-                <div className="p-3 border-b border-sidebar-border flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-6 w-6 -ml-1" onClick={onBack} data-sound-back>
-                            <CaretLeft className="text-muted-foreground" />
-                        </Button>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-                            <ClockCounterClockwise weight="bold" />
-                            History
-                        </div>
+                <div className="px-3 py-2 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+                    <button
+                        onClick={onBack}
+                        className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                        data-sound-back
+                    >
+                        <CaretLeft weight="bold" size={12} />
+                    </button>
+                    <div className="flex-1 flex items-center justify-center gap-2 text-xs font-medium text-sidebar-foreground">
+                        <ClockCounterClockwise weight="bold" size={12} />
+                        History
                     </div>
                     {history.length > 0 && (
                         <button
                             onClick={clearHistory}
-                            className="text-[10px] text-red-400 hover:text-red-300 transition-colors uppercase tracking-wider font-bold"
+                            className="h-5 w-5 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-red-400 hover:bg-secondary/60 hover:text-red-300 transition-all duration-200"
                         >
-                            Clear
+                            <Trash weight="fill" size={12} />
                         </button>
                     )}
                 </div>

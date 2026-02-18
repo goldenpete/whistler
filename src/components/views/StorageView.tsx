@@ -137,7 +137,7 @@ function BreadcrumbDropTarget({
             onClick={onClick}
             className={cn(
                 className,
-                "rounded px-1.5 py-0.5 transition-colors cursor-pointer",
+                "rounded-none px-1.5 py-0.5 transition-colors cursor-pointer",
                 isOver && "bg-primary/20 text-primary ring-1 ring-primary/30",
                 !isOver && !isActive && "hover:bg-accent/50 hover:text-accent-foreground",
                 isActive && "font-semibold text-foreground pointer-events-none"
@@ -174,7 +174,8 @@ export default function StorageView() {
         }
     }, [id, activeStorageId]);
 
-    const [viewMode, setViewMode] = useState<'grid' | 'list' | 'cards'>('list');
+    const viewMode = useStore(state => state.storageViewMode);
+    const setViewMode = (mode: 'grid' | 'list' | 'cards') => useStore.setState({ storageViewMode: mode });
     const [sortOption, setSortOption] = useState<SortOption>("custom");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [addFileOpen, setAddFileOpen] = useState(false);
@@ -1086,7 +1087,7 @@ export default function StorageView() {
 
 function EmptyState() {
     return (
-        <div className="col-span-full flex flex-col items-center justify-center p-16 text-muted-foreground border-2 border-dashed border-border rounded-lg">
+        <div className="col-span-full flex flex-col items-center justify-center p-16 text-muted-foreground border-2 border-dashed border-border rounded-none">
             <Folder size={56} weight="thin" className="mb-3 opacity-40" />
             <p className="font-medium">No files here</p>
             <p className="text-xs mt-1 opacity-70">Click "Add File" to add a web link</p>
@@ -1125,6 +1126,7 @@ interface FileCardInnerProps {
 }
 
 function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
+    const c = file.color;
     return (
         <div
             ref={domRef}
@@ -1132,15 +1134,18 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
             onClick={onClick}
             data-sound-cursor
             className={cn(
-                "flex flex-col gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/50 transition-all duration-200 aspect-[4/3] relative group hover:shadow-lg hover:shadow-primary/5 cursor-pointer select-none",
+                "flex flex-col gap-2 p-3 rounded-none border border-border bg-card transition-all duration-200 aspect-[4/3] relative group cursor-pointer select-none",
                 isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.02]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
-                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
+                isFocused && !isSelected && !c && "border-muted-foreground/30 bg-muted/20 shadow-md",
                 className
             )}
             style={{
                 ...style,
-                ...(file.color ? { borderColor: file.color, boxShadow: `0 0 10px ${file.color}20` } : undefined)
+                ...(c ? {
+                    borderColor: c,
+                    ...(isFocused && !isSelected ? { backgroundColor: c + '18', boxShadow: `0 0 12px ${c}30` } : {})
+                } : undefined)
             }}
         >
             {/* Selection checkbox */}
@@ -1165,8 +1170,8 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
 
             {/* Drop Target Overlay */}
             {isOver && file.type === 'folder' && (
-                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
-                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-none">
+                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-none shadow-lg border border-primary/20 flex items-center gap-2">
                         <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
                         <span className="text-xs font-semibold text-primary">Drop to move</span>
                     </div>
@@ -1181,6 +1186,7 @@ function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode,
 function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
+    const c = file.color;
 
     return (
         <div
@@ -1189,21 +1195,24 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
             onClick={onClick}
             data-sound-cursor
             className={cn(
-                "flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-md cursor-pointer select-none relative",
+                "flex items-center gap-4 px-4 py-3 rounded-none border border-border bg-card transition-all group cursor-pointer select-none relative",
                 isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.01]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
-                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
+                isFocused && !isSelected && !c && "border-muted-foreground/30 bg-muted/20 shadow-md",
                 className
             )}
             style={{
                 ...style,
-                ...(file.color ? { borderColor: file.color, boxShadow: `0 0 10px ${file.color}20` } : undefined)
+                ...(c ? {
+                    borderColor: c,
+                    ...(isFocused && !isSelected ? { backgroundColor: c + '18', boxShadow: `0 0 12px ${c}30` } : {})
+                } : undefined)
             }}
         >
             {/* Drop Target Overlay */}
             {isOver && file.type === 'folder' && (
-                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-lg">
-                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-none">
+                    <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-none shadow-lg border border-primary/20 flex items-center gap-2">
                         <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
                         <span className="text-xs font-semibold text-primary">Drop to move</span>
                     </div>
@@ -1226,7 +1235,7 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
             ) : null}
 
             {/* Thumbnail */}
-            <div className="w-16 h-12 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden pointer-events-none">
+            <div className="w-16 h-12 rounded-none bg-muted flex items-center justify-center shrink-0 overflow-hidden pointer-events-none">
                 <FileThumbnail file={file} iconSize={28} />
             </div>
 
@@ -1237,7 +1246,7 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
             </div>
 
             {/* Type Badge */}
-            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary rounded-full pointer-events-none">
+            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary rounded-none pointer-events-none">
                 {typeLabel}
             </div>
 
@@ -1252,6 +1261,7 @@ function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode,
 
 function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
+    const c = file.color;
 
     return (
         <div
@@ -1259,15 +1269,18 @@ function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode
             onClick={onClick}
             data-sound-cursor
             className={cn(
-                "flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:bg-accent/20 hover:border-primary/40 transition-all group hover:shadow-xl cursor-pointer select-none relative h-full",
+                "flex flex-col rounded-none border border-border bg-card overflow-hidden transition-all group cursor-pointer select-none relative h-full",
                 isOver && "ring-2 ring-primary bg-primary/20 shadow-xl scale-[1.02]",
                 isSelected && "ring-2 ring-primary bg-primary/10 border-primary",
-                isFocused && !isSelected && "ring-2 ring-primary/50 bg-accent/50",
+                isFocused && !isSelected && !c && "border-muted-foreground/30 bg-muted/20 shadow-xl",
                 className
             )}
             style={{
                 ...style,
-                ...(file.color ? { borderColor: file.color, boxShadow: `0 0 20px ${file.color}15` } : undefined)
+                ...(c ? {
+                    borderColor: c,
+                    ...(isFocused && !isSelected ? { backgroundColor: c + '18', boxShadow: `0 0 12px ${c}30` } : {})
+                } : undefined)
             }}
         >
             {/* Selection checkbox */}
@@ -1293,14 +1306,14 @@ function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode
                 <FileThumbnail file={file} iconSize={48} />
 
                 {/* Type Overlay */}
-                <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-none bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wide pointer-events-none">
                     {file.type}
                 </div>
 
                 {/* Drop Target Overlay */}
                 {isOver && file.type === 'folder' && (
                     <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] z-20">
-                        <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-primary/20 flex items-center gap-2">
+                        <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-none shadow-lg border border-primary/20 flex items-center gap-2">
                             <FolderOpen weight="fill" className="text-primary animate-bounce" size={16} />
                             <span className="text-xs font-semibold text-primary">Drop to move</span>
                         </div>
@@ -1416,7 +1429,7 @@ function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused,
                             onClick={handleClick}
                             className={cn(
                                 "absolute z-30 cursor-pointer",
-                                sortOption === "custom" ? "inset-4 rounded-lg" : "inset-0 rounded-xl"
+                                sortOption === "custom" ? "inset-4 rounded-none" : "inset-0 rounded-none"
                             )}
                         />
                     )}
@@ -1535,7 +1548,7 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
                             onClick={handleClick}
                             className={cn(
                                 "absolute z-30 cursor-pointer",
-                                sortOption === "custom" ? "inset-3 rounded-md" : "inset-0 rounded-lg"
+                                sortOption === "custom" ? "inset-3 rounded-none" : "inset-0 rounded-none"
                             )}
                         />
                     )}
