@@ -81,39 +81,41 @@ export function SortableEntityItem({
             {...dataAttrs}
             onClick={onSelect}
             className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm text-left transition-colors group cursor-pointer relative",
+                "w-full flex items-center gap-2 pl-2 pr-0 py-0 text-[11px] font-semibold tracking-wider rounded-none transition-all group border shadow-sm relative h-7 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 isActive
-                    ? "bg-primary/20 text-primary font-medium"
-                    : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
+                    ? "bg-primary/20 border-primary/30 text-primary"
+                    : "bg-secondary/40 border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             )}
         >
             {/* Entity icon — filled when active, colored when inactive */}
             <Icon
-                weight={isActive ? "fill" : "regular"}
-                className="text-lg shrink-0 transition-colors"
+                weight="fill"
+                className="flex-shrink-0 size-4 transition-colors"
                 style={{ color: isActive ? undefined : entity.color }}
             />
 
             {/* Entity name */}
-            <span title={entity.name} className="truncate flex-1 min-w-0">
+            <span title={entity.name} className="truncate w-0 flex-1 min-w-0 text-left py-0.5">
                 {entity.name}
             </span>
 
             {/* Hover-reveal action buttons */}
-            <div className="absolute inset-y-0 right-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/50">
+            <div className="h-full flex-shrink-0 flex items-center transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
                 <button
                     onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()}
-                    onClick={(e: ReactMouseEvent) => onEdit(e)}
-                    className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                    onClick={(e: ReactMouseEvent) => { e.stopPropagation(); onEdit(e); }}
+                    className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                    title="Edit"
                 >
-                    <PencilSimple weight="bold" />
+                    <PencilSimple weight="bold" size={14} />
                 </button>
                 <button
                     onPointerDown={(e: ReactMouseEvent) => e.stopPropagation()}
-                    onClick={(e: ReactMouseEvent) => onDelete(e)}
-                    className="p-1 h-full px-2 rounded-none hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                    onClick={(e: ReactMouseEvent) => { e.stopPropagation(); onDelete(e); }}
+                    className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                    title="Delete"
                 >
-                    <Trash weight="bold" />
+                    <Trash weight="bold" size={14} />
                 </button>
             </div>
         </div>
