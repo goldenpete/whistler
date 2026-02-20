@@ -30,17 +30,49 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 
+// ── Retry wrapper for lazy imports (handles stale chunks after deploy) ───────
+function lazyRetry<T extends { default: React.ComponentType<any> }>(
+    factory: () => Promise<T>
+): React.LazyExoticComponent<T["default"]> {
+    return lazy(() =>
+        factory().catch((err) => {
+            // If chunk failed, try one reload to get fresh assets
+            const key = "lazyRetryReloaded";
+            if (!sessionStorage.getItem(key)) {
+                sessionStorage.setItem(key, "1");
+                window.location.reload();
+                return new Promise(() => {}); // never resolves — page is reloading
+            }
+            sessionStorage.removeItem(key);
+            throw err;
+        })
+    );
+}
+
 // ── Lazy-loaded view components (code-split per route) ───────────────────────
-const StorageView = lazy(() => import("@/components/views/StorageView"));
-const FileView = lazy(() => import("@/components/views/FileView"));
-const DocsView = lazy(() => import("@/components/views/DocsView"));
-const GraphView = lazy(() => import("@/components/views/GraphView"));
-const CollectionView = lazy(() => import("@/components/views/CollectionView"));
-const CollectionsView = lazy(() => import("@/components/views/CollectionsView"));
-const SettingsView = lazy(() => import("@/components/views/SettingsView"));
-const HomeView = lazy(() => import("@/components/views/HomeView"));
-const WelcomeView = lazy(() => import("@/components/views/WelcomeView").then(m => ({ default: m.WelcomeView })));
-const LegalView = lazy(() => import("@/components/views/LegalView"));
+const StorageView = lazyRetry(() => import("@/components/views/StorageView"));
+const FileView = lazyRetry(() => import("@/components/views/FileView"));
+const DocsView = lazyRetry(() => import("@/components/views/DocsView"));
+const GraphView = lazyRetry(() => import("@/components/views/GraphView"));
+const CollectionView = lazyRetry(() => import("@/components/views/CollectionView"));
+const CollectionsView = lazyRetry(() => import("@/components/views/CollectionsView"));
+const SettingsView = lazyRetry(() => import("@/components/views/SettingsView"));
+const HomeView = lazyRetry(() => import("@/components/views/HomeView"));
+const WelcomeView = lazy(() =>
+    import("@/components/views/WelcomeView")
+        .then(m => ({ default: m.WelcomeView }))
+        .catch((err) => {
+            const key = "lazyRetryReloaded";
+            if (!sessionStorage.getItem(key)) {
+                sessionStorage.setItem(key, "1");
+                window.location.reload();
+                return new Promise(() => {}) as never;
+            }
+            sessionStorage.removeItem(key);
+            throw err;
+        })
+);
+const LegalView = lazyRetry(() => import("@/components/views/LegalView"));
 
 import { GlobalKeybinds } from "@/components/GlobalKeybinds";
 import { SpotlightSearch } from "@/components/SpotlightSearch";
