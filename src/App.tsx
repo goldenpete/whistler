@@ -74,9 +74,9 @@ const WelcomeView = lazy(() =>
 );
 const LegalView = lazyRetry(() => import("@/components/views/LegalView"));
 
-import { GlobalKeybinds } from "@/components/GlobalKeybinds";
-import { SpotlightSearch } from "@/components/SpotlightSearch";
-import { DoubleTapMenu } from "@/components/DoubleTapMenu";
+import { GlobalKeybinds } from "@/components/features/GlobalKeybinds";
+import { SpotlightSearch } from "@/components/features/SpotlightSearch";
+import { DoubleTapMenu } from "@/components/features/DoubleTapMenu";
 import { useInitialData } from "@/hooks/useInitialData";
 import { useSync } from "@/hooks/useSync";
 

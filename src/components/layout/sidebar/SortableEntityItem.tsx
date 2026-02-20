@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { getIcon } from "@/utils/iconMap";
 
 /** Props for the generic sortable entity item */
-export interface SortableEntityItemProps {
+interface SortableEntityItemProps {
     /** The entity data (storage, doc, or graph) */
     entity: {
         id: string;

@@ -28,6 +28,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { authStorage } from "@/utils/authStorage";
 import { useStore } from '@/store/useStore';
 import { useShallow } from '@/lib/zustand-shallow';
 
@@ -58,8 +59,8 @@ export function useSync() {
     const syncIntervalRef = useRef<number | null>(null);
 
     const handleSync = useCallback(async (type: 'push' | 'pull', silent = false) => {
-        const storedToken = localStorage.getItem("whistler_session_token");
-        const storedAccountId = localStorage.getItem("whistler_account_id");
+        const storedToken = authStorage.getToken();
+        const storedAccountId = authStorage.getAccountId();
 
         if (!storedAccountId || !storedToken) {
             if (!silent) setError("Connect with your Sync ID first");
@@ -76,7 +77,7 @@ export function useSync() {
                 const trashEnabled = syncOptions.trash ?? true;
                 const historyEnabled = syncOptions.history ?? true;
 
-                const data: any = {
+                const data: Record<string, unknown> = {
                     lastModified: Date.now(),
                 };
 
@@ -253,14 +254,14 @@ export function useSync() {
                     const { syncOptions } = state;
                     const trashEnabled = syncOptions.trash ?? true;
                     const historyEnabled = syncOptions.history ?? true;
-                    const updates: any = {};
+                    const updates: Record<string, unknown> = {};
                     
                     if (syncOptions.projects && serverData.projects) {
                         if (trashEnabled) {
                             updates.projects = serverData.projects;
                         } else {
                             const localDeleted = state.projects.filter(p => p.deleted);
-                            const serverIds = new Set(serverData.projects.map((p: any) => p.id));
+                            const serverIds = new Set(serverData.projects.map((p: { id: string }) => p.id));
                             updates.projects = [...serverData.projects, ...localDeleted.filter(p => !serverIds.has(p.id))];
                         }
                     }
@@ -269,7 +270,7 @@ export function useSync() {
                             updates.files = serverData.files;
                         } else {
                             const localDeleted = state.files.filter(f => f.deleted);
-                            const serverIds = new Set(serverData.files.map((f: any) => f.id));
+                            const serverIds = new Set(serverData.files.map((f: { id: string }) => f.id));
                             updates.files = [...serverData.files, ...localDeleted.filter(f => !serverIds.has(f.id))];
                         }
                     }
@@ -278,7 +279,7 @@ export function useSync() {
                             updates.collections = serverData.collections;
                         } else {
                             const localDeleted = state.collections.filter(c => c.deleted);
-                            const serverIds = new Set(serverData.collections.map((c: any) => c.id));
+                            const serverIds = new Set(serverData.collections.map((c: { id: string }) => c.id));
                             updates.collections = [...serverData.collections, ...localDeleted.filter(c => !serverIds.has(c.id))];
                         }
                     }
@@ -289,7 +290,7 @@ export function useSync() {
                                 updates.graphs = serverData.graphs;
                             } else {
                                 const localDeleted = state.graphs.filter(g => g.deleted);
-                                const serverIds = new Set(serverData.graphs.map((g: any) => g.id));
+                                const serverIds = new Set(serverData.graphs.map((g: { id: string }) => g.id));
                                 updates.graphs = [...serverData.graphs, ...localDeleted.filter(g => !serverIds.has(g.id))];
                             }
                         }
@@ -301,7 +302,7 @@ export function useSync() {
                             updates.docs = serverData.docs;
                         } else {
                             const localDeleted = state.docs.filter(d => d.deleted);
-                            const serverIds = new Set(serverData.docs.map((d: any) => d.id));
+                            const serverIds = new Set(serverData.docs.map((d: { id: string }) => d.id));
                             updates.docs = [...serverData.docs, ...localDeleted.filter(d => !serverIds.has(d.id))];
                         }
                     }
@@ -310,7 +311,7 @@ export function useSync() {
                             updates.storages = serverData.storages;
                         } else {
                             const localDeleted = state.storages.filter(s => s.deleted);
-                            const serverIds = new Set(serverData.storages.map((s: any) => s.id));
+                            const serverIds = new Set(serverData.storages.map((s: { id: string }) => s.id));
                             updates.storages = [...serverData.storages, ...localDeleted.filter(s => !serverIds.has(s.id))];
                         }
                     }
@@ -391,7 +392,7 @@ export function useSync() {
                         const finalProjects = updates.projects || state.projects;
                         if (finalProjects.length > 0) {
                             const currentActiveId = useStore.getState().activeProjectId;
-                            const isStillValid = finalProjects.some((p: any) => p.id === currentActiveId);
+                            const isStillValid = finalProjects.some((p: { id: string }) => p.id === currentActiveId);
                             
                             if (!isStillValid) {
                                 const firstProject = finalProjects[0];
@@ -399,7 +400,7 @@ export function useSync() {
                                 
                                 // Also try to set a valid storage for this project
                                 const finalStorages = updates.storages || state.storages;
-                                const projectStorage = finalStorages.find((s: any) => s.projectId === firstProject.id);
+                                const projectStorage = finalStorages.find((s: { projectId?: string }) => s.projectId === firstProject.id);
                                 if (projectStorage) {
                                     useStore.getState().setState({ activeStorageId: projectStorage.id });
                                 }
@@ -412,7 +413,7 @@ export function useSync() {
             
             const now = Date.now();
             setLastSyncTime(now);
-            localStorage.setItem("whistler_last_sync", now.toString());
+            authStorage.setLastSync(now.toString());
             setSyncStatus("success");
         } catch (err) {
             console.error("Sync Error:", err);

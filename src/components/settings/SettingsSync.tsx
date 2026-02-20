@@ -1,6 +1,26 @@
+/**
+ * ─── SettingsSync.tsx ─────────────────────────────────────────────────
+ *
+ * Cloud sync settings panel with authentication, 2FA, passkeys,
+ * and data synchronization controls.
+ *
+ * Features:
+ *   - Sync ID login with Cloudflare Turnstile captcha
+ *   - TOTP two-factor authentication (enable/disable)
+ *   - WebAuthn passkey registration and login
+ *   - Push/pull sync with configurable auto-sync interval
+ *   - Per-category sync toggles (files, collections, settings, etc.)
+ *   - Remote data deletion per category
+ *   - Session management and display name editing
+ *
+ * Exports: SettingsSync component
+ * Related: useSync hook, webauthn utils, useStore
+ * ───────────────────────────────────────────────────────────────────
+ */
 import React, { useEffect, useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
+import { authStorage } from "@/utils/authStorage";
 import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +76,7 @@ declare global {
     interface Window {
         turnstile?: {
             reset: (container?: string | HTMLElement) => void;
-            render: (container: string | HTMLElement, options: any) => string;
+            render: (container: string | HTMLElement, options: Record<string, unknown>) => string;
             remove: (widgetId: string) => void;
         };
     }
@@ -100,6 +120,9 @@ const getBrowserInfo = () => {
     return { browser, device, icon };
 };
 
+/* ═══════════════════════════════════════════════════════
+   STORE BINDINGS & STATE
+   ═══════════════════════════════════════════════════════ */
 export function SettingsSync() {
     const { 
         user, 
@@ -211,12 +234,12 @@ export function SettingsSync() {
 
             if (itemToDelete.id === 'trash') {
                 // Remove deleted items from all categories in the remote data
-                if (currentData.projects) currentData.projects = currentData.projects.filter((p: any) => !p.deleted);
-                if (currentData.files) currentData.files = currentData.files.filter((f: any) => !f.deleted);
-                if (currentData.collections) currentData.collections = currentData.collections.filter((c: any) => !c.deleted);
-                if (currentData.graphs) currentData.graphs = currentData.graphs.filter((g: any) => !g.deleted);
-                if (currentData.docs) currentData.docs = currentData.docs.filter((d: any) => !d.deleted);
-                if (currentData.storages) currentData.storages = currentData.storages.filter((s: any) => !s.deleted);
+                if (currentData.projects) currentData.projects = currentData.projects.filter((p: { deleted?: boolean }) => !p.deleted);
+                if (currentData.files) currentData.files = currentData.files.filter((f: { deleted?: boolean }) => !f.deleted);
+                if (currentData.collections) currentData.collections = currentData.collections.filter((c: { deleted?: boolean }) => !c.deleted);
+                if (currentData.graphs) currentData.graphs = currentData.graphs.filter((g: { deleted?: boolean }) => !g.deleted);
+                if (currentData.docs) currentData.docs = currentData.docs.filter((d: { deleted?: boolean }) => !d.deleted);
+                if (currentData.storages) currentData.storages = currentData.storages.filter((s: { deleted?: boolean }) => !s.deleted);
             }
 
             // 3. Put back
@@ -289,17 +312,13 @@ export function SettingsSync() {
 
     // Initialize from LocalStorage
     useEffect(() => {
-        const storedAccount = localStorage.getItem("whistler_account_id");
-        const storedToken = localStorage.getItem("whistler_session_token");
-        const storedLastSync = localStorage.getItem("whistler_last_sync");
-        const storedDisplayName = localStorage.getItem("whistler_display_name");
-        const storedTotpEnabled = localStorage.getItem("whistler_totp_enabled");
+        const { accountId: storedAccount, token: storedToken, lastSync: storedLastSync, displayName: storedDisplayName, totpEnabled } = authStorage.getCredentials();
         
         if (storedAccount && storedToken) {
             setAccountId(storedAccount);
             setSessionToken(storedToken);
             
-            if (storedTotpEnabled === "true") {
+            if (totpEnabled) {
                 setTotpEnabled(true);
             }
             
@@ -334,6 +353,9 @@ export function SettingsSync() {
 
     const getCleanAccountId = (value: string) => value.replace(/\D/g, "").slice(0, 16);
 
+    /* ═══════════════════════════════════════════════════════
+       AUTH HANDLERS
+       ═══════════════════════════════════════════════════════ */
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
         const cleanId = getCleanAccountId(syncId);
@@ -375,13 +397,9 @@ export function SettingsSync() {
             const displayName: string | undefined = data.display_name;
             setAccountId(cleanId);
             setSessionToken(token);
-            localStorage.setItem("whistler_account_id", cleanId);
-            localStorage.setItem("whistler_session_token", token);
-            if (displayName) {
-                localStorage.setItem("whistler_display_name", displayName);
-            }
+            authStorage.setCredentials({ accountId: cleanId, token, displayName });
             setTotpEnabled(false);
-            localStorage.removeItem("whistler_totp_enabled");
+            authStorage.setTotpEnabled(false);
             
             login({ id: cleanId, email: displayName || cleanId });
         } catch (err) {
@@ -432,13 +450,9 @@ export function SettingsSync() {
             const displayName: string | undefined = data.display_name;
             setAccountId(account);
             setSessionToken(token);
-            localStorage.setItem("whistler_account_id", account);
-            localStorage.setItem("whistler_session_token", token);
-            if (displayName) {
-                localStorage.setItem("whistler_display_name", displayName);
-            }
+            authStorage.setCredentials({ accountId: account, token, displayName });
             setTotpEnabled(true);
-            localStorage.setItem("whistler_totp_enabled", "true");
+            authStorage.setTotpEnabled(true);
 
             login({ id: account, email: displayName || account });
             setPhase("login");
@@ -457,10 +471,7 @@ export function SettingsSync() {
         setCaptchaToken(null);
         setPendingToken(null);
         setTotpCode("");
-        localStorage.removeItem("whistler_account_id");
-        localStorage.removeItem("whistler_session_token");
-        localStorage.removeItem("whistler_display_name");
-        localStorage.removeItem("whistler_totp_enabled");
+        authStorage.clearCredentials();
         logout();
         setPhase('login');
     };
@@ -476,9 +487,9 @@ export function SettingsSync() {
         updateUser({ email: newName || user.id });
         
         if (newName) {
-            localStorage.setItem("whistler_display_name", newName);
+            authStorage.setDisplayName(newName);
         } else {
-            localStorage.removeItem("whistler_display_name");
+            authStorage.setDisplayName("");
         }
         setIsEditingName(false);
 
@@ -503,6 +514,9 @@ export function SettingsSync() {
         }
     };
 
+    /* ═══════════════════════════════════════════════════════
+       2FA HANDLERS
+       ═══════════════════════════════════════════════════════ */
     // 2FA Setup Handlers
     const handleStart2FASetup = async () => {
         setIsLoading(true);
@@ -524,7 +538,7 @@ export function SettingsSync() {
             if (!response.ok) {
                 if (data.error === "2FA is already enabled") {
                     setTotpEnabled(true);
-                    localStorage.setItem("whistler_totp_enabled", "true");
+                    authStorage.setTotpEnabled(true);
                 }
                 setError(data.error || "Setup failed");
                 return;
@@ -565,7 +579,7 @@ export function SettingsSync() {
                 return;
             }
             setTotpEnabled(true);
-            localStorage.setItem("whistler_totp_enabled", "true");
+            authStorage.setTotpEnabled(true);
             setSetupStep('intro');
             setShowTwoFactorSetup(false);
             setTotpCode("");
@@ -603,7 +617,7 @@ export function SettingsSync() {
                 return;
             }
             setTotpEnabled(false);
-            localStorage.setItem("whistler_totp_enabled", "false");
+            authStorage.setTotpEnabled(false);
             setTotpCode("");
             setShowTwoFactorSetup(false);
         } catch (err) {
@@ -613,6 +627,9 @@ export function SettingsSync() {
         }
     };
 
+    /* ═══════════════════════════════════════════════════════
+       PASSKEY HANDLERS
+       ═══════════════════════════════════════════════════════ */
     // Passkey Logic
     const fetchPasskeys = async () => {
         if (!sessionToken) return;
@@ -775,19 +792,11 @@ export function SettingsSync() {
             
             setAccountId(cleanId);
             setSessionToken(token);
-            localStorage.setItem("whistler_account_id", cleanId);
-            localStorage.setItem("whistler_session_token", token);
-            if (displayName) {
-                localStorage.setItem("whistler_display_name", displayName);
-            }
+            authStorage.setCredentials({ accountId: cleanId, token, displayName });
             
             // Passkeys bypass 2FA, so we can assume it might be enabled but we are logged in
             setTotpEnabled(data.totp_enabled || false);
-            if (data.totp_enabled) {
-                localStorage.setItem("whistler_totp_enabled", "true");
-            } else {
-                localStorage.removeItem("whistler_totp_enabled");
-            }
+            authStorage.setTotpEnabled(data.totp_enabled || false);
             
             login({ id: cleanId, email: displayName || cleanId });
             setPhase("login");
@@ -798,6 +807,9 @@ export function SettingsSync() {
         }
     };
 
+    /* ═══════════════════════════════════════════════════════
+       JSX RENDER
+       ═══════════════════════════════════════════════════════ */
     // Render Logic
     
     // Login / 2FA / TOTP View

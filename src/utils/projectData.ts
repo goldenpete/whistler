@@ -36,7 +36,7 @@ export interface ProjectExportData {
 }
 
 /** Current export format version (for future migration support). */
-export const EXPORT_VERSION = 1;
+const EXPORT_VERSION = 1;
 
 /**
  * Export a single project and all its entities as a portable JSON object.

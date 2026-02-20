@@ -38,7 +38,7 @@ import {
     FilePdf, EyeSlash, FilmStrip, SidebarSimple,
     MagnifyingGlassMinus, MagnifyingGlassPlus, ArrowsClockwise
 } from "@phosphor-icons/react";
-import { cn, formatTime } from "@/lib/utils";
+import { cn, clamp, formatTime } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFPlayer } from "@/components/player/PDFPlayer";
 import { ImagePlayer } from "@/components/player/ImagePlayer";
@@ -74,7 +74,7 @@ interface HighlightPlayerDialogProps {
     onRequestClose?: () => void;
     onSelectHighlight?: (id: string) => void;
     isDraggable?: boolean;
-    onDragHandlePointerDown?: (event: any) => void;
+    onDragHandlePointerDown?: (event: React.PointerEvent) => void;
 }
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
@@ -154,7 +154,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         setFloatingPlayerMinimized(windowId, true);
     };
 
-    const handleDragStart = (e: any) => {
+    const handleDragStart = (e: React.PointerEvent) => {
         if (!isWindowed) return;
         dragActiveRef.current = true;
         dragOffsetRef.current = {
@@ -182,7 +182,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     };
 
     const handleTopBarDrag = inline ? onDragHandlePointerDown : handleDragStart;
-    const clampZoom = (value: number) => Math.min(2, Math.max(0.5, value));
+    const clampZoom = (value: number) => clamp(value, 0.5, 2);
     const isManualZoom = file?.id ? !!videoZoomManualByFile[file.id] : false;
     const zoomForFile = isManualZoom && file?.id ? (videoZoomByFile[file.id] ?? 1) : 1;
 

@@ -86,9 +86,9 @@ const FOLDER_COLORS = [
 ];
 
 /** Props for the SidebarFolderItem component */
-export interface SidebarFolderItemProps {
+interface SidebarFolderItemProps {
     /** The folder/bucket data (with id, name, etc.) */
-    folder: any;
+    folder: Pick<Collection, 'id' | 'name'> & Partial<Collection>;
     /** Whether the sidebar is in slim (icon-only) mode */
     isSlim: boolean;
     /** React children — collection items and sub-folders rendered inside collapse */
@@ -106,11 +106,11 @@ export interface SidebarFolderItemProps {
     /** Callback to open the move dialog for this folder */
     onMoveDialog?: () => void;
     /** All available sibling folders (for "Move to" submenu) */
-    folders?: any[];
+    folders?: Collection[];
     /** Callback to open the "add collection" dialog */
-    handleAddCollection: (e?: any) => void;
+    handleAddCollection: (e?: React.MouseEvent) => void;
     /** Callback to open the "add folder" dialog */
-    handleAddFolder: (e?: any) => void;
+    handleAddFolder: (e?: React.MouseEvent) => void;
     /** Nesting depth (0 = direct child of root) */
     depth?: number;
     /** Whether this item is the root bucket header */
@@ -170,7 +170,7 @@ export function SidebarFolderItem({
     const isCollapsed = isRoot ? isCollapsedProp : (collapsedById?.[folder.id] ?? true);
 
     // ── Store data ──────────────────────────────────────────────────────────
-    const { setSidebarView, activeCollectionId, collections } = useStore(useShallow((state: any) => ({
+    const { setSidebarView, activeCollectionId, collections } = useStore(useShallow((state) => ({
         setSidebarView: state.setSidebarView,
         activeCollectionId: state.activeCollectionId,
         collections: state.collections
@@ -395,7 +395,7 @@ export function SidebarFolderItem({
                                         if (!isRoot) {
                                             navigate(`/collections?folderId=${folder.id}`, { replace: true });
                                         }
-                                        handleAddFolder(undefined as any);
+                                        handleAddFolder();
                                     }}>
                                         <FolderSimplePlus className="mr-2 h-4 w-4" />
                                         Folder
@@ -480,7 +480,7 @@ export function SidebarFolderItem({
                         if (!isRoot) {
                             navigate(`/collections?folderId=${folder.id}`, { replace: true });
                         }
-                        handleAddFolder(undefined as any);
+                        handleAddFolder();
                     }}>
                         <FolderSimplePlus className="mr-2 h-4 w-4" />
                         Add Folder

@@ -41,7 +41,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { useStore } from '@/store/useStore';
 import { useShallow } from '@/lib/zustand-shallow';
 import type { Highlight } from "@/types";
-import { cn } from '@/lib/utils';
+import { cn, clamp } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { globalWorker } from '@/pdf-worker';
@@ -322,7 +322,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
 
         const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-        pageHighlights.forEach((h: any) => {
+        pageHighlights.forEach((h: Highlight) => {
             if (h.pdfRange) {
                 addRectsForRange(h.pdfRange.start, h.pdfRange.end);
             } else if (h.text) {
@@ -339,7 +339,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         setHighlightRects(newRects);
     }, [pageHighlights, scale]);
 
-    const handlePageLoadSuccess = useCallback((page: any) => {
+    const handlePageLoadSuccess = useCallback((page: { getViewport: (options: { scale: number }) => { width: number; height: number } }) => {
         const viewport = page.getViewport({ scale: 1 });
         if (viewport.width > 0) {
             setPageAspectRatio(viewport.height / viewport.width);
@@ -407,7 +407,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
         if (lockedPage) return;
         setDirection(offset > 0 ? 1 : -1);
         setPageNumber((prev: number) => {
-            const newPage = Math.min(Math.max(prev + offset, 1), numPages);
+            const newPage = clamp(prev + offset, 1, numPages);
             onPageChange?.(newPage);
             return newPage;
         });
@@ -427,7 +427,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                 
                 setScale(s => {
                     const newScale = s + delta;
-                    return Math.min(Math.max(newScale, 0.5), 5.0);
+                    return clamp(newScale, 0.5, 5.0);
                 });
             } else if (e.ctrlKey) {
                 e.preventDefault();
@@ -440,7 +440,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                     const delta = -e.deltaY * 0.01;
                     setScale(s => {
                         const newScale = s + delta;
-                        return Math.min(Math.max(newScale, 0.5), 5.0);
+                        return clamp(newScale, 0.5, 5.0);
                     });
                 } else {
                     // Ctrl + Mouse Wheel -> Pan Horizontal

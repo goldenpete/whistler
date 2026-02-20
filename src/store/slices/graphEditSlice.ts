@@ -36,7 +36,7 @@ export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
    */
   updateNode: (id: string, updates: Partial<GraphNode>) =>
     set((state) => ({
-      graphNodes: state.graphNodes.map((n: any) => (n.id === id ? { ...n, ...updates } : n)),
+      graphNodes: state.graphNodes.map((n) => (n.id === id ? { ...n, ...updates } : n)),
       // Skip history for position-only updates (drag operations)
       history:
         updates.x !== undefined || updates.y !== undefined
@@ -48,7 +48,7 @@ export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
                 action: 'update',
                 entityType: 'node',
                 entityId: id,
-                entityName: state.graphNodes.find((n: any) => n.id === id)?.title,
+                entityName: state.graphNodes.find((n) => n.id === id)?.title,
                 timestamp: Date.now(),
               },
               ...state.history,
@@ -58,8 +58,8 @@ export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
   /** Remove a node and all edges connected to it */
   removeNode: (id: string) =>
     set((state) => ({
-      graphNodes: state.graphNodes.filter((n: any) => n.id !== id),
-      graphEdges: state.graphEdges.filter((e: any) => e.fromId !== id && e.toId !== id),
+      graphNodes: state.graphNodes.filter((n) => n.id !== id),
+      graphEdges: state.graphEdges.filter((e) => e.fromId !== id && e.toId !== id),
       history: [
         {
           id: crypto.randomUUID(),
@@ -67,7 +67,7 @@ export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
           action: 'delete',
           entityType: 'node',
           entityId: id,
-          entityName: state.graphNodes.find((n: any) => n.id === id)?.title,
+          entityName: state.graphNodes.find((n) => n.id === id)?.title,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -95,7 +95,7 @@ export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
   /** Remove an edge */
   removeEdge: (id: string) =>
     set((state) => ({
-      graphEdges: state.graphEdges.filter((e: any) => e.id !== id),
+      graphEdges: state.graphEdges.filter((e) => e.id !== id),
       history: [
         {
           id: crypto.randomUUID(),

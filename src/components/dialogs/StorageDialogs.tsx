@@ -78,7 +78,7 @@ export const ICONS = [
     { name: "Book", icon: Book },
 ];
 
-export interface EntityFormProps {
+interface EntityFormProps {
     defaultName?: string;
     defaultDescription?: string;
     defaultColor?: string;

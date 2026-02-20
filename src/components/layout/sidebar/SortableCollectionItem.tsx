@@ -37,7 +37,7 @@ import { CollectionContextMenu } from "@/components/views/CollectionsView";
 import type { Collection } from "@/types";
 
 /** Props for the sortable collection item */
-export interface SortableCollectionItemProps {
+interface SortableCollectionItemProps {
     /** The collection data object */
     collection: Collection;
     /** Current react-router location object */
@@ -79,7 +79,7 @@ export function SortableCollectionItem({
 }: SortableCollectionItemProps) {
     const navigate = useNavigate();
 
-    const { activeCollectionId } = useStore(useShallow((state: any) => ({
+    const { activeCollectionId } = useStore(useShallow((state) => ({
         activeCollectionId: state.activeCollectionId
     })));
 

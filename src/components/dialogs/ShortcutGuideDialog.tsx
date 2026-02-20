@@ -13,6 +13,7 @@
  * ───────────────────────────────────────────────────────────────────
  */
 import React, { type ReactNode, useState, useMemo } from "react";
+import type { Icon } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { CaretRight, CaretLeft, CornersOut, CornersIn, SpeakerHigh, Image, FilmStrip, FileText, House, Folder, Graph, MagnifyingGlass, Gear, HardDrives, Trash, PencilSimple, CaretUp, CheckSquare, X } from "@phosphor-icons/react";
@@ -34,7 +35,7 @@ const Key = ({ children }: { children: ReactNode }) => (
     </span>
 );
 
-const ShortcutRow = ({ label, keys, icon: Icon }: { label: string, keys: ReactNode[], icon?: any }) => (
+const ShortcutRow = ({ label, keys, icon: Icon }: { label: string, keys: ReactNode[], icon?: Icon }) => (
     <div className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0">
         <div className="flex items-center gap-3">
             {Icon && <Icon className="text-zinc-400" size={16} />}
@@ -63,7 +64,7 @@ const ShortcutRow = ({ label, keys, icon: Icon }: { label: string, keys: ReactNo
 );
 
 // Helper to render dynamic row based on IDs
-const DynamicShortcutRow = ({ ids, label, icon: Icon, customKeys, extraKeys }: { ids?: string[], label?: string, icon?: any, customKeys?: ReactNode[], extraKeys?: ReactNode[] }) => {
+const DynamicShortcutRow = ({ ids, label, icon: Icon, customKeys, extraKeys }: { ids?: string[], label?: string, icon?: Icon, customKeys?: ReactNode[], extraKeys?: ReactNode[] }) => {
     const { customKeybinds } = useStore(useShallow((state) => ({
         customKeybinds: state.customKeybinds,
     })));
@@ -112,7 +113,7 @@ const DynamicShortcutRow = ({ ids, label, icon: Icon, customKeys, extraKeys }: {
 type GuideItem = 
     | { type: 'dynamic', ids: string[], label?: string, extraKeys?: ReactNode[] }
     | { type: 'header', label: string }
-    | { type: 'custom', label: string, icon: any, keys: ReactNode[] };
+    | { type: 'custom', label: string, icon: Icon, keys: ReactNode[] };
 
 const GUIDE_DATA: Record<string, GuideItem[]> = {
     global: [

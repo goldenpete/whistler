@@ -82,7 +82,7 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
     const items = useMemo(() => {
         if (!type) return [];
         
-        let rawItems: any[] = [];
+        let rawItems: Array<{ id: string; name?: string; title?: string; text?: string; note?: string; created?: number; lastModified?: number; fileId?: string; fileName?: string }> = [];
         
         switch (type) {
             case 'file':
@@ -125,7 +125,7 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
             });
     }, [type, files, highlights, collections, docs, graphs, storages, projects, activeProjectId, search, sortOrder]);
 
-    const handleItemClick = (item: any) => {
+    const handleItemClick = (item: { id: string; fileId?: string }) => {
         switch (type) {
             case 'file':
                 setActiveFile(item.id);

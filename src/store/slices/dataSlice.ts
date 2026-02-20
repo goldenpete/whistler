@@ -14,7 +14,7 @@
  */
 
 import type { StoreSet, StoreGet } from '../types';
-import type { Project, File, Collection, Highlight } from '@/types';
+import type { Project, File, Collection, Highlight, Graph, GraphNode, GraphEdge, Doc, Storage, HistoryEntry } from '@/types';
 
 export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
   /* ── Core Data Arrays ─────────────────────────────────────────────────── */
@@ -27,15 +27,15 @@ export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
   /** All highlights (video timestamps, image regions, PDF selections) */
   highlights: [] as Highlight[],
   /** All graphs */
-  graphs: [] as any[],
+  graphs: [] as Graph[],
   /** All graph nodes */
-  graphNodes: [] as any[],
+  graphNodes: [] as GraphNode[],
   /** All graph edges */
-  graphEdges: [] as any[],
+  graphEdges: [] as GraphEdge[],
   /** All documents */
-  docs: [] as any[],
+  docs: [] as Doc[],
   /** All storages (file containers within projects) */
-  storages: [] as any[],
+  storages: [] as Storage[],
 
   /* ── Active Entity IDs ────────────────────────────────────────────────── */
   /** Currently selected project */
@@ -55,7 +55,7 @@ export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
 
   /* ── History ──────────────────────────────────────────────────────────── */
   /** Action history log (newest first) */
-  history: [] as any[],
+  history: [] as HistoryEntry[],
 
   /* ── Bulk Setters (used by sync/migration to replace entire arrays) ──── */
 
@@ -93,7 +93,7 @@ export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
     set((state) => ({
       activeDocId: id,
       docs: id
-        ? state.docs.map((d: any) => (d.id === id ? { ...d, lastViewed: Date.now() } : d))
+        ? state.docs.map((d) => (d.id === id ? { ...d, lastViewed: Date.now() } : d))
         : state.docs,
     })),
 
@@ -102,7 +102,7 @@ export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
     set((state) => ({
       activeGraphId: id,
       graphs: id
-        ? state.graphs.map((g: any) => (g.id === id ? { ...g, lastViewed: Date.now() } : g))
+        ? state.graphs.map((g) => (g.id === id ? { ...g, lastViewed: Date.now() } : g))
         : state.graphs,
     })),
 });

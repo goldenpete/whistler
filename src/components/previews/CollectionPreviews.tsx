@@ -1,5 +1,5 @@
 import { useState, useEffect, type SyntheticEvent } from "react";
-import { thumbnailStorage } from "@/lib/thumbnailDb";
+import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { useStore } from "@/store/useStore";
@@ -10,7 +10,7 @@ interface CachedVideoPreviewProps {
     time: number;
 }
 
-export function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
+function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
     const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
     const cacheHighlights = useStore(state => state.cacheHighlights);
 

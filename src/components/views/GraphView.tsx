@@ -29,7 +29,7 @@ import {
     NotePencil,
     MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash, ArrowsOutSimple
 } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn, clamp } from "@/lib/utils";
 import type { GraphNode, GraphEdge, Graph, Highlight } from "@/types";
 import { NodeDialog } from "@/components/dialogs/EditNodeDialog";
 import { NodePreviewCard } from "@/components/graph/NodePreviewCard";
@@ -171,7 +171,7 @@ export default function GraphView() {
     }>({ open: false, mode: 'create', type: 'note' });
     
     // Helper to sync addNodeDialog with nodeDialog for compatibility
-    const setAddNodeDialog = (state: any) => {
+    const setAddNodeDialog = (state: { open: boolean; type?: 'note' | 'file' | 'collection' | 'highlight' | 'link' | 'doc' }) => {
         setNodeDialog({
             open: state.open,
             mode: 'create',
@@ -583,7 +583,7 @@ export default function GraphView() {
         const zoomFactor = 1.1;
         const direction = e.deltaY < 0 ? 1 : -1;
         const nextScale = direction > 0 ? scale * zoomFactor : scale / zoomFactor;
-        const clampedScale = Math.min(3, Math.max(0.2, nextScale));
+        const clampedScale = clamp(nextScale, 0.2, 3);
         if (clampedScale === scale) return;
 
         const newPanX = screenX - worldX * clampedScale;

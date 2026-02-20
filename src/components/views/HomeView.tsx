@@ -20,7 +20,7 @@ import { useState, useRef, useEffect, memo, type MouseEvent, type SyntheticEvent
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { findRootBucketId } from "@/utils/collectionUtils";
-import type { AccentTheme, File as AppFile, Doc, Collection } from "@/types";
+import type { AccentTheme, File as AppFile, Doc, Collection, Highlight, Graph, Storage, Project } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { formatTime } from "@/lib/utils";
 import { 
@@ -33,7 +33,7 @@ import {
     FilePdf,
     Clock,
     Plus,
-    Graph,
+    Graph as GraphIcon,
     HardDrives,
     Tag,
     NotePencil,
@@ -70,11 +70,11 @@ import { NewDocDialog, NewGraphDialog, NewProjectDialog } from "@/components/dia
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { QuickAccessDialog } from "@/components/dialogs/QuickAccessDialog";
 import type { QuickAccessType } from "@/components/dialogs/QuickAccessDialog";
-import { FileContextMenu } from "@/components/views/StorageView";
+import { FileContextMenu } from "@/components/storage/FileContextMenu";
 import { Copy, Trash, ArrowSquareOut, PencilSimple, Lightning } from "@phosphor-icons/react";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
-import { thumbnailStorage } from "@/lib/thumbnailDb";
+import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { isValidUrl } from "@/utils/security";
@@ -100,6 +100,16 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
     // Default to video for streaming URLs (catbox, etc)
     if (lower.includes('catbox') || lower.includes('files.')) return 'video';
     return 'file';
+}
+
+/** Shape of items in the allItems array used by the home view grid. */
+interface HomeViewItem {
+    id: string;
+    type: 'file' | 'doc' | 'collection' | 'graph' | 'highlight' | 'storage' | 'project';
+    subType?: string;
+    name: string;
+    timestamp: number;
+    data: Record<string, unknown>;
 }
 
 const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { url: string, start?: number, overrideMiddleFrame?: boolean }) => {
@@ -171,7 +181,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                     src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                     alt="YouTube Preview"
-                    onContextMenu={(e: any) => e.preventDefault()}
+                    onContextMenu={(e) => e.preventDefault()}
                 />
             </div>
         );
@@ -184,7 +194,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                     src={cachedThumbnail}
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                     alt="Video Preview"
-                    onContextMenu={(e: any) => e.preventDefault()}
+                    onContextMenu={(e) => e.preventDefault()}
                 />
             </div>
         );
@@ -252,7 +262,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
     );
 };
 
-const CardPreview = memo(({ item }: { item: any }) => {
+const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
     // Image File
     if (item.type === 'file' && item.subType === 'image' && item.data.url) {
         return (
@@ -261,7 +271,7 @@ const CardPreview = memo(({ item }: { item: any }) => {
                     src={item.data.url} 
                     alt="" 
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
-                    onContextMenu={(e: any) => e.preventDefault()}
+                    onContextMenu={(e) => e.preventDefault()}
                 />
             </div>
         );
@@ -345,7 +355,7 @@ const CardPreview = memo(({ item }: { item: any }) => {
                     CollectionGridPreview uses absolute positioning.
                     We can check if it has items.
                 */}
-                {(!highlights.some((h: any) => h.collectionId === item.data.id)) && (
+                {(!highlights.some((h) => h.collectionId === item.data.id)) && (
                     <div 
                         className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
                         style={{ color: item.data.color }}
@@ -371,7 +381,7 @@ const CardPreview = memo(({ item }: { item: any }) => {
                     className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
                     style={item.data.color ? { color: item.data.color, opacity: 0.05 } : undefined}
                 >
-                    <Graph size={200} weight="fill" />
+                    <GraphIcon size={200} weight="fill" />
                 </div>
             </>
         );
@@ -389,7 +399,7 @@ const CardPreview = memo(({ item }: { item: any }) => {
                             src={file.url} 
                             alt="" 
                             className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
-                            onContextMenu={(e: any) => e.preventDefault()}
+                            onContextMenu={(e) => e.preventDefault()}
                         />
                     </div>
                 );
@@ -520,7 +530,7 @@ export default function HomeView() {
     const [quickAccessPopoverOpen, setQuickAccessPopoverOpen] = useState(false);
     
     // Rename/Edit Dialog States
-    const [renameItem, setRenameItem] = useState<{id: string, type: string, name: string, data?: any} | null>(null);
+    const [renameItem, setRenameItem] = useState<{id: string, type: string, name: string, data?: Record<string, unknown>} | null>(null);
     const [renameFileOpen, setRenameFileOpen] = useState(false);
     const [renameDocOpen, setRenameDocOpen] = useState(false);
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
@@ -536,13 +546,13 @@ export default function HomeView() {
     };
 
     const handleColorChange = (file: AppFile, color: string) => {
-        useStore.setState((state: any) => ({
+        useStore.setState((state) => ({
             files: state.files.map((f: AppFile) => f.id === file.id ? { ...f, color, lastModified: Date.now() } : f)
         }));
     };
 
     const handleIconChange = (file: AppFile, icon: string) => {
-        useStore.setState((state: any) => ({
+        useStore.setState((state) => ({
             files: state.files.map((f: AppFile) => f.id === file.id ? { ...f, icon, lastModified: Date.now() } : f)
         }));
     };
@@ -562,7 +572,7 @@ export default function HomeView() {
 
         let targetStorageId = activeStorageId;
         if (!targetStorageId) {
-            const projectStorages = storages.filter((s: any) => s.projectId === activeProjectId);
+            const projectStorages = storages.filter((s) => s.projectId === activeProjectId);
             if (projectStorages.length > 0) {
                 targetStorageId = projectStorages[0].id;
             } else {
@@ -573,7 +583,7 @@ export default function HomeView() {
                     created: Date.now(),
                     lastModified: Date.now()
                 };
-                useStore.setState((state: any) => ({ 
+                useStore.setState((state) => ({ 
                     storages: [...state.storages, newStorage],
                     activeStorageId: newStorage.id 
                 }));
@@ -594,7 +604,7 @@ export default function HomeView() {
             created: Date.now(),
             lastModified: Date.now()
         };
-        useStore.setState((state: any) => ({ files: [...state.files, newFile] }));
+        useStore.setState((state) => ({ files: [...state.files, newFile] }));
         setPopoverOpen(false);
         navigate(`/file/${newFile.id}`);
     };
@@ -641,7 +651,7 @@ export default function HomeView() {
             created: Date.now(),
             lastModified: Date.now()
         };
-        useStore.setState((state: any) => ({ 
+        useStore.setState((state) => ({ 
             collections: [...state.collections, newCollection],
             activeCollectionId: targetBucketId // Keep the bucket active
         }));
@@ -673,7 +683,7 @@ export default function HomeView() {
     const handleCreateProject = (name: string) => {
         const newProject = useStore.getState().addProject(name);
         const storages = useStore.getState().storages;
-        const projectStorage = storages.find((s: any) => s.projectId === newProject.id);
+        const projectStorage = storages.find((s) => s.projectId === newProject.id);
         
         useStore.setState({ 
             activeProjectId: newProject.id,
@@ -688,14 +698,14 @@ export default function HomeView() {
     const projectFiles = files.filter((f: AppFile) => f.projectId === activeProjectId && !f.deleted);
     const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
     const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
-    const projectGraphs = (graphs || []).filter((g: any) => g.projectId === activeProjectId);
+    const projectGraphs = (graphs || []).filter((g) => g.projectId === activeProjectId);
 
     // Recent Highlights logic
     const projectFileIds = new Set(projectFiles.map((f: AppFile) => f.id));
     const projectHighlights = highlights
-        .filter((h: any) => projectFileIds.has(h.fileId));
+        .filter((h) => projectFileIds.has(h.fileId));
 
-    const formatHighlightLabel = (h: any, file?: any) => {
+    const formatHighlightLabel = (h: Highlight, file?: AppFile) => {
         if (file?.type === 'pdf') {
             return h.end && h.end !== h.start ? `Page ${h.start}-${h.end}` : `Page ${h.start}`;
         }
@@ -737,14 +747,14 @@ export default function HomeView() {
             timestamp: Math.max(c.lastModified, c.lastViewed || 0),
             data: c
         })),
-        ...projectGraphs.map((g: any) => ({
+        ...projectGraphs.map((g) => ({
             id: g.id,
             type: 'graph' as const,
             name: g.name,
             timestamp: Math.max(g.lastModified || g.created, g.lastViewed || 0),
             data: g
         })),
-        ...projectHighlights.map((h: any) => {
+        ...projectHighlights.map((h) => {
             const file = files.find((f: AppFile) => f.id === h.fileId);
             const label = formatHighlightLabel(h, file);
             return {
@@ -755,14 +765,14 @@ export default function HomeView() {
                 data: { ...h, file }
             };
         }),
-        ...storages.filter((s: any) => s.projectId === activeProjectId).map((s: any) => ({
+        ...storages.filter((s) => s.projectId === activeProjectId).map((s) => ({
             id: s.id,
             type: 'storage' as const,
             name: s.name,
             timestamp: Math.max(s.lastModified || s.created, s.lastViewed || 0),
             data: s
         })),
-        ...(projects || []).map((p: any) => ({
+        ...(projects || []).map((p) => ({
             id: p.id,
             type: 'project' as const,
             name: p.name,
@@ -783,7 +793,7 @@ export default function HomeView() {
             case 'file': return getFileIcon(item.subType as any);
             case 'doc': return FileText;
             case 'collection': return Tag;
-            case 'graph': return Graph;
+            case 'graph': return GraphIcon;
             case 'highlight': return Clock;
             case 'storage': return HardDrives;
             case 'project': return ProjectorScreenChart;
@@ -1008,7 +1018,7 @@ export default function HomeView() {
                             <NotePencil className="text-muted-foreground" size={16} /> Docs
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('graph'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
-                            <Graph className="text-muted-foreground" size={16} /> Graphs
+                            <GraphIcon className="text-muted-foreground" size={16} /> Graphs
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('storage'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
                             <HardDrives className="text-muted-foreground" size={16} /> Storages
@@ -1038,7 +1048,7 @@ export default function HomeView() {
                             <NotePencil className="text-muted-foreground" size={16} /> Add Doc
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddGraphOpen(true); setPopoverOpen(false); }}>
-                            <Graph className="text-muted-foreground" size={16} /> Add Graph
+                            <GraphIcon className="text-muted-foreground" size={16} /> Add Graph
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddStorageOpen(true); setPopoverOpen(false); }}>
                             <HardDrives className="text-muted-foreground" size={16} /> Add Storage

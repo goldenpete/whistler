@@ -49,7 +49,7 @@ import type { File, Collection, Highlight } from "@/types";
 import { useKeybind } from "@/hooks/use-keybind";
 import { formatTime } from "@/lib/utils";
 import { playSfx } from "@/utils/sound";
-import { ACTION_REGISTRY, type ActionContext } from "@/lib/actions";
+import { ACTION_REGISTRY, type ActionContext } from "@/utils/actions";
 
 export function SpotlightSearch() {
     const navigate = useNavigate();

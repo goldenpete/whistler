@@ -51,7 +51,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
   /** Update storage metadata (name, color, icon) */
   updateStorage: (id: string, updates: Partial<Storage>) =>
     set((state) => ({
-      storages: state.storages.map((s: any) =>
+      storages: state.storages.map((s) =>
         s.id === id ? { ...s, ...updates, lastModified: Date.now() } : s
       ),
       history: [
@@ -61,7 +61,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
           action: 'update',
           entityType: 'collection',
           entityId: id,
-          entityName: state.storages.find((s: any) => s.id === id)?.name,
+          entityName: state.storages.find((s) => s.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -75,7 +75,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
    */
   deleteStorage: (id: string) =>
     set((state) => {
-      const storage = state.storages.find((s: any) => s.id === id) || null;
+      const storage = state.storages.find((s) => s.id === id) || null;
       let nextActiveStorageId = state.activeStorageId;
 
       // If deleting the active storage, find a replacement
@@ -83,7 +83,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
         const projectId = storage?.projectId || state.activeProjectId;
         if (projectId) {
           const projectStorages = state.storages.filter(
-            (s: any) => s.projectId === projectId && s.id !== id && !s.deleted
+            (s) => s.projectId === projectId && s.id !== id && !s.deleted
           );
           nextActiveStorageId = projectStorages.length > 0 ? projectStorages[0].id : null;
         } else {
@@ -92,7 +92,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       }
 
       return {
-        storages: state.storages.map((s: any) =>
+        storages: state.storages.map((s) =>
           s.id === id ? { ...s, deleted: true, lastModified: Date.now() } : s
         ),
         activeStorageId: nextActiveStorageId,
@@ -148,7 +148,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
   /** Update document metadata or content */
   updateDoc: (id: string, updates: Partial<Doc>) =>
     set((state) => ({
-      docs: state.docs.map((d: any) =>
+      docs: state.docs.map((d) =>
         d.id === id ? { ...d, ...updates, lastModified: Date.now() } : d
       ),
       history: [
@@ -158,7 +158,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
           action: 'update',
           entityType: 'doc',
           entityId: id,
-          entityName: state.docs.find((d: any) => d.id === id)?.name,
+          entityName: state.docs.find((d) => d.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -200,7 +200,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
   /** Update graph metadata (name, color, icon). Also used for graph content updates. */
   updateGraph: (id: string, updates: Partial<Graph>) =>
     set((state) => ({
-      graphs: state.graphs.map((g: any) =>
+      graphs: state.graphs.map((g) =>
         g.id === id ? { ...g, ...updates, lastModified: Date.now() } : g
       ),
       history: [
@@ -210,7 +210,7 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
           action: 'update',
           entityType: 'graph',
           entityId: id,
-          entityName: state.graphs.find((g: any) => g.id === id)?.name,
+          entityName: state.graphs.find((g) => g.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,

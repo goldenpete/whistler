@@ -204,7 +204,6 @@ export function MainLayout() {
             if (playPromise) {
                 playPromise
                     .then(() => {
-                        console.log("Ambient music resumed after interaction");
                         setAmbientAutoplayBlocked(false);
                     })
                     .catch((err) => {

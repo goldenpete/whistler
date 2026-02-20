@@ -111,27 +111,27 @@ export const createProjectSlice = (set: StoreSet, _get: StoreGet) => ({
         state.collections.filter((c: Collection) => c.projectId === id).map((c: Collection) => c.id)
       );
       const projectGraphIds = new Set(
-        state.graphs.filter((g: any) => g.projectId === id).map((g: any) => g.id)
+        state.graphs.filter((g) => g.projectId === id).map((g) => g.id)
       );
 
       return {
         projects: remainingProjects,
         files: state.files.filter((f: File) => f.projectId !== id),
         collections: state.collections.filter((c: Collection) => c.projectId !== id),
-        graphs: state.graphs.filter((g: any) => g.projectId !== id),
-        docs: state.docs.filter((d: any) => d.projectId !== id),
-        storages: state.storages.filter((s: any) => s.projectId !== id),
+        graphs: state.graphs.filter((g) => g.projectId !== id),
+        docs: state.docs.filter((d) => d.projectId !== id),
+        storages: state.storages.filter((s) => s.projectId !== id),
         highlights: state.highlights.filter(
           (h) =>
             !projectFileIds.has(h.fileId) &&
             !(h.collectionId && projectCollectionIds.has(h.collectionId))
         ),
-        graphNodes: state.graphNodes.filter((n: any) => !projectGraphIds.has(n.graphId)),
-        graphEdges: state.graphEdges.filter((e: any) => !projectGraphIds.has(e.graphId)),
+        graphNodes: state.graphNodes.filter((n) => !projectGraphIds.has(n.graphId)),
+        graphEdges: state.graphEdges.filter((e) => !projectGraphIds.has(e.graphId)),
         // Switch to next available project
         activeProjectId: remainingProjectId,
         activeStorageId: remainingProjectId
-          ? state.storages.find((s: any) => s.projectId === remainingProjectId)?.id || null
+          ? state.storages.find((s) => s.projectId === remainingProjectId)?.id || null
           : null,
         activeCollectionId: null,
         activeGraphId: null,

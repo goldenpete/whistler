@@ -27,6 +27,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import type { Icon } from "@phosphor-icons/react";
 import { 
     CornersOut, 
     MagnifyingGlass, 
@@ -53,7 +54,7 @@ import {
     ArrowSquareOut
 } from "@phosphor-icons/react";
 
-export type KeybindCategory = 'Global' | 'Navigation' | 'Storage' | 'Video' | 'Audio' | 'PDF' | 'Image' | 'Graph' | 'Docs';
+type KeybindCategory = 'Global' | 'Navigation' | 'Storage' | 'Video' | 'Audio' | 'PDF' | 'Image' | 'Graph' | 'Docs';
 
 export interface KeybindDefinition {
     id: string;
@@ -61,7 +62,7 @@ export interface KeybindDefinition {
     description?: string;
     defaultKey: string;
     category: KeybindCategory;
-    icon?: any;
+    icon?: Icon;
     isSequence?: boolean; // e.g., G+H
 }
 

@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 
-function shallow(objA: any, objB: any) {
+function shallow(objA: unknown, objB: unknown) {
     if (Object.is(objA, objB)) {
         return true;
     }

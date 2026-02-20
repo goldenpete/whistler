@@ -155,7 +155,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
 
   restoreStorage: (id: string) =>
     set((state) => ({
-      storages: state.storages.map((s: any) =>
+      storages: state.storages.map((s) =>
         s.id === id ? { ...s, deleted: false, lastModified: Date.now() } : s
       ),
       history: [
@@ -165,7 +165,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
           action: 'restore',
           entityType: 'collection',
           entityId: id,
-          entityName: state.storages.find((s: any) => s.id === id)?.name,
+          entityName: state.storages.find((s) => s.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -179,7 +179,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
         state.files.filter((f) => f.storageId === id).map((f) => f.id)
       );
       return {
-        storages: state.storages.filter((s: any) => s.id !== id),
+        storages: state.storages.filter((s) => s.id !== id),
         files: state.files.filter((f) => !storageFileIds.has(f.id)),
         history: [
           {
@@ -188,7 +188,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
             action: 'delete',
             entityType: 'collection',
             entityId: id,
-            entityName: state.storages.find((s: any) => s.id === id)?.name,
+            entityName: state.storages.find((s) => s.id === id)?.name,
             details: 'Permanently Deleted',
             timestamp: Date.now(),
           },
@@ -201,7 +201,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
 
   trashGraph: (id: string) =>
     set((state) => ({
-      graphs: state.graphs.map((g: any) =>
+      graphs: state.graphs.map((g) =>
         g.id === id ? { ...g, deleted: true, lastModified: Date.now() } : g
       ),
       activeGraphId: state.activeGraphId === id ? null : state.activeGraphId,
@@ -212,7 +212,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
           action: 'delete',
           entityType: 'graph',
           entityId: id,
-          entityName: state.graphs.find((g: any) => g.id === id)?.name,
+          entityName: state.graphs.find((g) => g.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -221,7 +221,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
 
   restoreGraph: (id: string) =>
     set((state) => ({
-      graphs: state.graphs.map((g: any) =>
+      graphs: state.graphs.map((g) =>
         g.id === id ? { ...g, deleted: false, lastModified: Date.now() } : g
       ),
       history: [
@@ -231,7 +231,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
           action: 'restore',
           entityType: 'graph',
           entityId: id,
-          entityName: state.graphs.find((g: any) => g.id === id)?.name,
+          entityName: state.graphs.find((g) => g.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -241,9 +241,9 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
   /** Permanently remove graph + all its nodes and edges */
   permanentDeleteGraph: (id: string) =>
     set((state) => ({
-      graphs: state.graphs.filter((g: any) => g.id !== id),
-      graphNodes: state.graphNodes.filter((n: any) => n.graphId !== id),
-      graphEdges: state.graphEdges.filter((e: any) => e.graphId !== id),
+      graphs: state.graphs.filter((g) => g.id !== id),
+      graphNodes: state.graphNodes.filter((n) => n.graphId !== id),
+      graphEdges: state.graphEdges.filter((e) => e.graphId !== id),
       history: [
         {
           id: crypto.randomUUID(),
@@ -251,7 +251,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
           action: 'delete',
           entityType: 'graph',
           entityId: id,
-          entityName: state.graphs.find((g: any) => g.id === id)?.name,
+          entityName: state.graphs.find((g) => g.id === id)?.name,
           details: 'Permanent Delete',
           timestamp: Date.now(),
         },
@@ -263,7 +263,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
 
   trashDoc: (id: string) =>
     set((state) => ({
-      docs: state.docs.map((d: any) =>
+      docs: state.docs.map((d) =>
         d.id === id ? { ...d, deleted: true, lastModified: Date.now() } : d
       ),
       activeDocId: state.activeDocId === id ? null : state.activeDocId,
@@ -274,7 +274,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
           action: 'delete',
           entityType: 'doc',
           entityId: id,
-          entityName: state.docs.find((d: any) => d.id === id)?.name,
+          entityName: state.docs.find((d) => d.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -283,7 +283,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
 
   restoreDoc: (id: string) =>
     set((state) => ({
-      docs: state.docs.map((d: any) =>
+      docs: state.docs.map((d) =>
         d.id === id ? { ...d, deleted: false, lastModified: Date.now() } : d
       ),
       history: [
@@ -293,7 +293,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
           action: 'restore',
           entityType: 'doc',
           entityId: id,
-          entityName: state.docs.find((d: any) => d.id === id)?.name,
+          entityName: state.docs.find((d) => d.id === id)?.name,
           timestamp: Date.now(),
         },
         ...state.history,
@@ -302,7 +302,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
 
   permanentDeleteDoc: (id: string) =>
     set((state) => ({
-      docs: state.docs.filter((d: any) => d.id !== id),
+      docs: state.docs.filter((d) => d.id !== id),
       history: [
         {
           id: crypto.randomUUID(),
@@ -310,7 +310,7 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
           action: 'delete',
           entityType: 'doc',
           entityId: id,
-          entityName: state.docs.find((d: any) => d.id === id)?.name,
+          entityName: state.docs.find((d) => d.id === id)?.name,
           details: 'Permanent Delete',
           timestamp: Date.now(),
         },
@@ -332,10 +332,10 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
         state.collections.filter((c) => c.deleted).map((c) => c.id)
       );
       const deletedGraphIds = new Set(
-        state.graphs.filter((g: any) => g.deleted).map((g: any) => g.id)
+        state.graphs.filter((g) => g.deleted).map((g) => g.id)
       );
       const deletedStorageIds = new Set(
-        state.storages.filter((s: any) => s.deleted).map((s: any) => s.id)
+        state.storages.filter((s) => s.deleted).map((s) => s.id)
       );
 
       // Files inside deleted storages should also be removed
@@ -349,15 +349,15 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
       return {
         files: state.files.filter((f) => !allDeletedFileIds.has(f.id)),
         collections: state.collections.filter((c) => !c.deleted),
-        storages: state.storages.filter((s: any) => !s.deleted),
-        graphs: state.graphs.filter((g: any) => !g.deleted),
-        docs: state.docs.filter((d: any) => !d.deleted),
+        storages: state.storages.filter((s) => !s.deleted),
+        graphs: state.graphs.filter((g) => !g.deleted),
+        docs: state.docs.filter((d) => !d.deleted),
         highlights: state.highlights.filter(
           (h) =>
             !allDeletedFileIds.has(h.fileId) && !deletedCollectionIds.has(h.collectionId || '')
         ),
-        graphNodes: state.graphNodes.filter((n: any) => !deletedGraphIds.has(n.graphId)),
-        graphEdges: state.graphEdges.filter((e: any) => !deletedGraphIds.has(e.graphId)),
+        graphNodes: state.graphNodes.filter((n) => !deletedGraphIds.has(n.graphId)),
+        graphEdges: state.graphEdges.filter((e) => !deletedGraphIds.has(e.graphId)),
         history: [
           {
             id: crypto.randomUUID(),

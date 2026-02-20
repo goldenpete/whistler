@@ -44,7 +44,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { MouseEvent as ReactMouseEvent, ChangeEvent as ReactChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -73,29 +73,22 @@ import {
 import {
     DndContext, 
     closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
     pointerWithin,
     rectIntersection,
-    type DragStartEvent,
     DragOverlay
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
 import {
-    arrayMove,
     SortableContext,
-    sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useKeybind } from "@/hooks/use-keybind";
+import { useSidebarDnD } from "@/hooks/useSidebarDnD";
 import { findRootBucketId } from "@/utils/collectionUtils";
 
-import type { Collection, Storage, AccentTheme, BaseTheme, Doc, Graph as GraphType, Project } from "@/types";
+import type { Collection, Storage, AccentTheme, Doc, Graph as GraphType, Project, File as AppFile } from "@/types";
 import { getIcon } from "@/utils/iconMap";
 import {
     Select,
@@ -109,7 +102,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
     ContextMenu,
@@ -117,9 +109,6 @@ import {
     ContextMenuItem,
     ContextMenuTrigger,
     ContextMenuSeparator,
-    ContextMenuSub,
-    ContextMenuSubTrigger,
-    ContextMenuSubContent,
 } from "@/components/ui/context-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,11 +122,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { CreateCollectionDialog, EditCollectionDialog, CreateFolderDialog } from "@/components/dialogs/CollectionDialogs";
@@ -145,9 +129,9 @@ import { MoveCollectionDialog } from "@/components/dialogs/MoveCollectionDialog"
 import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, EditDocDialog } from "@/components/dialogs/StorageDialogs";
 import { NewDocDialog, NewGraphDialog } from "@/components/dialogs/CreationDialogs";
 import { EditProjectDialog } from "@/components/dialogs/EditProjectDialog";
-import { SidebarHistory } from "@/components/layout/SidebarHistory";
-import { SidebarTrash } from "@/components/layout/SidebarTrash";
-import { SidebarSync } from "@/components/layout/SidebarSync";
+import { SidebarHistory } from "@/components/layout/sidebar/SidebarHistory";
+import { SidebarTrash } from "@/components/layout/sidebar/SidebarTrash";
+import { SidebarSync } from "@/components/layout/sidebar/SidebarSync";
 import { PiPPlayer } from "@/components/player/PiPPlayer";
 import { exportProject, importProject, type ProjectExportData } from "@/utils/projectData";
 import { playSfx } from "@/utils/sound";
@@ -159,11 +143,16 @@ import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { SortableEntityItem } from "@/components/layout/sidebar/SortableEntityItem";
 import { SidebarFolderItem } from "@/components/layout/sidebar/SidebarFolderItem";
 import { SortableCollectionItem } from "@/components/layout/sidebar/SortableCollectionItem";
+import { SlimSidebar } from "@/components/layout/sidebar/SlimSidebar";
 import { SyncStatusFooter } from "@/components/layout/sidebar/SyncStatusFooter";
 
 /* NOTE: SortableStorageItem, SortableDocItem, SortableGraphItem have been
  * unified into the generic <SortableEntityItem> component. Each entity type
  * (storage, doc, graph) now uses the same component with different props. */
+
+/* ═══════════════════════════════════════════════════════
+   STORE BINDINGS & LOCAL STATE
+   ═══════════════════════════════════════════════════════ */
 
 export default function ProjectSidebar() {
     const navigate = useNavigate();
@@ -262,28 +251,25 @@ export default function ProjectSidebar() {
     const [editStorageOpen, setEditStorageOpen] = useState(false);
     const [storageToEdit, setStorageToEdit] = useState<Storage | null>(null);
     const [editGraphOpen, setEditGraphOpen] = useState(false);
-    const [graphToEdit, setGraphToEdit] = useState<any | null>(null);
+    const [graphToEdit, setGraphToEdit] = useState<GraphType | null>(null);
     const [renameDocOpen, setRenameDocOpen] = useState(false);
-    const [docToRename, setDocToRename] = useState<any | null>(null);
+    const [docToRename, setDocToRename] = useState<Doc | null>(null);
     const [editProjectOpen, setEditProjectOpen] = useState(false);
     const [newDocOpen, setNewDocOpen] = useState(false);
     const [newGraphOpen, setNewGraphOpen] = useState(false);
     const [newProjectOpen, setNewProjectOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-    const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
-    const handleDragStart = (event: DragStartEvent) => {
-        setActiveDragId(event.active.id as string);
-    };
+    /* ═══════════════════════════════════════════════════════
+       DRAG-AND-DROP (extracted to useSidebarDnD hook)
+       ═══════════════════════════════════════════════════════ */
 
-    const handleDragCancel = () => {
-        setActiveDragId(null);
-    };
+    const { sensors, handleDragStart, handleDragEnd, handleDragCancel, activeDragId } = useSidebarDnD({
+        collections, storages, docs, graphs, activeProjectId, activeCollectionId
+    });
 
-
-
-    const handleEditGraph = (e: ReactMouseEvent, graph: any) => {
+    const handleEditGraph = (e: ReactMouseEvent, graph: GraphType) => {
         e.stopPropagation();
         setGraphToEdit(graph);
         setEditGraphOpen(true);
@@ -294,7 +280,7 @@ export default function ProjectSidebar() {
         trashGraph(id);
     };
 
-    const handleRenameDoc = (e: ReactMouseEvent, doc: any) => {
+    const handleRenameDoc = (e: ReactMouseEvent, doc: Doc) => {
         e.stopPropagation();
         setDocToRename(doc);
         setRenameDocOpen(true);
@@ -416,273 +402,12 @@ export default function ProjectSidebar() {
 
     }, { preventDefault: true });
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-    );
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        if (!over || active.id === over.id || !activeProjectId) return;
-
-        // Try Collections
-        const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
-        const activeCollection = projectCollections.find((c: Collection) => c.id === active.id);
-        
-        if (activeCollection) {
-            // Check for root drop zone or dropping on header
-            if (over.id === "folder-nest-root" || over.id === "collections-root-header") {
-                 // Move to current bucket root if not already there
-                 // If no bucket is active, we can't move items here
-                 if (!activeCollectionId) return;
-                 
-                 // If the item itself is a bucket (parentId is null), we don't move it inside another bucket via this drop zone
-                 if (activeCollection.parentId === null) return;
-
-                 if (activeCollection.parentId !== activeCollectionId) {
-                     // Remove from old parent list
-                     const oldSiblings = projectCollections
-                        .filter(c => c.parentId === activeCollection.parentId && c.id !== activeCollection.id)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-                     // Insert into active bucket's root list (at end)
-                     const rootSiblings = projectCollections
-                        .filter(c => c.parentId === activeCollectionId)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-                     const targetIndex = rootSiblings.length;
-
-                     // Prepare updates
-                     const updates: { id: string, changes: any }[] = [];
-
-                     // Update old siblings order
-                     oldSiblings.forEach((c, index) => {
-                         updates.push({ id: c.id, changes: { order: index } });
-                     });
-
-                     // Update active collection
-                     updates.push({ 
-                         id: activeCollection.id, 
-                         changes: { parentId: activeCollectionId, order: targetIndex, lastModified: Date.now() } 
-                     });
-
-                     // Apply updates
-                     useStore.setState((state: any) => ({
-                         collections: state.collections.map((c: Collection) => {
-                             const update = updates.find(u => u.id === c.id);
-                             return update ? { ...c, ...update.changes } : c;
-                         })
-                     }));
-                 }
-                 return;
-            }
-
-            // Check for nesting
-            if (over.id.toString().startsWith("folder-nest-")) {
-                const newParentId = over.id.toString().replace("folder-nest-", "");
-                // If dropping on "root" in the context of the sidebar tree, it means the active bucket
-                let effectiveParentId = newParentId === "root" ? activeCollectionId : newParentId;
-
-                // If no active bucket and we are dropping on root, find the first bucket
-                if (!effectiveParentId && newParentId === "root") {
-                    const firstBucket = projectCollections.find(c => c.type === 'bucket' && !c.deleted);
-                    if (firstBucket) {
-                        effectiveParentId = firstBucket.id;
-                        useStore.setState({ activeCollectionId: firstBucket.id });
-                    }
-                }
-
-                // NEVER move a non-bucket item to parentId null (which would make it a bucket)
-                if (!effectiveParentId) return;
-
-                // Prevent nesting into self
-                if (effectiveParentId !== activeCollection.id) {
-                     // Get target folder's children to determine order (put at end)
-                     const targetSiblings = projectCollections
-                        .filter(c => c.parentId === effectiveParentId)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-                     
-                     const newOrder = targetSiblings.length;
-
-                     useStore.setState((state: any) => ({
-                        collections: state.collections.map((c: Collection) => 
-                            c.id === activeCollection.id 
-                                ? { 
-                                    ...c, 
-                                    parentId: effectiveParentId, 
-                                    order: newOrder, 
-                                    lastModified: Date.now() 
-                                  } 
-                                : c
-                        )
-                    }));
-                }
-                return;
-            }
-
-            const overCollection = projectCollections.find((c: Collection) => c.id === over.id);
-            if (overCollection) {
-                // NEVER move a bucket inside another item
-                if (activeCollection.type === 'bucket') {
-                    // Only allow reordering with other buckets
-                    if (overCollection.type === 'bucket') {
-                        const siblings = projectCollections
-                            .filter(c => c.type === 'bucket')
-                            .sort((a, b) => (a.order || 0) - (b.order || 0));
-                        
-                        const oldIndex = siblings.findIndex(c => c.id === activeCollection.id);
-                        const newIndex = siblings.findIndex(c => c.id === overCollection.id);
-                        
-                        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-                            const newSiblings = arrayMove(siblings, oldIndex, newIndex);
-                            const updates = newSiblings.map((c, index) => ({
-                                id: c.id,
-                                changes: { order: index }
-                            }));
-                            
-                            useStore.setState((state: any) => ({
-                                collections: state.collections.map((c: Collection) => {
-                                    const update = updates.find(u => u.id === c.id);
-                                    return update ? { ...c, ...update.changes } : c;
-                                })
-                            }));
-                        }
-                    }
-                    return;
-                }
-
-                // If dropping on a bucket, move inside it
-                if (overCollection.type === 'bucket') {
-                    // Move inside the bucket
-                    const targetSiblings = projectCollections
-                        .filter(c => c.parentId === overCollection.id)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-                    
-                    useStore.setState((state: any) => ({
-                        collections: state.collections.map((c: Collection) => 
-                            c.id === activeCollection.id 
-                                ? { ...c, parentId: overCollection.id, order: targetSiblings.length, lastModified: Date.now() } 
-                                : c
-                        )
-                    }));
-                    return;
-                }
-
-                // Reordering or Moving between lists
-                if (activeCollection.parentId === overCollection.parentId) {
-                    // Same parent: Reorder
-                    const siblings = projectCollections
-                        .filter(c => c.parentId === activeCollection.parentId)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-                    
-                    const oldIndex = siblings.findIndex(c => c.id === activeCollection.id);
-                    const newIndex = siblings.findIndex(c => c.id === overCollection.id);
-                    
-                    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-                        const newSiblings = arrayMove(siblings, oldIndex, newIndex);
-                        
-                        // Update order for all affected siblings
-                        const updates = newSiblings.map((c, index) => ({
-                            id: c.id,
-                            changes: { order: index }
-                        }));
-                        
-                        useStore.setState((state: any) => ({
-                            collections: state.collections.map((c: Collection) => {
-                                const update = updates.find(u => u.id === c.id);
-                                return update ? { ...c, ...update.changes } : c;
-                            })
-                        }));
-                    }
-                } else {
-                    // Different parent: Move item to new list
-                    // Remove from old parent list
-                    const oldSiblings = projectCollections
-                        .filter(c => c.parentId === activeCollection.parentId && c.id !== activeCollection.id)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-                    
-                    // Insert into new parent list
-                    const newSiblings = projectCollections
-                        .filter(c => c.parentId === overCollection.parentId)
-                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-                    
-                    const targetIndex = newSiblings.findIndex(c => c.id === overCollection.id);
-                    
-                    // Insert before target
-                    newSiblings.splice(targetIndex, 0, { ...activeCollection, parentId: overCollection.parentId });
-                    
-                    // Prepare updates
-                    const updates: { id: string, changes: any }[] = [];
-                    
-                    // Update old siblings order
-                    oldSiblings.forEach((c, index) => {
-                        updates.push({ id: c.id, changes: { order: index } });
-                    });
-                    
-                    // Update new siblings order
-                    newSiblings.forEach((c, index) => {
-                        updates.push({ id: c.id, changes: { order: index, parentId: overCollection.parentId } });
-                    });
-                    
-                    // Apply all updates
-                    useStore.setState((state: any) => ({
-                        collections: state.collections.map((c: Collection) => {
-                            const update = updates.find(u => u.id === c.id);
-                            // Ensure we update activeCollection even if not in old/new lists (it's in newSiblings now)
-                            if (c.id === activeCollection.id) {
-                                return { ...c, parentId: overCollection.parentId, order: targetIndex, lastModified: Date.now() };
-                            }
-                            return update ? { ...c, ...update.changes } : c;
-                        })
-                    }));
-                }
-                return;
-            }
-        }
-
-        // Try Storages
-        const projectStoragesList = storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted);
-        const storageOldIndex = projectStoragesList.findIndex((s: Storage) => s.id === active.id);
-
-        if (storageOldIndex !== -1) {
-             const storageNewIndex = projectStoragesList.findIndex((s: Storage) => s.id === over.id);
-             if (storageNewIndex !== -1) {
-                 const reordered = arrayMove(projectStoragesList, storageOldIndex, storageNewIndex);
-                 const otherStorages = storages.filter((s: Storage) => !(s.projectId === activeProjectId && !s.deleted));
-                 useStore.setState({ storages: [...otherStorages, ...reordered] });
-                 return;
-             }
-        }
-
-        // Try Docs
-        const projectDocsList = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
-        const docOldIndex = projectDocsList.findIndex((d: Doc) => d.id === active.id);
-
-        if (docOldIndex !== -1) {
-            const docNewIndex = projectDocsList.findIndex((d: Doc) => d.id === over.id);
-            if (docNewIndex !== -1) {
-                const reordered = arrayMove(projectDocsList, docOldIndex, docNewIndex);
-                const otherDocs = docs.filter((d: Doc) => !(d.projectId === activeProjectId && !d.deleted));
-                useStore.setState({ docs: [...otherDocs, ...reordered] });
-                return;
-            }
-        }
-
-        // Try Graphs
-        const projectGraphsList = graphs.filter((g: GraphType) => g.projectId === activeProjectId && !g.deleted);
-        const graphOldIndex = projectGraphsList.findIndex((g: GraphType) => g.id === active.id);
-        
-        if (graphOldIndex !== -1) {
-            const graphNewIndex = projectGraphsList.findIndex((g: GraphType) => g.id === over.id);
-            if (graphNewIndex !== -1) {
-                const reordered = arrayMove(projectGraphsList, graphOldIndex, graphNewIndex);
-                const otherGraphs = graphs.filter((g: GraphType) => !(g.projectId === activeProjectId && !g.deleted));
-                useStore.setState({ graphs: [...otherGraphs, ...reordered] });
-                return;
-            }
-        }
-        setActiveDragId(null);
-    };
+    /* ═══════════════════════════════════════════════════════
+       DRAG-AND-DROP REORDER LOGIC
+       ═══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       STORAGE / GRAPH / DOC HANDLERS
+       ═══════════════════════════════════════════════════════ */
 
     const handleCreateStorage = () => {
         if (!activeProjectId) return;
@@ -727,6 +452,10 @@ export default function ProjectSidebar() {
             updateDoc(docToRename.id, { name, color, icon });
         }
     };
+
+    /* ═══════════════════════════════════════════════════════
+       PROJECT HANDLERS
+       ═══════════════════════════════════════════════════════ */
 
     const handleEditProjectName = () => {
         if (!activeProjectId) return;
@@ -777,7 +506,7 @@ export default function ProjectSidebar() {
 
                 const importedData = importProject(data);
 
-                useStore.setState((state: any) => ({
+                useStore.setState((state) => ({
                     projects: [...state.projects, importedData.project],
                     files: [...state.files, ...importedData.files],
                     collections: [...state.collections, ...importedData.collections],
@@ -841,6 +570,10 @@ export default function ProjectSidebar() {
         useStore.setState({ activeGraphId: id });
     };
 
+    /* ═══════════════════════════════════════════════════════
+       VALIDATION EFFECTS
+       ═══════════════════════════════════════════════════════ */
+
     // Ensure a valid storage is always selected
     useEffect(() => {
         if (activeProjectId && projectStorages.length > 0) {
@@ -892,6 +625,10 @@ export default function ProjectSidebar() {
         if (!activeProjectId) return;
         setCreateCollectionOpen(true);
     };
+
+    /* ═══════════════════════════════════════════════════════
+       COLLECTION HANDLERS
+       ═══════════════════════════════════════════════════════ */
 
     const handleAddFolder = (e: ReactMouseEvent) => {
         if (e) {
@@ -956,7 +693,7 @@ export default function ProjectSidebar() {
                 lastModified: Date.now()
             };
 
-            useStore.setState((state: any) => ({
+            useStore.setState((state) => ({
                 collections: [...state.collections, newCollection],
                 activeCollectionId: isCreatingBucket ? newCollection.id : state.activeCollectionId
             }));
@@ -1006,7 +743,7 @@ export default function ProjectSidebar() {
                 lastModified: Date.now()
             };
             
-            useStore.setState((state: any) => ({
+            useStore.setState((state) => ({
                 collections: [...state.collections, newFolder]
             }));
             
@@ -1045,60 +782,9 @@ export default function ProjectSidebar() {
             setNewProjectName("");
             setNewProjectOpen(true);
         } else if (value.startsWith("export_") && activeProjectId) {
-            // EXPORT
-            const data = exportProject(useStore.getState(), activeProjectId);
-            if (data) {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `whistler_export_${data.project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
+            handleExportProject();
         } else if (value === "import") {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "application/json";
-            input.onchange = async (e: Event) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (!file) return;
-
-                const text = await file.text();
-                try {
-                    const data = JSON.parse(text) as ProjectExportData;
-                    if (!data.version || !data.project) throw new Error("Invalid project file");
-
-                    const importedData = importProject(data);
-
-                    useStore.setState((state: any) => ({
-                        projects: [...state.projects, importedData.project],
-                        files: [...state.files, ...importedData.files],
-                        collections: [...state.collections, ...importedData.collections],
-                        highlights: [...state.highlights, ...importedData.highlights],
-                        graphs: [...state.graphs, ...importedData.graphs],
-                        graphNodes: [...state.graphNodes, ...importedData.graphNodes],
-                        graphEdges: [...state.graphEdges, ...importedData.graphEdges],
-                        docs: [...state.docs, ...importedData.docs],
-                        storages: [...state.storages, ...importedData.storages],
-                        activeProjectId: importedData.project.id
-                    }));
-
-                    setImportStatus({
-                        type: "success",
-                        message: `Imported project: ${importedData.project.name}`,
-                    });
-                } catch (err) {
-                    console.error(err);
-                    setImportStatus({
-                        type: "error",
-                        message: "Failed to import project. Invalid file format.",
-                    });
-                }
-            };
-            input.click();
+            handleImportProject();
         } else {
             setActiveProject(value);
         }
@@ -1131,6 +817,10 @@ export default function ProjectSidebar() {
     );
 
 
+    /* ═══════════════════════════════════════════════════════
+       JSX RENDER
+       ═══════════════════════════════════════════════════════ */
+
     return (
         <>
             <motion.aside
@@ -1145,267 +835,13 @@ export default function ProjectSidebar() {
                 )}
             >
                 {isSlim ? (
-                    <div className="flex flex-col h-full min-h-0 items-center py-3 gap-2 w-full">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => {
-                                        playSfx('cursor');
-                                        toggleSidebarCollapse();
-                                    }}
-                                    className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
-                                >
-                                    <SidebarSimple weight="bold" size={18} />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">Expand Sidebar</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => {
-                                        playSfx('cursor');
-                                        navigate('/');
-                                        setSidebarView('main');
-                                    }}
-                                    className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent hover:opacity-80 transition-colors"
-                                >
-                                    <WhistlerLogo
-                                        className="rounded-md"
-                                        width={22}
-                                        height={22}
-                                    />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">Whistlerbox</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => {
-                                        playSfx('cursor');
-                                        useStore.getState().setSpotlightOpen(true);
-                                    }}
-                                    className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
-                                >
-                                    <MagnifyingGlass weight="bold" size={18} />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">Search</TooltipContent>
-                        </Tooltip>
-
-                        <Separator className="w-8 bg-border/40 my-1" />
-
-                        <div className="flex flex-col gap-2 w-full items-center">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            if (location.pathname === '/storage') {
-                                                toggleSidebarCollapse && toggleSidebarCollapse();
-                                                setSidebarView('storage');
-                                            } else {
-                                                navigate('/storage');
-                                            }
-                                        }}
-                                        className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
-                                            location.pathname === '/storage' 
-                                                ? "bg-primary/20 text-primary border-primary/30" 
-                                                : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                                        )}
-                                    >
-                                        <HardDrives weight={location.pathname === '/storage' ? "fill" : "bold"} size={20} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Storage</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            if (location.pathname.startsWith('/docs')) {
-                                                toggleSidebarCollapse && toggleSidebarCollapse();
-                                                setSidebarView('docs');
-                                            } else {
-                                                navigate('/docs');
-                                            }
-                                        }}
-                                        className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
-                                            location.pathname.startsWith('/docs')
-                                                ? "bg-primary/20 text-primary border-primary/30" 
-                                                : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                                        )}
-                                    >
-                                        <NotePencil weight={location.pathname.startsWith('/docs') ? "fill" : "bold"} size={20} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Docs</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            if (location.pathname.startsWith('/graphs')) {
-                                                toggleSidebarCollapse && toggleSidebarCollapse();
-                                                setSidebarView('graphs');
-                                            } else {
-                                                navigate('/graphs');
-                                            }
-                                        }}
-                                        className={cn(
-                                            "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
-                                            location.pathname.startsWith('/graphs')
-                                                ? "bg-primary/20 text-primary border-primary/30" 
-                                                : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                                        )}
-                                    >
-                                        <Graph weight={location.pathname.startsWith('/graphs') ? "fill" : "bold"} size={20} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Graphs</TooltipContent>
-                            </Tooltip>
-                        </div>
-
-                        <Separator className="w-8 bg-border/40 my-1" />
-
-                        <ScrollArea className="flex-1 min-h-0 w-full px-1">
-                            <div className="flex flex-col gap-2 w-full items-center pb-2">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={() => {
-                                                playSfx('cursor');
-                                                navigate('/collections');
-                                            }}
-                                            className={cn(
-                                                "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-                                                (location.pathname.startsWith('/collections') || location.pathname.startsWith('/collection/')) && "bg-primary/20 text-primary border-primary/30"
-                                            )}
-                                        >
-                                            <FolderOpen weight={(location.pathname.startsWith('/collections') || location.pathname.startsWith('/collection/')) ? "fill" : "bold"} size={20} />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">Collections</TooltipContent>
-                                </Tooltip>
-
-                                {collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted).map((collection: Collection) => {
-                                    const Icon = getIcon(collection.icon);
-                                    return (
-                                        <ContextMenu key={collection.id}>
-                                            <ContextMenuTrigger className="flex justify-center w-full">
-                                                <Link
-                                                    to={`/collections`}
-                                                    onClick={() => {
-                                                        playSfx('cursor');
-                                                        handleSelectCollection(collection.id);
-                                                    }}
-                                                    className={cn(
-                                                        "flex items-center justify-center w-9 h-9 rounded-none transition-colors relative border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-                                                        (location.pathname === `/collections` && activeCollectionId === collection.id)
-                                                            ? "bg-primary/20 text-primary border-primary/30"
-                                                            : ""
-                                                    )}
-                                                    title={collection.name}
-                                                >
-                                                    <div style={{ color: collection.color }}>
-                                                        <Icon
-                                                            className="text-lg transition-colors"
-                                                            weight="fill"
-                                                        />
-                                                    </div>
-                                                </Link>
-                                            </ContextMenuTrigger>
-                                            <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
-                                                <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setCollectionToEdit(collection);
-                                                    setEditCollectionOpen(true);
-                                                }}>
-                                                    <PencilSimple className="mr-2 h-4 w-4" />
-                                                    Rename Bucket
-                                                </ContextMenuItem>
-                                                <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    trashCollection(collection.id);
-                                                }} className="text-red-500 focus:text-red-500">
-                                                    <Trash className="mr-2 h-4 w-4" />
-                                                    Delete Bucket
-                                                </ContextMenuItem>
-                                            </ContextMenuContent>
-                                        </ContextMenu>
-                                    );
-                                })}
-                            </div>
-                        </ScrollArea>
-
-                        <div className="flex flex-col gap-2 w-full items-center pb-2">
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => { setSidebarView('sync'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    >
-                                        <ArrowsClockwise 
-                                            weight="bold" 
-                                            size={18} 
-                                            className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} 
-                                        />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Sync Status</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => { setSidebarView('history'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    >
-                                        <ClockCounterClockwise weight="bold" size={18} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">History</TooltipContent>
-                            </Tooltip>
-
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => { setSidebarView('trash'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                                        className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    >
-                                        <Trash weight="bold" size={18} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Trash</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        onClick={() => navigate('/settings')}
-                                        className={cn(
-                                            "h-8 w-8 flex items-center justify-center rounded-md transition-colors",
-                                            location.pathname === '/settings' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                        )}
-                                    >
-                                         <Gear weight="fill" size={18} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Settings</TooltipContent>
-                            </Tooltip>
-                        </div>
-                    </div>
+                    <SlimSidebar
+                        handleSelectCollection={handleSelectCollection}
+                        onEditCollection={(collection) => {
+                            setCollectionToEdit(collection);
+                            setEditCollectionOpen(true);
+                        }}
+                    />
                 ) : (
                     <>
                 {/* Header */}
@@ -1557,9 +993,9 @@ export default function ProjectSidebar() {
                                                                     onClick={() => {
                                                                         playSfx('cursor');
                                                                         const p1: Project = { id: crypto.randomUUID(), name: 'Demo Project', created: Date.now(), lastModified: Date.now() };
-                                                                        const s1 = { id: crypto.randomUUID(), projectId: p1.id, name: 'Main Storage', created: Date.now(), lastModified: Date.now() };
-                                                                        const f1: any = { id: crypto.randomUUID(), projectId: p1.id, storageId: s1.id, parentId: null, name: 'Getting Started.mp4', url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4', type: 'video', order: 0, created: Date.now(), lastModified: Date.now() };
-                                                                        useStore.setState((state: any) => ({ 
+                                                                        const s1: Storage = { id: crypto.randomUUID(), projectId: p1.id, name: 'Main Storage', created: Date.now(), lastModified: Date.now() };
+                                                                        const f1: AppFile = { id: crypto.randomUUID(), projectId: p1.id, storageId: s1.id, parentId: null, name: 'Getting Started.mp4', url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4', type: 'video', order: 0, created: Date.now(), lastModified: Date.now() };
+                                                                        useStore.setState((state) => ({ 
                                                                             projects: [...state.projects, p1], 
                                                                             storages: [...state.storages, s1], 
                                                                             files: [...state.files, f1], 
@@ -1593,7 +1029,7 @@ export default function ProjectSidebar() {
                                     {importStatus && (
                                         <div
                                             className={cn(
-                                                "mt-2 text-[11px] px-2 py-1 rounded-md border",
+                                                "mt-2 text-[11px] px-2 py-1 rounded-none border",
                                                 importStatus.type === "success"
                                                     ? "bg-emerald-500/10 border-emerald-700/60 text-emerald-300"
                                                     : "bg-red-500/10 border-red-700/60 text-red-300"
@@ -1910,7 +1346,7 @@ export default function ProjectSidebar() {
                                                                                         setMoveCollectionDialogOpen(true);
                                                                                     }}
                                                                                     onMove={(newParentId: string | null) => {
-                                                                                        useStore.setState((state: any) => ({
+                                                                                        useStore.setState((state) => ({
                                                                                             collections: state.collections.map((c: Collection) => 
                                                                                                 c.id === item.id ? { ...c, parentId: newParentId, lastModified: Date.now() } : c
                                                                                             )
@@ -2348,6 +1784,10 @@ export default function ProjectSidebar() {
                     <SidebarSimple weight="bold" size={18} />
                 </button>
             )}
+
+            {/* ═══════════════════════════════════════════════════════
+               DIALOG COMPONENTS
+               ═══════════════════════════════════════════════════════ */}
 
             <CreateCollectionDialog
                 open={createCollectionOpen}

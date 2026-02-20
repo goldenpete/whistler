@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, type KeyboardEvent, type MouseEvent, type 
 import { useNavigate } from "react-router-dom";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
+import { authStorage } from "@/utils/authStorage";
 import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,17 +155,13 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
     }, []);
 
     useEffect(() => {
-        const storedAccount = localStorage.getItem("whistler_account_id");
-        const storedToken = localStorage.getItem("whistler_session_token");
-        const storedLastSync = localStorage.getItem("whistler_last_sync");
-        const storedDisplayName = localStorage.getItem("whistler_display_name");
-        const storedTotpEnabled = localStorage.getItem("whistler_totp_enabled");
+        const { accountId: storedAccount, token: storedToken, lastSync: storedLastSync, displayName: storedDisplayName, totpEnabled } = authStorage.getCredentials();
         
         if (storedAccount && storedToken) {
             setAccountId(storedAccount);
             setSessionToken(storedToken);
             
-            if (storedTotpEnabled === "true") {
+            if (totpEnabled) {
                 setTotpEnabled(true);
             }
             
@@ -242,14 +239,10 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             const displayName: string | undefined = data.display_name;
             setAccountId(cleanId);
             setSessionToken(token);
-            localStorage.setItem("whistler_account_id", cleanId);
-            localStorage.setItem("whistler_session_token", token);
-            if (displayName) {
-                localStorage.setItem("whistler_display_name", displayName);
-            }
+            authStorage.setCredentials({ accountId: cleanId, token, displayName });
             // If we logged in without 2FA challenge, it means 2FA is disabled
             setTotpEnabled(false);
-            localStorage.removeItem("whistler_totp_enabled");
+            authStorage.setTotpEnabled(false);
             
             login({ id: cleanId, email: displayName || cleanId });
         } catch (err) {
@@ -300,14 +293,10 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             const displayName: string | undefined = data.display_name;
             setAccountId(account);
             setSessionToken(token);
-            localStorage.setItem("whistler_account_id", account);
-            localStorage.setItem("whistler_session_token", token);
-            if (displayName) {
-                localStorage.setItem("whistler_display_name", displayName);
-            }
+            authStorage.setCredentials({ accountId: account, token, displayName });
             // If we successfully verified TOTP, it means 2FA is enabled
             setTotpEnabled(true);
-            localStorage.setItem("whistler_totp_enabled", "true");
+            authStorage.setTotpEnabled(true);
 
             login({ id: account, email: displayName || account });
             setPhase("login");
@@ -328,10 +317,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         setCaptchaToken(null);
         setPendingToken(null);
         setTotpCode("");
-        localStorage.removeItem("whistler_account_id");
-        localStorage.removeItem("whistler_session_token");
-        localStorage.removeItem("whistler_display_name");
-        localStorage.removeItem("whistler_totp_enabled");
+        authStorage.clearCredentials();
         logout();
     };
 
@@ -382,18 +368,10 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             
             setAccountId(cleanId);
             setSessionToken(token);
-            localStorage.setItem("whistler_account_id", cleanId);
-            localStorage.setItem("whistler_session_token", token);
-            if (displayName) {
-                localStorage.setItem("whistler_display_name", displayName);
-            }
+            authStorage.setCredentials({ accountId: cleanId, token, displayName });
             
             setTotpEnabled(data.totp_enabled || false);
-            if (data.totp_enabled) {
-                localStorage.setItem("whistler_totp_enabled", "true");
-            } else {
-                localStorage.removeItem("whistler_totp_enabled");
-            }
+            authStorage.setTotpEnabled(data.totp_enabled || false);
             
             login({ id: cleanId, email: displayName || cleanId });
             setPhase("login");
@@ -419,9 +397,9 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         updateUser({ email: newName || user.id });
         
         if (newName) {
-            localStorage.setItem("whistler_display_name", newName);
+            authStorage.setDisplayName(newName);
         } else {
-            localStorage.removeItem("whistler_display_name");
+            authStorage.setDisplayName("");
         }
         setIsEditingName(false);
     };
@@ -446,7 +424,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             if (!response.ok) {
                 if (data.error === "2FA is already enabled") {
                     setTotpEnabled(true);
-                    localStorage.setItem("whistler_totp_enabled", "true");
+                    authStorage.setTotpEnabled(true);
                 }
                 setError(data.error || "Setup failed");
                 return;
@@ -487,7 +465,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                 return;
             }
             setTotpEnabled(true);
-            localStorage.setItem("whistler_totp_enabled", "true");
+            authStorage.setTotpEnabled(true);
             setSetupStep('intro');
             setShowTwoFactorSetup(false);
             setTotpCode("");
@@ -525,7 +503,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                 return;
             }
             setTotpEnabled(false);
-            localStorage.setItem("whistler_totp_enabled", "false");
+            authStorage.setTotpEnabled(false);
             setTotpCode("");
             setShowTwoFactorSetup(false);
         } catch (err) {

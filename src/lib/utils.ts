@@ -5,6 +5,7 @@
  *
  * Exports:
  *   - cn()         – Merges Tailwind CSS class names via clsx + twMerge
+ *   - clamp()      – Clamps a number between a min and max value
  *   - formatTime() – Converts seconds to "m:ss" display string
  *   - formatKey()  – Maps keyboard event key names to display symbols
  *                    (e.g. "ArrowUp" → "↑")
@@ -30,4 +31,9 @@ export function formatKey(key: string) {
     if (k === 'arrowleft' || k === 'left') return '←';
     if (k === 'arrowright' || k === 'right') return '→';
     return key;
+}
+
+/** Clamp a number between a minimum and maximum value. */
+export function clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
 }

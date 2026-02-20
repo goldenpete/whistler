@@ -13,7 +13,7 @@
  */
 
 import { useState } from "react";
-import { ACTION_REGISTRY } from "@/lib/actions";
+import { ACTION_REGISTRY } from "@/utils/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { MagnifyingGlass, CaretRight, Lightning } from "@phosphor-icons/react";

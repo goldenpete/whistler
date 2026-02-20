@@ -19,7 +19,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
-import { useStableRef } from "@/lib/use-stable-ref";
+import { useStableRef } from "@/hooks/useStableRef";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +65,7 @@ import {
     useDroppable,
     type DragStartEvent,
     pointerWithin,
+    type CollisionDetection,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -524,7 +525,7 @@ function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isF
 
 /** ─── CollectionContextMenu ──────────────────────────────────────── */
 
-export interface CollectionContextMenuProps {
+interface CollectionContextMenuProps {
     collection: Collection;
     onNavigate: (id: string) => void;
     onRename: (collection: Collection) => void;
@@ -995,7 +996,7 @@ export default function CollectionsView() {
             lastModified: Date.now()
         };
 
-        useStore.setState((state: any) => ({
+        useStore.setState((state) => ({
             collections: [...state.collections, newFolder]
         }));
 
@@ -1274,7 +1275,7 @@ export default function CollectionsView() {
                 <div className="flex-1 overflow-auto p-4">
                 <DndContext
                     sensors={sensors}
-                    collisionDetection={(args: any) => {
+                    collisionDetection={(args) => {
                         // First, check if pointer is within any droppable
                         const pointerCollisions = pointerWithin(args);
 

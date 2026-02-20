@@ -88,7 +88,7 @@ export const ICONS = [
 
 
 interface CollectionFormProps {
-    key?: any;
+    key?: React.Key;
     defaultName?: string;
     defaultColor?: string;
     defaultIcon?: string;

@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect, type MouseEvent } from "react";
 import { DownloadSimple, X, CornersIn } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn, clamp } from "@/lib/utils";
 
 interface ScreenshotDialogProps {
     open: boolean;
@@ -99,8 +99,8 @@ export function ScreenshotDialog({ open, onOpenChange, imageUrl, container }: Sc
             const imageBottomInContainer = imageTopInContainer + imageRect.height;
 
             // Clamp mouse position to image bounds
-            const clampedX = Math.max(imageLeftInContainer, Math.min(mouseXInContainer, imageRightInContainer));
-            const clampedY = Math.max(imageTopInContainer, Math.min(mouseYInContainer, imageBottomInContainer));
+            const clampedX = clamp(mouseXInContainer, imageLeftInContainer, imageRightInContainer);
+            const clampedY = clamp(mouseYInContainer, imageTopInContainer, imageBottomInContainer);
 
             // Calculate dimensions
             const width = Math.abs(clampedX - startPos.x);

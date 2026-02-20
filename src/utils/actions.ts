@@ -29,6 +29,7 @@
 import type { NavigateFunction, Location } from "react-router-dom";
 import type { AppStore } from "@/store/useStore";
 import type { File, Collection } from "@/types";
+import type { Icon } from "@phosphor-icons/react";
 import { 
     House, 
     HardDrives, 
@@ -66,16 +67,16 @@ export type ActionContext = {
     query: string;
 };
 
-export type ActionResult = 
+type ActionResult = 
     | { type: 'success', message?: string }
     | { type: 'error', message: string }
     | { type: 'keep-open' };
 
-export interface ActionDefinition {
+interface ActionDefinition {
     id: string;
     labels: string[]; // Triggers, e.g. ["go home", "home"]
     description: string;
-    icon: any;
+    icon: Icon;
     keywords?: string[]; // For fuzzy search
     execute: (context: ActionContext, args?: string[]) => ActionResult | Promise<ActionResult>;
     // If true, this action is only available in specific contexts

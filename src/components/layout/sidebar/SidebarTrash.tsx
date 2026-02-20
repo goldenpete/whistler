@@ -127,7 +127,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
         onDelete,
         color
     }: { 
-        icon: any, 
+        icon: React.ComponentType<{ weight?: string; className?: string; style?: React.CSSProperties }>, 
         name: string, 
         date: number, 
         onRestore: () => void, 
