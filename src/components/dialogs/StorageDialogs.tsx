@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Folder,
     Star,
@@ -108,6 +109,7 @@ export function EntityForm({
     const [description, setDescription] = useState(defaultDescription);
     const [color, setColor] = useState(defaultColor);
     const [iconName, setIconName] = useState(defaultIcon);
+    const [customizeTab, setCustomizeTab] = useState("color");
 
     // Reset state when defaults change (e.g. opening different item)
     useEffect(() => {
@@ -115,6 +117,7 @@ export function EntityForm({
         setDescription(defaultDescription);
         setColor(defaultColor);
         setIconName(defaultIcon);
+        setCustomizeTab("color");
     }, [defaultName, defaultDescription, defaultColor, defaultIcon]);
 
     const handleSubmit = () => {
@@ -161,47 +164,58 @@ export function EntityForm({
                 </div>
             )}
 
-            <ColorPicker
-                color={color}
-                onChange={setColor}
-                label="Color"
-            />
-
             <div className="space-y-2">
-                <Label className="text-zinc-400">Icon</Label>
-                <div className="grid grid-cols-7 gap-2">
-                    {allowNoIcon && (
-                        <button
-                            type="button"
-                            onClick={() => setIconName("")}
-                            className={cn(
-                                "aspect-square flex items-center justify-center rounded-md border transition-all",
-                                !iconName
-                                    ? "bg-primary border-primary text-primary-foreground"
-                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
+                <Label className="text-zinc-400">Customize</Label>
+                <Tabs value={customizeTab} onValueChange={setCustomizeTab} className="border border-zinc-800 bg-zinc-950/40 rounded-none overflow-hidden">
+                    <TabsList className="w-full rounded-none bg-zinc-900 border-b border-zinc-800 p-1 h-9">
+                        <TabsTrigger value="color" className="flex-1 rounded-none text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Color</TabsTrigger>
+                        <TabsTrigger value="icon" className="flex-1 rounded-none text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Icon</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="color" className="mt-0 p-3">
+                        <ColorPicker
+                            color={color}
+                            onChange={setColor}
+                            showLabel={false}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="icon" className="mt-0 p-3">
+                        <div className="grid grid-cols-7 gap-2">
+                            {allowNoIcon && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIconName("")}
+                                    className={cn(
+                                        "aspect-square flex items-center justify-center rounded-none border transition-all",
+                                        !iconName
+                                            ? "bg-primary border-primary text-primary-foreground"
+                                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
+                                    )}
+                                    title="None"
+                                >
+                                    <span className="text-[10px] uppercase font-medium">None</span>
+                                </button>
                             )}
-                            title="None"
-                        >
-                            <span className="text-[10px] uppercase font-medium">None</span>
-                        </button>
-                    )}
-                    {ICONS.map(({ name: iName, icon: Icon }) => (
-                        <button
-                            key={iName}
-                            type="button"
-                            onClick={() => setIconName(iName)}
-                            className={cn(
-                                "aspect-square flex items-center justify-center rounded-md border transition-all",
-                                iconName === iName
-                                    ? "bg-primary border-primary text-primary-foreground"
-                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
-                            )}
-                            title={iName}
-                        >
-                            <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
-                        </button>
-                    ))}
-                </div>
+                            {ICONS.map(({ name: iName, icon: Icon }) => (
+                                <button
+                                    key={iName}
+                                    type="button"
+                                    onClick={() => setIconName(iName)}
+                                    className={cn(
+                                        "aspect-square flex items-center justify-center rounded-none border transition-all",
+                                        iconName === iName
+                                            ? "bg-primary border-primary text-primary-foreground"
+                                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
+                                    )}
+                                    title={iName}
+                                >
+                                    <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
+                                </button>
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
@@ -297,7 +311,7 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                             value={name}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="bg-zinc-900 border-white text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                         />
                     </div>
                 </div>
@@ -451,27 +465,30 @@ function extractFilename(url: string): string {
 interface RenameFileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (name: string, description: string, url: string) => void;
+    onSubmit: (name: string, description: string, url: string, color: string) => void;
     initialName: string;
     initialDescription?: string;
     initialUrl?: string;
+    initialColor?: string;
     showDescription?: boolean;
 }
 
-export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "", initialUrl = "", showDescription = true }: RenameFileDialogProps) {
+export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "", initialUrl = "", initialColor = "", showDescription = true }: RenameFileDialogProps) {
     const [name, setName] = useState(initialName);
     const [description, setDescription] = useState(initialDescription);
     const [url, setUrl] = useState(initialUrl);
+    const [color, setColor] = useState(initialColor || "");
 
     useEffect(() => {
         setName(initialName);
         setDescription(initialDescription || "");
         setUrl(initialUrl || "");
-    }, [initialName, initialDescription, initialUrl, open]);
+        setColor(initialColor || "");
+    }, [initialName, initialDescription, initialUrl, initialColor, open]);
 
     const handleSubmit = () => {
         if (!name.trim()) return;
-        onSubmit(name.trim(), description.trim(), url.trim());
+        onSubmit(name.trim(), description.trim(), url.trim(), color);
         onOpenChange(false);
     };
 
@@ -517,7 +534,7 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                             value={url}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="bg-zinc-900 border-white text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                         />
                     </div>
 
@@ -531,10 +548,21 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                                 placeholder="Add a description..."
                                 value={description}
                                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-                                className="bg-zinc-900 border-white text-white placeholder:text-zinc-500 resize-none h-24"
+                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500 resize-none h-24"
                             />
                         </div>
                     )}
+
+                    <div className="space-y-2">
+                        <Label className="text-zinc-400">Color</Label>
+                        <div className="border border-zinc-800 bg-zinc-950/40 rounded-none p-3">
+                            <ColorPicker
+                                color={color}
+                                onChange={setColor}
+                                showLabel={false}
+                            />
+                        </div>
+                    </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
                     <Button 

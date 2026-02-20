@@ -30,7 +30,7 @@ import {
     MagnifyingGlass, Plus, CaretRight, FileVideo, CheckSquare, Square,
     LinkSimple, CaretDown, CaretUp, ArrowsOutSimple, Clock, Tag,
     SquaresFour, Rows, FolderOpen, ArrowSquareOut, X, Copy, Palette, Share,
-    Cards
+    Cards, Check, Shapes
 } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import { type File as AppFile } from "@/types";
@@ -88,6 +88,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ICONS } from "@/components/dialogs/StorageDialogs";
+import { getIcon, iconNames } from "@/utils/iconMap";
 import { cn } from "@/lib/utils";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import {
@@ -97,7 +98,6 @@ import {
     EditFolderDialog
 } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
-import { ColorPicker } from "@/components/ui/ColorPicker";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { thumbnailStorage } from "@/lib/thumbnailDb";
 import { useKeybind } from "@/hooks/use-keybind";
@@ -364,10 +364,10 @@ export default function StorageView() {
         }
     };
 
-    const handleRenameSubmit = (newName: string, newDescription: string) => {
+    const handleRenameSubmit = (newName: string, newDescription: string, newUrl: string, newColor: string) => {
         if (fileToRename) {
             useStore.setState(state => ({
-                files: state.files.map(f => f.id === fileToRename.id ? { ...f, name: newName, description: newDescription, lastModified: Date.now() } : f)
+                files: state.files.map(f => f.id === fileToRename.id ? { ...f, name: newName, description: newDescription, url: newUrl || null, color: newColor || undefined, lastModified: Date.now() } : f)
             }));
         }
     };
@@ -442,6 +442,12 @@ export default function StorageView() {
     const handleColorChange = (file: AppFile, color: string) => {
         useStore.setState(state => ({
             files: state.files.map(f => f.id === file.id ? { ...f, color, lastModified: Date.now() } : f)
+        }));
+    };
+
+    const handleIconChange = (file: AppFile, icon: string) => {
+        useStore.setState(state => ({
+            files: state.files.map(f => f.id === file.id ? { ...f, icon, lastModified: Date.now() } : f)
         }));
     };
 
@@ -951,6 +957,7 @@ export default function StorageView() {
                                                 onRename={handleRenameInit}
                                                 onMove={handleMoveInit}
                                                 onColorChange={handleColorChange}
+                                                onIconChange={handleIconChange}
                                                 onMouseEnter={() => setFocusedId(file.id)}
                                                 onMouseLeave={() => setFocusedId(null)}
                                                 sortOption={sortOption}
@@ -978,6 +985,7 @@ export default function StorageView() {
                                                 onRename={handleRenameInit}
                                                 onMove={handleMoveInit}
                                                 onColorChange={handleColorChange}
+                                                onIconChange={handleIconChange}
                                                 onMouseEnter={() => setFocusedId(file.id)}
                                                 onMouseLeave={() => setFocusedId(null)}
                                                 sortOption={sortOption}
@@ -1005,6 +1013,7 @@ export default function StorageView() {
                                                 onRename={handleRenameInit}
                                                 onMove={handleMoveInit}
                                                 onColorChange={handleColorChange}
+                                                onIconChange={handleIconChange}
                                                 onMouseEnter={() => setFocusedId(file.id)}
                                                 onMouseLeave={() => setFocusedId(null)}
                                                 sortOption={sortOption}
@@ -1031,7 +1040,10 @@ export default function StorageView() {
             />
             <MoveFileDialog
                 open={moveDialogOpen}
-                onOpenChange={setMoveDialogOpen}
+                onOpenChange={(open) => {
+                    setMoveDialogOpen(open);
+                    if (!open && !selectionMode) setSelectedIds(new Set());
+                }}
                 fileIds={Array.from(selectedIds)}
             />
             <RenameFileDialog
@@ -1041,6 +1053,7 @@ export default function StorageView() {
                 initialName={fileToRename?.name || ""}
                 initialDescription={fileToRename?.description || ""}
                 initialUrl={fileToRename?.url || ""}
+                initialColor={fileToRename?.color}
                 showDescription={fileToRename?.type !== 'folder'}
             />
             <EditFolderDialog
@@ -1105,6 +1118,7 @@ interface FileCardProps {
     onRename: (file: AppFile) => void;
     onMove: (file: AppFile) => void;
     onColorChange: (file: AppFile, color: string) => void;
+    onIconChange: (file: AppFile, icon: string) => void;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
     sortOption?: string;
@@ -1301,7 +1315,7 @@ function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode
             {/* Content Area (Top) */}
             <div
                 ref={domRef}
-                className="flex-1 min-h-[160px] bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors"
+                className="h-[160px] flex-none bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors"
             >
                 <FileThumbnail file={file} iconSize={48} />
 
@@ -1343,7 +1357,7 @@ function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode
     );
 }
 
-function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
+function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onIconChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
     // Use sortable for reordering
@@ -1462,12 +1476,13 @@ function FileCardCards({ file, onNavigate, selectionMode, isSelected, isFocused,
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
                 onColorChange={(color) => onColorChange(file, color)}
+                onIconChange={(icon) => onIconChange(file, icon)}
             />
         </ContextMenu>
     );
 }
 
-function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
+function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onIconChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
     // Use sortable for reordering
@@ -1581,12 +1596,13 @@ function FileCardGrid({ file, onNavigate, selectionMode, isSelected, isFocused, 
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
                 onColorChange={(color) => onColorChange(file, color)}
+                onIconChange={(icon) => onIconChange(file, icon)}
             />
         </ContextMenu>
     );
 }
 
-function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
+function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onMove, onColorChange, onIconChange, onMouseEnter, onMouseLeave, sortOption }: FileCardProps) {
     const linkTo = file.type === 'video' || file.type === 'pdf' || file.type === 'audio' || file.type === 'image' ? `/file/${file.id}` : '#';
 
     // Use sortable for reordering
@@ -1700,6 +1716,7 @@ function FileCardList({ file, onNavigate, selectionMode, isSelected, isFocused, 
                 onMove={() => onMove(file)}
                 onSelect={() => onToggleSelect(file.id)}
                 onColorChange={(color) => onColorChange(file, color)}
+                onIconChange={(icon) => onIconChange(file, icon)}
             />
         </ContextMenu>
     );
@@ -1711,9 +1728,10 @@ export interface FileContextMenuProps {
     onMove: () => void;
     onSelect: () => void;
     onColorChange: (color: string) => void;
+    onIconChange?: (icon: string) => void;
 }
 
-export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChange }: FileContextMenuProps) {
+export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChange, onIconChange }: FileContextMenuProps) {
     const handleDelete = () => {
         useStore.setState(state => ({
             files: state.files.map(f => f.id === file.id ? { ...f, deleted: true } : f)
@@ -1745,7 +1763,7 @@ export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChang
     };
 
     return (
-        <ContextMenuContent className="w-56">
+        <ContextMenuContent className="min-w-[8rem]">
             <ContextMenuItem onClick={onSelect} className="gap-2">
                 <CheckSquare size={16} /> Select
             </ContextMenuItem>
@@ -1764,13 +1782,103 @@ export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChang
                 <ContextMenuSubTrigger className="gap-2">
                     <Palette size={16} /> Change Color
                 </ContextMenuSubTrigger>
-                <ContextMenuSubContent className="w-64 p-2">
-                    <ColorPicker
-                        color={file.color || ""}
-                        onChange={onColorChange}
-                    />
+                <ContextMenuSubContent className="p-2">
+                    <div className="grid grid-cols-5 gap-1.5">
+                        {STORAGE_COLORS.map((c) => (
+                            <ContextMenuItem
+                                key={c}
+                                className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                                onSelect={() => onColorChange(c)}
+                            >
+                                <div
+                                    className={cn(
+                                        "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all",
+                                        file.color?.toLowerCase() === c.toLowerCase()
+                                            ? "border-white scale-110"
+                                            : "border-transparent hover:border-white/30 hover:scale-110"
+                                    )}
+                                    style={{ backgroundColor: c }}
+                                >
+                                    {file.color?.toLowerCase() === c.toLowerCase() && (
+                                        <Check weight="bold" className="w-3 h-3 text-white drop-shadow" />
+                                    )}
+                                </div>
+                            </ContextMenuItem>
+                        ))}
+                        <ContextMenuItem
+                            className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                            onSelect={() => onColorChange("")}
+                        >
+                            <div
+                                className={cn(
+                                    "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all bg-zinc-800",
+                                    !file.color
+                                        ? "border-white scale-110"
+                                        : "border-transparent hover:border-white/30 hover:scale-110"
+                                )}
+                            >
+                                {!file.color ? (
+                                    <Check weight="bold" className="w-3 h-3 text-white drop-shadow" />
+                                ) : (
+                                    <X weight="bold" className="w-3 h-3 text-zinc-400" />
+                                )}
+                            </div>
+                        </ContextMenuItem>
+                    </div>
                 </ContextMenuSubContent>
             </ContextMenuSub>
+
+            {file.type === 'folder' && (
+                <ContextMenuSub>
+                    <ContextMenuSubTrigger className="gap-2">
+                        <Shapes size={16} /> Change Icon
+                    </ContextMenuSubTrigger>
+                    <ContextMenuSubContent className="p-2">
+                        <div className="grid grid-cols-5 gap-1.5">
+                            {iconNames.map((name) => {
+                                const Icon = getIcon(name);
+                                return (
+                                    <ContextMenuItem
+                                        key={name}
+                                        className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                                        onSelect={() => onIconChange?.(name)}
+                                    >
+                                        <div
+                                            className={cn(
+                                                "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all",
+                                                file.icon === name
+                                                    ? "border-white scale-110 bg-zinc-700"
+                                                    : "border-transparent hover:border-white/30 hover:scale-110"
+                                            )}
+                                        >
+                                            <Icon weight={file.icon === name ? "fill" : "regular"} className="w-3.5 h-3.5 text-zinc-200" />
+                                        </div>
+                                    </ContextMenuItem>
+                                );
+                            })}
+                            <ContextMenuItem
+                                className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                                onSelect={() => onIconChange?.("")}
+                            >
+                                <div
+                                    className={cn(
+                                        "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all bg-zinc-800",
+                                        !file.icon
+                                            ? "border-white scale-110"
+                                            : "border-transparent hover:border-white/30 hover:scale-110"
+                                    )}
+                                >
+                                    {!file.icon ? (
+                                        <Check weight="bold" className="w-3 h-3 text-white drop-shadow" />
+                                    ) : (
+                                        <X weight="bold" className="w-3 h-3 text-zinc-400" />
+                                    )}
+                                </div>
+                            </ContextMenuItem>
+                        </div>
+                    </ContextMenuSubContent>
+                </ContextMenuSub>
+            )}
 
             <ContextMenuItem onClick={handleDelete} className="gap-2 text-destructive focus:text-destructive">
                 <Trash size={16} /> Trash

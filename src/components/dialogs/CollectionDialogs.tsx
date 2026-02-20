@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     FolderPlus,
     Star,
@@ -101,6 +102,14 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
     const [name, setName] = useState(defaultName);
     const [color, setColor] = useState(defaultColor);
     const [iconName, setIconName] = useState(defaultIcon);
+    const [customizeTab, setCustomizeTab] = useState("color");
+
+    useEffect(() => {
+        setName(defaultName);
+        setColor(defaultColor);
+        setIconName(defaultIcon);
+        setCustomizeTab("color");
+    }, [defaultName, defaultColor, defaultIcon]);
 
     const handleSubmit = () => {
         if (!name.trim()) return;
@@ -131,32 +140,43 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
 
             {!isFolder && (
                 <>
-                    <ColorPicker
-                        color={color}
-                        onChange={setColor}
-                        label="Collection Color"
-                    />
-
                     <div className="space-y-2">
-                        <Label className="text-zinc-400">Icon</Label>
-                        <div className="grid grid-cols-7 gap-2">
-                            {ICONS.map(({ name: iName, icon: Icon }) => (
-                                <button
-                                    key={iName}
-                                    type="button"
-                                    onClick={() => setIconName(iName)}
-                                    className={cn(
-                                        "aspect-square flex items-center justify-center rounded-md border transition-all",
-                                        iconName === iName
-                                            ? "bg-primary border-primary text-primary-foreground shadow-sm"
-                                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                                    )}
-                                    title={iName}
-                                >
-                                    <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
-                                </button>
-                            ))}
-                        </div>
+                        <Label className="text-zinc-400">Customize</Label>
+                        <Tabs value={customizeTab} onValueChange={setCustomizeTab} className="border border-zinc-800 bg-zinc-950/40 rounded-none overflow-hidden">
+                            <TabsList className="w-full rounded-none bg-zinc-900 border-b border-zinc-800 p-1 h-9">
+                                <TabsTrigger value="color" className="flex-1 rounded-none text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Color</TabsTrigger>
+                                <TabsTrigger value="icon" className="flex-1 rounded-none text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Icon</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="color" className="mt-0 p-3">
+                                <ColorPicker
+                                    color={color}
+                                    onChange={setColor}
+                                    showLabel={false}
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="icon" className="mt-0 p-3">
+                                <div className="grid grid-cols-7 gap-2">
+                                    {ICONS.map(({ name: iName, icon: Icon }) => (
+                                        <button
+                                            key={iName}
+                                            type="button"
+                                            onClick={() => setIconName(iName)}
+                                            className={cn(
+                                                "aspect-square flex items-center justify-center rounded-none border transition-all",
+                                                iconName === iName
+                                                    ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                                            )}
+                                            title={iName}
+                                        >
+                                            <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                     </div>
                 </>
             )}
@@ -295,14 +315,15 @@ export function EditCollectionDialog({ open, onOpenChange, collection, onSubmit 
     if (!collection) return null;
 
     const isFolder = collection.type === 'folder';
+    const isBucket = collection.type === 'bucket';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                    <DialogTitle>{isFolder ? "Edit Folder" : "Edit Collection"}</DialogTitle>
+                    <DialogTitle>{isBucket ? "Edit Bucket" : isFolder ? "Edit Folder" : "Edit Collection"}</DialogTitle>
                     <DialogDescription className="sr-only">
-                        Update your {isFolder ? "folder" : "collection"} details.
+                        Update your {isBucket ? "bucket" : isFolder ? "folder" : "collection"} details.
                     </DialogDescription>
                 </DialogHeader>
                 {/* Use key to force re-render when collection changes */}

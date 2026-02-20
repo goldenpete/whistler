@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ColorPicker } from "@/components/ui/ColorPicker";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { type File } from "@/types";
 import { isValidUrl } from "@/utils/security";
@@ -32,12 +33,14 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
     const [name, setName] = useState(file.name);
     const [description, setDescription] = useState(file.description || "");
     const [url, setUrl] = useState(file.url || "");
+    const [color, setColor] = useState(file.color || "");
 
     useEffect(() => {
         if (open) {
             setName(file.name);
             setDescription(file.description || "");
             setUrl(file.url || "");
+            setColor(file.color || "");
         }
     }, [open, file]);
 
@@ -46,7 +49,7 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
             alert("Invalid or unsafe URL protocol.");
             return;
         }
-        onSave({ name: name.trim(), description: description.trim(), url: url.trim() });
+        onSave({ name: name.trim(), description: description.trim(), url: url.trim(), color });
         onOpenChange(false);
     };
 
@@ -88,6 +91,16 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
                             className="bg-zinc-900 border-zinc-800 min-h-[150px] focus:border-primary/50 resize-y"
                             placeholder="Add a description..."
                         />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label className="text-zinc-400">Color</Label>
+                        <div className="border border-zinc-800 bg-zinc-950/40 rounded-none p-3">
+                            <ColorPicker
+                                color={color}
+                                onChange={setColor}
+                                showLabel={false}
+                            />
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>

@@ -541,6 +541,12 @@ export default function HomeView() {
         }));
     };
 
+    const handleIconChange = (file: AppFile, icon: string) => {
+        useStore.setState((state: any) => ({
+            files: state.files.map((f: AppFile) => f.id === file.id ? { ...f, icon, lastModified: Date.now() } : f)
+        }));
+    };
+
     const [popoverOpen, setPopoverOpen] = useState(false);
 
     const handleAddFile = (url: string, name: string) => {
@@ -858,7 +864,7 @@ export default function HomeView() {
                     alert("Invalid URL. Only http, https, blob, and data protocols are allowed.");
                     return;
                 }
-                useStore.getState().updateFile(id, { name, description, url: url?.trim() });
+                useStore.getState().updateFile(id, { name, description, url: url?.trim(), color: color || undefined, icon: icon || undefined });
                 break;
             case 'doc':
                 if (color || icon) {
@@ -1106,6 +1112,7 @@ export default function HomeView() {
                                                 onMove={() => handleMoveInit(item.data)}
                                                 onSelect={() => {}} 
                                                 onColorChange={(color) => handleColorChange(item.data, color)}
+                                                onIconChange={(icon) => handleIconChange(item.data, icon)}
                                             />
                                         ) : (
                                             <ContextMenuContent>
@@ -1194,10 +1201,11 @@ export default function HomeView() {
                     <RenameFileDialog
                         open={renameFileOpen}
                         onOpenChange={setRenameFileOpen}
-                        onSubmit={(name, description, url) => handleRename(name, description, undefined, undefined, url)}
+                        onSubmit={(name, description, url, color) => handleRename(name, description, color, undefined, url)}
                         initialName={renameItem.name}
                         initialDescription={renameItem.data.description}
                         initialUrl={renameItem.data.url}
+                        initialColor={renameItem.data.color}
                     />
                     <EditDocDialog
                         open={renameDocOpen}

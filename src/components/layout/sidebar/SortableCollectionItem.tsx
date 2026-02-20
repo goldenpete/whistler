@@ -33,6 +33,7 @@ import {
     ContextMenuItem,
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { CollectionContextMenu } from "@/components/views/CollectionsView";
 import type { Collection } from "@/types";
 
 /** Props for the sortable collection item */
@@ -55,6 +56,8 @@ export interface SortableCollectionItemProps {
     setEditCollectionOpen: (open: boolean) => void;
     /** Store action to soft-delete a collection (used by context menu) */
     trashCollection: (id: string) => void;
+    /** Handler called when user chooses "Move to" from context menu */
+    onMove?: (collection: Collection) => void;
     /** Context menu content for create actions (unused in this component's own menu) */
     createMenuContent: React.ReactNode;
     /** Currently active folder ID from URL search params, for active state detection */
@@ -71,6 +74,7 @@ export function SortableCollectionItem({
     setCollectionToEdit,
     setEditCollectionOpen,
     trashCollection,
+    onMove,
     currentFolderId = null,
 }: SortableCollectionItemProps) {
     const navigate = useNavigate();
@@ -196,25 +200,29 @@ export function SortableCollectionItem({
                 </ContextMenuTrigger>
 
                 {/* Right-click context menu */}
-                <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
-                    <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setCollectionToEdit(collection);
+                <CollectionContextMenu
+                    collection={collection}
+                    onNavigate={(id) => {
+                        handleSelectCollection(id);
+                        if (collection.type === 'bucket') {
+                            navigate('/collections');
+                        } else {
+                            navigate(`/collection/${id}`);
+                        }
+                    }}
+                    onRename={(c) => {
+                        setCollectionToEdit(c);
                         setEditCollectionOpen(true);
-                    }}>
-                        <PencilSimple className="mr-2 h-4 w-4" />
-                        {collection.type === 'bucket' ? 'Rename Bucket' : 'Rename Collection'}
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        trashCollection(collection.id);
-                    }} className="text-red-500 focus:text-red-500">
-                        <Trash className="mr-2 h-4 w-4" />
-                        {collection.type === 'bucket' ? 'Delete Bucket' : 'Delete Collection'}
-                    </ContextMenuItem>
-                </ContextMenuContent>
+                    }}
+                    onDelete={(id) => trashCollection(id)}
+                    onColorChange={(c, color) => {
+                        useStore.getState().updateCollection(c.id, { color, lastModified: Date.now() });
+                    }}
+                    onIconChange={(c, icon) => {
+                        useStore.getState().updateCollection(c.id, { icon, lastModified: Date.now() });
+                    }}
+                    onMove={onMove}
+                />
             </ContextMenu>
         </div>
     );

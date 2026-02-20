@@ -138,6 +138,40 @@ export default function CollectionView() {
     const collectionIdToUse = id || activeCollectionId;
     const activeCollection = collections.find(c => c.id === collectionIdToUse);
 
+    const selectedHighlight = highlights.find(h => h.id === selectedHighlightId) || null;
+    const selectedFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) || null : null;
+
+    // Filter highlights for this collection
+    const collectionHighlights = highlights.filter(h =>
+        h.collectionId === collectionIdToUse &&
+        (h.note || "").toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const CollectionIcon = getIcon(activeCollection?.icon);
+    const activeBucket = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
+
+    const breadcrumbs = useMemo(() => {
+        const path: { id: string; name: string }[] = [];
+        let current = activeCollection?.parentId ? collections.find(c => c.id === activeCollection.parentId) : null;
+        const visited = new Set<string>();
+
+        while (current) {
+            if (visited.has(current.id)) {
+                console.error("Cycle detected in collection structure:", current);
+                break;
+            }
+            visited.add(current.id);
+
+            // Stop if we reach the active bucket or an item with no parent
+            if (current.id === activeCollectionId) break;
+
+            path.unshift({ id: current.id, name: current.name });
+            const parentId = current.parentId;
+            current = parentId ? collections.find(c => c.id === parentId) : null;
+        }
+        return path;
+    }, [activeCollection, collections, activeCollectionId]);
+
     if (collectionIdToUse && !activeCollection) {
         return (
             <div className="flex flex-col items-center justify-center h-full bg-transparent text-foreground">
@@ -147,15 +181,6 @@ export default function CollectionView() {
             </div>
         );
     }
-
-    const selectedHighlight = highlights.find(h => h.id === selectedHighlightId) || null;
-    const selectedFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) || null : null;
-
-    // Filter highlights for this collection
-    const collectionHighlights = highlights.filter(h =>
-        h.collectionId === collectionIdToUse &&
-        (h.note || "").toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     const openHighlight = (h: Highlight) => {
         setSelectedHighlightId(h.id);
@@ -203,31 +228,6 @@ export default function CollectionView() {
         setSelectedItems(new Set());
         setSelectionMode(false);
     };
-
-    const CollectionIcon = getIcon(activeCollection?.icon);
-    const activeBucket = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
-
-    const breadcrumbs = useMemo(() => {
-        const path: { id: string; name: string }[] = [];
-        let current = activeCollection?.parentId ? collections.find(c => c.id === activeCollection.parentId) : null;
-        const visited = new Set<string>();
-
-        while (current) {
-            if (visited.has(current.id)) {
-                console.error("Cycle detected in collection structure:", current);
-                break;
-            }
-            visited.add(current.id);
-
-            // Stop if we reach the active bucket or an item with no parent
-            if (current.id === activeCollectionId) break;
-
-            path.unshift({ id: current.id, name: current.name });
-            const parentId = current.parentId;
-            current = parentId ? collections.find(c => c.id === parentId) : null;
-        }
-        return path;
-    }, [activeCollection, collections, activeCollectionId]);
 
     return (
         <div className="flex flex-col h-full bg-transparent text-foreground">
@@ -451,7 +451,7 @@ export default function CollectionView() {
                                         </div>
                                     </div>
                                 </ContextMenuTrigger>
-                                <ContextMenuContent className="w-56">
+                                <ContextMenuContent className="min-w-[8rem]">
                                     <ContextMenuItem
                                         onClick={() => {
                                             if (!selectionMode) {

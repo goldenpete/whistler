@@ -24,7 +24,7 @@ import { useStore, type AppStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import { useKeybind } from "@/hooks/use-keybind";
 import {
-    Plus, Circle,
+    Plus, Circle, Square,
     Note, File, Folder, Clock, Link as LinkIcon,
     NotePencil,
     MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash, ArrowsOutSimple
@@ -50,6 +50,9 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 
 const NODE_RADIUS = 18;
+const SQUARE_W = 90;
+const SQUARE_H = 26;
+const SQUARE_R = 3;
 const COLORS = ["#f97316", "#8b5cf6", "#10b981", "#3b82f6", "#ef4444", "#eab308"];
 const GRAPH_VIEW_KEY_PREFIX = "graph_view_";
 
@@ -104,6 +107,7 @@ export default function GraphView() {
         }
     }, [activeGraphId, activeProjectId, graphs]);
 
+    const [nodeShape, setNodeShape] = useState<'circle' | 'square'>('circle');
     const [draggingNode, setDraggingNode] = useState<string | null>(null);
     const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -130,6 +134,9 @@ export default function GraphView() {
                 setScale(parsed.scale);
                 setPan({ x: parsed.panX, y: parsed.panY });
             }
+            if (parsed.nodeShape === 'circle' || parsed.nodeShape === 'square') {
+                setNodeShape(parsed.nodeShape);
+            }
         } catch {
         }
     }, [activeGraphId]);
@@ -142,11 +149,12 @@ export default function GraphView() {
                 scale,
                 panX: pan.x,
                 panY: pan.y,
+                nodeShape,
             };
             localStorage.setItem(`${GRAPH_VIEW_KEY_PREFIX}${activeGraphId}`, JSON.stringify(payload));
         } catch {
         }
-    }, [activeGraphId, pan, scale]);
+    }, [activeGraphId, pan, scale, nodeShape]);
 
     // Context Menu State
     const [contextMenu, setContextMenu] = useState<{ type: 'node' | 'edge', id: string } | null>(null);
@@ -280,34 +288,72 @@ export default function GraphView() {
         }
 
         nodes.forEach((node: GraphNode) => {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = node.color || COLORS[0];
-            ctx.fill();
-            
-            // Highlight if connecting
-            if (connectingNodeId === node.id) {
-                ctx.strokeStyle = '#3b82f6';
-                ctx.lineWidth = 4 / scale;
-            } else {
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = 2 / scale;
-            }
-            ctx.stroke();
+            const color = node.color || COLORS[0];
 
-            if (node.icon && node.icon !== 'Folder' && imagesRef.current[node.icon]) {
-                const img = imagesRef.current[node.icon];
-                const iconSize = (NODE_RADIUS * 1.2); 
-                ctx.drawImage(img, node.x - iconSize/2, node.y - iconSize/2, iconSize, iconSize);
-            } else {
-            }
+            if (nodeShape === 'square') {
+                // ── Square / badge mode (matches landing-page concept) ──
+                const hw = SQUARE_W / 2;
+                const hh = SQUARE_H / 2;
+                const rx = node.x - hw;
+                const ry = node.y - hh;
 
-            ctx.fillStyle = '#f5f5f5';
-            ctx.font = `${13 / scale}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillText(node.title.slice(0, 14), node.x, node.y + NODE_RADIUS + (16 / scale));
+                ctx.beginPath();
+                ctx.roundRect(rx, ry, SQUARE_W, SQUARE_H, SQUARE_R);
+                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                ctx.fill();
+
+                // Border
+                if (connectingNodeId === node.id) {
+                    ctx.strokeStyle = '#3b82f6';
+                    ctx.lineWidth = 2 / scale;
+                } else {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.2 / scale;
+                }
+                ctx.stroke();
+
+                // Icon inside badge
+                const iconSize = 12;
+                const iconX = rx + 8;
+                const iconY = node.y - iconSize / 2;
+                if (node.icon && node.icon !== 'Folder' && imagesRef.current[node.icon]) {
+                    ctx.drawImage(imagesRef.current[node.icon], iconX, iconY, iconSize, iconSize);
+                }
+
+                // Label inside badge
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = `${10}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+                ctx.textAlign = 'left';
+                ctx.fillText(node.title.slice(0, 14), iconX + iconSize + 5, node.y + 3.5);
+            } else {
+                // ── Circle mode (original) ──
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+
+                if (connectingNodeId === node.id) {
+                    ctx.strokeStyle = '#3b82f6';
+                    ctx.lineWidth = 4 / scale;
+                } else {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                    ctx.lineWidth = 2 / scale;
+                }
+                ctx.stroke();
+
+                if (node.icon && node.icon !== 'Folder' && imagesRef.current[node.icon]) {
+                    const img = imagesRef.current[node.icon];
+                    const iconSize = (NODE_RADIUS * 1.2);
+                    ctx.drawImage(img, node.x - iconSize / 2, node.y - iconSize / 2, iconSize, iconSize);
+                }
+
+                ctx.fillStyle = '#f5f5f5';
+                ctx.font = `${13 / scale}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(node.title.slice(0, 14), node.x, node.y + NODE_RADIUS + (16 / scale));
+            }
         });
-    }, [nodes, edges, scale, pan, connectingNodeId, mousePos]);
+    }, [nodes, edges, scale, pan, connectingNodeId, mousePos, nodeShape]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -332,6 +378,13 @@ export default function GraphView() {
     // --- Mouse Handlers ---
     const getNodeAt = (x: number, y: number): GraphNode | undefined => {
         // x, y are world coords
+        if (nodeShape === 'square') {
+            return nodes.find((n: GraphNode) => {
+                const hw = SQUARE_W / 2;
+                const hh = SQUARE_H / 2;
+                return x >= n.x - hw && x <= n.x + hw && y >= n.y - hh && y <= n.y + hh;
+            });
+        }
         return nodes.find((n: GraphNode) => Math.hypot(n.x - x, n.y - y) <= NODE_RADIUS);
     };
 
@@ -788,6 +841,28 @@ export default function GraphView() {
                 {activeGraph ? (
                     <>
                         {/* Toolbar */}
+                        {/* Shape toggle – top-right */}
+                        <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-black/50 backdrop-blur-sm p-1 rounded-lg border border-white/10 shadow-lg">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-7 w-7", nodeShape === 'circle' ? 'text-white bg-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/10')}
+                                onClick={() => setNodeShape('circle')}
+                                title="Circle nodes"
+                            >
+                                <Circle size={16} />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-7 w-7", nodeShape === 'square' ? 'text-white bg-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/10')}
+                                onClick={() => setNodeShape('square')}
+                                title="Square nodes"
+                            >
+                                <Square size={16} />
+                            </Button>
+                        </div>
+
                         <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-sm p-1.5 rounded-lg border border-white/10 shadow-lg">
                             <DropdownMenu open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                                 <DropdownMenuTrigger asChild>
@@ -876,7 +951,7 @@ export default function GraphView() {
                             </ContextMenuTrigger>
 
                             {contextMenu && (
-                                <ContextMenuContent className="w-48">
+                                <ContextMenuContent className="min-w-[8rem]">
                                     {contextMenu.type === 'node' && (
                                         <>
                                             <ContextMenuItem onClick={() => handleAction('edit')} inset className="gap-2">

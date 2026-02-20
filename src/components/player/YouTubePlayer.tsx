@@ -192,28 +192,28 @@ export const YouTubePlayerComponent = forwardRef<YouTubePlayerHandle, YouTubePla
             return playerRef.current ? playerRef.current.getDuration() : 0;
         },
         get volume() {
-            return playerRef.current ? playerRef.current.getVolume() / 100 : 1;
+            return playerRef.current?.getVolume ? playerRef.current.getVolume() / 100 : 1;
         },
         set volume(vol: number) {
-            if (playerRef.current) playerRef.current.setVolume(vol * 100);
+            if (playerRef.current?.setVolume) playerRef.current.setVolume(vol * 100);
         },
         get muted() {
-            return playerRef.current ? playerRef.current.isMuted() : false;
+            return playerRef.current?.isMuted ? playerRef.current.isMuted() : false;
         },
         set muted(mute: boolean) {
-            if (playerRef.current) {
+            if (playerRef.current?.mute && playerRef.current?.unMute) {
                 if (mute) playerRef.current.mute();
                 else playerRef.current.unMute();
             }
         },
         get playbackRate() {
-            return playerRef.current ? playerRef.current.getPlaybackRate() : 1;
+            return playerRef.current?.getPlaybackRate ? playerRef.current.getPlaybackRate() : 1;
         },
         set playbackRate(rate: number) {
-            if (playerRef.current) playerRef.current.setPlaybackRate(rate);
+            if (playerRef.current?.setPlaybackRate) playerRef.current.setPlaybackRate(rate);
         },
         get paused() {
-            return playerRef.current ? playerRef.current.getPlayerState() !== window.YT.PlayerState.PLAYING : true;
+            return playerRef.current?.getPlayerState ? playerRef.current.getPlayerState() !== window.YT.PlayerState.PLAYING : true;
         }
     }));
 

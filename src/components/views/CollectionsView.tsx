@@ -44,9 +44,12 @@ import {
     X,
     Palette,
     Share,
-    Cards
+    Cards,
+    Check,
+    Shapes,
 } from "@phosphor-icons/react";
 import { findRootBucketId } from "@/utils/collectionUtils";
+import { getIcon, iconNames } from "@/utils/iconMap";
 import { type Collection } from "@/types";
 import { playSfx } from "@/utils/sound";
 import {
@@ -91,13 +94,23 @@ import {
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuSeparator,
+    ContextMenuLabel,
+    ContextMenuSub,
+    ContextMenuSubTrigger,
+    ContextMenuSubContent,
 } from "@/components/ui/context-menu";
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useKeybind } from "@/hooks/use-keybind";
 import { CreateCollectionDialog, CreateFolderDialog } from "@/components/dialogs/CollectionDialogs";
-import { getIcon } from "@/utils/iconMap";
+import { MoveCollectionDialog } from "@/components/dialogs/MoveCollectionDialog";
+
+const COLLECTION_COLORS = [
+    "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
+    "#06b6d4", "#3b82f6", "#6366f1", "#8b5cf6", "#d946ef",
+    "#f43f5e", "#64748b"
+];
 
 type SortOption = "custom" | "name" | "date";
 type SortDirection = "asc" | "desc";
@@ -147,6 +160,8 @@ interface CollectionCardProps {
     onRename: (collection: Collection) => void;
     onDelete: (id: string) => void;
     onColorChange: (collection: Collection, color: string) => void;
+    onIconChange: (collection: Collection, icon: string) => void;
+    onMove?: (collection: Collection) => void;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
 }
@@ -331,7 +346,7 @@ function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, s
             )}
 
             {/* Content Area (Top) */}
-            <div className="flex-1 min-h-[160px] bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors">
+            <div className="h-[160px] flex-none bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors">
                 {React.createElement(getIcon(collection.icon), {
                     size: 48,
                     weight: "regular",
@@ -371,7 +386,7 @@ function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, s
     );
 }
 
-function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onDelete, onColorChange, onMouseEnter, onMouseLeave, viewMode, sortOption }: CollectionCardProps & { viewMode: 'grid' | 'list' | 'cards', sortOption: string }) {
+function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onDelete, onColorChange, onIconChange, onMove, onMouseEnter, onMouseLeave, viewMode, sortOption }: CollectionCardProps & { viewMode: 'grid' | 'list' | 'cards', sortOption: string }) {
     const {
         attributes,
         listeners,
@@ -493,19 +508,193 @@ function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isF
                     />
                 </div>
             </ContextMenuTrigger>
-            <ContextMenuContent className="w-48">
-                <ContextMenuItem onClick={() => onNavigate(collection.id)}>
-                    <FolderOpen size={16} className="mr-2" /> Open
-                </ContextMenuItem>
-                <ContextMenuItem onClick={() => onRename(collection)}>
-                    <PencilSimple size={16} className="mr-2" /> Rename
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                <ContextMenuItem className="text-destructive" onClick={() => onDelete(collection.id)}>
-                    <Trash size={16} className="mr-2" /> Delete
-                </ContextMenuItem>
-            </ContextMenuContent>
+            <CollectionContextMenu
+                collection={collection}
+                onNavigate={onNavigate}
+                onRename={onRename}
+                onDelete={onDelete}
+                onColorChange={onColorChange}
+                onIconChange={onIconChange}
+                onMove={onMove}
+                onSelect={() => onToggleSelect(collection.id)}
+            />
         </ContextMenu>
+    );
+}
+
+/** ─── CollectionContextMenu ──────────────────────────────────────── */
+
+export interface CollectionContextMenuProps {
+    collection: Collection;
+    onNavigate: (id: string) => void;
+    onRename: (collection: Collection) => void;
+    onDelete: (id: string) => void;
+    onColorChange: (collection: Collection, color: string) => void;
+    onIconChange?: (collection: Collection, icon: string) => void;
+    onMove?: (collection: Collection) => void;
+    onSelect?: () => void;
+    /** Available folders to move into (if omitted, fetched from store) */
+    folders?: Collection[];
+    /** The active bucket id (if omitted, fetched from store) */
+    activeBucketId?: string | null;
+}
+
+export function CollectionContextMenu({
+    collection,
+    onNavigate,
+    onRename,
+    onDelete,
+    onColorChange,
+    onIconChange,
+    onMove,
+    onSelect,
+    folders: foldersProp,
+    activeBucketId: activeBucketIdProp,
+}: CollectionContextMenuProps) {
+    const storeData = useStore(useShallow((state) => ({
+        collections: state.collections,
+        activeProjectId: state.activeProjectId,
+        activeCollectionId: state.activeCollectionId,
+    })));
+
+    const typeLabel =
+        collection.type === 'bucket' ? 'Bucket' :
+        collection.type === 'folder' ? 'Folder' : 'Collection';
+
+    return (
+        <ContextMenuContent className="min-w-[8rem]">
+            <ContextMenuItem onClick={() => onNavigate(collection.id)} className="gap-2">
+                <FolderOpen size={16} /> Open
+            </ContextMenuItem>
+
+            {onSelect && (
+                <ContextMenuItem onClick={onSelect} className="gap-2">
+                    <CheckSquare size={16} /> Select
+                </ContextMenuItem>
+            )}
+
+            <ContextMenuSeparator />
+            <ContextMenuLabel>Edit</ContextMenuLabel>
+
+            <ContextMenuItem onClick={() => onRename(collection)} className="gap-2">
+                <PencilSimple size={16} /> Edit {typeLabel}
+            </ContextMenuItem>
+
+            {collection.type !== 'bucket' && onMove && (
+                <ContextMenuItem onClick={() => onMove(collection)} className="gap-2">
+                    <ArrowSquareOut size={16} /> Move to
+                </ContextMenuItem>
+            )}
+
+            <ContextMenuSub>
+                <ContextMenuSubTrigger className="gap-2">
+                    <Palette size={16} /> Change Color
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="p-2">
+                    <div className="grid grid-cols-5 gap-1.5">
+                        {COLLECTION_COLORS.map((c) => (
+                            <ContextMenuItem
+                                key={c}
+                                className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                                onSelect={() => onColorChange(collection, c)}
+                            >
+                                <div
+                                    className={cn(
+                                        "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all",
+                                        collection.color?.toLowerCase() === c.toLowerCase()
+                                            ? "border-white scale-110"
+                                            : "border-transparent hover:border-white/30 hover:scale-110"
+                                    )}
+                                    style={{ backgroundColor: c }}
+                                >
+                                    {collection.color?.toLowerCase() === c.toLowerCase() && (
+                                        <Check weight="bold" className="w-3 h-3 text-white drop-shadow" />
+                                    )}
+                                </div>
+                            </ContextMenuItem>
+                        ))}
+                        <ContextMenuItem
+                            className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                            onSelect={() => onColorChange(collection, "")}
+                        >
+                            <div
+                                className={cn(
+                                    "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all bg-zinc-800",
+                                    !collection.color
+                                        ? "border-white scale-110"
+                                        : "border-transparent hover:border-white/30 hover:scale-110"
+                                )}
+                            >
+                                {!collection.color ? (
+                                    <Check weight="bold" className="w-3 h-3 text-white drop-shadow" />
+                                ) : (
+                                    <X weight="bold" className="w-3 h-3 text-zinc-400" />
+                                )}
+                            </div>
+                        </ContextMenuItem>
+                    </div>
+                </ContextMenuSubContent>
+            </ContextMenuSub>
+
+            <ContextMenuSub>
+                <ContextMenuSubTrigger className="gap-2">
+                    <Shapes size={16} /> Change Icon
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="p-2">
+                    <div className="grid grid-cols-5 gap-1.5">
+                        {iconNames.map((name) => {
+                            const Icon = getIcon(name);
+                            return (
+                                <ContextMenuItem
+                                    key={name}
+                                    className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                                    onSelect={() => onIconChange?.(collection, name)}
+                                >
+                                    <div
+                                        className={cn(
+                                            "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all",
+                                            collection.icon === name
+                                                ? "border-white scale-110 bg-zinc-700"
+                                                : "border-transparent hover:border-white/30 hover:scale-110"
+                                        )}
+                                    >
+                                        <Icon weight={collection.icon === name ? "fill" : "regular"} className="w-3.5 h-3.5 text-zinc-200" />
+                                    </div>
+                                </ContextMenuItem>
+                            );
+                        })}
+                        <ContextMenuItem
+                            className="p-0 w-6 h-6 rounded-none focus:bg-transparent"
+                            onSelect={() => onIconChange?.(collection, "")}
+                        >
+                            <div
+                                className={cn(
+                                    "w-6 h-6 rounded-none border-2 flex items-center justify-center transition-all bg-zinc-800",
+                                    !collection.icon
+                                        ? "border-white scale-110"
+                                        : "border-transparent hover:border-white/30 hover:scale-110"
+                                )}
+                            >
+                                {!collection.icon ? (
+                                    <Check weight="bold" className="w-3 h-3 text-white drop-shadow" />
+                                ) : (
+                                    <X weight="bold" className="w-3 h-3 text-zinc-400" />
+                                )}
+                            </div>
+                        </ContextMenuItem>
+                    </div>
+                </ContextMenuSubContent>
+            </ContextMenuSub>
+
+            <ContextMenuSeparator />
+
+            <ContextMenuItem
+                onClick={() => onDelete(collection.id)}
+                className="gap-2 text-destructive focus:text-destructive"
+            >
+                <Trash size={16} /> Delete {typeLabel}
+            </ContextMenuItem>
+        </ContextMenuContent>
     );
 }
 
@@ -552,6 +741,8 @@ export default function CollectionsView() {
     const [addCollectionOpen, setAddCollectionOpen] = useState(false);
     const [addFolderOpen, setAddFolderOpen] = useState(false);
     const [collectionToEdit, setCollectionToEdit] = useState<Collection | null>(null);
+    const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+    const [collectionToMove, setCollectionToMove] = useState<Collection | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const currentFolder = currentFolderId ? collections.find(c => c.id === currentFolderId) : null;
@@ -1045,6 +1236,19 @@ export default function CollectionsView() {
                                 </Button>
                                 <div className="w-px h-5 bg-border" />
                                 <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-xs gap-2"
+                                    onClick={() => {
+                                        setCollectionToMove(null);
+                                        setMoveDialogOpen(true);
+                                    }}
+                                    disabled={selectedIds.size === 0}
+                                >
+                                    <ArrowSquareOut size={14} />
+                                    Move
+                                </Button>
+                                <Button
                                     variant="destructive"
                                     size="sm"
                                     className="h-8 text-xs gap-2"
@@ -1121,6 +1325,8 @@ export default function CollectionsView() {
                                                 playSfx('back');
                                             }}
                                             onColorChange={(c, color) => updateCollection(c.id, { color })}
+                                            onIconChange={(c, icon) => updateCollection(c.id, { icon })}
+                                            onMove={(c) => { setCollectionToMove(c); setMoveDialogOpen(true); }}
                                             onMouseEnter={() => setFocusedId(collection.id)}
                                             onMouseLeave={() => setFocusedId(null)}
                                             selectionMode={selectionMode}
@@ -1186,6 +1392,11 @@ export default function CollectionsView() {
                 open={addFolderOpen}
                 onOpenChange={setAddFolderOpen}
                 onSubmit={handleCreateFolder}
+            />
+            <MoveCollectionDialog
+                open={moveDialogOpen}
+                onOpenChange={setMoveDialogOpen}
+                collectionIds={collectionToMove ? [collectionToMove.id] : Array.from(selectedIds)}
             />
         </div>
     );

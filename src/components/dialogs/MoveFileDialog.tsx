@@ -46,6 +46,15 @@ export function MoveFileDialog({ open, onOpenChange, fileIds, container }: MoveF
     const [selectedStorageId, setSelectedStorageId] = useState<string | null>(null);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 
+    // Names of files being moved (for description)
+    const movingNames = useMemo(() =>
+        fileIds
+            .map(id => files.find((f: File) => f.id === id)?.name)
+            .filter(Boolean)
+            .join(", "),
+        [fileIds, files]
+    );
+
     // Filter storages for current project
     const projectStorages = useMemo(() => 
         storages.filter((s: Storage) => s.projectId === activeProjectId && !s.deleted),
@@ -112,8 +121,9 @@ export function MoveFileDialog({ open, onOpenChange, fileIds, container }: MoveF
             <DialogContent className="sm:max-w-[500px]" portalContainer={container}>
                 <DialogHeader>
                     <DialogTitle>Move to...</DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Select a destination folder for your selection.
+                    <DialogDescription>
+                        Choose a destination folder for{" "}
+                        <span className="font-medium text-foreground">{movingNames || "selected items"}</span>.
                     </DialogDescription>
                 </DialogHeader>
                 

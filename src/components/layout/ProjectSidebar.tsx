@@ -141,6 +141,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { CreateCollectionDialog, EditCollectionDialog, CreateFolderDialog } from "@/components/dialogs/CollectionDialogs";
+import { MoveCollectionDialog } from "@/components/dialogs/MoveCollectionDialog";
 import { CreateStorageDialog, EditStorageDialog, EditGraphDialog, EditDocDialog } from "@/components/dialogs/StorageDialogs";
 import { NewDocDialog, NewGraphDialog } from "@/components/dialogs/CreationDialogs";
 import { EditProjectDialog } from "@/components/dialogs/EditProjectDialog";
@@ -256,6 +257,8 @@ export default function ProjectSidebar() {
     // Edit State
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
     const [collectionToEdit, setCollectionToEdit] = useState<Collection | null>(null);
+    const [moveCollectionDialogOpen, setMoveCollectionDialogOpen] = useState(false);
+    const [collectionToMove, setCollectionToMove] = useState<Collection | null>(null);
     const [editStorageOpen, setEditStorageOpen] = useState(false);
     const [storageToEdit, setStorageToEdit] = useState<Storage | null>(null);
     const [editGraphOpen, setEditGraphOpen] = useState(false);
@@ -1321,7 +1324,7 @@ export default function ProjectSidebar() {
                                                     </div>
                                                 </Link>
                                             </ContextMenuTrigger>
-                                            <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
+                                            <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
                                                 <ContextMenuItem onClick={(e: ReactMouseEvent) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -1683,7 +1686,7 @@ export default function ProjectSidebar() {
                                                             )}
                                                         </button>
                                                     </ContextMenuTrigger>
-                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
+                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
                                                         {createMenuContent}
                                                     </ContextMenuContent>
                                                 </ContextMenu>
@@ -1727,7 +1730,7 @@ export default function ProjectSidebar() {
                                                             )}
                                                         </button>
                                                     </ContextMenuTrigger>
-                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
+                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
                                                         {createMenuContent}
                                                     </ContextMenuContent>
                                                 </ContextMenu>
@@ -1771,7 +1774,7 @@ export default function ProjectSidebar() {
                                                             )}
                                                         </button>
                                                     </ContextMenuTrigger>
-                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="w-48">
+                                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
                                                         {createMenuContent}
                                                     </ContextMenuContent>
                                                 </ContextMenu>
@@ -1896,6 +1899,16 @@ export default function ProjectSidebar() {
                                                                                         setEditCollectionOpen(true);
                                                                                     }}
                                                                                     onDelete={() => trashCollection(item.id)}
+                                                                                    onColorChange={(color: string) => {
+                                                                                        updateCollection(item.id, { color, lastModified: Date.now() });
+                                                                                    }}
+                                                                                    onIconChange={(icon: string) => {
+                                                                                        updateCollection(item.id, { icon, lastModified: Date.now() });
+                                                                                    }}
+                                                                                    onMoveDialog={() => {
+                                                                                        setCollectionToMove(item);
+                                                                                        setMoveCollectionDialogOpen(true);
+                                                                                    }}
                                                                                     onMove={(newParentId: string | null) => {
                                                                                         useStore.setState((state: any) => ({
                                                                                             collections: state.collections.map((c: Collection) => 
@@ -1922,6 +1935,7 @@ export default function ProjectSidebar() {
                                                                                 trashCollection={trashCollection}
                                                                                 createMenuContent={createMenuContent}
                                                                                 currentFolderId={currentFolderId}
+                                                                                onMove={(c) => { setCollectionToMove(c); setMoveCollectionDialogOpen(true); }}
                                                                             />
                                                                         );
                                                                     })}
@@ -2164,6 +2178,7 @@ export default function ProjectSidebar() {
                                                         trashCollection={trashCollection}
                                                         createMenuContent={createMenuContent}
                                                         currentFolderId={currentFolderId}
+                                                        onMove={(c) => { setCollectionToMove(c); setMoveCollectionDialogOpen(true); }}
                                                     />
                                                 ))}
                                         </SortableContext>
@@ -2451,6 +2466,11 @@ export default function ProjectSidebar() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <MoveCollectionDialog
+                open={moveCollectionDialogOpen}
+                onOpenChange={setMoveCollectionDialogOpen}
+                collectionIds={collectionToMove ? [collectionToMove.id] : []}
+            />
         </>
     );
 }
