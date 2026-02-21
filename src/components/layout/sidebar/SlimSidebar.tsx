@@ -2,12 +2,13 @@
  * ─── SlimSidebar.tsx ─────────────────────────────────────────────────────────
  *
  * Collapsed icon-only sidebar mode. Renders a vertical strip of icon buttons
- * for quick navigation to Storage, Docs, Graphs, Collections, and utility
- * views (Sync, History, Trash, Settings).
+ * for quick navigation to Home, Storage, Docs, Graphs, Collections, and
+ * utility views (Sync, History, Trash, Settings).
  *
  * Also shows bucket icons from the active project's collection tree.
  *
- * Extracted from ProjectSidebar.tsx to reduce its line count.
+ * All buttons use squared styling with border/shadow matching the expanded
+ * sidebar's search and collapse buttons.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -25,6 +26,7 @@ import {
     PencilSimple,
     ClockCounterClockwise,
     Gear,
+    House,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
@@ -45,8 +47,13 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
+import { PiPPlayer } from "@/components/player/PiPPlayer";
+
+// Consistent squared button style used throughout
+const BTN = "h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200";
+const BTN_ACTIVE = "h-8 w-8 flex items-center justify-center rounded-none border shadow-sm transition-all duration-200 bg-primary/20 text-primary border-primary/30";
+const NAV_BTN = "h-9 w-9 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200";
+const NAV_BTN_ACTIVE = "h-9 w-9 flex items-center justify-center rounded-none border shadow-sm transition-all duration-200 bg-primary/20 text-primary border-primary/30";
 
 interface SlimSidebarProps {
     handleSelectCollection: (id: string) => void;
@@ -65,6 +72,8 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
         setSidebarView,
         syncStatus,
         trashCollection,
+        isPipOpen,
+        pipFileId,
     } = useStore(useShallow((state) => ({
         collections: state.collections,
         activeCollectionId: state.activeCollectionId,
@@ -73,18 +82,25 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
         setSidebarView: state.setSidebarView,
         syncStatus: state.syncStatus,
         trashCollection: state.trashCollection,
+        isPipOpen: state.isPipOpen,
+        pipFileId: state.pipFileId,
     })));
 
+    const isHome = location.pathname === '/';
+    const isStorage = location.pathname === '/storage';
+    const isDocs = location.pathname.startsWith('/docs');
+    const isGraphs = location.pathname.startsWith('/graphs');
+    const isCollections = location.pathname.startsWith('/collections') || location.pathname.startsWith('/collection/');
+    const isSettings = location.pathname === '/settings';
+
     return (
-        <div className="flex flex-col h-full min-h-0 items-center py-3 gap-2 w-full">
+        <div className="flex flex-col h-full min-h-0 items-center py-2 gap-1.5 w-full">
+            {/* ── Top controls ── */}
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
-                        onClick={() => {
-                            playSfx('cursor');
-                            toggleSidebarCollapse();
-                        }}
-                        className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                        onClick={() => { playSfx('cursor'); toggleSidebarCollapse(); }}
+                        className={BTN}
                     >
                         <SidebarSimple weight="bold" size={18} />
                     </button>
@@ -95,31 +111,20 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
-                        onClick={() => {
-                            playSfx('cursor');
-                            navigate('/');
-                            setSidebarView('main');
-                        }}
-                        className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent hover:opacity-80 transition-colors"
+                        onClick={() => { playSfx('cursor'); navigate('/'); setSidebarView('main'); }}
+                        className={isHome ? NAV_BTN_ACTIVE : NAV_BTN}
                     >
-                        <WhistlerLogo
-                            className="rounded-md"
-                            width={22}
-                            height={22}
-                        />
+                        <House weight={isHome ? "fill" : "bold"} size={20} />
                     </button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Whistlerbox</TooltipContent>
+                <TooltipContent side="right">Home</TooltipContent>
             </Tooltip>
 
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
-                        onClick={() => {
-                            playSfx('cursor');
-                            useStore.getState().setSpotlightOpen(true);
-                        }}
-                        className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                        onClick={() => { playSfx('cursor'); useStore.getState().setSpotlightOpen(true); }}
+                        className={BTN}
                     >
                         <MagnifyingGlass weight="bold" size={18} />
                     </button>
@@ -127,29 +132,22 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                 <TooltipContent side="right">Search</TooltipContent>
             </Tooltip>
 
-            <Separator className="w-8 bg-border/40 my-1" />
+            {/* ── Divider ── */}
+            <div className="w-6 h-px bg-border/40 my-0.5" />
 
-            <div className="flex flex-col gap-2 w-full items-center">
+            {/* ── Navigation ── */}
+            <div className="flex flex-col gap-1.5 w-full items-center">
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
                             onClick={() => {
                                 playSfx('cursor');
-                                if (location.pathname === '/storage') {
-                                    toggleSidebarCollapse && toggleSidebarCollapse();
-                                    setSidebarView('storage');
-                                } else {
-                                    navigate('/storage');
-                                }
+                                if (isStorage) { toggleSidebarCollapse(); setSidebarView('storage'); }
+                                else navigate('/storage');
                             }}
-                            className={cn(
-                                "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
-                                location.pathname === '/storage' 
-                                    ? "bg-primary/20 text-primary border-primary/30" 
-                                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                            )}
+                            className={isStorage ? NAV_BTN_ACTIVE : NAV_BTN}
                         >
-                            <HardDrives weight={location.pathname === '/storage' ? "fill" : "bold"} size={20} />
+                            <HardDrives weight={isStorage ? "fill" : "bold"} size={20} />
                         </button>
                     </TooltipTrigger>
                     <TooltipContent side="right">Storage</TooltipContent>
@@ -160,21 +158,12 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                         <button
                             onClick={() => {
                                 playSfx('cursor');
-                                if (location.pathname.startsWith('/docs')) {
-                                    toggleSidebarCollapse && toggleSidebarCollapse();
-                                    setSidebarView('docs');
-                                } else {
-                                    navigate('/docs');
-                                }
+                                if (isDocs) { toggleSidebarCollapse(); setSidebarView('docs'); }
+                                else navigate('/docs');
                             }}
-                            className={cn(
-                                "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
-                                location.pathname.startsWith('/docs')
-                                    ? "bg-primary/20 text-primary border-primary/30" 
-                                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                            )}
+                            className={isDocs ? NAV_BTN_ACTIVE : NAV_BTN}
                         >
-                            <NotePencil weight={location.pathname.startsWith('/docs') ? "fill" : "bold"} size={20} />
+                            <NotePencil weight={isDocs ? "fill" : "bold"} size={20} />
                         </button>
                     </TooltipTrigger>
                     <TooltipContent side="right">Docs</TooltipContent>
@@ -185,111 +174,111 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                         <button
                             onClick={() => {
                                 playSfx('cursor');
-                                if (location.pathname.startsWith('/graphs')) {
-                                    toggleSidebarCollapse && toggleSidebarCollapse();
-                                    setSidebarView('graphs');
-                                } else {
-                                    navigate('/graphs');
-                                }
+                                if (isGraphs) { toggleSidebarCollapse(); setSidebarView('graphs'); }
+                                else navigate('/graphs');
                             }}
-                            className={cn(
-                                "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm",
-                                location.pathname.startsWith('/graphs')
-                                    ? "bg-primary/20 text-primary border-primary/30" 
-                                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                            )}
+                            className={isGraphs ? NAV_BTN_ACTIVE : NAV_BTN}
                         >
-                            <Graph weight={location.pathname.startsWith('/graphs') ? "fill" : "bold"} size={20} />
+                            <Graph weight={isGraphs ? "fill" : "bold"} size={20} />
                         </button>
                     </TooltipTrigger>
                     <TooltipContent side="right">Graphs</TooltipContent>
                 </Tooltip>
             </div>
 
-            <Separator className="w-8 bg-border/40 my-1" />
+            {/* ── Divider ── */}
+            <div className="w-6 h-px bg-border/40 my-0.5" />
 
+            {/* ── Collections (scrollable) ── */}
             <ScrollArea className="flex-1 min-h-0 w-full px-1">
-                <div className="flex flex-col gap-2 w-full items-center pb-2">
+                <div className="flex flex-col gap-1.5 w-full items-center py-1">
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button
-                                onClick={() => {
-                                    playSfx('cursor');
-                                    navigate('/collections');
-                                }}
+                                onClick={() => { playSfx('cursor'); navigate('/collections'); }}
                                 className={cn(
-                                    "h-9 w-9 flex items-center justify-center rounded-none transition-colors border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-                                    (location.pathname.startsWith('/collections') || location.pathname.startsWith('/collection/')) && "bg-primary/20 text-primary border-primary/30"
+                                    isCollections && !activeCollectionId ? NAV_BTN_ACTIVE : NAV_BTN
                                 )}
                             >
-                                <FolderOpen weight={(location.pathname.startsWith('/collections') || location.pathname.startsWith('/collection/')) ? "fill" : "bold"} size={20} />
+                                <FolderOpen weight={isCollections ? "fill" : "bold"} size={20} />
                             </button>
                         </TooltipTrigger>
                         <TooltipContent side="right">Collections</TooltipContent>
                     </Tooltip>
 
-                    {collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted).map((collection: Collection) => {
-                        const Icon = getIcon(collection.icon);
-                        return (
-                            <ContextMenu key={collection.id}>
-                                <ContextMenuTrigger className="flex justify-center w-full">
-                                    <Link
-                                        to={`/collections`}
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            handleSelectCollection(collection.id);
-                                        }}
-                                        className={cn(
-                                            "flex items-center justify-center w-9 h-9 rounded-none transition-colors relative border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-                                            (location.pathname === `/collections` && activeCollectionId === collection.id)
-                                                ? "bg-primary/20 text-primary border-primary/30"
-                                                : ""
-                                        )}
-                                        title={collection.name}
-                                    >
-                                        <div style={{ color: collection.color }}>
-                                            <Icon
-                                                className="text-lg transition-colors"
-                                                weight="fill"
-                                            />
-                                        </div>
-                                    </Link>
-                                </ContextMenuTrigger>
-                                <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
-                                    <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        onEditCollection(collection);
-                                    }}>
-                                        <PencilSimple className="mr-2 h-4 w-4" />
-                                        Rename Bucket
-                                    </ContextMenuItem>
-                                    <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        trashCollection(collection.id);
-                                    }} className="text-red-500 focus:text-red-500">
-                                        <Trash className="mr-2 h-4 w-4" />
-                                        Delete Bucket
-                                    </ContextMenuItem>
-                                </ContextMenuContent>
-                            </ContextMenu>
-                        );
-                    })}
+                    {collections
+                        .filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted)
+                        .map((collection: Collection) => {
+                            const Icon = getIcon(collection.icon);
+                            const isActive = isCollections && activeCollectionId === collection.id;
+                            return (
+                                <ContextMenu key={collection.id}>
+                                    <ContextMenuTrigger className="flex justify-center w-full">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Link
+                                                    to="/collections"
+                                                    onClick={() => { playSfx('cursor'); handleSelectCollection(collection.id); }}
+                                                    className={cn(
+                                                        isActive ? NAV_BTN_ACTIVE : NAV_BTN,
+                                                        "relative"
+                                                    )}
+                                                    title={collection.name}
+                                                >
+                                                    <div style={{ color: collection.color }}>
+                                                        <Icon className="text-lg" weight="fill" />
+                                                    </div>
+                                                </Link>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="right">{collection.name}</TooltipContent>
+                                        </Tooltip>
+                                    </ContextMenuTrigger>
+                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
+                                        <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onEditCollection(collection);
+                                        }}>
+                                            <PencilSimple className="mr-2 h-4 w-4" />
+                                            Rename Bucket
+                                        </ContextMenuItem>
+                                        <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            trashCollection(collection.id);
+                                        }} className="text-red-500 focus:text-red-500">
+                                            <Trash className="mr-2 h-4 w-4" />
+                                            Delete Bucket
+                                        </ContextMenuItem>
+                                    </ContextMenuContent>
+                                </ContextMenu>
+                            );
+                        })}
                 </div>
             </ScrollArea>
 
-            <div className="flex flex-col gap-2 w-full items-center pb-2">
-                 <Tooltip>
+            {/* ── Divider ── */}
+            <div className="w-6 h-px bg-border/40 my-0.5" />
+
+            {/* ── PiP player ── */}
+            {isPipOpen && pipFileId && (
+                <div className="w-full px-1 pb-1">
+                    <PiPPlayer isCollapsed={true} />
+                </div>
+            )}
+
+            {/* ── Bottom utilities ── */}
+            <div className="flex flex-col gap-1.5 w-full items-center pb-1">
+                <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => { setSidebarView('sync'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                            className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                            onClick={() => { playSfx('cursor'); setSidebarView('sync'); toggleSidebarCollapse(); }}
+                            className={BTN}
                         >
-                            <ArrowsClockwise 
-                                weight="bold" 
-                                size={18} 
-                                className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} 
+                            <ArrowsClockwise
+                                weight="bold"
+                                size={18}
+                                className={cn(syncStatus === 'syncing' && "animate-spin text-primary")}
                             />
                         </button>
                     </TooltipTrigger>
@@ -299,8 +288,8 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => { setSidebarView('history'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                            className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                            onClick={() => { playSfx('cursor'); setSidebarView('history'); toggleSidebarCollapse(); }}
+                            className={BTN}
                         >
                             <ClockCounterClockwise weight="bold" size={18} />
                         </button>
@@ -308,11 +297,11 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                     <TooltipContent side="right">History</TooltipContent>
                 </Tooltip>
 
-                 <Tooltip>
+                <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => { setSidebarView('trash'); toggleSidebarCollapse && toggleSidebarCollapse(); }}
-                            className="h-8 w-8 flex items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                            onClick={() => { playSfx('cursor'); setSidebarView('trash'); toggleSidebarCollapse(); }}
+                            className={BTN}
                         >
                             <Trash weight="bold" size={18} />
                         </button>
@@ -323,13 +312,10 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => navigate('/settings')}
-                            className={cn(
-                                "h-8 w-8 flex items-center justify-center rounded-md transition-colors",
-                                location.pathname === '/settings' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                            )}
+                            onClick={() => { playSfx('cursor'); navigate('/settings'); }}
+                            className={isSettings ? BTN_ACTIVE : BTN}
                         >
-                             <Gear weight="fill" size={18} />
+                            <Gear weight="fill" size={18} />
                         </button>
                     </TooltipTrigger>
                     <TooltipContent side="right">Settings</TooltipContent>

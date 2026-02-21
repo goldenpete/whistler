@@ -48,6 +48,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { MouseEvent as ReactMouseEvent, ChangeEvent as ReactChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatDistanceToNow } from "date-fns";
 import {
     SidebarSimple,
     HardDrives,
@@ -191,6 +192,7 @@ export default function ProjectSidebar() {
         sidebarMode,
         setSidebarMode,
         syncStatus,
+        lastSyncTime,
         sidebarView,
         setSidebarView,
         accentTheme,
@@ -225,6 +227,7 @@ export default function ProjectSidebar() {
         sidebarMode: state.sidebarMode,
         setSidebarMode: state.setSidebarMode,
         syncStatus: state.syncStatus,
+        lastSyncTime: state.lastSyncTime,
         sidebarView: state.sidebarView,
         setSidebarView: state.setSidebarView,
         accentTheme: state.accentTheme,
@@ -1699,73 +1702,63 @@ export default function ProjectSidebar() {
                 </AnimatePresence>
 
                 {/* Footer / PiP Placeholder */}
-                <div className="p-3 border-t border-border/40 bg-card/30 min-h-[50px] flex flex-col justify-center">
+                <div className="px-3 py-2 border-t border-border/40 bg-card/30 shrink-0">
                     {isPipOpen && pipFileId ? (
                         <PiPPlayer isCollapsed={isSidebarCollapsed} />
                     ) : (
-                        <>
-                            <div className={cn("flex items-center gap-1", isSidebarCollapsed || isSlim ? "flex-col justify-center" : "justify-between w-full")}>
-                                {!isSidebarCollapsed && !isSlim ? (
-                                    <div className="flex-1 min-w-0 mr-2">
-                                        <SyncStatusFooter />
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            setSidebarView('sync');
-                                        }}
-                                        className="w-8 h-8 mx-auto flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                        title="Sync Status"
-                                    >
-                                        <ArrowsClockwise weight="bold" size={18} className={cn(syncStatus === 'syncing' && "animate-spin text-primary")} />
-                                    </button>
+                        <div className="flex items-center gap-1 w-full">
+                            <button
+                                onClick={() => {
+                                    playSfx('cursor');
+                                    setSidebarView('sync');
+                                }}
+                                className="flex-1 min-w-0 h-8 flex items-center gap-2 px-2 rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                title="Sync Status"
+                            >
+                                <ArrowsClockwise weight="bold" size={16} className={cn("shrink-0", syncStatus === 'syncing' && "animate-spin text-primary")} />
+                                <span className="text-[10px] font-medium truncate">
+                                    {syncStatus === 'syncing' ? 'Syncing...' :
+                                     syncStatus === 'error' ? 'Sync error' :
+                                     lastSyncTime ? formatDistanceToNow(lastSyncTime, { addSuffix: true }) :
+                                     'Not synced'}
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    playSfx('cursor');
+                                    setSidebarView('history');
+                                }}
+                                className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200 shrink-0"
+                                title="History"
+                            >
+                                <ClockCounterClockwise weight="bold" size={18} />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    playSfx('cursor');
+                                    setSidebarView('trash');
+                                }}
+                                className="h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200 shrink-0"
+                                title="Trash"
+                            >
+                                <Trash weight="bold" size={18} />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    playSfx('cursor');
+                                    navigate('/settings');
+                                }}
+                                className={cn(
+                                    "h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm transition-all duration-200 shrink-0",
+                                    location.pathname === '/settings'
+                                        ? "bg-primary/20 text-primary border-primary/30"
+                                        : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                                 )}
-
-                                <div className={cn("flex items-center gap-1", (isSidebarCollapsed || isSlim) ? "flex-col w-full" : "shrink-0")}>
-                                    <button
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            setSidebarView('history');
-                                        }}
-                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                        title="History"
-                                    >
-                                        <ClockCounterClockwise weight="bold" size={18} />
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            setSidebarView('trash');
-                                        }}
-                                        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
-                                        title="Trash"
-                                    >
-                                        <Trash weight="bold" size={18} />
-                                    </button>
-                                    
-                                    {/* Separator - Only in vertical mode */}
-                                    {(isSidebarCollapsed || isSlim) && (
-                                        <div className="bg-border/40 h-px w-4 mx-auto" />
-                                    )}
-
-                                    <button
-                                        onClick={() => {
-                                            playSfx('cursor');
-                                            navigate('/settings');
-                                        }}
-                                        className={cn(
-                                            "w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 transition-colors",
-                                            location.pathname === '/settings' ? "bg-white/10 text-primary" : "text-primary"
-                                        )}
-                                        title="Settings"
-                                    >
-                                        <Gear weight="fill" size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        </>
+                                title="Settings"
+                            >
+                                <Gear weight="fill" size={18} />
+                            </button>
+                        </div>
                     )}
                 </div>
                 </>
