@@ -19,7 +19,10 @@
 import {
     FolderPlus, Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Folder
+    FilmStrip, FileText, Book, Folder,
+    Lightning, Diamond, Crown, Eye, Gear, ChatCircle, Envelope,
+    MapPin, Globe, Shield, Fire, Leaf, Sun, Moon,
+    Camera, Microphone, Headphones, Monitor, Terminal
 } from "@phosphor-icons/react";
 
 /** String-name → Phosphor component lookup table. */
@@ -45,7 +48,26 @@ export const iconMap: Record<string, any> = {
     "FilmStrip": FilmStrip,
     "FileText": FileText,
     "Book": Book,
-    "Folder": Folder
+    "Folder": Folder,
+    "Lightning": Lightning,
+    "Diamond": Diamond,
+    "Crown": Crown,
+    "Eye": Eye,
+    "Gear": Gear,
+    "ChatCircle": ChatCircle,
+    "Envelope": Envelope,
+    "MapPin": MapPin,
+    "Globe": Globe,
+    "Shield": Shield,
+    "Fire": Fire,
+    "Leaf": Leaf,
+    "Sun": Sun,
+    "Moon": Moon,
+    "Camera": Camera,
+    "Microphone": Microphone,
+    "Headphones": Headphones,
+    "Monitor": Monitor,
+    "Terminal": Terminal,
 };
 
 /** Resolve an icon name to its Phosphor component. Falls back to Folder. */

@@ -133,8 +133,8 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
 
             <Wrapper className={wrapperClass}>
                 {history.length === 0 ? (
-                    <div className={cn("text-center text-muted-foreground", isSettingsPage ? "p-8 border border-dashed border-border rounded-lg bg-card/30" : "py-12")}>
-                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-4">
+                    <div className={cn("text-center text-muted-foreground", isSettingsPage ? "p-8 border border-dashed border-border rounded-none bg-card/30" : "py-12")}>
+                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-none bg-muted/50 mb-4">
                             <ClockCounterClockwise size={24} className="opacity-50" />
                         </div>
                         <p className="text-sm font-medium">No history records found</p>
@@ -144,7 +144,7 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
                     (Object.entries(groupedHistory) as [string, HistoryEntry[]][])
                         .sort((a, b) => b[0].localeCompare(a[0]))
                         .map(([date, entries]) => (
-                        <div key={date} className={isSettingsPage ? "p-5 rounded-lg border border-border bg-card/50" : "mb-6 last:mb-0"}>
+                        <div key={date} className={isSettingsPage ? "p-5 rounded-none border border-border bg-card/50" : "mb-6 last:mb-0"}>
                             {isSettingsPage ? (
                                 <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
                                     <ClockCounterClockwise className="text-muted-foreground" size={16} />
@@ -165,16 +165,16 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
                                     
                                     if (isSettingsPage) {
                                         return (
-                                            <div key={entry.id} className="flex items-center justify-between p-3 rounded-md border border-border bg-background/50">
+                                            <div key={entry.id} className="flex items-center justify-between p-3 rounded-none border border-border bg-background/50">
                                                 <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", getActionColor(entry.action))}>
+                                                    <div className={cn("h-8 w-8 rounded-none flex items-center justify-center shrink-0", getActionColor(entry.action))}>
                                                         <Icon size={16} weight="fill" />
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-2">
                                                             <p className="text-sm font-medium truncate">{entry.entityName || "Unknown Entity"}</p>
                                                             <span className={cn(
-                                                                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-muted",
+                                                                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-none bg-muted",
                                                                 getActionColor(entry.action).replace('bg-', 'text-').split(' ')[0]
                                                             )}>
                                                                 {entry.action}
@@ -192,12 +192,12 @@ export function SidebarHistory({ onBack, variant = 'sidebar' }: SidebarHistoryPr
 
                                     return (
                                         <div key={entry.id} className={cn(
-                                            "flex items-start gap-3 p-3 rounded-lg transition-colors group border border-transparent",
+                                            "flex items-start gap-3 p-3 rounded-none transition-colors group border border-transparent",
                                             variant === 'sidebar' 
-                                                ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground p-2 gap-2 rounded-md" 
+                                                ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground p-2 gap-2 rounded-none" 
                                                 : "hover:bg-accent/50 hover:border-border/50"
                                         )}>
-                                            <div className={cn("p-1.5 rounded-md shrink-0", getActionColor(entry.action), variant === 'sidebar' && "p-1 rounded")}>
+                                            <div className={cn("p-1.5 rounded-none shrink-0", getActionColor(entry.action), variant === 'sidebar' && "p-1 rounded-none")}>
                                                 <Icon size={variant === 'sidebar' ? 12 : 16} weight="bold" />
                                             </div>
                                             <div className="flex-1 min-w-0">

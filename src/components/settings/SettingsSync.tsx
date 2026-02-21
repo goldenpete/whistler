@@ -822,8 +822,8 @@ export function SettingsSync() {
                             <ShieldCheck className="text-primary" size={24} />
                             Two-Factor Authentication
                         </h2>
-                        <div className="p-8 rounded-lg border border-border bg-card/50 flex flex-col items-center gap-6">
-                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                        <div className="p-8 rounded-none border border-border bg-card/50 flex flex-col items-center gap-6">
+                            <div className="w-16 h-16 bg-primary/10 rounded-none flex items-center justify-center text-primary">
                                 <ShieldCheck weight="fill" size={32} />
                             </div>
                             <div className="text-center space-y-2">
@@ -922,7 +922,7 @@ export function SettingsSync() {
                             </form>
                         </div>
 
-                        <div className="p-6 rounded-lg border border-border bg-card/50 flex flex-col justify-center space-y-6">
+                        <div className="p-6 rounded-none border border-border bg-card/50 flex flex-col justify-center space-y-6">
                             <div className="space-y-2">
                                 <h3 className="text-base font-medium">New to Whistler Sync?</h3>
                                 <p className="text-sm text-muted-foreground">
@@ -932,7 +932,7 @@ export function SettingsSync() {
                             <Button variant="outline" onClick={handleGenerateId} className="w-full">
                                 Generate New ID
                             </Button>
-                            <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded border border-border/50">
+                            <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-none border border-border/50">
                                 <strong>Note:</strong> Your data is end-to-end encrypted. We cannot recover your Sync ID if lost. Please save it securely.
                             </div>
                         </div>
@@ -958,16 +958,16 @@ export function SettingsSync() {
 
                 <div className="space-y-3">
                     {sessions.map((session) => (
-                        <div key={session.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
+                        <div key={session.id} className="flex items-center justify-between p-4 rounded-none border border-border bg-card/50">
                             <div className="flex items-center gap-4">
-                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
+                                <div className={`h-10 w-10 rounded-none flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
                                     <session.icon size={20} weight={session.isCurrent ? "fill" : "regular"} />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <span className="font-medium">{session.browser} on {session.device}</span>
                                         {session.isCurrent && (
-                                            <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded-full font-medium border border-green-500/20">
+                                            <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded-none font-medium border border-green-500/20">
                                                 Current
                                             </span>
                                         )}
@@ -1004,10 +1004,10 @@ export function SettingsSync() {
                     <User className="text-primary" size={24} />
                     Account
                 </h2>
-                <div className="p-5 rounded-lg border border-border bg-card/50">
+                <div className="p-5 rounded-none border border-border bg-card/50">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <div className="h-12 w-12 rounded-none bg-primary/10 flex items-center justify-center text-primary">
                                 <User size={24} weight="fill" />
                             </div>
                             <div>
@@ -1087,7 +1087,7 @@ export function SettingsSync() {
 
                     {/* Passkey Management UI */}
                     {showPasskeys && (
-                        <div className="mt-6 p-5 rounded-lg border border-border bg-muted/30 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="mt-6 p-5 rounded-none border border-border bg-muted/30 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <h3 className="text-sm font-medium">Passkeys</h3>
@@ -1144,9 +1144,9 @@ export function SettingsSync() {
                             ) : (
                                 <div className="space-y-2">
                                     {passkeys.map((pk) => (
-                                        <div key={pk.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border border-border/40">
+                                        <div key={pk.id} className="flex items-center justify-between p-3 rounded-none bg-background/50 border border-border/40">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                                <div className="w-8 h-8 rounded-none bg-primary/10 flex items-center justify-center text-primary">
                                                     <Key size={16} />
                                                 </div>
                                                 <div>
@@ -1173,7 +1173,7 @@ export function SettingsSync() {
 
                     {/* 2FA Setup Dialog Area */}
                     {showTwoFactorSetup && (
-                <div className="p-5 rounded-lg border border-yellow-500/30 bg-yellow-500/5 space-y-4 animate-in fade-in zoom-in-95">
+                <div className="p-5 rounded-none border border-yellow-500/30 bg-yellow-500/5 space-y-4 animate-in fade-in zoom-in-95">
                     <div className="flex items-center justify-between">
                         <h3 className="font-semibold flex items-center gap-2">
                             <ShieldCheck className="text-yellow-500" />
@@ -1198,7 +1198,7 @@ export function SettingsSync() {
                             )}
                             {setupStep === 'scan' && setupSecret && (
                                 <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-6">
-                                    <div className="bg-white p-2 rounded-lg w-fit">
+                                    <div className="bg-white p-2 rounded-none w-fit">
                                         <QRCode value={`otpauth://totp/Whistler:${user?.id}?secret=${setupSecret}&issuer=Whistler`} size={180} />
                                     </div>
                                     <div className="space-y-4">
@@ -1209,7 +1209,7 @@ export function SettingsSync() {
                                         <div>
                                             <h4 className="font-medium mb-1">Manual Entry</h4>
                                             <p className="text-sm text-muted-foreground mb-2">If you can't scan the code, enter this secret key manually:</p>
-                                            <code className="bg-muted px-2 py-1 rounded text-xs font-mono break-all select-all">
+                                            <code className="bg-muted px-2 py-1 rounded-none text-xs font-mono break-all select-all">
                                                 {setupSecret}
                                             </code>
                                         </div>
@@ -1269,7 +1269,7 @@ export function SettingsSync() {
                     Sync Status
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-5 rounded-lg border border-border bg-card/50 space-y-4">
+                    <div className="p-5 rounded-none border border-border bg-card/50 space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <label className="text-sm font-medium">Auto-Sync</label>
@@ -1306,7 +1306,7 @@ export function SettingsSync() {
                         )}
                     </div>
 
-                    <div className="p-5 rounded-lg border border-border bg-card/50 flex flex-col justify-between">
+                    <div className="p-5 rounded-none border border-border bg-card/50 flex flex-col justify-between">
                          <div className="flex items-center justify-between mb-4">
                              <div>
                                  <div className="text-sm font-medium">Last Sync</div>
@@ -1314,7 +1314,7 @@ export function SettingsSync() {
                                      {lastSyncTime ? new Date(lastSyncTime).toLocaleString() : "Never"}
                                  </div>
                              </div>
-                             <div className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${
+                             <div className={`px-2 py-1 rounded-none text-xs flex items-center gap-1 ${
                                  syncStatus === 'syncing' ? 'bg-blue-500/20 text-blue-400' :
                                  syncStatus === 'error' ? 'bg-red-500/20 text-red-400' :
                                  syncStatus === 'success' ? 'bg-green-500/20 text-green-400' :
@@ -1347,7 +1347,7 @@ export function SettingsSync() {
                     <Gear className="text-primary" size={24} />
                     What to Sync
                 </h2>
-                <div className="p-5 rounded-lg border border-border bg-card/50">
+                <div className="p-5 rounded-none border border-border bg-card/50">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
                         {[
                             { id: 'projects', label: 'Projects', desc: 'Project structure and metadata', icon: Folder },
@@ -1363,7 +1363,7 @@ export function SettingsSync() {
                         ].map((item) => (
                             <div key={item.id} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded bg-muted/30 flex items-center justify-center text-muted-foreground">
+                                    <div className="h-8 w-8 rounded-none bg-muted/30 flex items-center justify-center text-muted-foreground">
                                         <item.icon size={18} />
                                     </div>
                                     <div>
@@ -1376,7 +1376,7 @@ export function SettingsSync() {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-none"
                                             onClick={() => setAdvancedSyncOpen(true)}
                                             title="Advanced Settings Sync Options"
                                         >
@@ -1386,7 +1386,7 @@ export function SettingsSync() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-full"
+                                        className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-none"
                                         onClick={() => {
                                             setItemToDelete({ id: item.id, label: item.label });
                                             setDeleteDialogOpen(true);
@@ -1417,13 +1417,13 @@ export function SettingsSync() {
                 <div className="space-y-4">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {sessions.slice(0, 3).map((session) => (
-                            <div key={session.id} className="p-4 rounded-lg border border-border bg-card/50 flex flex-col gap-3">
+                            <div key={session.id} className="p-4 rounded-none border border-border bg-card/50 flex flex-col gap-3">
                                 <div className="flex items-start justify-between">
-                                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
+                                    <div className={`h-8 w-8 rounded-none flex items-center justify-center ${session.isCurrent ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
                                         <session.icon size={16} weight={session.isCurrent ? "fill" : "regular"} />
                                     </div>
                                     {session.isCurrent && (
-                                        <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded-full font-medium border border-green-500/20">
+                                        <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded-none font-medium border border-green-500/20">
                                             Current
                                         </span>
                                     )}
@@ -1450,17 +1450,17 @@ export function SettingsSync() {
                         ))}
                         {/* Placeholder Skeletons for empty slots */}
                         {Array.from({ length: Math.max(0, 3 - sessions.length) }).map((_, i) => (
-                            <div key={`skeleton-${i}`} className="p-4 rounded-lg border border-border bg-card/50 flex flex-col gap-3 opacity-50">
+                            <div key={`skeleton-${i}`} className="p-4 rounded-none border border-border bg-card/50 flex flex-col gap-3 opacity-50">
                                 <div className="flex items-start justify-between">
-                                    <div className="h-8 w-8 rounded-full bg-muted/50 animate-pulse" />
+                                    <div className="h-8 w-8 rounded-none bg-muted/50 animate-pulse" />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <div className="h-4 w-24 bg-muted/50 rounded animate-pulse" />
-                                    <div className="h-3 w-16 bg-muted/50 rounded animate-pulse" />
+                                    <div className="h-4 w-24 bg-muted/50 rounded-none animate-pulse" />
+                                    <div className="h-3 w-16 bg-muted/50 rounded-none animate-pulse" />
                                 </div>
                                 <div className="pt-2 border-t border-border/50 flex gap-2">
-                                    <div className="h-3 w-20 bg-muted/50 rounded animate-pulse" />
-                                    <div className="h-3 w-12 bg-muted/50 rounded animate-pulse" />
+                                    <div className="h-3 w-20 bg-muted/50 rounded-none animate-pulse" />
+                                    <div className="h-3 w-12 bg-muted/50 rounded-none animate-pulse" />
                                 </div>
                             </div>
                         ))}

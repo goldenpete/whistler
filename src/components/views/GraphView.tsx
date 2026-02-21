@@ -26,14 +26,15 @@ import { useKeybind } from "@/hooks/use-keybind";
 import {
     Plus, Circle, Square,
     Note, File, Folder, Clock, Link as LinkIcon,
-    NotePencil,
+    NotePencil, Palette, Stamp,
     MagnifyingGlassPlus, MagnifyingGlassMinus, PencilSimple, Trash, ArrowsOutSimple
 } from "@phosphor-icons/react";
 import { cn, clamp } from "@/lib/utils";
 import type { GraphNode, GraphEdge, Graph, Highlight } from "@/types";
 import { NodeDialog } from "@/components/dialogs/EditNodeDialog";
 import { NodePreviewCard } from "@/components/graph/NodePreviewCard";
-import { iconMap } from "@/utils/iconMap";
+import { iconMap, iconNames } from "@/utils/iconMap";
+import { PRESET_COLORS } from "@/components/ui/ColorPicker";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -49,10 +50,17 @@ import {
 } from "@/components/ui/context-menu";
 import { useNavigate, useParams } from "react-router-dom";
 
-const NODE_RADIUS = 18;
-const SQUARE_W = 90;
-const SQUARE_H = 26;
-const SQUARE_R = 3;
+// ── Node shape constants ──
+// "Circle" mode is actually a compact square; "square" mode is a wider badge/rectangle
+const NODE_SIZE = 36;          // Compact square side length (was circle of radius 18)
+const BADGE_MIN_W = 80;        // Badge minimum width
+const BADGE_MAX_W = 200;       // Badge maximum width
+const BADGE_H = 30;            // Badge height
+const BADGE_PAD_LEFT = 10;     // Left padding in badge
+const BADGE_PAD_RIGHT = 10;    // Right padding in badge
+const BADGE_ICON_SIZE = 14;    // Icon size inside badge
+const BADGE_ICON_GAP = 6;      // Gap between icon and text
+const BADGE_FONT = '500 11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 const COLORS = ["#f97316", "#8b5cf6", "#10b981", "#3b82f6", "#ef4444", "#eab308"];
 const GRAPH_VIEW_KEY_PREFIX = "graph_view_";
 
@@ -159,6 +167,10 @@ export default function GraphView() {
     // Context Menu State
     const [contextMenu, setContextMenu] = useState<{ type: 'node' | 'edge', id: string } | null>(null);
     
+    // Inline color/icon picker for context menu actions
+    const [colorPickerNodeId, setColorPickerNodeId] = useState<string | null>(null);
+    const [iconPickerNodeId, setIconPickerNodeId] = useState<string | null>(null);
+    
     // Preview Node State
     const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
 
@@ -192,8 +204,10 @@ export default function GraphView() {
             const loaded: Record<string, HTMLImageElement> = {};
             for (const [name, Icon] of Object.entries(iconMap)) {
                 try {
-                    const svgString = renderToStaticMarkup(<Icon weight="regular" color="#ffffff" />);
-                    const img = new Image();
+                    const dpr = window.devicePixelRatio || 1;
+                    const renderSize = Math.round(48 * dpr); // Render at high res for crisp scaling
+                    const svgString = renderToStaticMarkup(<Icon weight="regular" color="#ffffff" size={renderSize} />);
+                    const img = new Image(renderSize, renderSize);
                     img.src = `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
                     loaded[name] = img;
                 } catch (e) {
@@ -221,6 +235,49 @@ export default function GraphView() {
         if (!ctx) return;
 
         const dpr = window.devicePixelRatio || 1;
+
+        // Helper: draw text snapped to exact device pixels for crispness
+        const drawCrispText = (
+            text: string,
+            worldX: number,
+            worldY: number,
+            font: string,
+            fillStyle: string,
+            align: CanvasTextAlign = 'left',
+            maxWidth?: number
+        ) => {
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            // Convert world coords → device pixels, rounded to integer
+            const devX = Math.round((worldX * scale + pan.x) * dpr);
+            const devY = Math.round((worldY * scale + pan.y) * dpr);
+            // Scale font size by scale * dpr for device resolution
+            const fontSize = parseFloat(font.match(/([\d.]+)px/)?.[1] || '11');
+            const fontWeight = font.match(/(\d+)\s+[\d.]+px/)?.[1] || '400';
+            const fontFamily = font.replace(/^.*?px\s*/, '');
+            const devFont = `${fontWeight} ${Math.round(fontSize * scale * dpr)}px ${fontFamily}`;
+            ctx.font = devFont;
+            ctx.fillStyle = fillStyle;
+            ctx.textAlign = align;
+            if (maxWidth !== undefined) {
+                ctx.fillText(text, devX, devY, maxWidth * scale * dpr);
+            } else {
+                ctx.fillText(text, devX, devY);
+            }
+            ctx.restore();
+            // Restore world transform
+            ctx.setTransform(dpr, 0, 0, dpr, pan.x * dpr, pan.y * dpr);
+            ctx.scale(scale, scale);
+        };
+
+        // Helper: measure text at world-space font (returns world-space width)
+        const measureCrispText = (text: string, font: string): number => {
+            ctx.save();
+            ctx.font = font;
+            const w = ctx.measureText(text).width;
+            ctx.restore();
+            return w;
+        };
         
         // Clear screen
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -291,66 +348,110 @@ export default function GraphView() {
             const color = node.color || COLORS[0];
 
             if (nodeShape === 'square') {
-                // ── Square / badge mode (matches landing-page concept) ──
-                const hw = SQUARE_W / 2;
-                const hh = SQUARE_H / 2;
+                // ── Badge / rectangle mode ──
+                const hasIcon = !!(node.icon && imagesRef.current[node.icon]);
+                const textStart = BADGE_PAD_LEFT + (hasIcon ? BADGE_ICON_SIZE + BADGE_ICON_GAP : 0) + 3; // +3 for accent bar
+
+                // Measure text to compute dynamic badge width
+                ctx.font = BADGE_FONT;
+                const maxTextW = BADGE_MAX_W - textStart - BADGE_PAD_RIGHT;
+                const fullTextW = ctx.measureText(node.title).width;
+
+                // Truncate with ellipsis if needed
+                let displayText = node.title;
+                if (fullTextW > maxTextW) {
+                    const ellipsis = '\u2026';
+                    const ellipsisW = ctx.measureText(ellipsis).width;
+                    let truncated = node.title;
+                    while (truncated.length > 1 && ctx.measureText(truncated).width + ellipsisW > maxTextW) {
+                        truncated = truncated.slice(0, -1);
+                    }
+                    displayText = truncated + ellipsis;
+                }
+
+                const textW = ctx.measureText(displayText).width;
+                const badgeW = Math.max(BADGE_MIN_W, Math.min(BADGE_MAX_W, textStart + textW + BADGE_PAD_RIGHT));
+
+                const hw = badgeW / 2;
+                const hh = BADGE_H / 2;
                 const rx = node.x - hw;
                 const ry = node.y - hh;
 
+                // Background
                 ctx.beginPath();
-                ctx.roundRect(rx, ry, SQUARE_W, SQUARE_H, SQUARE_R);
-                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                ctx.rect(rx, ry, badgeW, BADGE_H);
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fill();
+
+                // Left color accent bar
+                ctx.fillStyle = color;
+                ctx.fillRect(rx, ry, 3, BADGE_H);
 
                 // Border
                 if (connectingNodeId === node.id) {
                     ctx.strokeStyle = '#3b82f6';
                     ctx.lineWidth = 2 / scale;
                 } else {
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = 1.2 / scale;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                    ctx.lineWidth = 1 / scale;
                 }
                 ctx.stroke();
 
                 // Icon inside badge
-                const iconSize = 12;
-                const iconX = rx + 8;
-                const iconY = node.y - iconSize / 2;
-                if (node.icon && node.icon !== 'Folder' && imagesRef.current[node.icon]) {
-                    ctx.drawImage(imagesRef.current[node.icon], iconX, iconY, iconSize, iconSize);
+                const iconX = rx + BADGE_PAD_LEFT + 3; // after accent bar
+                const iconY = node.y - BADGE_ICON_SIZE / 2;
+                if (hasIcon) {
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(imagesRef.current[node.icon!], iconX, iconY, BADGE_ICON_SIZE, BADGE_ICON_SIZE);
                 }
 
-                // Label inside badge
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.font = `${10}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-                ctx.textAlign = 'left';
-                ctx.fillText(node.title.slice(0, 14), iconX + iconSize + 5, node.y + 3.5);
+                // Label inside badge — pixel-snapped for crisp text
+                const labelX = rx + textStart;
+                drawCrispText(displayText, labelX, node.y + 4, BADGE_FONT, 'rgba(255,255,255,0.85)', 'left');
             } else {
-                // ── Circle mode (original) ──
+                // ── Compact square mode (was circle) ──
+                const half = NODE_SIZE / 2;
+                const rx = node.x - half;
+                const ry = node.y - half;
+
+                // Filled square
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
+                ctx.rect(rx, ry, NODE_SIZE, NODE_SIZE);
                 ctx.fillStyle = color;
                 ctx.fill();
 
                 if (connectingNodeId === node.id) {
                     ctx.strokeStyle = '#3b82f6';
-                    ctx.lineWidth = 4 / scale;
+                    ctx.lineWidth = 3 / scale;
                 } else {
-                    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                    ctx.lineWidth = 2 / scale;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                    ctx.lineWidth = 1.5 / scale;
                 }
                 ctx.stroke();
 
-                if (node.icon && node.icon !== 'Folder' && imagesRef.current[node.icon]) {
+                // Icon centered in square
+                if (node.icon && imagesRef.current[node.icon]) {
                     const img = imagesRef.current[node.icon];
-                    const iconSize = (NODE_RADIUS * 1.2);
+                    const iconSize = NODE_SIZE * 0.55;
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(img, node.x - iconSize / 2, node.y - iconSize / 2, iconSize, iconSize);
                 }
 
-                ctx.fillStyle = '#f5f5f5';
-                ctx.font = `${13 / scale}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.fillText(node.title.slice(0, 14), node.x, node.y + NODE_RADIUS + (16 / scale));
+                // Label below — truncate with ellipsis, pixel-snapped
+                const labelFont = `400 ${12 / scale}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+                const maxLabelW = 90 / scale;
+                let squareLabel = node.title;
+                if (measureCrispText(squareLabel, labelFont) > maxLabelW) {
+                    const ell = '\u2026';
+                    const ew = measureCrispText(ell, labelFont);
+                    while (squareLabel.length > 1 && measureCrispText(squareLabel, labelFont) + ew > maxLabelW) {
+                        squareLabel = squareLabel.slice(0, -1);
+                    }
+                    squareLabel += ell;
+                }
+                drawCrispText(squareLabel, node.x, node.y + half + (14 / scale), labelFont, '#f5f5f5', 'center');
             }
         });
     }, [nodes, edges, scale, pan, connectingNodeId, mousePos, nodeShape]);
@@ -369,8 +470,13 @@ export default function GraphView() {
             draw();
         };
         resize();
+        const ro = new ResizeObserver(resize);
+        ro.observe(container);
         window.addEventListener('resize', resize);
-        return () => window.removeEventListener('resize', resize);
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', resize);
+        };
     }, [draw]);
 
     useEffect(() => { draw(); }, [draw, iconsLoaded]);
@@ -379,13 +485,16 @@ export default function GraphView() {
     const getNodeAt = (x: number, y: number): GraphNode | undefined => {
         // x, y are world coords
         if (nodeShape === 'square') {
+            // Hit-test using max possible badge width for reliable clicking
             return nodes.find((n: GraphNode) => {
-                const hw = SQUARE_W / 2;
-                const hh = SQUARE_H / 2;
+                const hw = BADGE_MAX_W / 2;
+                const hh = BADGE_H / 2;
                 return x >= n.x - hw && x <= n.x + hw && y >= n.y - hh && y <= n.y + hh;
             });
         }
-        return nodes.find((n: GraphNode) => Math.hypot(n.x - x, n.y - y) <= NODE_RADIUS);
+        // Compact square hit detection
+        const half = NODE_SIZE / 2;
+        return nodes.find((n: GraphNode) => Math.abs(n.x - x) <= half && Math.abs(n.y - y) <= half);
     };
 
     const distToSegment = (p_x: number, p_y: number, v_x: number, v_y: number, w_x: number, w_y: number) => {
@@ -466,6 +575,9 @@ export default function GraphView() {
              // The preview card stops propagation, so if we are here, we clicked the canvas.
              setPreviewNodeId(null);
         }
+        // Close inline pickers
+        if (colorPickerNodeId) { setColorPickerNodeId(null); return; }
+        if (iconPickerNodeId) { setIconPickerNodeId(null); return; }
 
         if (connectingNodeId) {
             return;
@@ -615,8 +727,8 @@ export default function GraphView() {
             if (node.y > maxY) maxY = node.y;
         });
 
-        const boundsWidth = maxX - minX + NODE_RADIUS * 2;
-        const boundsHeight = maxY - minY + NODE_RADIUS * 2;
+        const boundsWidth = maxX - minX + NODE_SIZE * 2;
+        const boundsHeight = maxY - minY + NODE_SIZE * 2;
         if (boundsWidth <= 0 || boundsHeight <= 0) return;
 
         const padding = 80;
@@ -767,10 +879,20 @@ export default function GraphView() {
         setContextMenu(null);
     };
 
-    const handleAction = (action: 'edit' | 'delete' | 'connect') => {
+    const handleAction = (action: 'edit' | 'delete' | 'connect' | 'changeColor' | 'changeIcon') => {
         if (!contextMenu) return;
         const { type, id } = contextMenu;
         setContextMenu(null);
+
+        if (action === 'changeColor' && type === 'node') {
+            setColorPickerNodeId(id);
+            return;
+        }
+
+        if (action === 'changeIcon' && type === 'node') {
+            setIconPickerNodeId(id);
+            return;
+        }
 
         if (action === 'connect' && type === 'node') {
             const node = graphNodes.find((n: GraphNode) => n.id === id);
@@ -837,92 +959,94 @@ export default function GraphView() {
 
     return (
         <div className="flex h-full bg-transparent overflow-hidden">
-            <div ref={containerRef} className="flex-1 relative bg-transparent flex flex-col">
+            <div ref={containerRef} className="flex-1 relative bg-transparent overflow-hidden">
                 {activeGraph ? (
                     <>
                         {/* Toolbar */}
                         {/* Shape toggle – top-right */}
-                        <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-black/50 backdrop-blur-sm p-1 rounded-lg border border-white/10 shadow-lg">
+                        <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-sm p-1 rounded-none border border-white/10 shadow-lg">
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className={cn("h-7 w-7", nodeShape === 'circle' ? 'text-white bg-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/10')}
+                                className={cn("h-7 w-7 rounded-none", nodeShape === 'circle' ? 'text-white bg-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/10')}
                                 onClick={() => setNodeShape('circle')}
-                                title="Circle nodes"
+                                title="Compact nodes"
                             >
-                                <Circle size={16} />
+                                <Square size={14} />
                             </Button>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className={cn("h-7 w-7", nodeShape === 'square' ? 'text-white bg-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/10')}
+                                className={cn("h-7 w-7 rounded-none", nodeShape === 'square' ? 'text-white bg-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/10')}
                                 onClick={() => setNodeShape('square')}
-                                title="Square nodes"
+                                title="Badge nodes"
                             >
-                                <Square size={16} />
+                                <NotePencil size={14} />
                             </Button>
                         </div>
 
-                        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-sm p-1.5 rounded-lg border border-white/10 shadow-lg">
+                        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-sm p-1.5 rounded-none border border-white/10 shadow-lg">
                             <DropdownMenu open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-white hover:bg-white/10">
-                                        <Plus className="mr-2" /> Add Node
+                                    <Button variant="ghost" size="sm" className="h-8 px-2 rounded-none text-muted-foreground hover:text-white hover:bg-white/10">
+                                        <Plus className="mr-1.5" size={14} /> Add Node
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent 
                                     align="start" 
-                                    className="w-48 bg-neutral-900 border-white/10 text-white"
+                                    className="w-[220px] p-2 bg-zinc-950 border-white/10 text-white"
                                     onKeyDown={(e: KeyboardEvent) => {
                                         if (e.key === 'Backspace') {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             setIsAddMenuOpen(false);
                                         }
-                                        // Stop propagation for navigation keys to prevent graph interaction
                                         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape'].includes(e.key)) {
                                             e.stopPropagation();
                                         }
                                     }}
                                 >
-                                    <DropdownMenuItem onClick={() => handleAddNode('note')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
-                                        <Note className="mr-2" /> Note
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleAddNode('file')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
-                                        <File className="mr-2" /> File
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleAddNode('collection')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
-                                        <Folder className="mr-2" /> Collection
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleAddNode('highlight')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
-                                        <Clock className="mr-2" /> Highlight
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleAddNode('doc')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
-                                        <NotePencil className="mr-2" /> Doc
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleAddNode('link')} className="hover:bg-white/10 focus:bg-white/10 cursor-pointer">
-                                        <LinkIcon className="mr-2" /> Link
-                                    </DropdownMenuItem>
+                                    <div className="px-2 py-1.5 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">Create Node</div>
+                                    <div className="grid grid-cols-2 gap-1">
+                                        {([
+                                            { type: 'note' as const, label: 'Note', icon: Note, desc: 'Text note' },
+                                            { type: 'file' as const, label: 'File', icon: File, desc: 'Media file' },
+                                            { type: 'collection' as const, label: 'Collection', icon: Folder, desc: 'File group' },
+                                            { type: 'highlight' as const, label: 'Highlight', icon: Clock, desc: 'Timestamp' },
+                                            { type: 'doc' as const, label: 'Document', icon: NotePencil, desc: 'Rich text' },
+                                            { type: 'link' as const, label: 'Link', icon: LinkIcon, desc: 'External URL' },
+                                        ]).map(({ type: t, label, icon: Icon, desc }) => (
+                                            <button
+                                                key={t}
+                                                onClick={() => { handleAddNode(t); setIsAddMenuOpen(false); }}
+                                                className="flex flex-col items-center gap-1 p-2.5 rounded-none border border-transparent hover:bg-white/5 hover:border-white/10 transition-colors cursor-pointer text-center"
+                                            >
+                                                <Icon size={18} className="text-zinc-400" />
+                                                <span className="text-[11px] font-medium text-zinc-200">{label}</span>
+                                                <span className="text-[9px] text-zinc-500">{desc}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <div className="w-px h-4 bg-white/10 mx-1" />
+                            <div className="w-px h-4 bg-white/10 mx-0.5" />
 
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white hover:bg-white/10" onClick={() => setScale(s => Math.min(s + 0.1, 3))}>
-                                <MagnifyingGlassPlus />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none text-muted-foreground hover:text-white hover:bg-white/10" onClick={() => setScale(s => Math.min(s + 0.1, 3))}>
+                                <MagnifyingGlassPlus size={14} />
                             </Button>
-                            <span className="text-xs text-muted-foreground w-8 text-center select-none">{Math.round(scale * 100)}%</span>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white hover:bg-white/10" onClick={() => setScale(s => Math.max(s - 0.1, 0.2))}>
-                                <MagnifyingGlassMinus />
+                            <span className="text-[10px] text-zinc-500 w-8 text-center select-none font-mono">{Math.round(scale * 100)}%</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none text-muted-foreground hover:text-white hover:bg-white/10" onClick={() => setScale(s => Math.max(s - 0.1, 0.2))}>
+                                <MagnifyingGlassMinus size={14} />
                             </Button>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-white hover:bg-white/10"
+                                className="h-8 w-8 rounded-none text-muted-foreground hover:text-white hover:bg-white/10"
                                 onClick={handleFitToView}
                                 title="Fit to view"
                             >
-                                <ArrowsOutSimple />
+                                <ArrowsOutSimple size={14} />
                             </Button>
                         </div>
 
@@ -951,11 +1075,17 @@ export default function GraphView() {
                             </ContextMenuTrigger>
 
                             {contextMenu && (
-                                <ContextMenuContent className="min-w-[8rem]">
+                                <ContextMenuContent className="min-w-[10rem]">
                                     {contextMenu.type === 'node' && (
                                         <>
                                             <ContextMenuItem onClick={() => handleAction('edit')} inset className="gap-2">
                                                 <PencilSimple /> Edit node
+                                            </ContextMenuItem>
+                                            <ContextMenuItem onClick={() => handleAction('changeColor')} inset className="gap-2">
+                                                <Palette /> Change color
+                                            </ContextMenuItem>
+                                            <ContextMenuItem onClick={() => handleAction('changeIcon')} inset className="gap-2">
+                                                <Stamp /> Change icon
                                             </ContextMenuItem>
                                             <ContextMenuItem onClick={() => handleAction('connect')} inset className="gap-2">
                                                 <LinkIcon /> Connect to...
@@ -978,11 +1108,11 @@ export default function GraphView() {
                         {/* Status Bar */}
                         <div className="absolute bottom-4 right-4 flex items-center gap-2 pointer-events-none select-none">
                             {activeGraph && (
-                                <div className="px-2 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-[10px] text-zinc-400 font-medium">
+                                <div className="px-2 py-1 rounded-none bg-zinc-950/80 border border-zinc-800 text-[10px] text-zinc-400 font-medium">
                                     {activeGraph.name}
                                 </div>
                             )}
-                            <div className="px-2 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-[10px] text-zinc-400">
+                            <div className="px-2 py-1 rounded-none bg-zinc-950/80 border border-zinc-800 text-[10px] text-zinc-400">
                                 {nodes.length} nodes • {edges.length} edges
                             </div>
                         </div>
@@ -1008,7 +1138,7 @@ export default function GraphView() {
                                         }}
                                         style={{
                                             left: screenX,
-                                            top: screenY - NODE_RADIUS - 10,
+                                            top: screenY - NODE_SIZE / 2 - 10,
                                             transform: 'translate(-50%, -100%)'
                                         }}
                                     />
@@ -1025,20 +1155,117 @@ export default function GraphView() {
                             node={nodeDialog.node}
                             onSave={handleSaveNode}
                         />
+
+                        {/* Inline Color Picker */}
+                        {colorPickerNodeId && (() => {
+                            const node = nodes.find(n => n.id === colorPickerNodeId);
+                            if (!node) return null;
+                            const screenX = node.x * scale + pan.x;
+                            const screenY = node.y * scale + pan.y;
+                            return (
+                                <div
+                                    className="absolute z-50 bg-zinc-950 border border-zinc-800 rounded-none shadow-xl p-3"
+                                    style={{ left: screenX, top: screenY + NODE_SIZE / 2 + 8, transform: 'translateX(-50%)' }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">Node Color</div>
+                                    <div className="grid grid-cols-5 gap-1.5">
+                                        {PRESET_COLORS.map(c => (
+                                            <button
+                                                key={c}
+                                                className={cn(
+                                                    "w-6 h-6 rounded-none border-2 transition-all",
+                                                    node.color === c ? "border-white scale-110" : "border-transparent hover:border-white/30 hover:scale-110"
+                                                )}
+                                                style={{ backgroundColor: c }}
+                                                onClick={() => {
+                                                    updateNode(node.id, { color: c });
+                                                    setColorPickerNodeId(null);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <button
+                                        className="mt-2 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors w-full text-center"
+                                        onClick={() => setColorPickerNodeId(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Inline Icon Picker */}
+                        {iconPickerNodeId && (() => {
+                            const node = nodes.find(n => n.id === iconPickerNodeId);
+                            if (!node) return null;
+                            const screenX = node.x * scale + pan.x;
+                            const screenY = node.y * scale + pan.y;
+                            return (
+                                <div
+                                    className="absolute z-50 bg-zinc-950 border border-zinc-800 rounded-none shadow-xl p-3"
+                                    style={{ left: screenX, top: screenY + NODE_SIZE / 2 + 8, transform: 'translateX(-50%)' }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">Node Icon</div>
+                                    <div className="grid grid-cols-6 gap-1">
+                                        {/* No icon option */}
+                                        <button
+                                            className={cn(
+                                                "w-7 h-7 flex items-center justify-center rounded-none border transition-all",
+                                                !node.icon ? "border-white bg-white/10 text-white" : "border-transparent text-zinc-500 hover:border-white/20 hover:text-white"
+                                            )}
+                                            onClick={() => {
+                                                updateNode(node.id, { icon: "" });
+                                                setIconPickerNodeId(null);
+                                            }}
+                                            title="No icon"
+                                        >
+                                            <span className="text-[9px] font-bold">Ø</span>
+                                        </button>
+                                        {iconNames.map(name => {
+                                            const Icon = iconMap[name];
+                                            return (
+                                                <button
+                                                    key={name}
+                                                    className={cn(
+                                                        "w-7 h-7 flex items-center justify-center rounded-none border transition-all",
+                                                        node.icon === name ? "border-white bg-white/10 text-white" : "border-transparent text-zinc-500 hover:border-white/20 hover:text-white"
+                                                    )}
+                                                    onClick={() => {
+                                                        updateNode(node.id, { icon: name });
+                                                        setIconPickerNodeId(null);
+                                                    }}
+                                                    title={name}
+                                                >
+                                                    <Icon size={14} />
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <button
+                                        className="mt-2 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors w-full text-center"
+                                        onClick={() => setIconPickerNodeId(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            );
+                        })()}
                     </>
                 ) : !activeProjectId ? (
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
-                            <Circle size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
+                            <Square size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
                             <p>Select a project to create graphs</p>
                         </div>
                     </div>
                 ) : (
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
-                            <Circle size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
+                            <Square size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
                             <p className="mb-4">Select or create a graph</p>
-                            <Button variant="default" size="sm" onClick={handleCreateGraph}>
+                            <Button variant="default" size="sm" className="rounded-none" onClick={handleCreateGraph}>
                                 <Plus className="mr-2" /> Create Graph
                             </Button>
                         </div>

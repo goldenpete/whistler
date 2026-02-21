@@ -1884,7 +1884,7 @@ export default function ProjectSidebar() {
                                 value={newProjectName}
                                 onChange={(e: ReactChangeEvent<HTMLInputElement>) => setNewProjectName(e.target.value)}
                                 autoFocus
-                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500 focus-visible:ring-primary/20"
+                                className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-zinc-800"
                             />
                         </div>
                     </div>

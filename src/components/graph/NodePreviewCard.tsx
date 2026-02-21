@@ -13,6 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { iconMap } from "@/utils/iconMap";
 
 interface NodePreviewCardProps {
     node: GraphNode;
@@ -69,21 +70,21 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
     return (
         <div 
             className={cn(
-                "absolute z-50 w-72 bg-zinc-950 border border-zinc-800 rounded-lg shadow-xl p-3 text-white",
+                "absolute z-50 w-72 bg-zinc-950 border border-zinc-800 rounded-none shadow-xl p-3 text-white",
                 className
             )}
             style={style}
             onClick={(e) => e.stopPropagation()}
         >
             <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                     {type} Node
                 </span>
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="size-6 h-6 w-6" onClick={onEdit} title="Edit Node">
+                    <Button variant="ghost" size="icon" className="size-6 h-6 w-6 rounded-none" onClick={onEdit} title="Edit Node">
                         <PencilSimple size={14} />
                     </Button>
-                    <Button variant="ghost" size="icon" className="size-6 h-6 w-6" onClick={onClose} title="Close">
+                    <Button variant="ghost" size="icon" className="size-6 h-6 w-6 rounded-none" onClick={onClose} title="Close">
                         <X size={14} />
                     </Button>
                 </div>
@@ -91,13 +92,22 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
 
             <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                    <div className="mt-0.5 shrink-0 text-muted-foreground">
-                        {type === 'file' && <FileIcon size={20} />}
-                        {type === 'collection' && <FolderOpen size={20} />}
-                        {type === 'highlight' && <Clock size={20} className="text-primary" />}
-                        {type === 'doc' && <FileIcon size={20} />}
-                        {type === 'link' && <LinkIcon size={20} />}
-                        {type === 'note' && <Note size={20} />}
+                    <div
+                        className="mt-0.5 shrink-0 w-8 h-8 rounded-none flex items-center justify-center"
+                        style={{ backgroundColor: node.color || '#3b82f6' }}
+                    >
+                        {node.icon && iconMap[node.icon] ? (
+                            (() => { const CustomIcon = iconMap[node.icon]; return <CustomIcon size={16} className="text-white" />; })()
+                        ) : (
+                            <>
+                                {type === 'file' && <FileIcon size={16} className="text-white" />}
+                                {type === 'collection' && <FolderOpen size={16} className="text-white" />}
+                                {type === 'highlight' && <Clock size={16} className="text-white" />}
+                                {type === 'doc' && <FileIcon size={16} className="text-white" />}
+                                {type === 'link' && <LinkIcon size={16} className="text-white" />}
+                                {type === 'note' && <Note size={16} className="text-white" />}
+                            </>
+                        )}
                     </div>
                     
                     <div className="min-w-0 flex-1">
@@ -154,7 +164,7 @@ export function NodePreviewCard({ node, onClose, onEdit, style, className }: Nod
                 {canOpen && (
                     <Button 
                         size="sm" 
-                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="w-full rounded-none bg-primary text-primary-foreground hover:bg-primary/90"
                         onClick={handleOpen}
                     >
                         Open

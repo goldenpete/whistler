@@ -117,9 +117,9 @@ export function ActionsSettings() {
                                     {items.map(item => {
                                         const Icon = item.icon || Lightning;
                                         return (
-                                            <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
+                                            <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-none border border-zinc-800 hover:border-zinc-700 transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-md bg-zinc-800 text-zinc-400">
+                                                    <div className="p-2 rounded-none bg-zinc-800 text-zinc-400">
                                                         <Icon size={16} />
                                                     </div>
                                                     <div className="flex flex-col">
@@ -131,7 +131,7 @@ export function ActionsSettings() {
                                                 </div>
                                                 
                                                 <div className="flex items-center gap-4">
-                                                    <code className="text-[10px] text-zinc-600 font-mono px-2 py-1 bg-zinc-950 rounded border border-zinc-900">
+                                                    <code className="text-[10px] text-zinc-600 font-mono px-2 py-1 bg-zinc-950 rounded-none border border-zinc-900">
                                                         {item.id}
                                                     </code>
                                                 </div>

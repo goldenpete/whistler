@@ -38,7 +38,7 @@ const KeyDisplay = ({ k }: { k: string }) => {
             {parts.map((part, i) => (
                 <div key={i} className="flex items-center gap-1">
                     {i > 0 && <span className="text-zinc-600 text-xs">+</span>}
-                    <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold font-mono text-zinc-400 bg-zinc-800 border border-zinc-700 rounded shadow-[0_1px_0_rgba(0,0,0,0.2)] select-none uppercase whitespace-nowrap">
+                    <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold font-mono text-zinc-400 bg-zinc-800 border border-zinc-700 rounded-none shadow-[0_1px_0_rgba(0,0,0,0.2)] select-none uppercase whitespace-nowrap">
                         {formatKey(part)}
                     </span>
                 </div>
@@ -219,9 +219,9 @@ export function KeybindsSettings() {
                                         const Icon = item.icon || Keyboard;
 
                                         return (
-                                            <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
+                                            <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-none border border-zinc-800 hover:border-zinc-700 transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={cn("p-2 rounded-md bg-zinc-800 text-zinc-400", isDisabled && "opacity-50")}>
+                                                    <div className={cn("p-2 rounded-none bg-zinc-800 text-zinc-400", isDisabled && "opacity-50")}>
                                                         <Icon size={16} />
                                                     </div>
                                                     <div className="flex flex-col">
@@ -264,7 +264,7 @@ export function KeybindsSettings() {
 
             <div className="flex justify-center pt-8 pb-4 text-center">
                 <p className="text-xs text-zinc-500">
-                    Press <span className="inline-flex items-center justify-center h-4 px-1 text-[10px] font-bold font-mono text-zinc-400 bg-zinc-800 border border-zinc-700 rounded mx-0.5">{showShortcutsKey.replace('shift+?', '?')}</span> to view keyboard shortcuts at any time.
+                    Press <span className="inline-flex items-center justify-center h-4 px-1 text-[10px] font-bold font-mono text-zinc-400 bg-zinc-800 border border-zinc-700 rounded-none mx-0.5">{showShortcutsKey.replace('shift+?', '?')}</span> to view keyboard shortcuts at any time.
                 </p>
             </div>
 
@@ -278,7 +278,7 @@ export function KeybindsSettings() {
                     </DialogHeader>
                     
                     <div className="flex flex-col items-center justify-center py-8 gap-4">
-                        <div className="p-6 bg-zinc-900 rounded-xl border border-zinc-800 min-w-[200px] flex justify-center">
+                        <div className="p-6 bg-zinc-900 rounded-none border border-zinc-800 min-w-[200px] flex justify-center">
                             {capturedKey ? (
                                 <KeyDisplay k={capturedKey} />
                             ) : (
@@ -287,7 +287,7 @@ export function KeybindsSettings() {
                         </div>
                         
                         {conflictDef && (
-                            <div className="flex items-center gap-2 text-amber-500 bg-amber-500/10 px-3 py-2 rounded-md text-sm">
+                            <div className="flex items-center gap-2 text-amber-500 bg-amber-500/10 px-3 py-2 rounded-none text-sm">
                                 <Warning size={16} />
                                 <span>Conflicts with: <strong>{conflictDef.label}</strong></span>
                             </div>

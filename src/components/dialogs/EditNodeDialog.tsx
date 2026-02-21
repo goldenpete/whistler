@@ -26,22 +26,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import type { GraphNode, File, Highlight, Collection, Doc } from "@/types";
-import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon } from "@phosphor-icons/react";
+import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon, Check, NotePencil } from "@phosphor-icons/react";
 import { FilePickerDialog } from "./FilePickerDialog";
+import { CollectionPickerDialog } from "./CollectionPickerDialog";
 import { HighlightPickerDialog } from "./HighlightPickerDialog";
+import { DocPickerDialog } from "./DocPickerDialog";
 import { useNavigate } from "react-router-dom";
-import { ICONS } from "./StorageDialogs";
+import { iconMap, iconNames } from "@/utils/iconMap";
 import { cn } from "@/lib/utils";
 
 interface NodeDialogProps {
@@ -92,9 +87,11 @@ export function NodeDialog({
     const [selectedDocId, setSelectedDocId] = useState("");
     const [linkUrl, setLinkUrl] = useState("");
     
-    // File Picker State
+    // Picker Dialog State
     const [filePickerOpen, setFilePickerOpen] = useState(false);
+    const [collectionPickerOpen, setCollectionPickerOpen] = useState(false);
     const [highlightPickerOpen, setHighlightPickerOpen] = useState(false);
+    const [docPickerOpen, setDocPickerOpen] = useState(false);
 
     // Initialize state
     useEffect(() => {
@@ -225,7 +222,7 @@ export function NodeDialog({
         <div className="space-y-2">
             <Label>Select File</Label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
                     {selectedFile ? (
                         <>
                             <FileIcon className="shrink-0 text-foreground" />
@@ -291,7 +288,7 @@ export function NodeDialog({
         <div className="space-y-2">
             <Label>Select Highlight</Label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-11 px-3 py-1.5 flex items-center gap-3 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                <div className="flex-1 h-11 px-3 py-1.5 flex items-center gap-3 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
                     {selectedHighlight && selectedHighlightFile ? (
                         <>
                             <div className="flex flex-col items-center justify-center gap-1">
@@ -338,186 +335,216 @@ export function NodeDialog({
     );
 
     const docSelector = (
-        <div className="space-y-2">
-            <Label>Select Document</Label>
-            <Select value={selectedDocId} onValueChange={setSelectedDocId}>
-                <SelectTrigger className="bg-secondary/50 border-border">
-                    <SelectValue placeholder="Choose a document..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {projectDocs.map((d: Doc) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+        <div className="space-y-1.5">
+            <Label className="text-xs">Document</Label>
+            <div className="flex items-center gap-2">
+                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                    {selectedDoc ? (
+                        <>
+                            <NotePencil className="shrink-0 text-foreground" size={14} />
+                            <span className="truncate text-foreground">{selectedDoc.name}</span>
+                        </>
+                    ) : (
+                        <span className="opacity-50">No document selected</span>
+                    )}
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => setDocPickerOpen(true)}
+                >
+                    <NotePencil className="mr-2" size={14} />
+                    Browse...
+                </Button>
+            </div>
+            <DocPickerDialog
+                open={docPickerOpen}
+                onOpenChange={setDocPickerOpen}
+                onSelect={(id) => setSelectedDocId(id)}
+                initialDocId={selectedDocId}
+            />
         </div>
     );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>{mode === 'create' ? `Add ${type.charAt(0).toUpperCase() + type.slice(1)}` : 'Edit Node'}</DialogTitle>
+                    <DialogTitle>{mode === 'create' ? `New ${type.charAt(0).toUpperCase() + type.slice(1)} Node` : 'Edit Node'}</DialogTitle>
                     <DialogDescription>
-                        {mode === 'create' ? 'Configure new node details.' : 'Update node details.'}
+                        {mode === 'create' ? 'Configure the node to add to your graph.' : 'Update this node\'s properties.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
-                    {/* Common: Title & Color */}
-                    <div className="space-y-2">
-                        <Label>Title</Label>
+                <div className="space-y-4 py-2">
+                    {/* Title */}
+                    <div className="space-y-1.5">
+                        <Label className="text-xs">Title</Label>
                         <Input 
                             value={title} 
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)} 
-                            placeholder={type === 'note' ? "Note Title" : "Optional (defaults to selection)"}
-                            className="bg-secondary/50 border-border"
+                            placeholder={type === 'note' ? "Note title..." : "Optional — auto-fills from selection"}
+                            className="bg-secondary/50 border-border h-9"
                         />
                     </div>
 
-                    <ColorPicker color={color} onChange={setColor} />
+                    {/* Color & Icon row */}
+                    <div className="grid grid-cols-2 gap-3">
+                        {/* Compact Color Picker */}
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">Color</Label>
+                            <div className="flex flex-wrap gap-1 p-2 bg-zinc-900/50 rounded-none border border-white/5">
+                                {PRESET_COLORS.slice(0, 12).map(c => (
+                                    <button
+                                        key={c}
+                                        type="button"
+                                        onClick={() => setColor(c)}
+                                        className={cn(
+                                            "w-5 h-5 rounded-none border-2 transition-all",
+                                            color.toLowerCase() === c.toLowerCase() ? "border-white scale-110" : "border-transparent hover:scale-110 hover:border-white/20"
+                                        )}
+                                        style={{ backgroundColor: c }}
+                                    >
+                                        {color.toLowerCase() === c.toLowerCase() && (
+                                            <Check weight="bold" className={cn("w-2.5 h-2.5 mx-auto", c === "#ffffff" ? "text-black" : "text-white")} />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                    {/* Type Specific Fields */}
+                        {/* Compact Icon Picker */}
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">Icon</Label>
+                            <div className="flex flex-wrap gap-1 p-2 bg-zinc-900/50 rounded-none border border-white/5 max-h-[72px] overflow-y-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => setIconName("")}
+                                    className={cn(
+                                        "w-5 h-5 flex items-center justify-center rounded-none border transition-all",
+                                        !iconName ? "border-white bg-white/10 text-white" : "border-transparent text-zinc-500 hover:border-white/20 hover:text-white"
+                                    )}
+                                    title="No icon"
+                                >
+                                    <span className="text-[8px] font-bold">Ø</span>
+                                </button>
+                                {iconNames.map(name => {
+                                    const Icon = iconMap[name];
+                                    return (
+                                        <button
+                                            key={name}
+                                            type="button"
+                                            onClick={() => setIconName(name)}
+                                            className={cn(
+                                                "w-5 h-5 flex items-center justify-center rounded-none border transition-all",
+                                                iconName === name ? "border-white bg-white/10 text-white" : "border-transparent text-zinc-500 hover:border-white/20 hover:text-white"
+                                            )}
+                                            title={name}
+                                        >
+                                            <Icon size={12} />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Type-specific Fields */}
                     {type === 'file' && fileSelector}
 
                     {type === 'collection' && (
-                        <div className="space-y-2">
-                            <Label>Select Collection</Label>
-                            <Select value={selectedCollectionId} onValueChange={setSelectedCollectionId}>
-                                <SelectTrigger className="bg-secondary/50 border-border">
-                                    <SelectValue placeholder="Choose a collection..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {projectCollections.map((c: Collection) => (
-                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">Collection</Label>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                                    {selectedCollection ? (
+                                        <>
+                                            <FolderOpen className="shrink-0 text-foreground" size={14} />
+                                            <span className="truncate text-foreground">{selectedCollection.name}</span>
+                                        </>
+                                    ) : (
+                                        <span className="opacity-50">No collection selected</span>
+                                    )}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shrink-0"
+                                    onClick={() => setCollectionPickerOpen(true)}
+                                >
+                                    <FolderOpen className="mr-2" size={14} />
+                                    Browse...
+                                </Button>
+                            </div>
+                            <CollectionPickerDialog
+                                open={collectionPickerOpen}
+                                onOpenChange={setCollectionPickerOpen}
+                                onSelect={(id) => setSelectedCollectionId(id)}
+                                initialCollectionId={selectedCollectionId}
+                            />
                         </div>
                     )}
 
                     {type === 'link' && (
-                        <div className="space-y-2">
-                            <Label>URL</Label>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">URL</Label>
                             <Input 
                                 value={linkUrl} 
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)} 
                                 placeholder="https://..."
-                                className="bg-secondary/50 border-border"
+                                className="bg-secondary/50 border-border h-9"
                             />
                         </div>
                     )}
 
                     {type === 'highlight' && highlightSelector}
-
                     {type === 'doc' && docSelector}
 
-                    <div className="space-y-2 pt-2">
-                        <div className="text-xs font-medium text-muted-foreground">Preview</div>
-                        <div className="border border-border rounded-lg bg-secondary/20 p-3 space-y-2">
-                            {type === 'file' && selectedFile && (
-                                <div className="flex items-center gap-3">
-                                    <FileIcon className="text-muted-foreground" />
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium truncate text-foreground">
-                                            {selectedFile.name}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                            File node
-                                        </div>
-                                    </div>
+                    {/* Compact Preview */}
+                    {(canOpen || (type === 'note' && title.trim())) && (
+                        <div className="border border-border rounded-none bg-secondary/10 p-2.5 flex items-center gap-3">
+                            <div
+                                className="w-8 h-8 rounded-none flex items-center justify-center shrink-0"
+                                style={{ backgroundColor: color || '#3b82f6' }}
+                            >
+                                {iconName && iconMap[iconName] ? (
+                                    (() => { const Icon = iconMap[iconName]; return <Icon size={14} className="text-white" />; })()
+                                ) : (
+                                    <span className="text-white text-[10px] font-bold">
+                                        {(title || type).charAt(0).toUpperCase()}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="text-xs font-medium text-foreground truncate">
+                                    {type === 'note' ? title : (
+                                        type === 'file' ? selectedFile?.name :
+                                        type === 'collection' ? selectedCollection?.name :
+                                        type === 'doc' ? selectedDoc?.name :
+                                        type === 'highlight' ? (selectedHighlight?.note || selectedHighlight?.text || selectedHighlightFile?.name) :
+                                        type === 'link' ? linkUrl : title
+                                    ) || title || 'Untitled'}
                                 </div>
-                            )}
-                            {type === 'collection' && selectedCollection && (
-                                <div className="flex items-center gap-3">
-                                    <FolderOpen className="text-muted-foreground" />
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium truncate text-foreground">
-                                            {selectedCollection.name}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                            Collection node
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {type === 'highlight' && selectedHighlight && selectedHighlightFile && (
-                                <div className="flex items-center gap-3">
-                                    <Clock className="text-primary" />
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium truncate text-foreground">
-                                            {selectedHighlight.note || selectedHighlight.text || selectedHighlightFile.name}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                            {(() => {
-                                                const mins = Math.floor(selectedHighlight.start / 60);
-                                                const secs = Math.floor(selectedHighlight.start % 60);
-                                                return `${mins}:${secs.toString().padStart(2, "0")}`;
-                                            })()} • {selectedHighlightFile.name}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {type === 'doc' && selectedDoc && (
-                                <div className="flex items-center gap-3">
-                                    <FileIcon className="text-muted-foreground" />
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium truncate text-foreground">
-                                            {selectedDoc.name}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                            Doc node
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {type === 'link' && linkUrl.trim().length > 0 && (
-                                <div className="flex items-center gap-3">
-                                    <LinkIcon className="text-muted-foreground" />
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium truncate text-foreground">
-                                            {linkUrl.trim()}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                            External link
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {type === 'note' && title.trim().length > 0 && (
-                                <div className="flex items-center gap-3">
-                                    <FileIcon className="text-muted-foreground" />
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium truncate text-foreground">
-                                            {title}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                            Note node
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {!canOpen && type !== 'note' && (
-                                <div className="text-xs text-muted-foreground">
-                                    Select a target above to preview what this node will open.
-                                </div>
-                            )}
+                                <div className="text-[10px] text-muted-foreground">{type} node</div>
+                            </div>
                             <Button
                                 size="sm"
-                                className="w-full mt-1 bg-primary text-primary-foreground"
-                                variant="default"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs shrink-0"
                                 disabled={!canOpen}
                                 onClick={handleOpenTarget}
                             >
                                 Open
                             </Button>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button
+                        size="sm"
                         onClick={handleSubmit}
                         className="bg-primary text-primary-foreground"
                         data-sound-confirm={mode === "create" ? true : undefined}

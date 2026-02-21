@@ -136,9 +136,9 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
     }) => {
         if (isSettingsPage) {
             return (
-                <div className="flex items-center justify-between p-3 rounded-md border border-border bg-background/50 group">
+                <div className="flex items-center justify-between p-3 rounded-none border border-border bg-background/50 group">
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className={cn("h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0")}>
+                        <div className={cn("h-8 w-8 rounded-none bg-primary/10 flex items-center justify-center text-primary shrink-0")}>
                             <Icon size={16} weight="fill" style={color ? { color } : undefined} />
                         </div>
                         <div className="min-w-0">
@@ -196,7 +196,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
 
         return (
             <div className={cn(
-                "flex items-center gap-2 p-2 rounded-md transition-colors group relative",
+                "flex items-center gap-2 p-2 rounded-none transition-colors group relative",
                 variant === 'sidebar' 
                     ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" 
                     : "hover:bg-muted"
@@ -390,7 +390,7 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
     );
 
     const TrashSection = ({ title, children }: { title: string, children: ReactNode }) => (
-        <div className={isSettingsPage ? "p-5 rounded-lg border border-border bg-card/50" : ""}>
+        <div className={isSettingsPage ? "p-5 rounded-none border border-border bg-card/50" : ""}>
             <h3 className={cn(
                 "text-muted-foreground uppercase tracking-wider mb-2 px-2",
                 isSettingsPage ? "text-sm font-semibold normal-case px-0 tracking-normal text-foreground mb-3" : "text-[10px] font-bold"
@@ -407,9 +407,9 @@ export function SidebarTrash({ onBack, variant = 'sidebar' }: SidebarTrashProps)
 
             <Wrapper className={wrapperClass}>
                 {!hasTrash ? (
-                    <div className={cn("text-center text-muted-foreground", isSettingsPage ? "p-8 border border-dashed border-border rounded-lg bg-card/30" : "py-8")}>
+                    <div className={cn("text-center text-muted-foreground", isSettingsPage ? "p-8 border border-dashed border-border rounded-none bg-card/30" : "py-8")}>
                          {isSettingsPage && (
-                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-4">
+                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-none bg-muted/50 mb-4">
                                 <Trash size={24} className="opacity-50" />
                             </div>
                          )}

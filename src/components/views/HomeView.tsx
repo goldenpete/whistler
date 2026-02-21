@@ -1080,7 +1080,7 @@ export default function HomeView() {
                                         <ContextMenuTrigger asChild>
                                             <button
                                                 onClick={() => handleItemClick(item)}
-                                                className="group relative flex flex-col items-start justify-end gap-3 p-4 rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-all text-left overflow-hidden h-48 shadow-sm"
+                                                className="group relative flex flex-col items-start justify-end gap-3 p-4 rounded-none border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-all text-left overflow-hidden h-48 shadow-sm"
                                             >
                                                 {/* Background Preview */}
                                                 <CardPreview item={item} />
@@ -1091,10 +1091,10 @@ export default function HomeView() {
                                                 {/* Content Layer */}
                                                 <div className="relative z-20 w-full flex flex-col h-full">
                                                     <div className="flex items-center justify-between w-full gap-2 mb-auto">
-                                                        <div className="p-2 shrink-0 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
+                                                        <div className="p-2 shrink-0 rounded-none bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
                                                             <Icon weight="duotone" className="w-5 h-5" style={item.data.color ? { color: item.data.color } : undefined} />
                                                         </div>
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-none bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
                                                             {label}
                                                         </span>
                                                     </div>

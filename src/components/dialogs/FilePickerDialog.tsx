@@ -191,7 +191,7 @@ export function FilePickerDialog({
                     </div>
 
                     {/* File List */}
-                    <ScrollArea className="h-[250px] border rounded-md p-1">
+                    <ScrollArea className="h-[250px] border rounded-none p-1">
                         {displayedFolders.length === 0 && displayedFiles.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                                 <Folder size={32} className="opacity-20" />
@@ -202,7 +202,7 @@ export function FilePickerDialog({
                                 {displayedFolders.map(folder => (
                                     <button
                                         key={folder.id}
-                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground text-sm text-left transition-colors"
+                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-none hover:bg-accent hover:text-accent-foreground text-sm text-left transition-colors"
                                         onClick={() => setCurrentFolderId(folder.id)}
                                     >
                                         <Folder className="text-amber-500 text-lg shrink-0" weight="fill" />
@@ -213,7 +213,7 @@ export function FilePickerDialog({
                                     <button
                                         key={file.id}
                                         className={cn(
-                                            "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left transition-colors",
+                                            "w-full flex items-center gap-3 px-3 py-2 rounded-none text-sm text-left transition-colors",
                                             selectedFileId === file.id
                                                 ? "bg-primary/20 text-primary"
                                                 : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"

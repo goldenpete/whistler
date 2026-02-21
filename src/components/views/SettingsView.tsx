@@ -70,130 +70,63 @@ export default function SettingsView() {
                 </div>
                 
                 <nav className="flex-1 px-4 py-2 space-y-6">
-                    <div>
-                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Preferences</h3>
-                        <div className="space-y-1">
-                            <button
-                                onClick={() => navigate('/settings?tab=appearance')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'appearance' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <Palette size={18} weight={activeTab === 'appearance' ? "fill" : "regular"} />
-                                Appearance
-                            </button>
-                            <button
-                                onClick={() => navigate('/settings?tab=music')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'music' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <SpeakerHigh size={18} weight={activeTab === 'music' ? "fill" : "regular"} />
-                                Audio & Media
-                            </button>
-                            <button
-                                onClick={() => navigate('/settings?tab=keybinds')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'keybinds' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <Keyboard size={18} weight={activeTab === 'keybinds' ? "fill" : "regular"} />
-                                Shortcuts
-                            </button>
-                            <button
-                                onClick={() => navigate('/settings?tab=actions')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'actions' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <Lightning size={18} weight={activeTab === 'actions' ? "fill" : "regular"} />
-                                Actions
-                            </button>
+                    {([
+                        {
+                            label: "Preferences",
+                            items: [
+                                { tab: 'appearance' as SettingsTab, icon: Palette, label: 'Appearance' },
+                                { tab: 'music' as SettingsTab, icon: SpeakerHigh, label: 'Audio & Media' },
+                                { tab: 'keybinds' as SettingsTab, icon: Keyboard, label: 'Shortcuts' },
+                                { tab: 'actions' as SettingsTab, icon: Lightning, label: 'Actions' },
+                            ],
+                        },
+                        {
+                            label: "Activity",
+                            items: [
+                                { tab: 'history' as SettingsTab, icon: ClockCounterClockwise, label: 'History' },
+                                { tab: 'trash' as SettingsTab, icon: Trash, label: 'Trash' },
+                            ],
+                        },
+                        {
+                            label: "Data & Account",
+                            items: [
+                                { tab: 'sync' as SettingsTab, icon: Cloud, label: 'Sync & Backup' },
+                                { tab: 'system' as SettingsTab, icon: Gear, label: 'System' },
+                            ],
+                        },
+                    ] as const).map((group) => (
+                        <div key={group.label}>
+                            <h3 className="px-3 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.15em] mb-1.5">{group.label}</h3>
+                            <div className="space-y-0.5">
+                                {group.items.map(({ tab, icon: Icon, label }) => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => navigate(`/settings?tab=${tab}`)}
+                                        className={cn(
+                                            "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all duration-150 border-l-2",
+                                            activeTab === tab
+                                                ? "bg-primary/10 text-primary border-l-primary"
+                                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border-l-transparent"
+                                        )}
+                                    >
+                                        <Icon size={18} weight={activeTab === tab ? "fill" : "regular"} />
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    ))}
 
                     <div>
-                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Activity</h3>
-                        <div className="space-y-1">
-                            <button
-                                onClick={() => navigate('/settings?tab=history')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'history' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <ClockCounterClockwise size={18} weight={activeTab === 'history' ? "fill" : "regular"} />
-                                History
-                            </button>
-                            <button
-                                onClick={() => navigate('/settings?tab=trash')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'trash' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <Trash size={18} weight={activeTab === 'trash' ? "fill" : "regular"} />
-                                Trash
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Data & Account</h3>
-                        <div className="space-y-1">
-                            <button
-                                onClick={() => navigate('/settings?tab=sync')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'sync' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <Cloud size={18} weight={activeTab === 'sync' ? "fill" : "regular"} />
-                                Sync & Backup
-                            </button>
-                            <button
-                                onClick={() => navigate('/settings?tab=system')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                                    activeTab === 'system' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                            >
-                                <Gear size={18} weight={activeTab === 'system' ? "fill" : "regular"} />
-                                System
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Support</h3>
-                        <div className="space-y-1">
+                        <h3 className="px-3 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.15em] mb-1.5">Support</h3>
+                        <div className="space-y-0.5">
                             <button
                                 onClick={() => navigate('/settings?tab=about')}
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                                    "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all duration-150 border-l-2",
                                     activeTab === 'about' 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                        ? "bg-primary/10 text-primary border-l-primary" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border-l-transparent"
                                 )}
                             >
                                 <Info size={18} weight={activeTab === 'about' ? "fill" : "regular"} />

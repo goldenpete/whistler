@@ -74,7 +74,7 @@ export function EditProjectDialog({ open, onOpenChange, currentName, onSave, onD
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             autoFocus
-                            className="bg-zinc-900 border-border/60 focus:border-primary/50 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                         />
                     </div>
                     {onDelete && (

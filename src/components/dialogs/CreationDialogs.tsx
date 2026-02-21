@@ -143,7 +143,7 @@ export function NewProjectDialog({ open, onOpenChange, onSubmit }: NewProjectDia
                             value={name}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                             autoFocus
-                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && handleSubmit()}
                         />
                     </div>

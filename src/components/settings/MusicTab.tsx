@@ -24,7 +24,6 @@ import {
     X,
     MagnifyingGlass,
     CaretLeft,
-    CaretRight,
     FilmStrip,
     Gear,
 } from "@phosphor-icons/react";
@@ -123,8 +122,6 @@ export function MusicTab() {
         setSoundConfig: state.setSoundConfig,
     })));
 
-    const [muteSettingsView, setMuteSettingsView] = useState<'main' | 'always' | 'highlights'>('main');
-
     /* ═══════════════════════════════════════════════════════
        AMBIENT MUSIC HANDLERS
        ═══════════════════════════════════════════════════════ */
@@ -170,10 +167,10 @@ export function MusicTab() {
                     <MusicNotes className="text-primary" size={24} />
                     Ambient Music
                 </h2>
-                <div className="p-5 rounded-lg border border-border bg-card/50 space-y-4">
+                <div className="p-5 rounded-none border border-border bg-card/50 space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <div className="h-10 w-10 rounded-none bg-primary/10 flex items-center justify-center text-primary">
                                 <MusicNotes size={20} weight="fill" />
                             </div>
                             <div>
@@ -240,63 +237,37 @@ export function MusicTab() {
                     Media Playback
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {muteSettingsView === 'always' ? (
-                        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50 animate-in fade-in slide-in-from-right-2 duration-200">
-                            <div className="flex items-center gap-4">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2 shrink-0" onClick={() => setMuteSettingsView('main')}>
-                                    <CaretLeft size={16} />
-                                </Button>
-                                <div className="space-y-0.5">
-                                    <label className="text-sm font-medium">Always show mute pop-up</label>
-                                    <p className="text-xs text-muted-foreground">Show the overlay every time a video opens, regardless of history.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setMuteSettingsView('highlights')}>
-                                    <CaretRight size={16} />
-                                </Button>
-                                <Switch 
-                                    checked={alwaysShowMuteOverlay}
-                                    onCheckedChange={setAlwaysShowMuteOverlay}
-                                />
-                            </div>
+                    <div className="flex items-center justify-between p-4 rounded-none border border-border bg-card/50">
+                        <div className="space-y-0.5">
+                            <label className="text-sm font-medium">Mute new videos until unmuted</label>
+                            <p className="text-xs text-muted-foreground">Requires clicking Unmute Video the first time a video opens.</p>
                         </div>
-                    ) : muteSettingsView === 'highlights' ? (
-                        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50 animate-in fade-in slide-in-from-right-2 duration-200">
-                            <div className="flex items-center gap-4">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2 shrink-0" onClick={() => setMuteSettingsView('always')}>
-                                    <CaretLeft size={16} />
-                                </Button>
-                                <div className="space-y-0.5">
-                                    <label className="text-sm font-medium">Include highlights</label>
-                                    <p className="text-xs text-muted-foreground">Also mute highlights when they open.</p>
-                                </div>
-                            </div>
-                            <Switch 
-                                checked={muteHighlightsUntilUnmuted}
-                                onCheckedChange={setMuteHighlightsUntilUnmuted}
-                            />
+                        <Switch 
+                            checked={muteNewVideosUntilUnmuted}
+                            onCheckedChange={setMuteNewVideosUntilUnmuted}
+                        />
+                    </div>
+                    <div className={cn("flex items-center justify-between p-4 rounded-none border border-border bg-card/50", !muteNewVideosUntilUnmuted && "opacity-50 pointer-events-none")}>
+                        <div className="space-y-0.5">
+                            <label className="text-sm font-medium">Always show mute pop-up</label>
+                            <p className="text-xs text-muted-foreground">Show the overlay every time a video opens.</p>
                         </div>
-                    ) : (
-                        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
-                            <div className="space-y-0.5">
-                                <label className="text-sm font-medium">Mute new videos until unmuted</label>
-                                <p className="text-xs text-muted-foreground">Requires clicking Unmute Video the first time a video opens.</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {muteNewVideosUntilUnmuted && (
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setMuteSettingsView('always')}>
-                                        <Gear size={16} />
-                                    </Button>
-                                )}
-                                <Switch 
-                                    checked={muteNewVideosUntilUnmuted}
-                                    onCheckedChange={setMuteNewVideosUntilUnmuted}
-                                />
-                            </div>
+                        <Switch 
+                            checked={alwaysShowMuteOverlay}
+                            onCheckedChange={setAlwaysShowMuteOverlay}
+                        />
+                    </div>
+                    <div className={cn("flex items-center justify-between p-4 rounded-none border border-border bg-card/50", !muteNewVideosUntilUnmuted && "opacity-50 pointer-events-none")}>
+                        <div className="space-y-0.5">
+                            <label className="text-sm font-medium">Include highlights</label>
+                            <p className="text-xs text-muted-foreground">Also mute highlights when they open.</p>
                         </div>
-                    )}
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
+                        <Switch 
+                            checked={muteHighlightsUntilUnmuted}
+                            onCheckedChange={setMuteHighlightsUntilUnmuted}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-none border border-border bg-card/50">
                         <div className="space-y-0.5">
                             <label className="text-sm font-medium">Remember media volume</label>
                             <p className="text-xs text-muted-foreground">Stores volume per video and audio file.</p>
@@ -306,7 +277,7 @@ export function MusicTab() {
                             onCheckedChange={setRememberMediaVolume}
                         />
                     </div>
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
+                    <div className="flex items-center justify-between p-4 rounded-none border border-border bg-card/50">
                         <div className="space-y-0.5">
                             <label className="text-sm font-medium">Disable autoplay for new media</label>
                             <p className="text-xs text-muted-foreground">Applies to videos and audio files when they open.</p>
@@ -316,7 +287,7 @@ export function MusicTab() {
                             onCheckedChange={setDisableMediaAutoplay}
                         />
                     </div>
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
+                    <div className="flex items-center justify-between p-4 rounded-none border border-border bg-card/50">
                         <div className="space-y-0.5">
                             <label className="text-sm font-medium">Use middle frame for previews</label>
                             <p className="text-xs text-muted-foreground">Generates thumbnails from the middle of videos.</p>
@@ -336,7 +307,7 @@ export function MusicTab() {
                     <SpeakerHigh className="text-primary" size={24} />
                     Sound Effects
                 </h2>
-                <div className="p-5 rounded-lg border border-border bg-card/50 space-y-6">
+                <div className="p-5 rounded-none border border-border bg-card/50 space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                             <label className="text-sm font-medium">Enable website sounds</label>
@@ -478,7 +449,7 @@ export function MusicTab() {
                                 { id: 'search', label: 'Search', icon: MagnifyingGlass },
                             ].map((sound) => (
                                 <div key={sound.id} className={cn(
-                                    "flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors",
+                                    "flex items-center justify-between p-2 rounded-none hover:bg-muted/30 transition-colors",
                                     (sound.id === 'search' && replaceSearchWithConfirm && !replaceAllSoundsWithCursor) && "opacity-50 pointer-events-none",
                                     (replaceAllSoundsWithCursor && sound.id !== 'cursor') && "opacity-50 pointer-events-none"
                                 )}>
