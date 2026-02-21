@@ -935,12 +935,14 @@ export default function ProjectSidebar() {
                                                     {projects.length > 0 ? (
                                                         <>
                                                             <Select value={activeProjectId || ""} onValueChange={handleProjectChange}>
-                                                                <SelectTrigger className={cn("flex-1 h-8 bg-card border-border/60 shadow-sm group [&_svg]:text-muted-foreground [&_svg]:group-hover:text-foreground [&_svg]:transition-colors", isSlim && "px-1 justify-center")}>
-                                                                    {isSlim ? <FolderOpen weight="bold" className="text-muted-foreground group-hover:text-foreground transition-colors" /> : <SelectValue placeholder="Select Project" />}
+                                                                <SelectTrigger className={cn("flex-1 h-8 bg-card border-border/60 shadow-sm group [&_svg]:text-muted-foreground [&_svg]:group-hover:text-foreground [&_svg]:transition-colors truncate max-w-full", isSlim && "px-1 justify-center")}> 
+                                                                    {isSlim ? <FolderOpen weight="bold" className="text-muted-foreground group-hover:text-foreground transition-colors" /> : <span className="truncate block max-w-full"><SelectValue placeholder="Select Project" /></span>} 
                                                                 </SelectTrigger>
                                                                 <SelectContent>
                                                                     {projects.map((p: Project) => (
-                                                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                                        <SelectItem key={p.id} value={p.id}>
+                                                                            <span className="truncate block max-w-[220px]">{p.name}</span>
+                                                                        </SelectItem>
                                                                     ))}
                                                                     <Separator className="my-1" />
                                                                     <SelectItem value="new"><span className="text-primary flex items-center gap-2"><Plus className="size-3" /> New Project</span></SelectItem>

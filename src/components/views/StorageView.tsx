@@ -1,4 +1,17 @@
-﻿/**
+﻿    // ...existing code...
+    // After files variable is defined:
+    // ...existing code...
+    // After files variable is defined:
+    const isDescendant = (folderId: string, targetId: string | null): boolean => {
+        if (!targetId) return false;
+        let current = files.find((f: AppFile) => f.id === targetId);
+        while (current && typeof current.parentId === 'string') {
+            if (current.parentId === folderId) return true;
+            current = files.find((f: AppFile) => f.id === current.parentId);
+        }
+        return false;
+    };
+/**
  * â”€â”€â”€ StorageView.tsx â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  *
  * File system browser view for navigating, managing, and organizing
@@ -144,6 +157,20 @@ export default function StorageView() {
         trashFile: state.trashFile,
         addStorage: state.addStorage,
     })));
+
+    // Helper: check if folderId is ancestor of targetId
+    const appFiles = files as AppFile[];
+    const isDescendant = (folderId: string, targetId: string | null): boolean => {
+        if (!targetId) return false;
+        let current = appFiles.find((f) => f.id === targetId);
+        while (current && typeof current.parentId === 'string') {
+            if (current.parentId === folderId) return true;
+            const next = appFiles.find((f) => f.id === current.parentId);
+            if (!next) break;
+            current = next;
+        }
+        return false;
+    };
 
     useEffect(() => {
         if (id && id !== activeStorageId) {
@@ -524,18 +551,28 @@ export default function StorageView() {
             return;
         }
 
+
         // Handle drop on breadcrumb
         const overData = over.data.current;
         if (overData?.type === 'breadcrumb') {
             const targetFolderId = overData.folderId;
-
-            // Don't move if it's already in that folder
             const activeFile = files.find(f => f.id === active.id);
+            // Prevent moving folder into itself or its descendants
+            if (activeFile && activeFile.type === 'folder') {
+                if (targetFolderId === activeFile.id) {
+                    setActiveId(null);
+                    return;
+                }
+                if (isDescendant(activeFile.id, targetFolderId)) {
+                    setActiveId(null);
+                    return;
+                }
+            }
+            // Don't move if it's already in that folder
             if (activeFile && activeFile.parentId === targetFolderId) {
                 setActiveId(null);
                 return;
             }
-
             useStore.setState(state => ({
                 files: state.files.map(f =>
                     f.id === active.id
@@ -551,7 +588,6 @@ export default function StorageView() {
         if (sortOption !== "custom") {
             const overFile = files.find(f => f.id === over.id);
             const isTargetFolder = over.id === 'root' || (overFile && overFile.type === 'folder');
-
             if (!isTargetFolder) {
                 setActiveId(null);
                 return;
@@ -559,37 +595,46 @@ export default function StorageView() {
         }
 
         const targetFolderId = over.id === 'root' ? null : over.id as string;
-
-        // Don't move if dropping on itself or same parent
         const activeFile = files.find(f => f.id === active.id);
+        // Prevent moving folder into itself or its descendants
+        if (activeFile && activeFile.type === 'folder') {
+            if (targetFolderId === activeFile.id) {
+                setActiveId(null);
+                return;
+            }
+            if (isDescendant(activeFile.id, typeof targetFolderId === 'string' ? targetFolderId : null)) {
+                setActiveId(null);
+                return;
+            }
+        }
+        // Don't move if dropping on itself or same parent
         if (activeFile?.parentId === targetFolderId) {
             setActiveId(null);
             return;
         }
 
-        // Verify target is a folder or root, not a file (unless dropping ON a folder in the grid)
-        // If dropping on breadcrumb (which we assume over.id is), it's valid if it's a folder or root.
-        // We need to differentiate dropping on grid folder vs breadcrumb.
-        // Grid folders are just normal IDs. Breadcrumb IDs match folder IDs (except root).
-
-        // Check if dropping onto a folder
+        // Handle nested drop targets
         let overId = over.id;
         let isExplicitFolderDrop = false;
-
-        // Handle nested drop targets
         if (overId.toString().startsWith("folder-nest-")) {
             overId = overId.toString().replace("folder-nest-", "");
             isExplicitFolderDrop = true;
         }
-
         const overFile = files.find(f => f.id === overId);
         const isTargetFolder = overId === 'root' || (overFile && overFile.type === 'folder');
-
-        // Logic for dropping into folders (nesting)
-        // If it's an explicit folder drop (bullseye), or root, OR if we are not in custom sort (where everything is a drop target)
         const isNestingDrop = isTargetFolder && (isExplicitFolderDrop || overId === 'root' || sortOption !== 'custom');
-
         if (isNestingDrop) {
+            // Prevent moving folder into itself or its descendants
+            if (activeFile && activeFile.type === 'folder') {
+                if (overId === activeFile.id) {
+                    setActiveId(null);
+                    return;
+                }
+                if (isDescendant(activeFile.id, typeof overId === 'string' ? overId : null)) {
+                    setActiveId(null);
+                    return;
+                }
+            }
             useStore.setState(state => ({
                 files: state.files.map(f =>
                     f.id === active.id
@@ -623,7 +668,6 @@ export default function StorageView() {
                 }));
             }
         }
-
         setActiveId(null);
     };
 
