@@ -698,7 +698,7 @@ export function SettingsSync() {
             const credential = await startRegistration(options);
             
             // 3. Send credential to server to finish registration
-            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/register/finish`, {
+            let verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/register/finish`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -706,6 +706,18 @@ export function SettingsSync() {
                 },
                 body: JSON.stringify(credential)
             });
+
+            // Compatibility fallback: some backends expect `{ credential: ... }`
+            if (!verifyResponse.ok) {
+                verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/register/finish`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${sessionToken}`
+                    },
+                    body: JSON.stringify({ credential })
+                });
+            }
             
             if (!verifyResponse.ok) {
                 const errorData = await verifyResponse.json();
@@ -772,7 +784,7 @@ export function SettingsSync() {
             const assertion = await startAuthentication(options);
             
             // 3. Send assertion to server to finish login
-            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
+            let verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -780,6 +792,18 @@ export function SettingsSync() {
                     assertion
                 })
             });
+
+            // Compatibility fallback: some backends expect assertion fields at top level.
+            if (!verifyResponse.ok) {
+                verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        account_id: cleanId,
+                        ...assertion
+                    })
+                });
+            }
             
             if (!verifyResponse.ok) {
                 const errorData = await verifyResponse.json();

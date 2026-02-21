@@ -77,7 +77,8 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
         collections,
         rememberMediaVolume,
         audioVolumeByFile,
-        setAudioVolumeForFile
+        setAudioVolumeForFile,
+        hideSeekbarProgressTrail
     } = useStore(useShallow((state) => ({
         addAmbientMusicSuppression: state.addAmbientMusicSuppression,
         removeAmbientMusicSuppression: state.removeAmbientMusicSuppression,
@@ -87,6 +88,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
         rememberMediaVolume: state.rememberMediaVolume,
         audioVolumeByFile: state.audioVolumeByFile,
         setAudioVolumeForFile: state.setAudioVolumeForFile,
+        hideSeekbarProgressTrail: state.hideSeekbarProgressTrail,
     })));
     
     const [isPlaying, setIsPlaying] = useState(false);
@@ -327,6 +329,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                                     handleSeek([newTime]);
                                 }}
                                 className="cursor-pointer"
+                                hideRange={hideSeekbarProgressTrail}
                             />
                         </div>
                         <div className="flex justify-between text-xs font-mono text-zinc-500">

@@ -177,6 +177,7 @@ export interface AppStore extends AppState {
   // ── Theme Toggle Settings ───────────────────────────────────────────────
   toggleThemingEnabled: boolean;
   largeTogglesThemingEnabled: boolean;
+  hideSeekbarProgressTrail: boolean;
 
   // ── UI State ────────────────────────────────────────────────────────────
   isDoubleTapMenuOpen: boolean;
@@ -202,6 +203,7 @@ export interface AppStore extends AppState {
   // ── Theme Toggle Actions ──────────────────────────────────────────────
   setToggleThemingEnabled: (enabled: boolean) => void;
   setLargeTogglesThemingEnabled: (enabled: boolean) => void;
+  setHideSeekbarProgressTrail: (enabled: boolean) => void;
 
   // ── UI Actions ────────────────────────────────────────────────────────
   setDoubleTapMenuOpen: (isOpen: boolean) => void;

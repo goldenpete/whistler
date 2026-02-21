@@ -110,17 +110,17 @@ export function SpotlightSearch() {
     const getFileIcon = useCallback((type: string) => {
         switch (type) {
             case "video":
-                return <FilmStrip className="mr-2 h-4 w-4 text-blue-400" />;
+                return <FilmStrip className="mr-2 h-3 w-3 text-blue-400" />;
             case "pdf":
-                return <FilePdf className="mr-2 h-4 w-4 text-red-400" />;
+                return <FilePdf className="mr-2 h-3 w-3 text-red-400" />;
             case "audio":
-                return <MusicNote className="mr-2 h-4 w-4 text-purple-400" />;
+                return <MusicNote className="mr-2 h-3 w-3 text-purple-400" />;
             case "image":
-                return <Image className="mr-2 h-4 w-4 text-green-400" />;
+                return <Image className="mr-2 h-3 w-3 text-green-400" />;
             case "folder":
-                return <Folder className="mr-2 h-4 w-4 text-amber-400" />;
+                return <Folder className="mr-2 h-3 w-3 text-amber-400" />;
             default:
-                return <FileText className="mr-2 h-4 w-4 text-zinc-400" />;
+                return <FileText className="mr-2 h-3 w-3 text-zinc-400" />;
         }
     }, []);
 
@@ -216,7 +216,8 @@ export function SpotlightSearch() {
             open={isSpotlightOpen} 
             onOpenChange={setSpotlightOpen}
             commandProps={{
-                shouldFilter: !isActionSearch // We do our own filtering for actions
+                shouldFilter: !isActionSearch, // We do our own filtering for actions
+                className: "[&_[cmdk-input]]:h-8 [&_[cmdk-item]]:py-1 [&_[cmdk-item]]:px-2 [&_[cmdk-item]_svg]:h-3 [&_[cmdk-item]_svg]:w-3"
             }}
         >
             <CommandInput 
@@ -232,11 +233,12 @@ export function SpotlightSearch() {
                     <CommandGroup heading="Actions">
                         {filteredActions.map(action => (
                             <CommandItem
+                                className="py-1 px-2 text-xs"
                                 key={action.id}
                                 value={action.labels[0]} // value used for selection
                                 onSelect={() => executeAction(action.id)}
                             >
-                                <action.icon className="mr-2 h-4 w-4" />
+                                <action.icon className="mr-2 h-3 w-3" />
                                 <span>{action.labels[0]}</span>
                                 <span className="ml-2 text-xs text-muted-foreground">{action.description}</span>
                             </CommandItem>
@@ -249,24 +251,24 @@ export function SpotlightSearch() {
                     <>
                         {/* Quick Navigation */}
                         <CommandGroup heading="Navigation">
-                            <CommandItem onSelect={() => handleNavigation("/")}>
-                                <House className="mr-2 h-4 w-4" />
+                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/")}> 
+                                <House className="mr-2 h-3 w-3" />
                                 <span>Home</span>
                             </CommandItem>
-                            <CommandItem onSelect={() => handleNavigation("/storage")}>
-                                <HardDrives className="mr-2 h-4 w-4" />
+                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/storage")}>
+                                <HardDrives className="mr-2 h-3 w-3" />
                                 <span>Storage</span>
                             </CommandItem>
-                            <CommandItem onSelect={() => handleNavigation("/docs")}>
-                                <NotePencil className="mr-2 h-4 w-4" />
+                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/docs")}>
+                                <NotePencil className="mr-2 h-3 w-3" />
                                 <span>Docs</span>
                             </CommandItem>
-                            <CommandItem onSelect={() => handleNavigation("/graphs")}>
-                                <Graph className="mr-2 h-4 w-4" />
+                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/graphs")}>
+                                <Graph className="mr-2 h-3 w-3" />
                                 <span>Graphs</span>
                             </CommandItem>
-                            <CommandItem onSelect={() => handleNavigation("/settings")}>
-                                <Gear className="mr-2 h-4 w-4" />
+                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/settings")}>
+                                <Gear className="mr-2 h-3 w-3" />
                                 <span>Settings</span>
                             </CommandItem>
                         </CommandGroup>
@@ -278,6 +280,7 @@ export function SpotlightSearch() {
                             <CommandGroup heading="Files">
                                 {projectFiles.slice(0, 10).map((file: File) => (
                                     <CommandItem
+                                        className="py-1 px-2 text-xs"
                                         key={file.id}
                                         value={file.name}
                                         onSelect={() => handleSelectFile(file)}
@@ -294,12 +297,13 @@ export function SpotlightSearch() {
                             <CommandGroup heading="Collections">
                                 {projectCollections.map((collection: Collection) => (
                                     <CommandItem
+                                        className="py-1 px-2 text-xs"
                                         key={collection.id}
                                         value={collection.name}
                                         onSelect={() => handleSelectCollection(collection)}
                                     >
                                         <Tag
-                                            className="mr-2 h-4 w-4"
+                                            className="mr-2 h-3 w-3"
                                             style={{ color: collection.color }}
                                         />
                                         <span>{collection.name}</span>
@@ -316,6 +320,7 @@ export function SpotlightSearch() {
                                     const file = projectFiles.find(f => f.id === highlight.fileId);
                                     return (
                                         <CommandItem
+                                            className="py-1 px-2 text-xs"
                                             key={highlight.id}
                                             value={highlight.note || "Highlight"}
                                             onSelect={() => handleSelectHighlight(highlight)}
@@ -342,28 +347,29 @@ export function SpotlightSearch() {
                 {/* Highlights */}
                 {projectHighlights.length > 0 && (
                     <CommandGroup heading="Highlights">
-                        {projectHighlights.slice(0, 10).map((highlight: Highlight) => {
+                                {projectHighlights.slice(0, 10).map((highlight: Highlight) => {
                             const file = files.find((f: File) => f.id === highlight.fileId);
                             const label = file?.type === "pdf"
                                 ? (highlight.end && highlight.end !== highlight.start
                                     ? `Page ${highlight.start}-${highlight.end}`
                                     : `Page ${highlight.start}`)
                                 : `${formatTime(highlight.start)} - ${formatTime(highlight.end || highlight.start)}`;
-                            return (
-                                <CommandItem
-                                    key={highlight.id}
-                                    value={`${highlight.note} ${file?.name}`}
-                                    onSelect={() => handleSelectHighlight(highlight)}
-                                >
-                                    <Clock className="mr-2 h-4 w-4 text-amber-400" />
-                                    <span className="mr-2 font-mono text-xs text-muted-foreground">
-                                        {label}
-                                    </span>
-                                    <span className="truncate flex-1">
-                                        {highlight.note || file?.name || "Unnamed"}
-                                    </span>
-                                </CommandItem>
-                            );
+                                    return (
+                                        <CommandItem
+                                            className="py-1 px-2 text-xs"
+                                            key={highlight.id}
+                                            value={`${highlight.note} ${file?.name}`}
+                                            onSelect={() => handleSelectHighlight(highlight)}
+                                        >
+                                            <Clock className="mr-2 h-3 w-3 text-amber-400" />
+                                            <span className="mr-2 font-mono text-xs text-muted-foreground">
+                                                {label}
+                                            </span>
+                                            <span className="truncate flex-1">
+                                                {highlight.note || file?.name || "Unnamed"}
+                                            </span>
+                                        </CommandItem>
+                                    );
                         })}
                     </CommandGroup>
                 )}
@@ -377,6 +383,7 @@ export function SpotlightSearch() {
                             .filter((p: { id: string }) => p.id !== activeProjectId)
                             .map((project: { id: string; name: string }) => (
                                 <CommandItem
+                                    className="py-1 px-2 text-xs"
                                     key={project.id}
                                     value={`project ${project.name}`}
                                     onSelect={() => {
@@ -385,7 +392,7 @@ export function SpotlightSearch() {
                                         setSpotlightOpen(false);
                                     }}
                                 >
-                                    <Folder className="mr-2 h-4 w-4 text-primary" />
+                                    <Folder className="mr-2 h-3 w-3 text-primary" />
                                     <span>{project.name}</span>
                                 </CommandItem>
                             ))}

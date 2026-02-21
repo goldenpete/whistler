@@ -3,12 +3,20 @@
  * Utility functions for WebAuthn (Passkeys)
  */
 
-// Helper to convert base64url to Uint8Array
+type BinaryLike = string | ArrayBuffer | Uint8Array | null | undefined;
+
+interface PublicKeyOptionsEnvelope<T> {
+    publicKey?: T;
+    options?: T | { publicKey?: T };
+}
+
+// Helper to convert base64/base64url to Uint8Array
 function base64urlToUint8Array(base64url: string): Uint8Array {
-    const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
-    const base64 = base64url
-        .replace(/-/g, '+')
-        .replace(/_/g, '/') + padding;
+    const normalized = base64url.trim();
+    const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
+    const base64 = normalized
+        .replace(/-/g, "+")
+        .replace(/_/g, "/") + padding;
     const str = atob(base64);
     const buffer = new Uint8Array(str.length);
     for (let i = 0; i < str.length; i++) {
@@ -17,30 +25,69 @@ function base64urlToUint8Array(base64url: string): Uint8Array {
     return buffer;
 }
 
+function toUint8Array(value: BinaryLike): Uint8Array {
+    if (value == null) return new Uint8Array();
+    if (value instanceof Uint8Array) return value;
+    if (value instanceof ArrayBuffer) return new Uint8Array(value);
+    if (typeof value === "string") return base64urlToUint8Array(value);
+    throw new Error("Unsupported binary value in WebAuthn options");
+}
+
+function normalizePublicKeyOptions<T extends { challenge: BinaryLike }>(input: T | PublicKeyOptionsEnvelope<T>): T {
+    const envelope = input as PublicKeyOptionsEnvelope<T>;
+    if (envelope.publicKey && envelope.publicKey.challenge != null) return envelope.publicKey;
+    if (envelope.options && (envelope.options as T).challenge != null) return envelope.options as T;
+    if (envelope.options && (envelope.options as PublicKeyOptionsEnvelope<T>).publicKey?.challenge != null) {
+        return (envelope.options as PublicKeyOptionsEnvelope<T>).publicKey as T;
+    }
+    if ((input as T).challenge != null) return input as T;
+    throw new Error("Invalid WebAuthn options from server");
+}
+
+function ensureWebAuthnAvailable() {
+    if (typeof window === "undefined" || typeof navigator === "undefined") {
+        throw new Error("WebAuthn is not available in this environment");
+    }
+    if (!window.isSecureContext) {
+        throw new Error("Passkeys require a secure context (HTTPS or localhost)");
+    }
+    if (!("credentials" in navigator) || typeof navigator.credentials?.create !== "function" || typeof navigator.credentials?.get !== "function") {
+        throw new Error("This browser does not support passkeys");
+    }
+}
+
 // Helper to convert Uint8Array to base64url
 function uint8ArrayToBase64url(buffer: Uint8Array): string {
-    const str = String.fromCharCode(...buffer);
+    // Chunk to avoid call stack/argument limits on large buffers.
+    let str = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < buffer.length; i += chunkSize) {
+        str += String.fromCharCode(...buffer.subarray(i, i + chunkSize));
+    }
     return btoa(str)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
 }
 
 /**
  * Start the WebAuthn registration process
  */
-export async function startRegistration(options: any) {
+export async function startRegistration(options: PublicKeyCredentialCreationOptions | PublicKeyOptionsEnvelope<PublicKeyCredentialCreationOptions>) {
+    ensureWebAuthnAvailable();
+    const rawOptions = normalizePublicKeyOptions(options);
+
     // Convert options from the server to the format expected by the browser
     const createOptions: PublicKeyCredentialCreationOptions = {
-        ...options,
-        challenge: base64urlToUint8Array(options.challenge),
+        ...rawOptions,
+        challenge: toUint8Array(rawOptions.challenge),
         user: {
-            ...options.user,
-            id: base64urlToUint8Array(options.user.id),
+            ...rawOptions.user,
+            id: toUint8Array(rawOptions.user.id),
         },
-        excludeCredentials: options.excludeCredentials?.map((cred: any) => ({
+        excludeCredentials: rawOptions.excludeCredentials?.map((cred) => ({
             ...cred,
-            id: base64urlToUint8Array(cred.id),
+            id: toUint8Array(cred.id),
         })),
     };
 
@@ -62,6 +109,7 @@ export async function startRegistration(options: any) {
         response: {
             attestationObject: uint8ArrayToBase64url(new Uint8Array(response.attestationObject)),
             clientDataJSON: uint8ArrayToBase64url(new Uint8Array(response.clientDataJSON)),
+            transports: response.getTransports ? response.getTransports() : [],
         },
         clientExtensionResults: credential.getClientExtensionResults(),
     };
@@ -70,15 +118,20 @@ export async function startRegistration(options: any) {
 /**
  * Start the WebAuthn authentication process
  */
-export async function startAuthentication(options: any) {
+export async function startAuthentication(options: PublicKeyCredentialRequestOptions | PublicKeyOptionsEnvelope<PublicKeyCredentialRequestOptions>) {
+    ensureWebAuthnAvailable();
+    const rawOptions = normalizePublicKeyOptions(options);
+
     // Convert options from the server to the format expected by the browser
     const getOptions: PublicKeyCredentialRequestOptions = {
-        ...options,
-        challenge: base64urlToUint8Array(options.challenge),
-        allowCredentials: options.allowCredentials?.map((cred: any) => ({
+        ...rawOptions,
+        challenge: toUint8Array(rawOptions.challenge),
+        allowCredentials: rawOptions.allowCredentials?.length
+            ? rawOptions.allowCredentials.map((cred) => ({
             ...cred,
-            id: base64urlToUint8Array(cred.id),
-        })),
+            id: toUint8Array(cred.id),
+        }))
+            : undefined,
     };
 
     const credential = (await navigator.credentials.get({

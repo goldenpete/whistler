@@ -13,13 +13,14 @@
  */
 
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
     SidebarSimple,
     HardDrives,
     NotePencil,
     Graph,
     FolderOpen,
+    Folder,
     Trash,
     MagnifyingGlass,
     ArrowsClockwise,
@@ -90,8 +91,37 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
     const isStorage = location.pathname === '/storage';
     const isDocs = location.pathname.startsWith('/docs');
     const isGraphs = location.pathname.startsWith('/graphs');
-    const isCollections = location.pathname.startsWith('/collections') || location.pathname.startsWith('/collection/');
+    const isCollectionsRoot = location.pathname.startsWith('/collections');
+    const isCollectionDetail = location.pathname.startsWith('/collection/');
+    const isCollections = isCollectionsRoot || isCollectionDetail;
     const isSettings = location.pathname === '/settings';
+    const projectBuckets = collections
+        .filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted);
+    const activeBucket = projectBuckets.find((b) => b.id === activeCollectionId) || projectBuckets[0] || null;
+    const ActiveBucketIcon = activeBucket?.icon ? getIcon(activeBucket.icon) : Folder;
+    const recentCollections = collections
+        .filter((c: Collection) => c.projectId === activeProjectId && c.type === 'collection' && !c.deleted)
+        .sort((a: Collection, b: Collection) => {
+            const aTime = Math.max(a.lastViewed || 0, a.lastModified || 0, a.created || 0);
+            const bTime = Math.max(b.lastViewed || 0, b.lastModified || 0, b.created || 0);
+            return bTime - aTime;
+        })
+        .slice(0, 12);
+
+    const handleOpenCollections = () => {
+        if (isCollectionsRoot) {
+            // Keep behavior consistent with other sections: expand sidebar into collections management.
+            toggleSidebarCollapse();
+            setSidebarView('collections');
+            return;
+        }
+
+        // Ensure a bucket is selected when entering collections.
+        if (!activeCollectionId && projectBuckets.length > 0) {
+            handleSelectCollection(projectBuckets[0].id);
+        }
+        navigate('/collections');
+    };
 
     return (
         <div className="flex flex-col h-full min-h-0 items-center py-2 gap-1.5 w-full">
@@ -195,30 +225,40 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button
-                                onClick={() => { playSfx('cursor'); navigate('/collections'); }}
+                                onClick={() => { playSfx('cursor'); handleOpenCollections(); }}
                                 className={cn(
-                                    isCollections && !activeCollectionId ? NAV_BTN_ACTIVE : NAV_BTN
+                                    isCollectionsRoot ? NAV_BTN_ACTIVE : NAV_BTN
                                 )}
                             >
-                                <FolderOpen weight={isCollections ? "fill" : "bold"} size={20} />
+                                {activeBucket ? (
+                                    <div style={{ color: activeBucket.color }}>
+                                        <ActiveBucketIcon weight="fill" size={20} />
+                                    </div>
+                                ) : (
+                                    <FolderOpen weight={isCollectionsRoot ? "fill" : "bold"} size={20} />
+                                )}
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right">Collections</TooltipContent>
+                        <TooltipContent side="right">
+                            {activeBucket ? activeBucket.name : "Collections Root"}
+                        </TooltipContent>
                     </Tooltip>
 
-                    {collections
-                        .filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted)
-                        .map((collection: Collection) => {
+                    {recentCollections.map((collection: Collection) => {
                             const Icon = getIcon(collection.icon);
-                            const isActive = isCollections && activeCollectionId === collection.id;
+                            const isActive = location.pathname === `/collection/${collection.id}`;
                             return (
                                 <ContextMenu key={collection.id}>
                                     <ContextMenuTrigger className="flex justify-center w-full">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Link
-                                                    to="/collections"
-                                                    onClick={() => { playSfx('cursor'); handleSelectCollection(collection.id); }}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        playSfx('cursor');
+                                                        handleSelectCollection(collection.id);
+                                                        navigate(`/collection/${collection.id}`);
+                                                    }}
                                                     className={cn(
                                                         isActive ? NAV_BTN_ACTIVE : NAV_BTN,
                                                         "relative"
@@ -228,28 +268,28 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
                                                     <div style={{ color: collection.color }}>
                                                         <Icon className="text-lg" weight="fill" />
                                                     </div>
-                                                </Link>
+                                                </button>
                                             </TooltipTrigger>
                                             <TooltipContent side="right">{collection.name}</TooltipContent>
                                         </Tooltip>
                                     </ContextMenuTrigger>
                                     <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
-                                        <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            onEditCollection(collection);
-                                        }}>
-                                            <PencilSimple className="mr-2 h-4 w-4" />
-                                            Rename Bucket
-                                        </ContextMenuItem>
-                                        <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            trashCollection(collection.id);
-                                        }} className="text-red-500 focus:text-red-500">
-                                            <Trash className="mr-2 h-4 w-4" />
-                                            Delete Bucket
-                                        </ContextMenuItem>
+                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onEditCollection(collection);
+                                            }}>
+                                                <PencilSimple className="mr-2 h-4 w-4" />
+                                            Rename Collection
+                                            </ContextMenuItem>
+                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                trashCollection(collection.id);
+                                            }} className="text-red-500 focus:text-red-500">
+                                                <Trash className="mr-2 h-4 w-4" />
+                                            Delete Collection
+                                            </ContextMenuItem>
                                     </ContextMenuContent>
                                 </ContextMenu>
                             );

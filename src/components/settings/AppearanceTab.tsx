@@ -118,6 +118,8 @@ export function AppearanceTab() {
         setToggleThemingEnabled,
         largeTogglesThemingEnabled,
         setLargeTogglesThemingEnabled,
+        hideSeekbarProgressTrail,
+        setHideSeekbarProgressTrail,
         docViewMode,
         setDocViewMode,
         storageViewMode,
@@ -161,6 +163,8 @@ export function AppearanceTab() {
         setToggleThemingEnabled: state.setToggleThemingEnabled,
         largeTogglesThemingEnabled: state.largeTogglesThemingEnabled,
         setLargeTogglesThemingEnabled: state.setLargeTogglesThemingEnabled,
+        hideSeekbarProgressTrail: state.hideSeekbarProgressTrail,
+        setHideSeekbarProgressTrail: state.setHideSeekbarProgressTrail,
         docViewMode: state.docViewMode,
         setDocViewMode: state.setDocViewMode,
         storageViewMode: state.storageViewMode,
@@ -849,6 +853,18 @@ export function AppearanceTab() {
                                 onCheckedChange={setToggleThemingEnabled}
                             />
                         </div>
+                    </div>
+
+                    {/* Seekbar Trail */}
+                    <div className="p-5 rounded-none border border-border bg-card/50 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <label className="text-sm font-medium">Hide Seekbar Progress Trail</label>
+                            <p className="text-xs text-muted-foreground">Removes the played-color fill so highlights are easier to spot</p>
+                        </div>
+                        <Switch
+                            checked={hideSeekbarProgressTrail}
+                            onCheckedChange={setHideSeekbarProgressTrail}
+                        />
                     </div>
 
                     {/* Window Outlines */}

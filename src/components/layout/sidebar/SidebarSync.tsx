@@ -348,7 +348,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
             const assertion = await startAuthentication(options);
             
             // 3. Send assertion to server to finish login
-            const verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
+            let verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -356,6 +356,18 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                     assertion
                 })
             });
+
+            // Compatibility fallback: some backends expect assertion fields at top level.
+            if (!verifyResponse.ok) {
+                verifyResponse = await fetch(`${SYNC_API_URL}/passkeys/login/finish`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        account_id: cleanId,
+                        ...assertion
+                    })
+                });
+            }
             
             if (!verifyResponse.ok) {
                 const errorData = await verifyResponse.json();

@@ -168,7 +168,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         videoUnmutedByFile,
         setVideoVolumeForFile,
         setVideoUnmutedForFile,
-        alwaysShowMuteOverlay
+        alwaysShowMuteOverlay,
+        hideSeekbarProgressTrail
     } = useStore(useShallow((state) => ({
         files: state.files,
         highlights: state.highlights,
@@ -208,6 +209,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         setVideoVolumeForFile: state.setVideoVolumeForFile,
         setVideoUnmutedForFile: state.setVideoUnmutedForFile,
         alwaysShowMuteOverlay: state.alwaysShowMuteOverlay,
+        hideSeekbarProgressTrail: state.hideSeekbarProgressTrail,
     })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeRef = useRef<YouTubePlayerHandle>(null);
@@ -1494,6 +1496,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 step={0.1}
                                 onValueChange={handleSeek}
                                 className="cursor-pointer"
+                                hideRange={hideSeekbarProgressTrail}
                             />
                         </div>
 

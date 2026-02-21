@@ -81,6 +81,8 @@ export const createAppearanceSlice = (set: StoreSet, _get: StoreGet) => ({
   toggleThemingEnabled: true,
   /** Whether large toggle buttons use theme accent color */
   largeTogglesThemingEnabled: true,
+  /** Whether to hide the played-color trail behind media seekbars */
+  hideSeekbarProgressTrail: false,
 
   /* ── Theme Actions ────────────────────────────────────────────────────── */
 
@@ -172,4 +174,5 @@ export const createAppearanceSlice = (set: StoreSet, _get: StoreGet) => ({
   setWindowOutlineEnabled: (enabled: boolean) => set({ windowOutlineEnabled: enabled }),
   setToggleThemingEnabled: (enabled: boolean) => set({ toggleThemingEnabled: enabled }),
   setLargeTogglesThemingEnabled: (enabled: boolean) => set({ largeTogglesThemingEnabled: enabled }),
+  setHideSeekbarProgressTrail: (enabled: boolean) => set({ hideSeekbarProgressTrail: enabled }),
 });
