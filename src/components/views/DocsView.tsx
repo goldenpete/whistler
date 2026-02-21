@@ -27,10 +27,9 @@ import { useKeybind } from "@/hooks/use-keybind";
 import {
     NotePencil, TextB, TextItalic, ListBullets,
     TextUnderline, TextStrikethrough, TextAlignLeft, TextAlignCenter, TextAlignRight,
-    CaretLeft, CaretRight, Link, File, Rows, ArrowsOutSimple, Layout, Plus
+    CaretLeft, CaretRight, Link, File, Rows, ArrowsOutSimple, Layout, Plus, Folder, Clock
 } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Dialog,
     DialogContent,
@@ -48,6 +47,9 @@ import {
 import { cn } from "@/lib/utils";
 import { sanitizeHTML, isValidUrl } from "@/utils/security";
 import { FilePickerDialog } from "@/components/dialogs/FilePickerDialog";
+import { CollectionPickerDialog } from "@/components/dialogs/CollectionPickerDialog";
+import { HighlightPickerDialog } from "@/components/dialogs/HighlightPickerDialog";
+import { DocPickerDialog } from "@/components/dialogs/DocPickerDialog";
 
 export default function DocsView() {
     const { id } = useParams();
@@ -134,20 +136,25 @@ function DocEditor({ doc }: DocEditorProps) {
         files,
         collections,
         highlights,
+        docs,
     } = useStore(useShallow((state: AppStore) => ({
         docViewMode: state.docViewMode,
         setDocViewMode: state.setDocViewMode,
         files: state.files,
         collections: state.collections,
         highlights: state.highlights,
+        docs: state.docs,
     })));
     const saveTimeoutRef = useRef<number | null>(null);
     const [linkDialogOpen, setLinkDialogOpen] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
     const [linkMode, setLinkMode] = useState<"external" | "internal">("external");
-    const [internalType, setInternalType] = useState<"file" | "collection" | "highlight">("file");
+    const [internalType, setInternalType] = useState<"file" | "collection" | "highlight" | "doc">("file");
     const [internalId, setInternalId] = useState<string>("");
     const [filePickerOpen, setFilePickerOpen] = useState(false);
+    const [collectionPickerOpen, setCollectionPickerOpen] = useState(false);
+    const [highlightPickerOpen, setHighlightPickerOpen] = useState(false);
+    const [docPickerOpen, setDocPickerOpen] = useState(false);
     const [formatState, setFormatState] = useState({
         bold: false,
         italic: false,
@@ -293,6 +300,16 @@ function DocEditor({ doc }: DocEditorProps) {
         const file = files.find((f: AppFile) => f.id === t.fileId && !f.deleted);
         return !!file && file.projectId === doc.projectId;
     });
+    const projectDocs = docs.filter(
+        (d: Doc) => d.projectId === doc.projectId && !d.deleted
+    );
+    const selectedFile = projectFiles.find((f: AppFile) => f.id === internalId);
+    const selectedCollection = projectCollections.find((c: Collection) => c.id === internalId);
+    const selectedHighlight = projectHighlights.find((t: Highlight) => t.id === internalId);
+    const selectedHighlightFile = selectedHighlight
+        ? files.find((f: AppFile) => f.id === selectedHighlight.fileId)
+        : undefined;
+    const selectedDoc = projectDocs.find((d: Doc) => d.id === internalId);
     const handleInsertLink = () => {
         if (linkMode === "external") {
             const url = linkUrl.trim();
@@ -318,6 +335,10 @@ function DocEditor({ doc }: DocEditorProps) {
                 const target = projectHighlights.find((t: Highlight) => t.id === internalId);
                 if (!target) return;
                 href = `/file/${target.fileId}?t=${target.start}`;
+            } else if (internalType === "doc") {
+                const target = projectDocs.find((d: Doc) => d.id === internalId);
+                if (!target) return;
+                href = `/docs/${target.id}`;
             }
             if (!href) return;
             execCommand("createLink", href);
@@ -529,7 +550,7 @@ function DocEditor({ doc }: DocEditorProps) {
             </div>
 
             <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-                <DialogContent className="sm:max-w-sm">
+                <DialogContent className="w-[calc(100vw-2rem)] max-w-[34rem]">
                     <DialogHeader>
                         <DialogTitle>Insert Link</DialogTitle>
                         <DialogDescription>
@@ -537,7 +558,7 @@ function DocEditor({ doc }: DocEditorProps) {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Button
                                 type="button"
                                 variant={linkMode === "external" ? "secondary" : "ghost"}
@@ -579,8 +600,8 @@ function DocEditor({ doc }: DocEditorProps) {
                                 />
                             </div>
                         ) : (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-xs">
+                            <div className="space-y-3 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 text-xs min-w-0">
                                     <Button
                                         type="button"
                                         variant={internalType === "file" ? "secondary" : "ghost"}
@@ -627,23 +648,30 @@ function DocEditor({ doc }: DocEditorProps) {
                                     >
                                         Highlights
                                     </Button>
+                                    <Button
+                                        type="button"
+                                        variant={internalType === "doc" ? "secondary" : "ghost"}
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 px-3",
+                                            internalType === "doc"
+                                                ? "bg-secondary text-secondary-foreground"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                        onClick={() => setInternalType("doc")}
+                                    >
+                                        Documents
+                                    </Button>
                                 </div>
-                                {internalType === "file" ? (
-                                    <div className="py-2 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
-                                                {internalId ? (
-                                                    (() => {
-                                                        const f = projectFiles.find(f => f.id === internalId);
-                                                        return f ? (
-                                                            <>
-                                                                <File className="shrink-0 text-foreground" />
-                                                                <span className="truncate text-foreground">{f.name}</span>
-                                                            </>
-                                                        ) : (
-                                                            <span className="opacity-50">File not found</span>
-                                                        );
-                                                    })()
+                                <div className="py-2 space-y-2">
+                                    {internalType === "file" && (
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="flex-1 min-w-0 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                                                {selectedFile ? (
+                                                    <>
+                                                        <File className="shrink-0 text-foreground" />
+                                                        <span className="truncate text-foreground">{selectedFile.name}</span>
+                                                    </>
                                                 ) : (
                                                     <span className="opacity-50">No file selected</span>
                                                 )}
@@ -658,81 +686,103 @@ function DocEditor({ doc }: DocEditorProps) {
                                                 Browse...
                                             </Button>
                                         </div>
-                                        <FilePickerDialog
-                                            open={filePickerOpen}
-                                            onOpenChange={setFilePickerOpen}
-                                            onSelect={(id) => setInternalId(id)}
-                                            initialFileId={internalId}
-                                        />
-                                    </div>
-                                ) : (
-                                    <ScrollArea className="max-h-56 rounded-md border border-border bg-secondary/20">
-                                        <div className="p-2 space-y-1">
-                                            {internalType === "collection" &&
-                                                (projectCollections.length > 0 ? (
-                                                    projectCollections.map((c: Collection) => (
-                                                        <button
-                                                            key={c.id}
-                                                            type="button"
-                                                            onClick={() => setInternalId(c.id)}
-                                                            className={cn(
-                                                                "w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left transition-colors",
-                                                                internalId === c.id
-                                                                    ? "bg-primary/20 text-primary"
-                                                                    : "hover:bg-secondary/50 text-foreground"
-                                                            )}
-                                                        >
-                                                            <span className="truncate">{c.name}</span>
-                                                            <span className="ml-2 text-[10px] text-muted-foreground uppercase">
-                                                                collection
-                                                            </span>
-                                                        </button>
-                                                    ))
+                                    )}
+                                    {internalType === "collection" && (
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="flex-1 min-w-0 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                                                {selectedCollection ? (
+                                                    <>
+                                                        <Folder className="shrink-0 text-foreground" />
+                                                        <span className="truncate text-foreground">{selectedCollection.name}</span>
+                                                    </>
                                                 ) : (
-                                                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                                                        No collections in this project
-                                                    </div>
-                                                ))}
-                                            {internalType === "highlight" &&
-                                                (projectHighlights.length > 0 ? (
-                                                    projectHighlights.map((t: Highlight) => {
-                                                        const file = files.find(
-                                                            (f: AppFile) => f.id === t.fileId
-                                                        );
-                                                        const mins = Math.floor(t.start / 60);
-                                                        const secs = Math.floor(t.start % 60)
-                                                            .toString()
-                                                            .padStart(2, "0");
-                                                        return (
-                                                            <button
-                                                                key={t.id}
-                                                                type="button"
-                                                                onClick={() => setInternalId(t.id)}
-                                                                className={cn(
-                                                                    "w-full flex flex-col px-2 py-1.5 rounded text-xs text-left transition-colors",
-                                                                    internalId === t.id
-                                                                        ? "bg-primary/20 text-primary"
-                                                                        : "hover:bg-secondary/50 text-foreground"
-                                                                )}
-                                                            >
-                                                                <span className="truncate">
-                                                                    {t.note || "Highlight"}
-                                                                </span>
-                                                                <span className="text-[10px] text-muted-foreground truncate">
-                                                                    {file?.name || "File"} • {mins}:
-                                                                    {secs}
-                                                                </span>
-                                                            </button>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                                                        No highlights in this project
-                                                    </div>
-                                                ))}
+                                                    <span className="opacity-50">No collection selected</span>
+                                                )}
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="shrink-0 bg-secondary/50 border-border hover:bg-secondary text-foreground"
+                                                onClick={() => setCollectionPickerOpen(true)}
+                                            >
+                                                Browse...
+                                            </Button>
                                         </div>
-                                    </ScrollArea>
-                                )}
+                                    )}
+                                    {internalType === "highlight" && (
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="flex-1 min-w-0 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                                                {selectedHighlight ? (
+                                                    <>
+                                                        <Clock className="shrink-0 text-primary" size={14} />
+                                                        <span className="truncate text-foreground min-w-0">
+                                                            {selectedHighlight.note || selectedHighlight.text || selectedHighlightFile?.name || "Highlight"}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="opacity-50 text-xs">No highlight selected</span>
+                                                )}
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="shrink-0 bg-secondary/50 border-border hover:bg-secondary text-foreground"
+                                                onClick={() => setHighlightPickerOpen(true)}
+                                            >
+                                                Browse...
+                                            </Button>
+                                        </div>
+                                    )}
+                                    {internalType === "doc" && (
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="flex-1 min-w-0 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-md bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                                                {selectedDoc ? (
+                                                    <>
+                                                        <NotePencil className="shrink-0 text-foreground" size={14} />
+                                                        <span className="truncate text-foreground">{selectedDoc.name}</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="opacity-50">No document selected</span>
+                                                )}
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="shrink-0 bg-secondary/50 border-border hover:bg-secondary text-foreground"
+                                                onClick={() => setDocPickerOpen(true)}
+                                            >
+                                                Browse...
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <FilePickerDialog
+                                        open={filePickerOpen}
+                                        onOpenChange={setFilePickerOpen}
+                                        onSelect={(selectedId) => setInternalId(selectedId)}
+                                        initialFileId={internalType === "file" ? internalId : undefined}
+                                    />
+                                    <CollectionPickerDialog
+                                        open={collectionPickerOpen}
+                                        onOpenChange={setCollectionPickerOpen}
+                                        onSelect={(selectedId) => setInternalId(selectedId)}
+                                        initialCollectionId={internalType === "collection" ? internalId : undefined}
+                                    />
+                                    <HighlightPickerDialog
+                                        open={highlightPickerOpen}
+                                        onOpenChange={setHighlightPickerOpen}
+                                        onSelect={(selectedId) => setInternalId(selectedId)}
+                                        initialHighlightId={internalType === "highlight" ? internalId : undefined}
+                                    />
+                                    <DocPickerDialog
+                                        open={docPickerOpen}
+                                        onOpenChange={setDocPickerOpen}
+                                        onSelect={(selectedId) => setInternalId(selectedId)}
+                                        initialDocId={internalType === "doc" ? internalId : undefined}
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

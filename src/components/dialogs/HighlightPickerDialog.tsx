@@ -154,7 +154,7 @@ export function HighlightPickerDialog({
                 )}
 
                 {/* Highlight list */}
-                <ScrollArea className="h-[300px] border rounded-none p-1">
+                <ScrollArea className="h-[300px] border rounded-none p-1 overflow-x-hidden">
                     {displayedHighlights.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                             <Clock size={32} className="opacity-20" />
@@ -165,7 +165,7 @@ export function HighlightPickerDialog({
                             </span>
                         </div>
                     ) : (
-                        <div className="space-y-0.5">
+                        <div className="space-y-0.5 w-full min-w-0">
                             {displayedHighlights.map((h) => {
                                 const file = getFile(h.fileId);
                                 const isPdf = file?.type === 'pdf';
@@ -174,7 +174,7 @@ export function HighlightPickerDialog({
                                     <button
                                         key={h.id}
                                         className={cn(
-                                            "w-full flex items-center gap-3 px-3 py-2 rounded-none text-sm text-left transition-colors",
+                                            "w-full max-w-full min-w-0 overflow-hidden flex items-center gap-3 px-3 py-2 rounded-none text-sm text-left transition-colors",
                                             selectedHighlightId === h.id
                                                 ? "bg-primary/20 text-primary"
                                                 : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
@@ -203,14 +203,14 @@ export function HighlightPickerDialog({
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-xs font-medium truncate">
+                                        <div className="w-0 flex-1 min-w-0 overflow-hidden">
+                                            <div className="text-xs font-medium truncate max-w-full">
                                                 {h.note || h.text || (file ? file.name : "Untitled")}
                                             </div>
                                             {file && (
-                                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate mt-0.5">
+                                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 min-w-0">
                                                     <FilmStrip size={10} className="shrink-0" />
-                                                    <span className="truncate">{file.name}</span>
+                                                    <span className="truncate min-w-0">{file.name}</span>
                                                     {!isPdf && h.end != null && h.end !== h.start && (
                                                         <span className="ml-auto shrink-0">{formatTime(h.start)} – {formatTime(h.end)}</span>
                                                     )}
@@ -238,3 +238,4 @@ export function HighlightPickerDialog({
         </Dialog>
     );
 }
+

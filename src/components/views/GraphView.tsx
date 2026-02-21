@@ -1254,14 +1254,14 @@ export default function GraphView() {
                         })()}
                     </>
                 ) : !activeProjectId ? (
-                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
                             <Square size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
                             <p>Select a project to create graphs</p>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
                             <Square size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
                             <p className="mb-4">Select or create a graph</p>
