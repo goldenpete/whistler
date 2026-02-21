@@ -106,6 +106,7 @@ import { cn } from "@/lib/utils";
 import { useKeybind } from "@/hooks/use-keybind";
 import { CreateCollectionDialog, CreateFolderDialog } from "@/components/dialogs/CollectionDialogs";
 import { MoveCollectionDialog } from "@/components/dialogs/MoveCollectionDialog";
+import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 
 const COLLECTION_COLORS = [
     "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
@@ -183,6 +184,11 @@ interface CollectionCardInnerProps {
 }
 
 function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+    const { highlights, files } = useStore(useShallow((state) => ({
+        highlights: state.highlights,
+        files: state.files,
+    })));
+    const hasPreview = highlights.some((h) => h.collectionId === collection.id);
     const c = collection.color;
     return (
         <div
@@ -215,8 +221,9 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
                 </div>
             )}
 
-            <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none">
-                {React.createElement(getIcon(collection.icon), {
+            <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none relative">
+                <CollectionGridPreview collectionId={collection.id} highlights={highlights} files={files} />
+                {!hasPreview && React.createElement(getIcon(collection.icon), {
                     size: 44,
                     weight: "regular",
                     className: "text-muted-foreground group-hover:text-primary transition-colors",
@@ -241,6 +248,11 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
 }
 
 function CollectionCardListInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+    const { highlights, files } = useStore(useShallow((state) => ({
+        highlights: state.highlights,
+        files: state.files,
+    })));
+    const hasPreview = highlights.some((h) => h.collectionId === collection.id);
     const dateStr = new Date(collection.lastModified).toLocaleDateString();
     const c = collection.color;
 
@@ -285,8 +297,9 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
                 </div>
             )}
 
-            <div className="w-16 h-12 rounded-none bg-muted flex items-center justify-center shrink-0 overflow-hidden pointer-events-none">
-                {React.createElement(getIcon(collection.icon), {
+            <div className="w-16 h-12 rounded-none bg-muted flex items-center justify-center shrink-0 overflow-hidden pointer-events-none relative">
+                <CollectionGridPreview collectionId={collection.id} highlights={highlights} files={files} />
+                {!hasPreview && React.createElement(getIcon(collection.icon), {
                     size: 28,
                     weight: "regular",
                     className: "text-muted-foreground group-hover:text-primary transition-colors",
@@ -312,6 +325,11 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
 }
 
 function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+    const { highlights, files } = useStore(useShallow((state) => ({
+        highlights: state.highlights,
+        files: state.files,
+    })));
+    const hasPreview = highlights.some((h) => h.collectionId === collection.id);
     const dateStr = new Date(collection.lastModified).toLocaleDateString();
     const c = collection.color;
 
@@ -348,7 +366,8 @@ function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, s
 
             {/* Content Area (Top) */}
             <div className="h-[160px] flex-none bg-muted/30 flex items-center justify-center overflow-hidden pointer-events-none relative group-hover:bg-muted/10 transition-colors">
-                {React.createElement(getIcon(collection.icon), {
+                <CollectionGridPreview collectionId={collection.id} highlights={highlights} files={files} />
+                {!hasPreview && React.createElement(getIcon(collection.icon), {
                     size: 48,
                     weight: "regular",
                     className: "text-muted-foreground group-hover:text-primary transition-colors",
