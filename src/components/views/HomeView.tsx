@@ -103,14 +103,65 @@ function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 
 }
 
 /** Shape of items in the allItems array used by the home view grid. */
-interface HomeViewItem {
-    id: string;
-    type: 'file' | 'doc' | 'collection' | 'graph' | 'highlight' | 'storage' | 'project';
-    subType?: string;
-    name: string;
-    timestamp: number;
-    data: Record<string, unknown>;
-}
+type HomeViewItem =
+    | {
+        id: string;
+        type: 'file';
+        subType: AppFile['type'];
+        name: string;
+        timestamp: number;
+        data: AppFile;
+    }
+    | {
+        id: string;
+        type: 'doc';
+        name: string;
+        timestamp: number;
+        data: Doc;
+    }
+    | {
+        id: string;
+        type: 'collection';
+        subType?: Collection['type'];
+        name: string;
+        timestamp: number;
+        data: Collection;
+    }
+    | {
+        id: string;
+        type: 'bucket';
+        name: string;
+        timestamp: number;
+        data: Collection;
+    }
+    | {
+        id: string;
+        type: 'graph';
+        name: string;
+        timestamp: number;
+        data: Graph;
+    }
+    | {
+        id: string;
+        type: 'highlight';
+        name: string;
+        timestamp: number;
+        data: Highlight & { file?: AppFile };
+    }
+    | {
+        id: string;
+        type: 'storage';
+        name: string;
+        timestamp: number;
+        data: Storage;
+    }
+    | {
+        id: string;
+        type: 'project';
+        name: string;
+        timestamp: number;
+        data: Project;
+    };
 
 const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { url: string, start?: number, overrideMiddleFrame?: boolean }) => {
     const { useMiddleFrameForPreviews, cacheFiles } = useStore(useShallow(state => ({
@@ -313,12 +364,12 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                 {item.data.color && (
                     <div 
                         className="absolute inset-0 opacity-[0.08]"
-                        style={{ backgroundColor: item.data.color }}
+                        style={{ backgroundColor: item.data.color as string }}
                     />
                 )}
                 <div 
                     className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                    style={item.data.color ? { color: item.data.color } : undefined}
+                    style={item.data.color ? { color: item.data.color as string } : undefined}
                 >
                     <NotePencil size={180} weight="fill" />
                 </div>
@@ -344,7 +395,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                 />
                 <div 
                     className="absolute inset-0 opacity-[0.08]"
-                    style={{ backgroundColor: item.data.color }}
+                    style={{ backgroundColor: item.data.color as string }}
                 />
                 {/* Only show icon if no grid preview (handled by checking if highlights exist for this collection? 
                     Actually CollectionGridPreview returns null if empty.
@@ -358,11 +409,29 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                 {(!highlights.some((h) => h.collectionId === item.data.id)) && (
                     <div 
                         className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                        style={{ color: item.data.color }}
+                        style={{ color: item.data.color as string }}
                     >
                         <Tag size={180} weight="fill" />
                     </div>
                 )}
+            </>
+        );
+    }
+
+    // Bucket
+    if (item.type === 'bucket') {
+        return (
+            <>
+                <div
+                    className="absolute inset-0 opacity-[0.08]"
+                    style={{ backgroundColor: item.data.color as string }}
+                />
+                <div
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    style={{ color: item.data.color as string }}
+                >
+                    <Folder size={180} weight="fill" />
+                </div>
             </>
         );
     }
@@ -374,12 +443,12 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                 {item.data.color && (
                     <div 
                         className="absolute inset-0 opacity-[0.08]"
-                        style={{ backgroundColor: item.data.color }}
+                        style={{ backgroundColor: item.data.color as string }}
                     />
                 )}
                 <div 
                     className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                    style={item.data.color ? { color: item.data.color, opacity: 0.05 } : undefined}
+                    style={item.data.color ? { color: item.data.color as string, opacity: 0.05 } : undefined}
                 >
                     <GraphIcon size={200} weight="fill" />
                 </div>
@@ -417,7 +486,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                             onError={() => {}}
                             width={400}
                             page={item.data.start || 1}
-                            rect={item.data.rect}
+                            rect={item.data.rect || undefined}
                             className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                         />
                     </div>
@@ -439,12 +508,12 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                 {item.data.color && (
                     <div 
                         className="absolute inset-0 opacity-[0.08]"
-                        style={{ backgroundColor: item.data.color }}
+                        style={{ backgroundColor: item.data.color as string }}
                     />
                 )}
                 <div 
                     className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
-                    style={item.data.color ? { color: item.data.color } : undefined}
+                    style={item.data.color ? { color: item.data.color as string } : undefined}
                 >
                     <Folder size={180} weight="fill" />
                 </div>
@@ -496,6 +565,7 @@ export default function HomeView() {
 
     const [addFileOpen, setAddFileOpen] = useState(false);
     const [addCollectionOpen, setAddCollectionOpen] = useState(false);
+    const [addBucketOpen, setAddBucketOpen] = useState(false);
     const [addDocOpen, setAddDocOpen] = useState(false);
     const [addGraphOpen, setAddGraphOpen] = useState(false);
     const [addStorageOpen, setAddStorageOpen] = useState(false);
@@ -512,7 +582,7 @@ export default function HomeView() {
                 console.error("Failed to parse filters", e);
             }
         }
-        return new Set(['file', 'doc', 'collection', 'graph', 'highlight', 'storage', 'project']);
+        return new Set(['file', 'doc', 'collection', 'bucket', 'graph', 'highlight', 'storage', 'project']);
     });
 
     const toggleFilter = (type: string) => {
@@ -530,7 +600,7 @@ export default function HomeView() {
     const [quickAccessPopoverOpen, setQuickAccessPopoverOpen] = useState(false);
     
     // Rename/Edit Dialog States
-    const [renameItem, setRenameItem] = useState<{id: string, type: string, name: string, data?: Record<string, unknown>} | null>(null);
+    const [renameItem, setRenameItem] = useState<HomeViewItem | null>(null);
     const [renameFileOpen, setRenameFileOpen] = useState(false);
     const [renameDocOpen, setRenameDocOpen] = useState(false);
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
@@ -659,6 +729,40 @@ export default function HomeView() {
         navigate(`/collection/${newCollection.id}`);
     };
 
+    const handleCreateBucket = (name: string, color: string, icon: string) => {
+        if (!activeProjectId) return;
+
+        const siblingBuckets = collections.filter((c: Collection) =>
+            c.projectId === activeProjectId &&
+            c.parentId === null &&
+            c.type === 'bucket' &&
+            !c.deleted
+        );
+        const maxOrder = siblingBuckets.length > 0
+            ? Math.max(...siblingBuckets.map((c) => c.order || 0))
+            : -1;
+
+        const newBucket: Collection = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            parentId: null,
+            name,
+            color,
+            icon,
+            type: 'bucket',
+            order: maxOrder + 1,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState((state) => ({
+            collections: [...state.collections, newBucket],
+            activeCollectionId: newBucket.id
+        }));
+        setPopoverOpen(false);
+        navigate('/collections');
+    };
+
     const handleCreateDoc = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
         useStore.getState().addDoc(name, activeProjectId, color, icon);
@@ -697,7 +801,12 @@ export default function HomeView() {
     // Filter items for current project
     const projectFiles = files.filter((f: AppFile) => f.projectId === activeProjectId && !f.deleted);
     const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
-    const projectCollections = collections.filter((c: Collection) => c.projectId === activeProjectId && !c.deleted);
+    const projectCollections = collections.filter((c: Collection) =>
+        c.projectId === activeProjectId && !c.deleted && c.type !== 'bucket'
+    );
+    const projectBuckets = collections.filter((c: Collection) =>
+        c.projectId === activeProjectId && !c.deleted && c.type === 'bucket'
+    );
     const projectGraphs = (graphs || []).filter((g) => g.projectId === activeProjectId);
 
     // Recent Highlights logic
@@ -724,7 +833,7 @@ export default function HomeView() {
     };
 
     // Unify all items
-    const allItems = [
+    const allItems: HomeViewItem[] = [
         ...projectFiles.map((f: AppFile) => ({
             id: f.id,
             type: 'file' as const,
@@ -743,9 +852,17 @@ export default function HomeView() {
         ...projectCollections.map((c: Collection) => ({
             id: c.id,
             type: 'collection' as const,
+            subType: c.type,
             name: c.name,
             timestamp: Math.max(c.lastModified, c.lastViewed || 0),
             data: c
+        })),
+        ...projectBuckets.map((b: Collection) => ({
+            id: b.id,
+            type: 'bucket' as const,
+            name: b.name,
+            timestamp: Math.max(b.lastModified, b.lastViewed || 0),
+            data: b
         })),
         ...projectGraphs.map((g) => ({
             id: g.id,
@@ -769,14 +886,14 @@ export default function HomeView() {
             id: s.id,
             type: 'storage' as const,
             name: s.name,
-            timestamp: Math.max(s.lastModified || s.created, s.lastViewed || 0),
+            timestamp: Math.max(s.lastModified || s.created, (s as Storage & { lastViewed?: number }).lastViewed || 0),
             data: s
         })),
         ...(projects || []).map((p) => ({
             id: p.id,
             type: 'project' as const,
             name: p.name,
-            timestamp: Math.max(p.lastModified || p.created, p.lastViewed || 0),
+            timestamp: Math.max(p.lastModified || p.created, (p as Project & { lastViewed?: number }).lastViewed || 0),
             data: p
         }))
     ].sort((a, b) => b.timestamp - a.timestamp);
@@ -784,15 +901,16 @@ export default function HomeView() {
     const filteredItems = allItems.filter(item => activeFilters.has(item.type));
 
     const getItemIcon = (item: typeof allItems[0]) => {
-        if ((item.type === 'collection' || item.type === 'doc' || item.type === 'graph' || item.type === 'storage') && item.data.icon) {
+        if ((item.type === 'collection' || item.type === 'bucket' || item.type === 'doc' || item.type === 'graph' || item.type === 'storage') && item.data.icon) {
             const customIcon = ICONS.find(i => i.name === item.data.icon)?.icon;
             if (customIcon) return customIcon;
         }
 
         switch (item.type) {
-            case 'file': return getFileIcon(item.subType as any);
+            case 'file': return getFileIcon(item.subType as AppFile['type']);
             case 'doc': return FileText;
             case 'collection': return Tag;
+            case 'bucket': return Folder;
             case 'graph': return GraphIcon;
             case 'highlight': return Clock;
             case 'storage': return HardDrives;
@@ -807,7 +925,9 @@ export default function HomeView() {
             case 'doc':
                 return 'Doc';
             case 'collection':
-                return 'Collection';
+                return item.subType === 'folder' ? 'Folder' : 'Collection';
+            case 'bucket':
+                return 'Bucket';
             case 'graph':
                 return 'Graph';
             case 'highlight':
@@ -818,6 +938,20 @@ export default function HomeView() {
                 return 'Project';
             default:
                 return 'Unknown';
+        }
+    };
+
+    const getItemColor = (item: typeof allItems[0]): string | undefined => {
+        switch (item.type) {
+            case 'file':
+            case 'doc':
+            case 'collection':
+            case 'bucket':
+            case 'graph':
+            case 'storage':
+                return item.data.color;
+            default:
+                return undefined;
         }
     };
 
@@ -836,11 +970,21 @@ export default function HomeView() {
                 navigate(`/docs/${item.id}`);
                 break;
             case 'collection':
-                const bucketId = findRootBucketId(useStore.getState().collections, item.id);
-                if (bucketId) {
-                    useStore.getState().setActiveCollection(bucketId);
+                {
+                    const bucketId = findRootBucketId(useStore.getState().collections, item.id);
+                    if (bucketId) {
+                        useStore.getState().setActiveCollection(bucketId);
+                    }
+                    if (item.subType === 'folder') {
+                        navigate(`/collections?folderId=${item.id}`);
+                    } else {
+                        navigate(`/collection/${item.id}`);
+                    }
                 }
-                navigate(`/collection/${item.id}`);
+                break;
+            case 'bucket':
+                useStore.getState().setActiveCollection(item.id);
+                navigate('/collections');
                 break;
             case 'graph':
                 useStore.getState().setActiveGraph(item.id);
@@ -884,6 +1028,7 @@ export default function HomeView() {
                 }
                 break;
             case 'collection':
+            case 'bucket':
                 if (color && icon) {
                     useStore.getState().updateCollection(id, { name, color, icon });
                 }
@@ -909,6 +1054,7 @@ export default function HomeView() {
                 useStore.getState().trashDoc(item.id);
                 break;
             case 'collection':
+            case 'bucket':
                 useStore.getState().trashCollection(item.id);
                 break;
             case 'graph':
@@ -935,6 +1081,7 @@ export default function HomeView() {
                 setRenameDocOpen(true);
                 break;
             case 'collection':
+            case 'bucket':
                 setEditCollectionOpen(true);
                 break;
             case 'graph':
@@ -981,7 +1128,7 @@ export default function HomeView() {
                         <div className="p-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                             Filter Items
                         </div>
-                        {['file', 'doc', 'collection', 'graph', 'highlight', 'storage', 'project'].map((type) => (
+                        {['file', 'doc', 'collection', 'bucket', 'graph', 'highlight', 'storage', 'project'].map((type) => (
                             <Button
                                 key={type}
                                 variant="ghost"
@@ -1014,6 +1161,9 @@ export default function HomeView() {
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('collection'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
                             <Tag className="text-muted-foreground" size={16} /> Collections
                         </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('bucket'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
+                            <Folder className="text-muted-foreground" size={16} /> Buckets
+                        </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setQuickAccessType('doc'); setQuickAccessOpen(true); setQuickAccessPopoverOpen(false); }}>
                             <NotePencil className="text-muted-foreground" size={16} /> Docs
                         </Button>
@@ -1043,6 +1193,9 @@ export default function HomeView() {
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddCollectionOpen(true); setPopoverOpen(false); }}>
                             <Tag className="text-muted-foreground" size={16} /> Add Collection
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddBucketOpen(true); setPopoverOpen(false); }}>
+                            <Folder className="text-muted-foreground" size={16} /> Add Bucket
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddDocOpen(true); setPopoverOpen(false); }}>
                             <NotePencil className="text-muted-foreground" size={16} /> Add Doc
@@ -1092,7 +1245,7 @@ export default function HomeView() {
                                                 <div className="relative z-20 w-full flex flex-col h-full">
                                                     <div className="flex items-center justify-between w-full gap-2 mb-auto">
                                                         <div className="p-2 shrink-0 rounded-none bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
-                                                            <Icon weight="duotone" className="w-5 h-5" style={item.data.color ? { color: item.data.color } : undefined} />
+                                                            <Icon weight="duotone" className="w-5 h-5" style={getItemColor(item) ? { color: getItemColor(item) } : undefined} />
                                                         </div>
                                                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-none bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
                                                             {label}
@@ -1178,6 +1331,12 @@ export default function HomeView() {
                 onOpenChange={setAddCollectionOpen}
                 onSubmit={handleCreateCollection}
             />
+            <CreateCollectionDialog
+                open={addBucketOpen}
+                onOpenChange={setAddBucketOpen}
+                onSubmit={handleCreateBucket}
+                title="New Bucket"
+            />
             <NewDocDialog
                 open={addDocOpen}
                 onOpenChange={setAddDocOpen}
@@ -1213,33 +1372,33 @@ export default function HomeView() {
                         onOpenChange={setRenameFileOpen}
                         onSubmit={(name, description, url, color) => handleRename(name, description, color, undefined, url)}
                         initialName={renameItem.name}
-                        initialDescription={renameItem.data.description}
-                        initialUrl={renameItem.data.url}
-                        initialColor={renameItem.data.color}
+                        initialDescription={renameItem.type === 'file' ? renameItem.data.description : undefined}
+                        initialUrl={renameItem.type === 'file' ? (renameItem.data.url || undefined) : undefined}
+                        initialColor={renameItem.type === 'file' ? renameItem.data.color : undefined}
                     />
                     <EditDocDialog
                         open={renameDocOpen}
                         onOpenChange={setRenameDocOpen}
                         onSubmit={(name, color, icon) => handleRename(name, undefined, color, icon)}
                         initialName={renameItem.name}
-                        initialColor={renameItem.data.color}
-                        initialIcon={renameItem.data.icon}
+                        initialColor={renameItem.type === 'doc' ? renameItem.data.color : undefined}
+                        initialIcon={renameItem.type === 'doc' ? renameItem.data.icon : undefined}
                     />
                     <EditFolderDialog
                         open={editCollectionOpen}
                         onOpenChange={setEditCollectionOpen}
                         onSubmit={(name, description, color, icon) => handleRename(name, undefined, color, icon)}
                         initialName={renameItem.name}
-                        initialColor={renameItem.data.color}
-                        initialIcon={renameItem.data.icon}
+                        initialColor={renameItem.type === 'collection' || renameItem.type === 'bucket' ? renameItem.data.color : undefined}
+                        initialIcon={renameItem.type === 'collection' || renameItem.type === 'bucket' ? renameItem.data.icon : undefined}
                     />
                     <EditGraphDialog
                         open={renameGraphOpen}
                         onOpenChange={setRenameGraphOpen}
                         onSubmit={(name, color, icon) => handleRename(name, undefined, color, icon)}
                         initialName={renameItem.name}
-                        initialColor={renameItem.data.color}
-                        initialIcon={renameItem.data.icon}
+                        initialColor={renameItem.type === 'graph' ? renameItem.data.color : undefined}
+                        initialIcon={renameItem.type === 'graph' ? renameItem.data.icon : undefined}
                     />
                     <MoveFileDialog
                         open={moveDialogOpen}

@@ -22,6 +22,7 @@ import {
     File, 
     FileText, 
     Tag, 
+    Folder,
     Graph, 
     HardDrives, 
     Clock, 
@@ -35,8 +36,9 @@ import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { findRootBucketId } from "@/utils/collectionUtils";
+import type { Collection } from "@/types";
 
-export type QuickAccessType = 'file' | 'highlight' | 'collection' | 'doc' | 'graph' | 'storage' | 'project';
+export type QuickAccessType = 'file' | 'highlight' | 'collection' | 'bucket' | 'doc' | 'graph' | 'storage' | 'project';
 
 interface QuickAccessDialogProps {
     open: boolean;
@@ -82,22 +84,27 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
     const items = useMemo(() => {
         if (!type) return [];
         
-        let rawItems: Array<{ id: string; name?: string; title?: string; text?: string; note?: string; created?: number; lastModified?: number; fileId?: string; fileName?: string }> = [];
+        let rawItems: Array<{ id: string; name?: string; title?: string; text?: string; note?: string; created?: number; lastModified?: number; fileId?: string; fileName?: string; type?: Collection['type'] }> = [];
         
         switch (type) {
             case 'file':
                 rawItems = files.filter(f => f.projectId === activeProjectId && !f.deleted);
                 break;
             case 'highlight':
-                // Join highlights with files to filter by project
-                const projectFileIds = new Set(files.filter(f => f.projectId === activeProjectId).map(f => f.id));
-                rawItems = highlights.filter(h => projectFileIds.has(h.fileId)).map(h => {
-                    const file = files.find(f => f.id === h.fileId);
-                    return { ...h, name: h.note || h.text || "Untitled Highlight", fileName: file?.name };
-                });
+                {
+                    // Join highlights with files to filter by project
+                    const projectFileIds = new Set(files.filter(f => f.projectId === activeProjectId).map(f => f.id));
+                    rawItems = highlights.filter(h => projectFileIds.has(h.fileId)).map(h => {
+                        const file = files.find(f => f.id === h.fileId);
+                        return { ...h, name: h.note || h.text || "Untitled Highlight", fileName: file?.name };
+                    });
+                }
                 break;
             case 'collection':
-                rawItems = collections.filter(c => c.projectId === activeProjectId && !c.deleted);
+                rawItems = collections.filter(c => c.projectId === activeProjectId && !c.deleted && c.type !== 'bucket');
+                break;
+            case 'bucket':
+                rawItems = collections.filter(c => c.projectId === activeProjectId && !c.deleted && c.type === 'bucket');
                 break;
             case 'doc':
                 rawItems = docs.filter(d => d.projectId === activeProjectId && !d.deleted);
@@ -125,7 +132,7 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
             });
     }, [type, files, highlights, collections, docs, graphs, storages, projects, activeProjectId, search, sortOrder]);
 
-    const handleItemClick = (item: { id: string; fileId?: string }) => {
+    const handleItemClick = (item: { id: string; fileId?: string; type?: Collection['type'] }) => {
         switch (type) {
             case 'file':
                 setActiveFile(item.id);
@@ -138,16 +145,21 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
                 }
                 break;
             case 'collection':
-                const bucketId = findRootBucketId(collections, item.id);
-                if (bucketId) {
-                    setActiveCollection(bucketId);
+                {
+                    const bucketId = findRootBucketId(collections, item.id);
+                    if (bucketId) {
+                        setActiveCollection(bucketId);
+                    }
+                    if (item.type === 'folder') {
+                        navigate(`/collections?folderId=${item.id}`);
+                    } else {
+                        navigate(`/collection/${item.id}`);
+                    }
                 }
-                if (item.type === 'collection') {
-                    navigate(`/collection/${item.id}`);
-                } else {
-                    // It's a folder or bucket
-                    navigate(`/collections${item.type === 'folder' ? `?folderId=${item.id}` : ''}`);
-                }
+                break;
+            case 'bucket':
+                setActiveCollection(item.id);
+                navigate('/collections');
                 break;
             case 'doc':
                 setActiveDoc(item.id);
@@ -174,6 +186,7 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
             case 'file': return File;
             case 'highlight': return Clock;
             case 'collection': return Tag;
+            case 'bucket': return Folder;
             case 'doc': return FileText;
             case 'graph': return Graph;
             case 'storage': return HardDrives;
@@ -189,6 +202,7 @@ export function QuickAccessDialog({ open, onOpenChange, type }: QuickAccessDialo
             case 'file': return "All Files";
             case 'highlight': return "All Highlights";
             case 'collection': return "All Collections";
+            case 'bucket': return "All Buckets";
             case 'doc': return "All Documents";
             case 'graph': return "All Graphs";
             case 'storage': return "All Storages";

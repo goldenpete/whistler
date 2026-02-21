@@ -616,7 +616,7 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                 placeholder="16-digit ID" 
                                 value={syncId}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setSyncId(formatAccountId(e.target.value))}
-                                className="h-8 text-sm font-mono bg-sidebar-accent/50 border-sidebar-border text-sidebar-foreground placeholder:text-muted-foreground/50"
+                                className="h-8 text-sm font-mono bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                                 maxLength={19}
                                 minLength={16}
                                 required

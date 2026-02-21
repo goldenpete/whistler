@@ -1,16 +1,4 @@
-﻿    // ...existing code...
-    // After files variable is defined:
-    // ...existing code...
-    // After files variable is defined:
-    const isDescendant = (folderId: string, targetId: string | null): boolean => {
-        if (!targetId) return false;
-        let current = files.find((f: AppFile) => f.id === targetId);
-        while (current && typeof current.parentId === 'string') {
-            if (current.parentId === folderId) return true;
-            current = files.find((f: AppFile) => f.id === current.parentId);
-        }
-        return false;
-    };
+﻿
 /**
  * â”€â”€â”€ StorageView.tsx â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  *
@@ -162,10 +150,12 @@ export default function StorageView() {
     const appFiles = files as AppFile[];
     const isDescendant = (folderId: string, targetId: string | null): boolean => {
         if (!targetId) return false;
-        let current = appFiles.find((f) => f.id === targetId);
-        while (current && typeof current.parentId === 'string') {
-            if (current.parentId === folderId) return true;
-            const next = appFiles.find((f) => f.id === current.parentId);
+        let current = appFiles.find((f) => f.id === targetId) || null;
+        while (current) {
+            const parentId = current.parentId;
+            if (typeof parentId !== 'string') break;
+            if (parentId === folderId) return true;
+            const next = appFiles.find((f) => f.id === parentId) || null;
             if (!next) break;
             current = next;
         }
