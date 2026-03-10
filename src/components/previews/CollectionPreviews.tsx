@@ -4,6 +4,7 @@ import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { useStore } from "@/store/useStore";
 import type { Highlight, File as AppFile } from "@/types";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 
 interface CachedVideoPreviewProps {
     url: string;
@@ -75,6 +76,51 @@ interface CollectionGridPreviewProps {
     files: AppFile[];
 }
 
+function CollectionGridPreviewTile({ highlight, file }: { highlight: Highlight; file: AppFile }) {
+    const { resolvedUrl } = useResolvedFileUrl(file);
+
+    if (!resolvedUrl) {
+        return <div className="w-full h-full bg-muted/50" />;
+    }
+
+    const youtubeId = getYouTubeId(resolvedUrl);
+
+    if (youtubeId) {
+        return (
+            <img
+                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                className="w-full h-full object-cover"
+                alt=""
+            />
+        );
+    }
+
+    if (file.type === 'video') {
+        return <CachedVideoPreview url={resolvedUrl} time={highlight.start || 0} />;
+    }
+
+    if (file.type === 'image') {
+        return <img src={resolvedUrl} className="w-full h-full object-cover" alt="" />;
+    }
+
+    if (file.type === 'pdf') {
+        return (
+            <div className="w-full h-full overflow-hidden">
+                <PdfThumbnail
+                    url={resolvedUrl}
+                    onError={() => {}}
+                    width={150}
+                    page={highlight.start || 1}
+                    rect={highlight.rect ?? undefined}
+                    className="w-full h-full object-cover"
+                />
+            </div>
+        );
+    }
+
+    return <div className="w-full h-full bg-muted/50" />;
+}
+
 export function CollectionGridPreview({ collectionId, highlights, files }: CollectionGridPreviewProps) {
     // Get first 4 highlights for this collection
     const items = highlights
@@ -85,42 +131,13 @@ export function CollectionGridPreview({ collectionId, highlights, files }: Colle
 
     return (
         <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 opacity-20 pointer-events-none">
-            {items.map((h, i) => {
+            {items.map((h) => {
                 const file = files.find(f => f.id === h.fileId);
-                if (!file || !file.url) return <div key={h.id} className="bg-muted/50" />;
-                
-                const youtubeId = getYouTubeId(file.url);
+                if (!file) return <div key={h.id} className="bg-muted/50" />;
 
                 return (
                     <div key={h.id} className="relative overflow-hidden border-[0.5px] border-white/10">
-                        {youtubeId ? (
-                             <img
-                                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
-                                className="w-full h-full object-cover"
-                                alt=""
-                            />
-                        ) : file.type === 'video' ? (
-                            <CachedVideoPreview url={file.url} time={h.start || 0} />
-                        ) : file.type === 'image' ? (
-                            <img
-                                src={file.url}
-                                className="w-full h-full object-cover"
-                                alt=""
-                            />
-                        ) : file.type === 'pdf' ? (
-                            <div className="w-full h-full overflow-hidden">
-                                <PdfThumbnail
-                                    url={file.url}
-                                    onError={() => {}}
-                                    width={150}
-                                    page={h.start || 1}
-                                    rect={h.rect ?? undefined}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                        ) : (
-                            <div className="w-full h-full bg-muted/50" />
-                        )}
+                        <CollectionGridPreviewTile highlight={h} file={file} />
                     </div>
                 );
             })}

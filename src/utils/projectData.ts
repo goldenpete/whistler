@@ -20,6 +20,7 @@
 
 import type { Project, File, Collection, Highlight, Graph, GraphNode, GraphEdge, Doc, Storage, AppState } from "@/types";
 import { isValidUrl } from "./security";
+import { isLocalFile, sanitizeFileForPersistence } from './localFiles';
 
 export interface ProjectExportData {
     version: number;
@@ -50,7 +51,9 @@ export function exportProject(state: AppState, projectId: string): ProjectExport
         version: EXPORT_VERSION,
         exportedAt: Date.now(),
         project,
-        files: state.files.filter(f => f.projectId === projectId && !f.deleted),
+        files: state.files
+            .filter(f => f.projectId === projectId && !f.deleted)
+            .map((file) => sanitizeFileForPersistence(file)),
         collections: state.collections.filter(c => c.projectId === projectId && !c.deleted),
         highlights: state.highlights.filter(h => {
             const file = state.files.find(f => f.id === h.fileId);
@@ -111,7 +114,10 @@ export function importProject(data: ProjectExportData): Omit<ProjectExportData, 
     }));
 
     const newFiles = data.files.map(f => {
-        const safeUrl = f.url && isValidUrl(f.url) ? f.url : "";
+        const safeUrl = isLocalFile(f)
+            ? null
+            : (f.url && isValidUrl(f.url) ? f.url : '');
+
         return {
             ...f,
             id: get(f.id),

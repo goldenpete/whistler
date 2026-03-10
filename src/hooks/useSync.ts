@@ -31,6 +31,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { authStorage } from "@/utils/authStorage";
 import { useStore } from '@/store/useStore';
 import { useShallow } from '@/lib/zustand-shallow';
+import { sanitizeFilesForPersistence } from '@/utils/localFiles';
 
 /** Cloudflare Workers API endpoint for sync operations. */
 const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
@@ -88,8 +89,8 @@ export function useSync() {
                 }
                 if (syncOptions.files) {
                     data.files = trashEnabled 
-                        ? state.files 
-                        : state.files.filter(f => !f.deleted);
+                        ? sanitizeFilesForPersistence(state.files)
+                        : sanitizeFilesForPersistence(state.files.filter(f => !f.deleted));
                 }
                 if (syncOptions.collections) {
                     data.collections = trashEnabled 
@@ -267,11 +268,14 @@ export function useSync() {
                     }
                     if (syncOptions.files && serverData.files) {
                         if (trashEnabled) {
-                            updates.files = serverData.files;
+                            updates.files = sanitizeFilesForPersistence(serverData.files);
                         } else {
                             const localDeleted = state.files.filter(f => f.deleted);
                             const serverIds = new Set(serverData.files.map((f: { id: string }) => f.id));
-                            updates.files = [...serverData.files, ...localDeleted.filter(f => !serverIds.has(f.id))];
+                            updates.files = [
+                                ...sanitizeFilesForPersistence(serverData.files),
+                                ...sanitizeFilesForPersistence(localDeleted.filter(f => !serverIds.has(f.id))),
+                            ];
                         }
                     }
                     if (syncOptions.collections && serverData.collections) {

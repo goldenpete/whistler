@@ -20,6 +20,9 @@ import { ColorPicker } from "@/components/ui/ColorPicker";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { type File } from "@/types";
 import { isValidUrl } from "@/utils/security";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
+import { getDisplaySourceLabel, isLocalFile } from "@/utils/localFiles";
+import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
 
 interface EditFileDialogProps {
     open: boolean;
@@ -34,6 +37,8 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
     const [description, setDescription] = useState(file.description || "");
     const [url, setUrl] = useState(file.url || "");
     const [color, setColor] = useState(file.color || "");
+    const { availability, requestAccess, relink, resolvedUrl } = useResolvedFileUrl(file);
+    const isLocalSource = isLocalFile(file);
 
     useEffect(() => {
         if (open) {
@@ -45,11 +50,11 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
     }, [open, file]);
 
     const handleSubmit = () => {
-        if (url.trim() && !isValidUrl(url)) {
+        if (!isLocalSource && url.trim() && !isValidUrl(url)) {
             alert("Invalid or unsafe URL protocol.");
             return;
         }
-        onSave({ name: name.trim(), description: description.trim(), url: url.trim(), color });
+        onSave({ name: name.trim(), description: description.trim(), url: isLocalSource ? file.url : url.trim(), color });
         onOpenChange(false);
     };
 
@@ -72,16 +77,35 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
                             className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
                         />
                     </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="url" className="text-zinc-400">Link</Label>
-                        <Input
-                            id="url"
-                            value={url}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
-                            className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
-                            placeholder="https://..."
-                        />
-                    </div>
+                    {isLocalSource ? (
+                        <div className="grid gap-2">
+                            <Label className="text-zinc-400">Local Source</Label>
+                            <div className="rounded-none border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-sm text-zinc-200">
+                                {getDisplaySourceLabel(file, resolvedUrl) || "Local file attached"}
+                            </div>
+
+                            {(availability === 'permission-required' || availability === 'missing-handle' || availability === 'unsupported' || availability === 'error') && (
+                                <LocalFileAccessPanel
+                                    file={file}
+                                    availability={availability}
+                                    onRequestAccess={requestAccess}
+                                    onRelink={relink}
+                                    compact={true}
+                                />
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid gap-2">
+                            <Label htmlFor="url" className="text-zinc-400">Link</Label>
+                            <Input
+                                id="url"
+                                value={url}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
+                                className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
+                                placeholder="https://..."
+                            />
+                        </div>
+                    )}
                     <div className="grid gap-2">
                         <Label htmlFor="description" className="text-zinc-400">Description</Label>
                         <Textarea

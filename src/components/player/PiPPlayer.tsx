@@ -23,6 +23,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, X, ArrowsOutSimple, SpeakerSimpleHigh, SpeakerSimpleSlash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 
 interface PiPPlayerProps {
     isCollapsed: boolean;
@@ -44,6 +45,7 @@ export function PiPPlayer({ isCollapsed }: PiPPlayerProps) {
     const [isMuted, setIsMuted] = useState(false);
 
     const file = pipFileId ? files.find(f => f.id === pipFileId) : null;
+    const { resolvedUrl } = useResolvedFileUrl(file);
 
     useEffect(() => {
         if (videoRef.current) {
@@ -61,7 +63,7 @@ export function PiPPlayer({ isCollapsed }: PiPPlayerProps) {
     }, [isPlaying, file?.id]); // Re-run when file changes
 
 
-    if (!isPipOpen || !file || !file.url) return null;
+    if (!isPipOpen || !file || !resolvedUrl) return null;
 
     const togglePlay = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -110,7 +112,7 @@ export function PiPPlayer({ isCollapsed }: PiPPlayerProps) {
                 {/* Video */}
                 <video
                     ref={videoRef}
-                    src={file.url}
+                    src={resolvedUrl}
                     className="w-full h-full object-cover"
                     muted={isMuted}
                     loop

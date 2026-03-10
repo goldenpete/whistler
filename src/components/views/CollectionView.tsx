@@ -67,7 +67,7 @@ import {
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { findRootBucketId } from "@/utils/collectionUtils";
-import type { Highlight } from "@/types";
+import type { Highlight, File as AppFile } from "@/types";
 import { EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { getIcon } from "@/utils/iconMap";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
@@ -75,6 +75,7 @@ import { getYouTubeId } from "@/components/player/YouTubePlayer";
 
 
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 
 export default function CollectionView() {
     const {
@@ -369,8 +370,6 @@ export default function CollectionView() {
                         const file = files.find(f => f.id === h.fileId);
                         if (!file) return null;
                         const isSelected = selectedItems.has(h.id);
-                        const youtubeId = file.url ? getYouTubeId(file.url) : null;
-
                         return (
                             <ContextMenu key={h.id}>
                                 <ContextMenuTrigger>
@@ -383,34 +382,7 @@ export default function CollectionView() {
                                     >
                                         {/* Preview Area */}
                                         <div className="aspect-video bg-muted relative overflow-hidden">
-                                            {/* Media Preview */}
-                                            {youtubeId ? (
-                                                <HighlightYouTubePreview videoId={youtubeId} start={h.start} />
-                                            ) : file.url && (file.type === 'video' || file.type === 'image' || file.type === 'pdf') ? (
-                                                file.type === 'image' ? (
-                                                    <img
-                                                        src={file.url}
-                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                                    />
-                                                ) : file.type === 'pdf' ? (
-                                                    <div className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity">
-                                                        <PdfThumbnail
-                                                            url={file.url}
-                                                            onError={() => { }}
-                                                            width={300}
-                                                            page={h.start || 1}
-                                                            rect={h.rect || undefined}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <HighlightVideoPreview url={file.url} start={h.start} />
-                                                )
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                    <FileIconByType type={file.type} size={48} />
-                                                </div>
-                                            )}
+                                            <CollectionHighlightPreview highlight={h} file={file} />
 
                                             {/* Time Badge */}
                                             <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-mono font-medium">
@@ -520,6 +492,53 @@ export default function CollectionView() {
                     }
                 }}
             />
+        </div>
+    );
+}
+
+function CollectionHighlightPreview({ highlight, file }: { highlight: Highlight; file: AppFile }) {
+    const { resolvedUrl } = useResolvedFileUrl(file);
+
+    if (!resolvedUrl) {
+        return (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <FileIconByType type={file.type} size={48} />
+            </div>
+        );
+    }
+
+    const youtubeId = getYouTubeId(resolvedUrl);
+
+    if (youtubeId) {
+        return <HighlightYouTubePreview videoId={youtubeId} start={highlight.start} />;
+    }
+
+    if (file.type === 'image') {
+        return <img src={resolvedUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />;
+    }
+
+    if (file.type === 'pdf') {
+        return (
+            <div className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity">
+                <PdfThumbnail
+                    url={resolvedUrl}
+                    onError={() => { }}
+                    width={300}
+                    page={highlight.start || 1}
+                    rect={highlight.rect || undefined}
+                    className="w-full h-full object-cover"
+                />
+            </div>
+        );
+    }
+
+    if (file.type === 'video') {
+        return <HighlightVideoPreview url={resolvedUrl} start={highlight.start} />;
+    }
+
+    return (
+        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+            <FileIconByType type={file.type} size={48} />
         </div>
     );
 }

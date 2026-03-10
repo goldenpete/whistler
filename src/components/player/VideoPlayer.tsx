@@ -111,6 +111,14 @@ import { useKeybind } from "@/hooks/use-keybind";
 import { playSfx } from "@/utils/sound";
 import { isValidUrl } from "@/utils/security";
 import { HighlightsSidebar } from "@/components/player/HighlightsSidebar";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
+import {
+    getDisplaySourceLabel,
+    getOpenUrlForFile,
+    getShareUrlForFile,
+    isLocalFile,
+} from "@/utils/localFiles";
+import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
 
 interface VideoPlayerProps {
     fileIdOverride?: string;
@@ -213,7 +221,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeRef = useRef<YouTubePlayerHandle>(null);
-    const isYouTube = fileId ? (files.find(f => f.id === fileId)?.url?.includes('youtube.com') || files.find(f => f.id === fileId)?.url?.includes('youtu.be')) : false;
+    const isYouTube = resolvedUrl ? (resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be')) : false;
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const imageRef = useRef<ImagePlayerHandle>(null);
     const audioRef = useRef<AudioPlayerHandle>(null);
@@ -242,13 +250,19 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
 
     const file = files.find(f => f.id === fileId);
+    const { resolvedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
     const [localUrl, setLocalUrl] = useState(file?.url || "");
+    const displaySourceLabel = file ? getDisplaySourceLabel(file, resolvedUrl) : "";
 
     useEffect(() => {
-        setLocalUrl(file?.url || "");
-    }, [file?.url]);
+        setLocalUrl(isLocalFile(file) ? "" : (file?.url || ""));
+    }, [file?.url, file]);
 
     const handleUrlUpdate = () => {
+        if (!file || isLocalFile(file)) {
+            return;
+        }
+
         if (file && localUrl !== file.url) {
             if (localUrl && !isValidUrl(localUrl)) {
                 alert("Invalid or unsafe URL protocol.");
@@ -263,8 +277,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
        SCREENSHOT CAPTURE
        ═══════════════════════════════════════════════════════ */
     const handleCaptureFrame = async () => {
-        if (isYouTube && file && file.url) {
-            const videoId = getYouTubeId(file.url);
+        if (isYouTube && file && resolvedUrl) {
+            const videoId = getYouTubeId(resolvedUrl);
             if (videoId) {
                 const maxResUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
                 const hqUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
@@ -913,7 +927,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     // --- End Shortcuts ---
 
     const handleCopyUrl = () => {
-        if (file.url) navigator.clipboard.writeText(file.url);
+        if (!file) return;
+        navigator.clipboard.writeText(getShareUrlForFile(file));
     };
 
     const seekToHighlight = (highlight: Highlight) => {
@@ -956,15 +971,20 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     };
 
     const handleOpenLink = () => {
-        if (file.url) window.open(file.url, '_blank');
+        if (!file) return;
+        window.open(getOpenUrlForFile(file, resolvedUrl), '_blank');
     };
 
     const handleShare = async () => {
-        if (navigator.share && file.url) {
+        if (!file) return;
+
+        const shareUrl = getShareUrlForFile(file);
+
+        if (navigator.share) {
             try {
                 await navigator.share({
                     title: file.name,
-                    url: file.url
+                    url: shareUrl
                 });
             } catch (err) {
                 console.error('Share failed', err);
@@ -1208,7 +1228,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     }}
                                 >
                                     <span className="text-xs text-blue-400 truncate max-w-[150px] sm:max-w-[200px] hover:underline font-mono">
-                                        {localUrl || "Add URL..."}
+                                        {isLocalFile(file) ? displaySourceLabel : (localUrl || "Add URL...")}
                                     </span>
                                 </div>
                             </div>
@@ -1302,11 +1322,20 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                         </div>
                     )}
 
-                    {file.type === 'pdf' ? (
+                    {isLocalFile(file) && !resolvedUrl ? (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center p-6 bg-black/30">
+                            <LocalFileAccessPanel
+                                file={file}
+                                availability={availability}
+                                onRequestAccess={requestAccess}
+                                onRelink={relink}
+                            />
+                        </div>
+                    ) : file.type === 'pdf' ? (
                         <div className="absolute inset-0 z-10">
                             <PDFPlayer
                                 ref={pdfRef}
-                                url={file.url || ""}
+                                url={resolvedUrl || ""}
                                 fileId={file.id}
                                 onPageChange={() => { }}
                                 onSelectionChange={setHasPdfSelection}
@@ -1322,7 +1351,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                         <div className="absolute inset-0 z-10">
                             <ImagePlayer
                                 ref={imageRef}
-                                url={file.url || ""}
+                                url={resolvedUrl || ""}
                                 fileId={file.id}
                                 onSelectionChange={(hasSelection: boolean) => { /* Optional: update state if needed */ }}
                                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -1337,7 +1366,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                         <div className="absolute inset-0 z-10 bg-zinc-950">
                         <AudioPlayer
                             ref={audioRef}
-                            url={file.url || ""}
+                            url={resolvedUrl || ""}
                             fileId={file.id}
                             className="w-full h-full"
                             highlights={fileHighlights}
@@ -1352,7 +1381,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     {isYouTube ? (
                                         <YouTubePlayerComponent
                                             ref={youtubeRef}
-                                            url={file.url || ""}
+                                            url={resolvedUrl || ""}
                                             className="w-full h-full"
                                             onTimeUpdate={(t: number) => handleTimeUpdate(t)}
                                         onDurationChange={(d: number) => setDuration(d)}
@@ -1372,7 +1401,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                 ) : (
                                 <video
                                     ref={videoRef}
-                                    src={file.url || ""}
+                                    src={resolvedUrl || ""}
                                     className="max-w-full max-h-full object-contain focus:outline-none"
                                     autoPlay={!disableMediaAutoplay}
                                     onWaiting={() => setIsLoading(true)}

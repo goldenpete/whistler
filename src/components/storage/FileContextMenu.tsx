@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/context-menu";
 import { getIcon, iconNames } from "@/utils/iconMap";
 import { cn } from "@/lib/utils";
+import { getOpenUrlForFile, getShareUrlForFile } from "@/utils/localFiles";
 
 export const STORAGE_COLORS = [
     "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
@@ -49,17 +50,17 @@ export function FileContextMenu({ file, onRename, onMove, onSelect, onColorChang
     };
 
     const handleCopyLink = () => {
-        const url = file.url || `${window.location.origin}/file/${file.id}`;
+        const url = getShareUrlForFile(file);
         navigator.clipboard.writeText(url);
     };
 
     const handleOpenLink = () => {
-        const url = file.url || `${window.location.origin}/file/${file.id}`;
+        const url = getOpenUrlForFile(file, file.url);
         window.open(url, '_blank');
     };
 
     const handleShare = () => {
-        const url = file.url || `${window.location.origin}/file/${file.id}`;
+        const url = getShareUrlForFile(file);
         if (navigator.share) {
             navigator.share({
                 title: file.name,

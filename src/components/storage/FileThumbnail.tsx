@@ -21,6 +21,8 @@ import { ICONS } from "@/components/dialogs/StorageDialogs";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { thumbnailStorage } from "@/utils/thumbnailDb";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
+import { inferFileTypeFromUrl } from "@/utils/localFiles";
 
 /* ═══════════════════════════════════════════════════════
    UTILITIES
@@ -38,15 +40,7 @@ export function getFileIcon(type: string) {
 }
 
 export function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image' {
-    const lower = url.toLowerCase();
-    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'video';
-    if (/\.(mp4|webm|mov|avi|mkv|m4v)(\?|$)/.test(lower)) return 'video';
-    if (/\.(mp3|wav|ogg|flac|m4a)(\?|$)/.test(lower)) return 'audio';
-    if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/.test(lower)) return 'image';
-    if (/\.pdf(\?|$)/.test(lower)) return 'pdf';
-    // Default to video for streaming URLs (catbox, etc)
-    if (lower.includes('catbox') || lower.includes('files.')) return 'video';
-    return 'file';
+    return inferFileTypeFromUrl(url);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -57,13 +51,14 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
     const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
+    const { resolvedUrl } = useResolvedFileUrl(file);
 
     // Load cached thumbnail
     useEffect(() => {
-        if (file.type !== 'video' || !file.url || getYouTubeId(file.url)) return;
+        if (file.type !== 'video' || !resolvedUrl || getYouTubeId(resolvedUrl)) return;
 
         const loadThumbnail = async () => {
-            const key = `${file.url}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
+            const key = `${resolvedUrl}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
             try {
                 const blob = await thumbnailStorage.load(key);
                 if (blob) {
@@ -75,7 +70,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
             }
         };
         loadThumbnail();
-    }, [file.url, file.type, useMiddleFrameForPreviews]);
+    }, [resolvedUrl, file.type, useMiddleFrameForPreviews]);
 
     // Cleanup object URL
     useEffect(() => {
@@ -99,7 +94,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
 
     const [error, setError] = useState(false);
 
-    if (error || !file.url) {
+    if (error || !resolvedUrl) {
         return React.createElement(Icon, {
             size: iconSize,
             weight: "regular",
@@ -109,7 +104,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
     }
 
     // Check for YouTube first, regardless of file type (handles legacy 'file' type imports)
-    const youtubeId = getYouTubeId(file.url);
+    const youtubeId = getYouTubeId(resolvedUrl);
     if (youtubeId) {
         return (
             <img
@@ -122,7 +117,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
     }
 
     if (file.type === 'image') {
-        return <img src={file.url} alt={file.name} className="w-full h-full object-cover" onError={() => setError(true)} />;
+        return <img src={resolvedUrl} alt={file.name} className="w-full h-full object-cover" onError={() => setError(true)} />;
     }
 
     if (file.type === 'video') {
@@ -140,7 +135,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
         return (
             <video
                 ref={videoRef}
-                src={`${file.url}#t=0.1`}
+                src={`${resolvedUrl}#t=0.1`}
                 className="w-full h-full object-cover"
                 preload="metadata"
                 muted
@@ -157,7 +152,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
                 }}
                 onSeeked={async (e: SyntheticEvent<HTMLVideoElement>) => {
                     const video = e.currentTarget;
-                    const key = `${file.url}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
+                    const key = `${resolvedUrl}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
 
                     try {
                         const canvas = document.createElement('canvas');
@@ -182,7 +177,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
     if (file.type === "pdf") {
         return (
             <PdfThumbnail
-                url={file.url}
+                url={resolvedUrl}
                 onError={() => setError(true)}
             />
         );

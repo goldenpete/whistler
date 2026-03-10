@@ -19,6 +19,7 @@
 import { useRef, useEffect, useState } from "react";
 import { type File } from "@/types";
 import { cn, formatTime } from "@/lib/utils";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 
 interface SeekPreviewProps {
     file: File;
@@ -30,6 +31,7 @@ interface SeekPreviewProps {
 export function SeekPreview({ file, time, x, visible }: SeekPreviewProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [loaded, setLoaded] = useState(false);
+    const { resolvedUrl } = useResolvedFileUrl(file);
 
     useEffect(() => {
         if (videoRef.current && time !== null) {
@@ -42,7 +44,7 @@ export function SeekPreview({ file, time, x, visible }: SeekPreviewProps) {
 
 
 
-    if (!file.url || (file.type !== 'video' && file.type !== 'audio')) return null;
+    if (!resolvedUrl || (file.type !== 'video' && file.type !== 'audio')) return null;
 
     return (
         <div
@@ -57,7 +59,7 @@ export function SeekPreview({ file, time, x, visible }: SeekPreviewProps) {
                 {!loaded && <div className="absolute inset-0 bg-zinc-900 animate-pulse" />}
                 <video
                     ref={videoRef}
-                    src={file.url}
+                    src={resolvedUrl}
                     className="w-full h-full object-cover"
                     preload="metadata"
                     onLoadedData={() => setLoaded(true)}

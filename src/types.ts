@@ -28,6 +28,31 @@
 
 // ── Core Entities ────────────────────────────────────────────────────────────
 
+/**
+ * Persisted metadata for a file that lives on the user's local disk.
+ *
+ * Important design note:
+ *   - The actual FileSystemFileHandle is NOT stored here because it cannot be
+ *     serialized into Zustand's JSON persistence or cloud sync payloads.
+ *   - The handle itself lives in IndexedDB and is looked up using `bindingId`.
+ *   - Runtime object URLs are regenerated from that handle whenever the app
+ *     needs to render the file again after a reload.
+ */
+export interface LocalFileSource {
+    /** Stable lookup key used to find the browser-stored file handle in IndexedDB. */
+    bindingId: string;
+    /** Last filename reported by the browser handle. */
+    originalFileName: string;
+    /** Most recent MIME type seen from the local file, if the browser provided one. */
+    mimeType: string;
+    /** File size in bytes at the time the handle was last resolved. */
+    size: number;
+    /** Last modified timestamp reported by the browser file object. */
+    lastModified: number;
+    /** Unix timestamp (ms) when the local file was first attached to Whistler. */
+    addedAt: number;
+}
+
 /** A top-level project that groups all user data. */
 export interface Project {
     id: string;
@@ -61,6 +86,16 @@ export interface File {
     icon?: string;
     /** External URL or blob URL; null for folders. */
     url: string | null;
+    /**
+     * Where the file's underlying media comes from.
+     *
+     *   - 'remote' means Whistler should use `url` as the canonical source.
+     *   - 'local' means Whistler should regenerate `url` at runtime from the
+     *     persisted IndexedDB file handle referenced by `localSource.bindingId`.
+     */
+    sourceKind?: 'remote' | 'local';
+    /** Extra persisted metadata used only for local-disk files. */
+    localSource?: LocalFileSource | null;
     /** Determines which player component renders this file. */
     type: 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image';
     /** Sort position within its parent (lower = higher in list). */

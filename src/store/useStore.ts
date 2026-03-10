@@ -36,6 +36,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { sanitizeFilesForPersistence } from '@/utils/localFiles';
 
 // ── Types (re-exported for backward compatibility) ───────────────────────────
 import type { AppStore } from './types';
@@ -104,7 +105,11 @@ export const useStore = create<AppStore>()(
        */
       partialize: (state: AppStore) => {
         const { ambientMusicUrl, ambientMusicSuppressedBy, floatingPlayerWindows, ...rest } = state;
-        return rest as AppStore;
+
+        return {
+          ...rest,
+          files: sanitizeFilesForPersistence(rest.files),
+        } as AppStore;
       },
     }
   )

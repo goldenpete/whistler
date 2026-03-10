@@ -78,6 +78,16 @@ import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { isValidUrl } from "@/utils/security";
+import {
+    createLocalFileSource,
+    getDisplaySourceLabel,
+    inferFileTypeFromUrl,
+    isLocalFile,
+    resolveLocalFileSource,
+    saveLocalFileHandle,
+    type PickedLocalFile,
+} from "@/utils/localFiles";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 
 function getGreeting(username: string) {
     const hour = new Date().getHours();
@@ -88,18 +98,6 @@ function getGreeting(username: string) {
     else greeting = "Good night";
     
     return `${greeting}, ${username}`;
-}
-
-function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image' {
-    const lower = url.toLowerCase();
-    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'video';
-    if (/\.(mp4|webm|mov|avi|mkv|m4v)(\?|$)/.test(lower)) return 'video';
-    if (/\.(mp3|wav|ogg|flac|m4a)(\?|$)/.test(lower)) return 'audio';
-    if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/.test(lower)) return 'image';
-    if (/\.pdf(\?|$)/.test(lower)) return 'pdf';
-    // Default to video for streaming URLs (catbox, etc)
-    if (lower.includes('catbox') || lower.includes('files.')) return 'video';
-    return 'file';
 }
 
 /** Shape of items in the allItems array used by the home view grid. */
@@ -314,12 +312,17 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
 };
 
 const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
+    const previewFile = item.type === 'file'
+        ? item.data
+        : (item.type === 'highlight' ? item.data.file : null);
+    const { resolvedUrl } = useResolvedFileUrl(previewFile);
+
     // Image File
-    if (item.type === 'file' && item.subType === 'image' && item.data.url) {
+    if (item.type === 'file' && item.subType === 'image' && resolvedUrl) {
         return (
             <div className="absolute inset-0 bg-black/20">
                 <img 
-                    src={item.data.url} 
+                    src={resolvedUrl} 
                     alt="" 
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
                     onContextMenu={(e) => e.preventDefault()}
@@ -329,16 +332,16 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
     }
     
     // Video File
-    if (item.type === 'file' && item.subType === 'video' && item.data.url) {
-        return <VideoCardPreview url={item.data.url} />;
+    if (item.type === 'file' && item.subType === 'video' && resolvedUrl) {
+        return <VideoCardPreview url={resolvedUrl} />;
     }
 
     // PDF File
-    if (item.type === 'file' && item.subType === 'pdf' && item.data.url) {
+    if (item.type === 'file' && item.subType === 'pdf' && resolvedUrl) {
         return (
             <div className="absolute inset-0">
                 <PdfThumbnail 
-                    url={item.data.url} 
+                    url={resolvedUrl} 
                     onError={() => {}}
                     width={400}
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
@@ -460,12 +463,12 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
     if (item.type === 'highlight') {
         const file = item.data.file;
         
-        if (file?.url && (file.type === 'video' || file.type === 'image' || file.type === 'pdf')) {
+        if (file && resolvedUrl && (file.type === 'video' || file.type === 'image' || file.type === 'pdf')) {
             if (file.type === 'image') {
                 return (
                     <div className="absolute inset-0 bg-black/20">
                         <img 
-                            src={file.url} 
+                            src={resolvedUrl} 
                             alt="" 
                             className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
                             onContextMenu={(e) => e.preventDefault()}
@@ -475,14 +478,14 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
             }
             
             if (file.type === 'video') {
-                return <VideoCardPreview url={file.url} start={item.data.start || 0.1} overrideMiddleFrame={true} />;
+                return <VideoCardPreview url={resolvedUrl} start={item.data.start || 0.1} overrideMiddleFrame={true} />;
             }
 
             if (file.type === 'pdf') {
                 return (
                     <div className="absolute inset-0">
                         <PdfThumbnail 
-                            url={file.url} 
+                            url={resolvedUrl} 
                             onError={() => {}}
                             width={400}
                             page={item.data.start || 1}
@@ -564,6 +567,7 @@ export default function HomeView() {
     const navigate = useNavigate();
 
     const [addFileOpen, setAddFileOpen] = useState(false);
+    const [addFileMode, setAddFileMode] = useState<"web" | "local">("web");
     const [addCollectionOpen, setAddCollectionOpen] = useState(false);
     const [addBucketOpen, setAddBucketOpen] = useState(false);
     const [addDocOpen, setAddDocOpen] = useState(false);
@@ -661,7 +665,7 @@ export default function HomeView() {
             }
         }
 
-        const type = getFileTypeFromUrl(url);
+        const type = inferFileTypeFromUrl(url);
         const newFile: AppFile = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
@@ -675,6 +679,66 @@ export default function HomeView() {
             lastModified: Date.now()
         };
         useStore.setState((state) => ({ files: [...state.files, newFile] }));
+        setPopoverOpen(false);
+        navigate(`/file/${newFile.id}`);
+    };
+
+    const handleAddLocalFile = async (selection: PickedLocalFile) => {
+        if (!activeProjectId) return;
+
+        let targetStorageId = activeStorageId;
+        if (!targetStorageId) {
+            const projectStorages = storages.filter((s) => s.projectId === activeProjectId);
+            if (projectStorages.length > 0) {
+                targetStorageId = projectStorages[0].id;
+            } else {
+                const newStorage = {
+                    id: crypto.randomUUID(),
+                    projectId: activeProjectId,
+                    name: "Main Storage",
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                useStore.setState((state) => ({
+                    storages: [...state.storages, newStorage],
+                    activeStorageId: newStorage.id
+                }));
+                targetStorageId = newStorage.id;
+            }
+        }
+
+        const bindingId = crypto.randomUUID();
+        await saveLocalFileHandle(bindingId, selection.handle);
+
+        const localSource = createLocalFileSource(bindingId, selection.browserFile);
+        const newFile: AppFile = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            storageId: targetStorageId,
+            parentId: null,
+            name: selection.browserFile.name,
+            url: null,
+            sourceKind: 'local',
+            localSource,
+            type: selection.inferredType,
+            order: files.filter((f: AppFile) => f.projectId === activeProjectId && !f.parentId).length,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState((state) => ({ files: [...state.files, newFile] }));
+
+        const resolution = await resolveLocalFileSource(localSource);
+        if (resolution.status === 'ready' && resolution.url) {
+            useStore.setState((state) => ({
+                files: state.files.map((candidate) => (
+                    candidate.id === newFile.id
+                        ? { ...candidate, url: resolution.url }
+                        : candidate
+                ))
+            }));
+        }
+
         setPopoverOpen(false);
         navigate(`/file/${newFile.id}`);
     };
@@ -1014,11 +1078,17 @@ export default function HomeView() {
         
         switch (type) {
             case 'file':
-                if (url && !isValidUrl(url.trim())) {
+                if (!isLocalFile(renameItem.data) && url && !isValidUrl(url.trim())) {
                     alert("Invalid URL. Only http, https, blob, and data protocols are allowed.");
                     return;
                 }
-                useStore.getState().updateFile(id, { name, description, url: url?.trim(), color: color || undefined, icon: icon || undefined });
+                useStore.getState().updateFile(id, {
+                    name,
+                    description,
+                    url: isLocalFile(renameItem.data) ? renameItem.data.url : url?.trim(),
+                    color: color || undefined,
+                    icon: icon || undefined,
+                });
                 break;
             case 'doc':
                 if (color || icon) {
@@ -1188,8 +1258,11 @@ export default function HomeView() {
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-1" align="end">
-                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddFileOpen(true); setPopoverOpen(false); }}>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddFileMode('web'); setAddFileOpen(true); setPopoverOpen(false); }}>
                             <FileIcon className="text-muted-foreground" size={16} /> Add File
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddFileMode('local'); setAddFileOpen(true); setPopoverOpen(false); }}>
+                            <HardDrives className="text-muted-foreground" size={16} /> Add Local File
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddCollectionOpen(true); setPopoverOpen(false); }}>
                             <Tag className="text-muted-foreground" size={16} /> Add Collection
@@ -1324,7 +1397,9 @@ export default function HomeView() {
             <AddFileDialog
                 open={addFileOpen}
                 onOpenChange={setAddFileOpen}
-                onSubmit={handleAddFile}
+                onSubmitRemote={handleAddFile}
+                onSubmitLocal={handleAddLocalFile}
+                defaultTab={addFileMode}
             />
             <CreateCollectionDialog
                 open={addCollectionOpen}
@@ -1375,6 +1450,8 @@ export default function HomeView() {
                         initialDescription={renameItem.type === 'file' ? renameItem.data.description : undefined}
                         initialUrl={renameItem.type === 'file' ? (renameItem.data.url || undefined) : undefined}
                         initialColor={renameItem.type === 'file' ? renameItem.data.color : undefined}
+                        isLocalFileSource={renameItem.type === 'file' ? isLocalFile(renameItem.data) : false}
+                        localSourceLabel={renameItem.type === 'file' ? getDisplaySourceLabel(renameItem.data) : ''}
                     />
                     <EditDocDialog
                         open={renameDocOpen}

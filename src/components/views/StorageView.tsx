@@ -77,11 +77,19 @@ import {
 } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { useKeybind } from "@/hooks/use-keybind";
-import { getFileTypeFromUrl } from "@/components/storage/FileThumbnail";
 import {
     FileCardGrid, FileCardList, FileCardCards,
     FileCardGridInner, FileCardListInner, FileCardCardsInner
 } from "@/components/storage/FileCards";
+import {
+    createLocalFileSource,
+    getDisplaySourceLabel,
+    inferFileTypeFromUrl,
+    isLocalFile,
+    resolveLocalFileSource,
+    saveLocalFileHandle,
+    type PickedLocalFile,
+} from "@/utils/localFiles";
 
 
 
@@ -173,10 +181,14 @@ export default function StorageView() {
     const [sortOption, setSortOption] = useState<SortOption>("custom");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [addFileOpen, setAddFileOpen] = useState(false);
+    const [addFileMode, setAddFileMode] = useState<"web" | "local">("web");
 
     // Listen for action triggers
     useEffect(() => {
-        const handleTriggerCreateFile = () => setAddFileOpen(true);
+        const handleTriggerCreateFile = () => {
+            setAddFileMode('web');
+            setAddFileOpen(true);
+        };
         window.addEventListener("trigger-storage-create-file", handleTriggerCreateFile);
         return () => window.removeEventListener("trigger-storage-create-file", handleTriggerCreateFile);
     }, []);
@@ -364,7 +376,14 @@ export default function StorageView() {
     const handleRenameSubmit = (newName: string, newDescription: string, newUrl: string, newColor: string) => {
         if (fileToRename) {
             useStore.setState(state => ({
-                files: state.files.map(f => f.id === fileToRename.id ? { ...f, name: newName, description: newDescription, url: newUrl || null, color: newColor || undefined, lastModified: Date.now() } : f)
+                files: state.files.map(f => f.id === fileToRename.id ? {
+                    ...f,
+                    name: newName,
+                    description: newDescription,
+                    url: isLocalFile(fileToRename) ? fileToRename.url : (newUrl || null),
+                    color: newColor || undefined,
+                    lastModified: Date.now()
+                } : f)
             }));
         }
     };
@@ -507,7 +526,7 @@ export default function StorageView() {
             }
         }
 
-        const type = getFileTypeFromUrl(url);
+        const type = inferFileTypeFromUrl(url);
         const newFile: AppFile = {
             id: crypto.randomUUID(),
             projectId: activeProjectId,
@@ -521,6 +540,60 @@ export default function StorageView() {
             lastModified: Date.now()
         };
         useStore.setState(state => ({ files: [...state.files, newFile] }));
+    };
+
+    const handleAddLocalFile = async (selection: PickedLocalFile) => {
+        if (!activeProjectId) return;
+
+        let targetStorageId = activeStorageId;
+        if (!targetStorageId) {
+            const projectStorages = storages.filter(s => s.projectId === activeProjectId);
+            if (projectStorages.length > 0) {
+                targetStorageId = projectStorages[0].id;
+            } else {
+                const newStorage = {
+                    id: crypto.randomUUID(),
+                    projectId: activeProjectId,
+                    name: "Main Storage",
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                useStore.setState(state => ({ storages: [...state.storages, newStorage] }));
+                targetStorageId = newStorage.id;
+            }
+        }
+
+        const bindingId = crypto.randomUUID();
+        await saveLocalFileHandle(bindingId, selection.handle);
+
+        const localSource = createLocalFileSource(bindingId, selection.browserFile);
+        const newFile: AppFile = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            storageId: targetStorageId,
+            parentId: currentFolderId,
+            name: selection.browserFile.name,
+            url: null,
+            sourceKind: 'local',
+            localSource,
+            type: selection.inferredType,
+            order: projectFiles.length,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState(state => ({ files: [...state.files, newFile] }));
+
+        const resolution = await resolveLocalFileSource(localSource);
+        if (resolution.status === 'ready' && resolution.url) {
+            useStore.setState((state) => ({
+                files: state.files.map((candidate) => (
+                    candidate.id === newFile.id
+                        ? { ...candidate, url: resolution.url }
+                        : candidate
+                ))
+            }));
+        }
     };
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -862,9 +935,13 @@ export default function StorageView() {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 <div className="w-px h-5 bg-border mx-1" />
-                                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => setAddFileOpen(true)}>
+                                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => { setAddFileMode('web'); setAddFileOpen(true); }}>
                                     <Plus weight="bold" size={14} />
                                     Add File
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => { setAddFileMode('local'); setAddFileOpen(true); }}>
+                                    <HardDrives weight="bold" size={14} />
+                                    Add Local File
                                 </Button>
                                 <Button variant="default" size="sm" className="h-8 gap-2 text-xs" onClick={() => setNewFolderOpen(true)}>
                                     <FolderOpen weight="bold" size={14} />
@@ -1051,7 +1128,9 @@ export default function StorageView() {
             <AddFileDialog
                 open={addFileOpen}
                 onOpenChange={setAddFileOpen}
-                onSubmit={handleAddFile}
+                onSubmitRemote={handleAddFile}
+                onSubmitLocal={handleAddLocalFile}
+                defaultTab={addFileMode}
             />
             <NewFolderDialog
                 open={newFolderOpen}
@@ -1075,6 +1154,8 @@ export default function StorageView() {
                 initialUrl={fileToRename?.url || ""}
                 initialColor={fileToRename?.color}
                 showDescription={fileToRename?.type !== 'folder'}
+                isLocalFileSource={Boolean(fileToRename && isLocalFile(fileToRename))}
+                localSourceLabel={fileToRename ? getDisplaySourceLabel(fileToRename) : ''}
             />
             <EditFolderDialog
                 open={editFolderOpen}

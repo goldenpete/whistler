@@ -44,6 +44,7 @@ import { PDFPlayer } from "@/components/player/PDFPlayer";
 import { ImagePlayer } from "@/components/player/ImagePlayer";
 import { AudioPlayer } from "@/components/player/AudioPlayer";
 import { YouTubePlayerComponent, type YouTubePlayerHandle } from "@/components/player/YouTubePlayer";
+import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 
 // --- Time Helper ---
 
@@ -78,6 +79,7 @@ interface HighlightPlayerDialogProps {
 }
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
+    const { resolvedUrl } = useResolvedFileUrl(file);
     const navigate = useNavigate();
     const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile } = useStore(useShallow((state) => ({
         setPipFile: state.setPipFile,
@@ -103,7 +105,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const isPdf = file?.name.toLowerCase().endsWith('.pdf');
     const isImage = file?.type === 'image';
     const isAudio = file?.type === 'audio';
-    const isYouTube = file?.url?.includes('youtube.com') || file?.url?.includes('youtu.be');
+    const isYouTube = resolvedUrl?.includes('youtube.com') || resolvedUrl?.includes('youtu.be');
     const isVideo = !isPdf && !isImage && !isAudio;
     
     // State
@@ -520,10 +522,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                 >
                     {isPdf ? (
                         <div className="w-full h-full flex items-center justify-center bg-zinc-950">
-                            {file.url ? (
+                            {resolvedUrl ? (
                                 <PDFPlayer
                                     key={file.id} // Force new instance for each file to prevent state carry-over
-                                    url={file.url}
+                                    url={resolvedUrl}
                                     fileId={file.id}
                                     highlightId={highlight.id}
                                     initialPage={highlight.start}
@@ -548,7 +550,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                     ) : isImage ? (
                         <ImagePlayer
                                 key={file.id}
-                                url={file.url || ""}
+                            url={resolvedUrl || ""}
                                 fileId={file.id}
                                 highlightId={highlight.id}
                                 highlights={[highlight]}
@@ -562,7 +564,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                             <div className="w-full max-w-4xl px-8 flex items-center justify-center h-full">
                                 <AudioPlayer
                                     key={file.id}
-                                    url={file.url || ""}
+                                    url={resolvedUrl || ""}
                                     fileId={file.id}
                                     className="w-full"
                                     highlights={[]}
@@ -579,7 +581,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                 {isYouTube ? (
                                         <YouTubePlayerComponent
                                             ref={youtubeRef}
-                                            url={file.url || ""}
+                                            url={resolvedUrl || ""}
                                             className="w-full h-full"
                                             onTimeUpdate={(t: number) => handleTimeUpdate(t)}
                                             onPlay={() => {
@@ -595,8 +597,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     ) : (
                                     <video
                                         ref={videoRef}
-                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                        src={(file as any).webkitRelativePath || (file as any).url || ""}
+                                        src={resolvedUrl || ""}
                                         className="max-w-full max-h-full object-contain focus:outline-none"
                                         onPause={() => {
                                             setIsPlaying(false);

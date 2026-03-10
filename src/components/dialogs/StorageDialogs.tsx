@@ -52,6 +52,8 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
+import { pickLocalFile, supportsLocalFileAccess, type PickedLocalFile } from "@/utils/localFiles";
+import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
 
 // Predefined Icons
 export const ICONS = [
@@ -242,24 +244,56 @@ export function EntityForm({
 interface AddFileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (url: string, name: string) => void;
+    onSubmitRemote: (url: string, name: string) => void;
+    onSubmitLocal: (selection: PickedLocalFile) => Promise<void> | void;
+    defaultTab?: "web" | "local";
 }
 
-export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogProps) {
+export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitLocal, defaultTab = "web" }: AddFileDialogProps) {
     const [url, setUrl] = useState("");
     const [name, setName] = useState("");
+    const [tab, setTab] = useState<"web" | "local">(defaultTab);
+    const [selectedLocalFile, setSelectedLocalFile] = useState<PickedLocalFile | null>(null);
 
-    const handleSubmit = () => {
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        // Reset the dialog to the caller's requested mode each time it opens so
+        // explicit "Add Local File" actions always land on the right tab.
+        setTab(defaultTab);
+    }, [defaultTab, open]);
+
+    const handleSubmitRemote = () => {
         if (!url.trim()) return;
 
         // If no name provided, extract from URL
         const finalName = name.trim() || extractFilename(url);
-        onSubmit(url.trim(), finalName);
+        onSubmitRemote(url.trim(), finalName);
 
         // Reset form
         setUrl("");
         setName("");
         onOpenChange(false);
+    };
+
+    const handleSubmitLocal = async () => {
+        if (!selectedLocalFile) return;
+
+        await onSubmitLocal(selectedLocalFile);
+        setSelectedLocalFile(null);
+        onOpenChange(false);
+    };
+
+    const handlePickLocalFile = async () => {
+        const picked = await pickLocalFile();
+
+        if (!picked) {
+            return;
+        }
+
+        setSelectedLocalFile(picked);
     };
 
     const handleUrlChange = (value: string) => {
@@ -273,7 +307,9 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
             e.preventDefault();
-            handleSubmit();
+            if (tab === "web") {
+                handleSubmitRemote();
+            }
         }
     };
 
@@ -283,38 +319,102 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                 <DialogHeader>
                     <DialogTitle>Add File</DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Enter a web link to a video, PDF, image, or other file.
+                        Add a web link or attach a file directly from this device.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="url" className="text-zinc-400">
-                            URL
-                        </Label>
-                        <Input
-                            id="url"
-                            placeholder="https://example.com/video.mp4"
-                            value={url}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => handleUrlChange(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="name" className="text-zinc-400">
-                            Display Name
-                        </Label>
-                        <Input
-                            id="name"
-                            placeholder="My File"
-                            value={name}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
-                        />
-                    </div>
-                </div>
+                <Tabs value={tab} onValueChange={(value) => setTab(value as "web" | "local")} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 rounded-none bg-zinc-900 border border-zinc-800 p-1 h-10">
+                        <TabsTrigger value="web" className="rounded-none data-[state=active]:bg-zinc-800">Web Link</TabsTrigger>
+                        <TabsTrigger value="local" className="rounded-none data-[state=active]:bg-zinc-800">Local File</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="web" className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="url" className="text-zinc-400">
+                                URL
+                            </Label>
+                            <Input
+                                id="url"
+                                placeholder="https://example.com/video.mp4"
+                                value={url}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => handleUrlChange(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                autoFocus={tab === "web"}
+                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="name" className="text-zinc-400">
+                                Display Name
+                            </Label>
+                            <Input
+                                id="name"
+                                placeholder="My File"
+                                value={name}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
+                            />
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="local" className="space-y-4 py-4">
+                        {!supportsLocalFileAccess() ? (
+                            <LocalFileAccessPanel
+                                file={{
+                                    id: 'unsupported-local-file',
+                                    projectId: 'unsupported',
+                                    storageId: 'unsupported',
+                                    parentId: null,
+                                    name: 'Local file support unavailable',
+                                    url: null,
+                                    sourceKind: 'local',
+                                    localSource: {
+                                        bindingId: 'unsupported',
+                                        originalFileName: 'This browser is missing File System Access API support',
+                                        mimeType: '',
+                                        size: 0,
+                                        lastModified: 0,
+                                        addedAt: 0,
+                                    },
+                                    type: 'file',
+                                    order: 0,
+                                    created: 0,
+                                    lastModified: 0,
+                                }}
+                                availability="unsupported"
+                                onRequestAccess={async () => false}
+                                onRelink={async () => false}
+                                compact={true}
+                            />
+                        ) : (
+                            <>
+                                <div className="rounded-none border border-zinc-800 bg-zinc-950/40 p-4 space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-medium text-white">Pick a file from your device</p>
+                                            <p className="text-xs text-zinc-400">Whistler stores a browser handle locally so this file record can reconnect across sessions.</p>
+                                        </div>
+                                        <Button type="button" onClick={() => void handlePickLocalFile()} data-sound-confirm>
+                                            Browse
+                                        </Button>
+                                    </div>
+
+                                    {selectedLocalFile ? (
+                                        <div className="rounded-none border border-zinc-800 bg-black/20 px-3 py-3 text-xs space-y-1">
+                                            <div><span className="text-zinc-400">Name:</span> <span className="text-white">{selectedLocalFile.browserFile.name}</span></div>
+                                            <div><span className="text-zinc-400">Type:</span> <span className="text-white">{selectedLocalFile.inferredType}</span></div>
+                                            <div><span className="text-zinc-400">MIME:</span> <span className="text-white">{selectedLocalFile.browserFile.type || 'Unknown'}</span></div>
+                                            <div><span className="text-zinc-400">Size:</span> <span className="text-white">{Math.max(1, Math.round(selectedLocalFile.browserFile.size / 1024))} KB</span></div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-zinc-500">No file selected yet.</p>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </TabsContent>
+                </Tabs>
                 <div className="flex justify-end gap-3 pt-4">
                     <Button 
                         variant="ghost" 
@@ -323,14 +423,25 @@ export function AddFileDialog({ open, onOpenChange, onSubmit }: AddFileDialogPro
                     >
                         Cancel
                     </Button>
-                    <Button 
-                        onClick={handleSubmit} 
-                        disabled={!url.trim()}
-                        className="bg-primary text-primary-foreground hover:opacity-90"
-                        data-sound-confirm
-                    >
-                        Add to Project
-                    </Button>
+                    {tab === "web" ? (
+                        <Button 
+                            onClick={handleSubmitRemote} 
+                            disabled={!url.trim()}
+                            className="bg-primary text-primary-foreground hover:opacity-90"
+                            data-sound-confirm
+                        >
+                            Add to Project
+                        </Button>
+                    ) : (
+                        <Button 
+                            onClick={() => void handleSubmitLocal()} 
+                            disabled={!selectedLocalFile}
+                            className="bg-primary text-primary-foreground hover:opacity-90"
+                            data-sound-confirm
+                        >
+                            Add Local File
+                        </Button>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
@@ -471,9 +582,11 @@ interface RenameFileDialogProps {
     initialUrl?: string;
     initialColor?: string;
     showDescription?: boolean;
+    isLocalFileSource?: boolean;
+    localSourceLabel?: string;
 }
 
-export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "", initialUrl = "", initialColor = "", showDescription = true }: RenameFileDialogProps) {
+export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, initialDescription = "", initialUrl = "", initialColor = "", showDescription = true, isLocalFileSource = false, localSourceLabel = "" }: RenameFileDialogProps) {
     const [name, setName] = useState(initialName);
     const [description, setDescription] = useState(initialDescription);
     const [url, setUrl] = useState(initialUrl);
@@ -505,7 +618,9 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                 <DialogHeader>
                     <DialogTitle>{showDescription ? "Edit File Details" : "Rename"}</DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Update the file's name, link, and description.
+                        {isLocalFileSource
+                            ? "Update the file's display metadata. Local source access is managed separately."
+                            : "Update the file's name, link, and description."}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -524,19 +639,29 @@ export function RenameFileDialog({ open, onOpenChange, onSubmit, initialName, in
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="rename-file-url" className="text-zinc-400">
-                            Link
-                        </Label>
-                        <Input
-                            id="rename-file-url"
-                            placeholder="https://..."
-                            value={url}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
-                        />
-                    </div>
+                    {isLocalFileSource ? (
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Local Source</Label>
+                            <div className="rounded-none border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-sm text-zinc-200">
+                                {localSourceLabel || "Local file attached"}
+                            </div>
+                            <p className="text-xs text-zinc-500">Use the file player if you need to re-grant permission or locate the file again.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label htmlFor="rename-file-url" className="text-zinc-400">
+                                Link
+                            </Label>
+                            <Input
+                                id="rename-file-url"
+                                placeholder="https://..."
+                                value={url}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
+                            />
+                        </div>
+                    )}
 
                     {showDescription && (
                         <div className="space-y-2">
