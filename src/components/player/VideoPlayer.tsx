@@ -221,7 +221,6 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeRef = useRef<YouTubePlayerHandle>(null);
-    const isYouTube = resolvedUrl ? (resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be')) : false;
     const pdfRef = useRef<PDFPlayerHandle>(null);
     const imageRef = useRef<ImagePlayerHandle>(null);
     const audioRef = useRef<AudioPlayerHandle>(null);
@@ -251,6 +250,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
     const file = files.find(f => f.id === fileId);
     const { resolvedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
+    const isYouTube = resolvedUrl ? (resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be')) : false;
     const [localUrl, setLocalUrl] = useState(file?.url || "");
     const displaySourceLabel = file ? getDisplaySourceLabel(file, resolvedUrl) : "";
 
