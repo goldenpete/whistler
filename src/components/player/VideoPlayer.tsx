@@ -1323,7 +1323,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     )}
 
                     {isLocalFile(file) && !resolvedUrl ? (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center p-6 bg-black/30">
+                            <div className="absolute inset-0 z-30 flex items-center justify-center p-6 bg-black/30">
                             <LocalFileAccessPanel
                                 file={file}
                                 availability={availability}

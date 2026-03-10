@@ -45,6 +45,8 @@ import { ImagePlayer } from "@/components/player/ImagePlayer";
 import { AudioPlayer } from "@/components/player/AudioPlayer";
 import { YouTubePlayerComponent, type YouTubePlayerHandle } from "@/components/player/YouTubePlayer";
 import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
+import { isLocalFile } from "@/utils/localFiles";
+import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
 
 // --- Time Helper ---
 
@@ -79,7 +81,7 @@ interface HighlightPlayerDialogProps {
 }
 
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
-    const { resolvedUrl } = useResolvedFileUrl(file);
+    const { resolvedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
     const navigate = useNavigate();
     const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile } = useStore(useShallow((state) => ({
         setPipFile: state.setPipFile,
@@ -244,7 +246,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
     // Initialization Effect
     useEffect(() => {
-        if (open && file && highlight && videoRef.current) {
+        if (open && file && highlight && resolvedUrl && videoRef.current) {
             const video = videoRef.current;
             // eslint-disable-next-line react-hooks/immutability
             video.currentTime = start;
@@ -253,7 +255,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         } else {
             setIsPlaying(false);
         }
-    }, [open, file, highlight, start]);
+    }, [open, file, highlight, start, resolvedUrl]);
 
     // Volume Sync
     useEffect(() => {
@@ -572,6 +574,15 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     showControls={true}
                                 />
                             </div>
+                    ) : isLocalFile(file) && !resolvedUrl ? (
+                        <div className="w-full h-full flex items-center justify-center p-6">
+                            <LocalFileAccessPanel
+                                file={file}
+                                availability={availability}
+                                onRequestAccess={requestAccess}
+                                onRelink={relink}
+                            />
+                        </div>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center overflow-hidden">
                             <div
