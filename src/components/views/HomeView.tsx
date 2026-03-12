@@ -239,7 +239,10 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                 muted
                 loop
                 playsInline
-                onMouseOver={(e: MouseEvent<HTMLVideoElement>) => e.currentTarget.play()}
+                crossOrigin="anonymous"
+                onMouseOver={(e: MouseEvent<HTMLVideoElement>) => {
+                    e.currentTarget.play().catch(() => {});
+                }}
                 onMouseOut={(e: MouseEvent<HTMLVideoElement>) => {
                     const video = e.currentTarget;
                     video.pause();
@@ -274,16 +277,11 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                                         if (cacheFiles) {
                                             await thumbnailStorage.save(key, blob);
                                         }
-                                        // Optional: Immediately switch to cached version? 
-                                        // Maybe better to wait for next mount or set state here.
-                                        // setCachedThumbnail(URL.createObjectURL(blob)); 
-                                        // If we set state here, it might flash. 
-                                        // Let's just save it for next time.
                                     }
                                 }, 'image/jpeg', 0.7);
                             }
-                        } catch (err) {
-                            console.warn("Failed to capture thumbnail", err);
+                        } catch {
+                            // SecurityError from tainted canvas on cross-origin videos - expected
                         }
                     }
                 }}

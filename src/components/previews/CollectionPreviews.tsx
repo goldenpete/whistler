@@ -28,9 +28,10 @@ function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
             className="w-full h-full object-cover"
             muted
             playsInline
+            crossOrigin="anonymous"
             onSeeked={async (e: SyntheticEvent<HTMLVideoElement>) => {
                 if (!cacheHighlights) return;
-                
+
                 const video = e.currentTarget;
                 const key = `${url}-${time}-grid`;
                 try {
@@ -44,7 +45,9 @@ function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
                             if (blob) await thumbnailStorage.save(key, blob);
                         }, 'image/jpeg', 0.5);
                     }
-                } catch (e) {}
+                } catch {
+                    // SecurityError from tainted canvas on cross-origin videos - expected
+                }
             }}
         />
     );

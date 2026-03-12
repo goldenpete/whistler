@@ -250,7 +250,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
             const video = videoRef.current;
             // eslint-disable-next-line react-hooks/immutability
             video.currentTime = start;
-            video.play().catch(e => console.error("Auto-play failed:", e));
+            video.play().catch(() => {});
             setIsPlaying(true);
         } else {
             setIsPlaying(false);
@@ -340,7 +340,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
         if (videoRef.current) {
             if (videoRef.current.paused) {
-                videoRef.current.play();
+                videoRef.current.play().catch(() => {});
                 setIsPlaying(true);
             } else {
                 videoRef.current.pause();

@@ -599,7 +599,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
 
         if (videoRef.current) {
             if (videoRef.current.paused) {
-                videoRef.current.play();
+                videoRef.current.play().catch(() => {});
             } else {
                 videoRef.current.pause();
             }
@@ -958,7 +958,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             youtubeRef.current.play();
         } else if (videoRef.current) {
             videoRef.current.currentTime = highlight.start;
-            videoRef.current.play();
+            videoRef.current.play().catch(() => {});
         }
     };
 

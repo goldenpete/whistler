@@ -148,8 +148,8 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
                                 }
                             }, 'image/jpeg', 0.7);
                         }
-                    } catch (err) {
-                        console.error("Failed to capture thumbnail", err);
+                    } catch {
+                        // SecurityError from tainted canvas on cross-origin videos - expected
                     }
                 }}
             />
