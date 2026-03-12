@@ -258,38 +258,43 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
             return;
         }
 
-        const onSeeked = () => {
-            seekingToStart.current = false;
-            video.removeEventListener('seeked', onSeeked);
-        };
+        let cancelled = false;
 
-        const seekAndPlay = () => {
-            seekingToStart.current = true;
-            video.addEventListener('seeked', onSeeked);
-            video.currentTime = start;
+        // Wait for seek to complete BEFORE playing — this prevents timeupdate
+        // events from firing at the old position and triggering the loop logic.
+        const onSeeked = () => {
+            video.removeEventListener('seeked', onSeeked);
+            if (cancelled) return;
+            seekingToStart.current = false;
             video.play().catch(() => {});
             setIsPlaying(true);
         };
 
-        // If metadata is already loaded, seek immediately; otherwise wait
+        const seekToStart = () => {
+            if (cancelled) return;
+            seekingToStart.current = true;
+            video.addEventListener('seeked', onSeeked);
+            video.currentTime = start;
+        };
+
+        const onLoadedMetadata = () => {
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            seekToStart();
+        };
+
         if (video.readyState >= 1) {
-            seekAndPlay();
+            seekToStart();
         } else {
-            const onLoaded = () => {
-                seekAndPlay();
-                video.removeEventListener('loadedmetadata', onLoaded);
-            };
-            video.addEventListener('loadedmetadata', onLoaded);
-            return () => {
-                video.removeEventListener('loadedmetadata', onLoaded);
-                video.removeEventListener('seeked', onSeeked);
-            };
+            video.addEventListener('loadedmetadata', onLoadedMetadata);
         }
 
         return () => {
+            cancelled = true;
+            seekingToStart.current = false;
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
             video.removeEventListener('seeked', onSeeked);
         };
-    }, [open, file, highlight, start, resolvedUrl]);
+    }, [open, file?.id, highlight?.id, start, resolvedUrl]);
 
     // Volume Sync
     useEffect(() => {
@@ -339,8 +344,11 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
             return;
         }
 
-        // Skip loop enforcement while we're still seeking to the initial position
+        // Skip while we're seeking to the initial position (play hasn't started yet)
         if (seekingToStart.current) return;
+
+        // Skip if the video element is mid-seek — prevents stale-position re-seek loops
+        if (videoRef.current?.seeking) return;
 
         // Loop Logic
         if (now < start - 0.5 || now > end) {
