@@ -136,7 +136,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const [editEnd, setEditEnd] = useState("");
 
     const start = highlight?.start || 0;
-    const end = highlight?.end || 0;
+    const end = (highlight?.end && highlight.end > start) ? highlight.end : start + 5;
     const segmentDuration = end - start;
     const fileHighlights = file ? allHighlights.filter((h: Highlight) => h.fileId === file.id) : [];
     const sortedHighlights = fileHighlights.slice().sort((a: Highlight, b: Highlight) => a.start - b.start);
@@ -258,13 +258,17 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
             return;
         }
 
+        const onSeeked = () => {
+            seekingToStart.current = false;
+            video.removeEventListener('seeked', onSeeked);
+        };
+
         const seekAndPlay = () => {
             seekingToStart.current = true;
+            video.addEventListener('seeked', onSeeked);
             video.currentTime = start;
             video.play().catch(() => {});
             setIsPlaying(true);
-            // Clear the seeking guard after a short delay to let the seek complete
-            setTimeout(() => { seekingToStart.current = false; }, 300);
         };
 
         // If metadata is already loaded, seek immediately; otherwise wait
@@ -276,8 +280,15 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                 video.removeEventListener('loadedmetadata', onLoaded);
             };
             video.addEventListener('loadedmetadata', onLoaded);
-            return () => video.removeEventListener('loadedmetadata', onLoaded);
+            return () => {
+                video.removeEventListener('loadedmetadata', onLoaded);
+                video.removeEventListener('seeked', onSeeked);
+            };
         }
+
+        return () => {
+            video.removeEventListener('seeked', onSeeked);
+        };
     }, [open, file, highlight, start, resolvedUrl]);
 
     // Volume Sync
