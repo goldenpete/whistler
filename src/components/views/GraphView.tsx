@@ -17,7 +17,7 @@
  * Related: EditNodeDialog, NodePreviewCard, iconMap, useStore
  * ───────────────────────────────────────────────────────────────────
  */
-import React, { useRef, useState, useEffect, useCallback, type MouseEvent, type WheelEvent, type KeyboardEvent } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo, type MouseEvent, type WheelEvent, type KeyboardEvent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
@@ -69,6 +69,7 @@ export default function GraphView() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const imagesRef = useRef<Record<string, HTMLImageElement>>({});
+    const rafRef = useRef<number>(0);
     const navigate = useNavigate();
     const { 
         graphs, 
@@ -103,8 +104,8 @@ export default function GraphView() {
     }, [id, activeGraphId]);
 
     const activeGraph = graphs.find((g: Graph) => g.id === activeGraphId && !g.deleted);
-    const nodes: GraphNode[] = graphNodes.filter((n: GraphNode) => n.graphId === activeGraphId);
-    const edges: GraphEdge[] = graphEdges.filter((e: GraphEdge) => e.graphId === activeGraphId);
+    const nodes: GraphNode[] = useMemo(() => graphNodes.filter((n: GraphNode) => n.graphId === activeGraphId), [graphNodes, activeGraphId]);
+    const edges: GraphEdge[] = useMemo(() => graphEdges.filter((e: GraphEdge) => e.graphId === activeGraphId), [graphEdges, activeGraphId]);
 
     // Auto-select first graph if none active
     useEffect(() => {
@@ -200,6 +201,7 @@ export default function GraphView() {
 
     // Load icons
     useEffect(() => {
+        let cancelled = false;
         const loadIcons = async () => {
             const loaded: Record<string, HTMLImageElement> = {};
             for (const [name, Icon] of Object.entries(iconMap)) {
@@ -214,18 +216,20 @@ export default function GraphView() {
                     console.warn(`Failed to load icon ${name}`, e);
                 }
             }
+            if (cancelled) return;
             imagesRef.current = loaded;
-            // Force redraw
-            const canvas = document.querySelector('canvas'); 
-            // We can't easily access draw() here because it's defined later or we need to put this effect after draw definition?
-            // Actually draw is defined below. 
-            // We can use a state to force re-render or move the effect.
             setIconsLoaded(true);
         };
         loadIcons();
+        return () => { cancelled = true; };
     }, []);
 
     const [iconsLoaded, setIconsLoaded] = useState(false);
+
+    // Clean up pending rAF on unmount
+    useEffect(() => {
+        return () => { cancelAnimationFrame(rafRef.current); };
+    }, []);
 
     // --- Drawing ---
     const draw = useCallback(() => {
@@ -306,22 +310,26 @@ export default function GraphView() {
         const gridStartY = Math.floor(startY / gridSize) * gridSize;
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; // Faint dots
-        
-        // Draw slightly larger area to avoid flickering edges
+
+        // Batch all dots into a single path for performance
+        ctx.beginPath();
         for (let x = gridStartX - gridSize; x < endX + gridSize; x += gridSize) {
             for (let y = gridStartY - gridSize; y < endY + gridSize; y += gridSize) {
-                ctx.beginPath();
+                ctx.moveTo(x + dotRadius, y);
                 ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-                ctx.fill();
             }
         }
+        ctx.fill();
+
+        // Build node lookup map for O(1) access during edge drawing
+        const nodeMap = new Map<string, GraphNode>(nodes.map(n => [n.id, n]));
 
         // Draw edges
         ctx.strokeStyle = 'rgba(255,255,255,0.15)';
         ctx.lineWidth = 2 / scale;
         edges.forEach((edge: GraphEdge) => {
-            const from = nodes.find((n: GraphNode) => n.id === edge.fromId);
-            const to = nodes.find((n: GraphNode) => n.id === edge.toId);
+            const from = nodeMap.get(edge.fromId);
+            const to = nodeMap.get(edge.toId);
             if (from && to) {
                 ctx.beginPath();
                 ctx.moveTo(from.x, from.y);
@@ -332,7 +340,7 @@ export default function GraphView() {
 
         // Draw connection line
         if (connectingNodeId) {
-            const from = nodes.find((n: GraphNode) => n.id === connectingNodeId);
+            const from = nodeMap.get(connectingNodeId);
             if (from) {
                 ctx.beginPath();
                 ctx.moveTo(from.x, from.y);
@@ -507,11 +515,12 @@ export default function GraphView() {
 
     const getEdgeAt = (x: number, y: number) => {
         const threshold = 10 / scale; // Hit area depends on scale
+        const nodeMap = new Map<string, GraphNode>(nodes.map(n => [n.id, n]));
         return edges.find((edge: GraphEdge) => {
-            const from = nodes.find((n: GraphNode) => n.id === edge.fromId);
-            const to = nodes.find((n: GraphNode) => n.id === edge.toId);
+            const from = nodeMap.get(edge.fromId);
+            const to = nodeMap.get(edge.toId);
             if (!from || !to) return false;
-            
+
             const d = distToSegment(x, y, from.x, from.y, to.x, to.y);
             return d <= threshold;
         });
@@ -610,34 +619,41 @@ export default function GraphView() {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const screenX = e.clientX - rect.left;
-        const screenY = e.clientY - rect.top;
-        
-        const worldX = (screenX - pan.x) / scale;
-        const worldY = (screenY - pan.y) / scale;
-        
-        // Update mouse pos for connection drawing
-        if (connectingNodeId) {
-            setMousePos({ x: worldX, y: worldY });
-            return;
-        }
+        // Capture event data synchronously before rAF deferral
+        const clientX = e.clientX;
+        const clientY = e.clientY;
 
-        if (draggingNode) {
-            useStore.setState((state: AppStore) => ({
-                graphNodes: state.graphNodes.map((n: GraphNode) =>
-                    n.id === draggingNode ? { ...n, x: worldX - offset.x, y: worldY - offset.y } : n
-                )
-            }));
-        } else if (isPanning) {
-            const dx = e.clientX - dragStart.x;
-            const dy = e.clientY - dragStart.y;
-            
-            // Update Pan
-            setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-            setDragStart({ x: e.clientX, y: e.clientY });
-        }
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            const rect = canvasRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            const screenX = clientX - rect.left;
+            const screenY = clientY - rect.top;
+
+            const worldX = (screenX - pan.x) / scale;
+            const worldY = (screenY - pan.y) / scale;
+
+            // Update mouse pos for connection drawing
+            if (connectingNodeId) {
+                setMousePos({ x: worldX, y: worldY });
+                return;
+            }
+
+            if (draggingNode) {
+                useStore.setState((state: AppStore) => ({
+                    graphNodes: state.graphNodes.map((n: GraphNode) =>
+                        n.id === draggingNode ? { ...n, x: worldX - offset.x, y: worldY - offset.y } : n
+                    )
+                }));
+            } else if (isPanning) {
+                const dx = clientX - dragStart.x;
+                const dy = clientY - dragStart.y;
+
+                // Update Pan
+                setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+                setDragStart({ x: clientX, y: clientY });
+            }
+        });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
@@ -681,28 +697,36 @@ export default function GraphView() {
         setIsPanning(false);
     };
 
+    const wheelRafRef = useRef<number>(0);
     const handleWheel = (e: WheelEvent<HTMLCanvasElement>) => {
         e.preventDefault();
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (!rect) return;
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        const deltaY = e.deltaY;
 
-        const screenX = e.clientX - rect.left;
-        const screenY = e.clientY - rect.top;
+        cancelAnimationFrame(wheelRafRef.current);
+        wheelRafRef.current = requestAnimationFrame(() => {
+            const rect = canvasRef.current?.getBoundingClientRect();
+            if (!rect) return;
 
-        const worldX = (screenX - pan.x) / scale;
-        const worldY = (screenY - pan.y) / scale;
+            const screenX = clientX - rect.left;
+            const screenY = clientY - rect.top;
 
-        const zoomFactor = 1.1;
-        const direction = e.deltaY < 0 ? 1 : -1;
-        const nextScale = direction > 0 ? scale * zoomFactor : scale / zoomFactor;
-        const clampedScale = clamp(nextScale, 0.2, 3);
-        if (clampedScale === scale) return;
+            const worldX = (screenX - pan.x) / scale;
+            const worldY = (screenY - pan.y) / scale;
 
-        const newPanX = screenX - worldX * clampedScale;
-        const newPanY = screenY - worldY * clampedScale;
+            const zoomFactor = 1.1;
+            const direction = deltaY < 0 ? 1 : -1;
+            const nextScale = direction > 0 ? scale * zoomFactor : scale / zoomFactor;
+            const clampedScale = clamp(nextScale, 0.2, 3);
+            if (clampedScale === scale) return;
 
-        setScale(clampedScale);
-        setPan({ x: newPanX, y: newPanY });
+            const newPanX = screenX - worldX * clampedScale;
+            const newPanY = screenY - worldY * clampedScale;
+
+            setScale(clampedScale);
+            setPan({ x: newPanX, y: newPanY });
+        });
     };
 
     const handleFitToView = () => {

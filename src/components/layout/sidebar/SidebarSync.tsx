@@ -4,6 +4,7 @@ import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { authStorage } from "@/utils/authStorage";
 import { useSync } from "@/hooks/useSync";
+import { SYNC_API_URL } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,13 +41,12 @@ declare global {
     interface Window {
         turnstile?: {
             reset: (container?: string | HTMLElement) => void;
-            render: (container: string | HTMLElement, options: any) => string;
+            render: (container: string | HTMLElement, options: { sitekey: string; theme?: string; callback?: (token: string) => void; 'error-callback'?: () => void }) => string;
             remove: (widgetId: string) => void;
         };
     }
 }
 
-const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
 interface SidebarSyncProps {

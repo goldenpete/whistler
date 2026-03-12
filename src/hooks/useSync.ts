@@ -32,9 +32,7 @@ import { authStorage } from "@/utils/authStorage";
 import { useStore } from '@/store/useStore';
 import { useShallow } from '@/lib/zustand-shallow';
 import { sanitizeFilesForPersistence } from '@/utils/localFiles';
-
-/** Cloudflare Workers API endpoint for sync operations. */
-const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
+import { SYNC_API_URL } from '@/constants';
 
 export function useSync() {
     const { 
@@ -58,6 +56,7 @@ export function useSync() {
     })));
     const [error, setError] = useState<string | null>(null);
     const syncIntervalRef = useRef<number | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
 
     const handleSync = useCallback(async (type: 'push' | 'pull', silent = false) => {
         const storedToken = authStorage.getToken();
@@ -70,6 +69,11 @@ export function useSync() {
 
         if (!silent) setSyncStatus("syncing");
         setError(null);
+
+        // Abort any in-flight sync request
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
 
         try {
             if (type === "push") {
@@ -191,8 +195,7 @@ export function useSync() {
                 });
                 
                 if (!silent) {
-                    console.log(`Syncing (Push) for account ${storedAccountId}`);
-                    console.log(`Payload size: approx ${Math.round(payload.length / 1024)} KB`);
+                    // Debug logging omitted in production
                 }
 
                 const response = await fetch(`${SYNC_API_URL}/data`, {
@@ -202,6 +205,7 @@ export function useSync() {
                         Authorization: `Bearer ${storedToken}`,
                     },
                     body: payload,
+                    signal: controller.signal,
                 });
                 
                 if (response.status === 401) {
@@ -216,20 +220,18 @@ export function useSync() {
                 
                 if (!response.ok) {
                     const body = await response.json().catch(() => null);
-                    console.error("Push Error Body:", body);
                     setError(body?.error || "Push failed");
                     setSyncStatus("error");
                     return;
                 }
-                if (!silent) console.log("Push Successful");
             } else {
-                if (!silent) console.log(`Syncing (Pull) for account ${storedAccountId}`);
                 
                 const response = await fetch(`${SYNC_API_URL}/data`, {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${storedToken}`,
                     },
+                    signal: controller.signal,
                 });
 
                 if (response.status === 401) {
@@ -242,7 +244,6 @@ export function useSync() {
 
                 if (!response.ok) {
                     const body = await response.json().catch(() => null);
-                    console.error("Pull Error Body:", body);
                     setError(body?.error || "Pull failed");
                     setSyncStatus("error");
                     return;
@@ -412,14 +413,14 @@ export function useSync() {
                         }
                     }
                 }
-                if (!silent) console.log("Pull Successful");
             }
-            
+
             const now = Date.now();
             setLastSyncTime(now);
             authStorage.setLastSync(now.toString());
             setSyncStatus("success");
         } catch (err) {
+            if (err instanceof DOMException && err.name === 'AbortError') return;
             console.error("Sync Error:", err);
             setError("Network error");
             setSyncStatus("error");
@@ -442,6 +443,7 @@ export function useSync() {
         }
         return () => {
             if (syncIntervalRef.current) window.clearInterval(syncIntervalRef.current);
+            abortRef.current?.abort();
         };
     }, [autoSyncEnabled, user, autoSyncInterval, handleSync]);
 

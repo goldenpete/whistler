@@ -25,8 +25,10 @@ import {
     Camera, Microphone, Headphones, Monitor, Terminal
 } from "@phosphor-icons/react";
 
+import type { Icon } from "@phosphor-icons/react";
+
 /** String-name → Phosphor component lookup table. */
-export const iconMap: Record<string, any> = {
+export const iconMap: Record<string, Icon> = {
     "FolderPlus": FolderPlus,
     "Star": Star,
     "Heart": Heart,

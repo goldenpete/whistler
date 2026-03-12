@@ -12,7 +12,7 @@
  * Related: StorageView, FileThumbnail, FileContextMenu
  * ───────────────────────────────────────────────────────────────────
  */
-import type { MouseEvent, ReactNode, CSSProperties } from "react";
+import { memo, type MouseEvent, type ReactNode, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { type File as AppFile } from "@/types";
 import { useStableRef } from "@/hooks/useStableRef";
@@ -73,7 +73,7 @@ export interface FileCardInnerProps {
    INNER (PRESENTATIONAL) COMPONENTS
    ═══════════════════════════════════════════════════════ */
 
-export function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
+export const FileCardGridInner = memo(function FileCardGridInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const c = file.color;
     return (
         <div
@@ -129,9 +129,9 @@ export function FileCardGridInner({ file, isSelected, isFocused, isOver, selecti
             {children}
         </div>
     );
-}
+});
 
-export function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
+export const FileCardListInner = memo(function FileCardListInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
     const typeLabel = file.type.toUpperCase();
     const c = file.color;
@@ -205,9 +205,9 @@ export function FileCardListInner({ file, isSelected, isFocused, isOver, selecti
             {children}
         </div>
     );
-}
+});
 
-export function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
+export const FileCardCardsInner = memo(function FileCardCardsInner({ file, isSelected, isFocused, isOver, selectionMode, onClick, linkTo, domRef, children, style, className, showSelection = true }: FileCardInnerProps) {
     const dateStr = new Date(file.created).toLocaleDateString();
     const c = file.color;
 
@@ -289,7 +289,7 @@ export function FileCardCardsInner({ file, isSelected, isFocused, isOver, select
             {children}
         </div>
     );
-}
+});
 
 /* ═══════════════════════════════════════════════════════
    OUTER (DnD + CONTEXT MENU) WRAPPERS

@@ -1,6 +1,8 @@
-import { useState, useEffect, type SyntheticEvent } from "react";
+import { type SyntheticEvent } from "react";
+import { useCachedThumbnail } from "@/hooks/useCachedThumbnail";
 import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
+import { getYouTubeThumbnailUrl } from "@/constants";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { useStore } from "@/store/useStore";
 import type { Highlight, File as AppFile } from "@/types";
@@ -12,34 +14,12 @@ interface CachedVideoPreviewProps {
 }
 
 function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
-    const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
     const cacheHighlights = useStore(state => state.cacheHighlights);
-
-    useEffect(() => {
-        if (Number.isNaN(time)) return;
-
-        const loadThumbnail = async () => {
-            const key = `${url}-${time}-grid`;
-            try {
-                const blob = await thumbnailStorage.load(key);
-                if (blob) {
-                    setCachedThumbnail(URL.createObjectURL(blob));
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        };
-        loadThumbnail();
-    }, [url, time]);
-
-    useEffect(() => {
-        return () => {
-             if (cachedThumbnail) URL.revokeObjectURL(cachedThumbnail);
-        }
-    }, [cachedThumbnail]);
+    const thumbnailKey = Number.isNaN(time) ? null : `${url}-${time}-grid`;
+    const cachedThumbnail = useCachedThumbnail(thumbnailKey);
 
     if (cachedThumbnail) {
-        return <img src={cachedThumbnail} className="w-full h-full object-cover" alt="" />;
+        return <img src={cachedThumbnail} className="w-full h-full object-cover" alt="" loading="lazy" />;
     }
 
     return (
@@ -88,9 +68,10 @@ function CollectionGridPreviewTile({ highlight, file }: { highlight: Highlight; 
     if (youtubeId) {
         return (
             <img
-                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                src={getYouTubeThumbnailUrl(youtubeId)}
                 className="w-full h-full object-cover"
                 alt=""
+                loading="lazy"
             />
         );
     }
@@ -100,7 +81,7 @@ function CollectionGridPreviewTile({ highlight, file }: { highlight: Highlight; 
     }
 
     if (file.type === 'image') {
-        return <img src={resolvedUrl} className="w-full h-full object-cover" alt="" />;
+        return <img src={resolvedUrl} className="w-full h-full object-cover" alt="" loading="lazy" />;
     }
 
     if (file.type === 'pdf') {

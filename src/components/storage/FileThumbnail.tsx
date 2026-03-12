@@ -10,7 +10,7 @@
  * Related: StorageView, StorageDialogs, thumbnailDb
  * ───────────────────────────────────────────────────────────────────
  */
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import type { SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { type File as AppFile } from "@/types";
@@ -20,8 +20,10 @@ import {
 import { ICONS } from "@/components/dialogs/StorageDialogs";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
+import { getYouTubeThumbnailUrl } from "@/constants";
 import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
+import { useCachedThumbnail } from "@/hooks/useCachedThumbnail";
 import { inferFileTypeFromUrl } from "@/utils/localFiles";
 
 /* ═══════════════════════════════════════════════════════
@@ -50,36 +52,13 @@ export function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | '
 export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) {
     const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
     const { resolvedUrl } = useResolvedFileUrl(file);
 
-    // Load cached thumbnail
-    useEffect(() => {
-        if (file.type !== 'video' || !resolvedUrl || getYouTubeId(resolvedUrl)) return;
-
-        const loadThumbnail = async () => {
-            const key = `${resolvedUrl}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
-            try {
-                const blob = await thumbnailStorage.load(key);
-                if (blob) {
-                    const objectUrl = URL.createObjectURL(blob);
-                    setCachedThumbnail(objectUrl);
-                }
-            } catch (e) {
-                console.error("Failed to load thumbnail", e);
-            }
-        };
-        loadThumbnail();
-    }, [resolvedUrl, file.type, useMiddleFrameForPreviews]);
-
-    // Cleanup object URL
-    useEffect(() => {
-        return () => {
-            if (cachedThumbnail) {
-                URL.revokeObjectURL(cachedThumbnail);
-            }
-        };
-    }, [cachedThumbnail]);
+    // Build the thumbnail cache key (null when we shouldn't load)
+    const thumbnailKey = (file.type === 'video' && resolvedUrl && !getYouTubeId(resolvedUrl))
+        ? `${resolvedUrl}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`
+        : null;
+    const cachedThumbnail = useCachedThumbnail(thumbnailKey);
 
     const Icon = (() => {
         let icon = getFileIcon(file.type);
@@ -108,16 +87,17 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
     if (youtubeId) {
         return (
             <img
-                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                src={getYouTubeThumbnailUrl(youtubeId)}
                 alt={file.name}
                 className="w-full h-full object-cover"
+                loading="lazy"
                 onError={() => setError(true)}
             />
         );
     }
 
     if (file.type === 'image') {
-        return <img src={resolvedUrl} alt={file.name} className="w-full h-full object-cover" onError={() => setError(true)} />;
+        return <img src={resolvedUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" onError={() => setError(true)} />;
     }
 
     if (file.type === 'video') {
@@ -127,7 +107,8 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
                     src={cachedThumbnail}
                     alt={file.name}
                     className="w-full h-full object-cover"
-                    onError={() => setCachedThumbnail(null)}
+                    loading="lazy"
+                    onError={() => setError(true)}
                 />
             );
         }

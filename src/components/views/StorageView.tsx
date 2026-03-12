@@ -18,7 +18,7 @@
  * Related: StorageDialogs, collectionUtils, useStore
  * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  */
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
@@ -261,13 +261,13 @@ export default function StorageView() {
 
     const normalizedQuery = searchQuery.toLowerCase();
 
-    const projectFiles = files.filter(f =>
+    const projectFiles = useMemo(() => files.filter(f =>
         f.projectId === activeProjectId &&
         (!activeStorageId || f.storageId === activeStorageId) &&
         f.parentId === currentFolderId &&
         !f.deleted &&
         (normalizedQuery === "" || f.name.toLowerCase().includes(normalizedQuery))
-    );
+    ), [files, activeProjectId, activeStorageId, currentFolderId, normalizedQuery]);
 
     // Sort files based on option
     const sortedProjectFiles = useMemo(() => {
@@ -293,6 +293,37 @@ export default function StorageView() {
     }, [projectFiles, sortOption, sortDirection]);
 
     const orderedProjectFiles = sortedProjectFiles;
+
+    // Progressive rendering: render in batches to avoid mounting hundreds of cards at once
+    const RENDER_BATCH_SIZE = 50;
+    const [renderLimit, setRenderLimit] = useState(RENDER_BATCH_SIZE);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
+
+    // Reset render limit when the file list changes (folder navigation, search, etc.)
+    useEffect(() => {
+        setRenderLimit(RENDER_BATCH_SIZE);
+    }, [currentFolderId, normalizedQuery, activeStorageId, sortOption]);
+
+    // Auto-expand when the sentinel element scrolls into view
+    useEffect(() => {
+        const el = loadMoreRef.current;
+        if (!el || renderLimit >= orderedProjectFiles.length) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setRenderLimit(prev => Math.min(prev + RENDER_BATCH_SIZE, orderedProjectFiles.length));
+                }
+            },
+            { rootMargin: '200px' }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [renderLimit, orderedProjectFiles.length]);
+
+    const visibleFiles = useMemo(
+        () => orderedProjectFiles.slice(0, renderLimit),
+        [orderedProjectFiles, renderLimit]
+    );
 
     // Keyboard Navigation
     const getColumns = () => {
@@ -1042,7 +1073,7 @@ export default function StorageView() {
                                         strategy={rectSortingStrategy}
                                         disabled={sortOption !== "custom"}
                                     >
-                                        {orderedProjectFiles.map((file: AppFile) => (
+                                        {visibleFiles.map((file: AppFile) => (
                                             <FileCardGrid
                                                 key={file.id}
                                                 file={file}
@@ -1062,6 +1093,7 @@ export default function StorageView() {
                                         ))}
                                     </SortableContext>
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
+                                    {renderLimit < orderedProjectFiles.length && <div ref={loadMoreRef} className="h-1" />}
                                 </div>
                             ) : viewMode === 'list' ? (
                                 <div className="flex flex-col gap-2 pb-10">
@@ -1070,7 +1102,7 @@ export default function StorageView() {
                                         strategy={verticalListSortingStrategy}
                                         disabled={sortOption !== "custom"}
                                     >
-                                        {orderedProjectFiles.map((file: AppFile) => (
+                                        {visibleFiles.map((file: AppFile) => (
                                             <FileCardList
                                                 key={file.id}
                                                 file={file}
@@ -1090,6 +1122,7 @@ export default function StorageView() {
                                         ))}
                                     </SortableContext>
                                     {orderedProjectFiles.length === 0 && <EmptyState />}
+                                    {renderLimit < orderedProjectFiles.length && <div ref={loadMoreRef} className="h-1" />}
                                 </div>
                             ) : (
                                 <SortableContext
@@ -1098,7 +1131,7 @@ export default function StorageView() {
                                     disabled={sortOption !== "custom"}
                                 >
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-20">
-                                        {orderedProjectFiles.map((file: AppFile) => (
+                                        {visibleFiles.map((file: AppFile) => (
                                             <FileCardCards
                                                 key={file.id}
                                                 file={file}
@@ -1117,6 +1150,7 @@ export default function StorageView() {
                                             />
                                         ))}
                                         {orderedProjectFiles.length === 0 && <EmptyState />}
+                                        {renderLimit < orderedProjectFiles.length && <div ref={loadMoreRef} className="h-1" />}
                                     </div>
                                 </SortableContext>
                             )}

@@ -16,7 +16,7 @@
  * Related: CollectionView, CollectionDialogs, collectionUtils
  * ───────────────────────────────────────────────────────────────────
  */
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useStableRef } from "@/hooks/useStableRef";
@@ -183,7 +183,7 @@ interface CollectionCardInnerProps {
     viewMode: 'grid' | 'list' | 'cards';
 }
 
-function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+const CollectionCardGridInner = memo(function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
     const { highlights, files } = useStore(useShallow((state) => ({
         highlights: state.highlights,
         files: state.files,
@@ -245,9 +245,9 @@ function CollectionCardGridInner({ collection, isSelected, isFocused, isOver, se
             {children}
         </div>
     );
-}
+});
 
-function CollectionCardListInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+const CollectionCardListInner = memo(function CollectionCardListInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
     const { highlights, files } = useStore(useShallow((state) => ({
         highlights: state.highlights,
         files: state.files,
@@ -322,9 +322,9 @@ function CollectionCardListInner({ collection, isSelected, isFocused, isOver, se
             {children}
         </div>
     );
-}
+});
 
-function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
+const CollectionCardCardsInner = memo(function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, selectionMode, onClick, domRef, children, style, className, showSelection = true }: CollectionCardInnerProps) {
     const { highlights, files } = useStore(useShallow((state) => ({
         highlights: state.highlights,
         files: state.files,
@@ -404,7 +404,7 @@ function CollectionCardCardsInner({ collection, isSelected, isFocused, isOver, s
             {children}
         </div>
     );
-}
+});
 
 function CollectionCard({ collection, onNavigate, selectionMode, isSelected, isFocused, onToggleSelect, onRename, onDelete, onColorChange, onIconChange, onMove, onMouseEnter, onMouseLeave, viewMode, sortOption }: CollectionCardProps & { viewMode: 'grid' | 'list' | 'cards', sortOption: string }) {
     const {

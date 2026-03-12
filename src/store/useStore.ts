@@ -35,7 +35,7 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { sanitizeFilesForPersistence } from '@/utils/localFiles';
 
 // ── Types (re-exported for backward compatibility) ───────────────────────────
@@ -65,6 +65,42 @@ import { createUiSlice } from './slices/uiSlice';
 
 /** localStorage key for persisted store data */
 const STORAGE_KEY = 'whistler_v2_data';
+
+/** Debounce interval for localStorage writes (ms) */
+const PERSIST_DEBOUNCE_MS = 1000;
+
+/**
+ * Wraps localStorage with debounced setItem to avoid serializing
+ * the entire store on every state change.
+ */
+function createThrottledStorage(): StateStorage {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let pendingValue: string | null = null;
+
+  return {
+    getItem: (name: string) => localStorage.getItem(name),
+    setItem: (name: string, value: string) => {
+      pendingValue = value;
+      if (!timeout) {
+        timeout = setTimeout(() => {
+          if (pendingValue !== null) {
+            localStorage.setItem(name, pendingValue);
+            pendingValue = null;
+          }
+          timeout = null;
+        }, PERSIST_DEBOUNCE_MS);
+      }
+    },
+    removeItem: (name: string) => {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+        pendingValue = null;
+      }
+      localStorage.removeItem(name);
+    },
+  };
+}
 
 // ── Store Creation ───────────────────────────────────────────────────────────
 
@@ -96,7 +132,7 @@ export const useStore = create<AppStore>()(
     }),
     {
       name: STORAGE_KEY,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => createThrottledStorage()),
       /**
        * Exclude transient state from persistence:
        * - ambientMusicUrl: Blob URLs don't survive page reload (stored in IndexedDB)

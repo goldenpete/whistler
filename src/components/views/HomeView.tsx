@@ -16,7 +16,7 @@
  * Related: StorageDialogs, CollectionDialogs, useStore
  * ───────────────────────────────────────────────────────────────────
  */
-import { useState, useRef, useEffect, memo, type MouseEvent, type SyntheticEvent } from "react";
+import { useState, useRef, useEffect, useMemo, memo, type MouseEvent, type SyntheticEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { findRootBucketId } from "@/utils/collectionUtils";
@@ -74,6 +74,7 @@ import { FileContextMenu } from "@/components/storage/FileContextMenu";
 import { Copy, Trash, ArrowSquareOut, PencilSimple, Lightning } from "@phosphor-icons/react";
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
+import { getYouTubeThumbnailUrl } from "@/constants";
 import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
@@ -88,6 +89,7 @@ import {
     type PickedLocalFile,
 } from "@/utils/localFiles";
 import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
+import { useCachedThumbnail } from "@/hooks/useCachedThumbnail";
 
 function getGreeting(username: string) {
     const hour = new Date().getHours();
@@ -168,35 +170,12 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
     })));
     const videoRef = useRef<HTMLVideoElement>(null);
     const youtubeId = getYouTubeId(url);
-    const [cachedThumbnail, setCachedThumbnail] = useState<string | null>(null);
 
     // Load cached thumbnail
-    useEffect(() => {
-        if (youtubeId || Number.isNaN(start)) return;
-        
-        const loadThumbnail = async () => {
-            const key = `${url}-${start}-${overrideMiddleFrame ? 'mid' : 'start'}`;
-            try {
-                const blob = await thumbnailStorage.load(key);
-                if (blob) {
-                    const objectUrl = URL.createObjectURL(blob);
-                    setCachedThumbnail(objectUrl);
-                }
-            } catch (e) {
-                console.error("Failed to load thumbnail", e);
-            }
-        };
-        loadThumbnail();
-    }, [url, start, overrideMiddleFrame, youtubeId]);
-
-    // Cleanup object URL
-    useEffect(() => {
-        return () => {
-            if (cachedThumbnail) {
-                URL.revokeObjectURL(cachedThumbnail);
-            }
-        };
-    }, [cachedThumbnail]);
+    const thumbnailKey = (youtubeId || Number.isNaN(start))
+        ? null
+        : `${url}-${start}-${overrideMiddleFrame ? 'mid' : 'start'}`;
+    const cachedThumbnail = useCachedThumbnail(thumbnailKey);
 
     useEffect(() => {
         if (youtubeId || cachedThumbnail) return;
@@ -227,9 +206,10 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
         return (
             <div className="absolute inset-0 bg-black/20">
                 <img
-                    src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
+                    src={getYouTubeThumbnailUrl(youtubeId, 'hqdefault')}
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                     alt="YouTube Preview"
+                    loading="lazy"
                     onContextMenu={(e) => e.preventDefault()}
                 />
             </div>
@@ -243,6 +223,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
                     src={cachedThumbnail}
                     className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                     alt="Video Preview"
+                    loading="lazy"
                     onContextMenu={(e) => e.preventDefault()}
                 />
             </div>
@@ -321,10 +302,11 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
     if (item.type === 'file' && item.subType === 'image' && resolvedUrl) {
         return (
             <div className="absolute inset-0 bg-black/20">
-                <img 
-                    src={resolvedUrl} 
-                    alt="" 
-                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
+                <img
+                    src={resolvedUrl}
+                    alt=""
+                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
                     onContextMenu={(e) => e.preventDefault()}
                 />
             </div>
@@ -863,20 +845,20 @@ export default function HomeView() {
     const username = user?.email?.split('@')[0] || "User";
 
     // Filter items for current project
-    const projectFiles = files.filter((f: AppFile) => f.projectId === activeProjectId && !f.deleted);
-    const projectDocs = docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted);
-    const projectCollections = collections.filter((c: Collection) =>
+    const projectFiles = useMemo(() => files.filter((f: AppFile) => f.projectId === activeProjectId && !f.deleted), [files, activeProjectId]);
+    const projectDocs = useMemo(() => docs.filter((d: Doc) => d.projectId === activeProjectId && !d.deleted), [docs, activeProjectId]);
+    const projectCollections = useMemo(() => collections.filter((c: Collection) =>
         c.projectId === activeProjectId && !c.deleted && c.type !== 'bucket'
-    );
-    const projectBuckets = collections.filter((c: Collection) =>
+    ), [collections, activeProjectId]);
+    const projectBuckets = useMemo(() => collections.filter((c: Collection) =>
         c.projectId === activeProjectId && !c.deleted && c.type === 'bucket'
-    );
-    const projectGraphs = (graphs || []).filter((g) => g.projectId === activeProjectId);
+    ), [collections, activeProjectId]);
+    const projectGraphs = useMemo(() => (graphs || []).filter((g) => g.projectId === activeProjectId), [graphs, activeProjectId]);
 
     // Recent Highlights logic
-    const projectFileIds = new Set(projectFiles.map((f: AppFile) => f.id));
-    const projectHighlights = highlights
-        .filter((h) => projectFileIds.has(h.fileId));
+    const projectFileIds = useMemo(() => new Set(projectFiles.map((f: AppFile) => f.id)), [projectFiles]);
+    const projectHighlights = useMemo(() => highlights
+        .filter((h) => projectFileIds.has(h.fileId)), [highlights, projectFileIds]);
 
     const formatHighlightLabel = (h: Highlight, file?: AppFile) => {
         if (file?.type === 'pdf') {
@@ -897,7 +879,7 @@ export default function HomeView() {
     };
 
     // Unify all items
-    const allItems: HomeViewItem[] = [
+    const allItems: HomeViewItem[] = useMemo(() => [
         ...projectFiles.map((f: AppFile) => ({
             id: f.id,
             type: 'file' as const,
@@ -960,9 +942,9 @@ export default function HomeView() {
             timestamp: Math.max(p.lastModified || p.created, (p as Project & { lastViewed?: number }).lastViewed || 0),
             data: p
         }))
-    ].sort((a, b) => b.timestamp - a.timestamp);
+    ].sort((a, b) => b.timestamp - a.timestamp), [projectFiles, projectDocs, projectCollections, projectBuckets, projectGraphs, projectHighlights, files, storages, activeProjectId, projects]);
 
-    const filteredItems = allItems.filter(item => activeFilters.has(item.type));
+    const filteredItems = useMemo(() => allItems.filter(item => activeFilters.has(item.type)), [allItems, activeFilters]);
 
     const getItemIcon = (item: typeof allItems[0]) => {
         if ((item.type === 'collection' || item.type === 'bucket' || item.type === 'doc' || item.type === 'graph' || item.type === 'storage') && item.data.icon) {

@@ -190,8 +190,42 @@ export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFi
             return;
         }
 
-        void refresh();
-    }, [file, refresh, supportsLocalAccess, syncRemoteFileState]);
+        let cancelled = false;
+        (async () => {
+            const resolution = await resolveLocalFileSource(file.localSource);
+            if (cancelled) return;
+            setAvailability(resolution.status);
+            setResolvedUrl(resolution.url);
+
+            if (resolution.status !== 'ready' || !resolution.url || !resolution.browserFile) {
+                if (file.url) {
+                    applyRuntimeFileUpdate(file.id, { url: null });
+                }
+                return;
+            }
+
+            const refreshedLocalSource = {
+                ...file.localSource,
+                ...createLocalFileSource(file.localSource.bindingId, resolution.browserFile),
+                addedAt: file.localSource.addedAt,
+            };
+
+            const inferredType = inferFileTypeFromName(
+                resolution.browserFile.name,
+                resolution.browserFile.type,
+            );
+
+            const shouldUpdateDisplayName = file.name === file.localSource.originalFileName;
+
+            applyRuntimeFileUpdate(file.id, {
+                url: resolution.url,
+                type: inferredType,
+                localSource: refreshedLocalSource,
+                name: shouldUpdateDisplayName ? resolution.browserFile.name : file.name,
+            });
+        })();
+        return () => { cancelled = true; };
+    }, [file, supportsLocalAccess, syncRemoteFileState]);
 
     return useMemo(() => ({
         resolvedUrl,

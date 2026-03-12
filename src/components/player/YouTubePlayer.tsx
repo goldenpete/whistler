@@ -19,9 +19,15 @@ import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 're
 
 declare global {
     interface Window {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         YT: any;
         onYouTubeIframeAPIReady: () => void;
     }
+}
+
+interface YTPlayerEvent {
+    target: { getDuration: () => number };
+    data: number;
 }
 
 interface YouTubePlayerProps {
@@ -34,6 +40,23 @@ interface YouTubePlayerProps {
     onPause?: () => void;
     onClick?: () => void;
     initialTime?: number;
+}
+
+interface YTPlayer {
+    playVideo: () => void;
+    pauseVideo: () => void;
+    getCurrentTime: () => number;
+    getDuration: () => number;
+    getVolume: () => number;
+    setVolume: (v: number) => void;
+    isMuted: () => boolean;
+    mute: () => void;
+    unMute: () => void;
+    getPlaybackRate: () => number;
+    setPlaybackRate: (r: number) => void;
+    getPlayerState: () => number;
+    seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+    destroy: () => void;
 }
 
 export interface YouTubePlayerHandle {
@@ -65,7 +88,7 @@ export const YouTubePlayerComponent = forwardRef<YouTubePlayerHandle, YouTubePla
     initialTime = 0
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const playerRef = useRef<any>(null);
+    const playerRef = useRef<YTPlayer | null>(null);
     const [isReady, setIsReady] = useState(false);
     const videoId = getYouTubeId(url);
     const timeUpdateInterval = useRef<ReturnType<typeof setInterval>>(null);
@@ -134,13 +157,13 @@ export const YouTubePlayerComponent = forwardRef<YouTubePlayerHandle, YouTubePla
         };
     }, [isReady, videoId]);
 
-    const onPlayerReady = (event: any) => {
+    const onPlayerReady = (event: YTPlayerEvent) => {
         if (onDurationChange) {
             onDurationChange(event.target.getDuration());
         }
     };
 
-    const onPlayerStateChange = (event: any) => {
+    const onPlayerStateChange = (event: YTPlayerEvent) => {
         // YT.PlayerState.ENDED = 0
         // YT.PlayerState.PLAYING = 1
         // YT.PlayerState.PAUSED = 2

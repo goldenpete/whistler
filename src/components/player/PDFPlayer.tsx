@@ -45,6 +45,7 @@ import { cn, clamp } from '@/lib/utils';
 import { useDebounceValue } from 'usehooks-ts';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { globalWorker } from '@/pdf-worker';
+import { getPdfDocumentOptions } from '@/constants';
 import { playSfx } from '@/utils/sound';
 
 // Note: Worker is configured globally in src/pdf-worker.ts
@@ -113,6 +114,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const pageWrapperRef = useRef<HTMLDivElement>(null);
+    const wheelRafRef = useRef<number>(0);
 
     // --- Store Access ---
     const { addHighlight, activeCollectionId, highlights } = useStore(useShallow((state) => ({
@@ -122,14 +124,7 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
     })));
 
     // --- Derived State ---
-    const options = useMemo(() => ({
-        cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
-        cMapPacked: true,
-        standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-        verbosity: 0,
-        stopAtErrors: false,
-        pdfBug: false,
-    }), []);
+    const options = useMemo(() => getPdfDocumentOptions(pdfjs.version), []);
 
     // Filter highlights for the current page
     const pageHighlights = useMemo(() => 
@@ -424,23 +419,29 @@ export const PDFPlayer = forwardRef<PDFPlayerHandle, PDFPlayerProps>(({
                 // Zoom (Shift + Scroll)
                 const isTrackpad = Math.abs(e.deltaY) < 50;
                 const delta = isTrackpad ? -e.deltaY * 0.01 : -Math.sign(e.deltaY) * 0.2;
-                
-                setScale(s => {
-                    const newScale = s + delta;
-                    return clamp(newScale, 0.5, 5.0);
+
+                cancelAnimationFrame(wheelRafRef.current);
+                wheelRafRef.current = requestAnimationFrame(() => {
+                    setScale(s => {
+                        const newScale = s + delta;
+                        return clamp(newScale, 0.5, 5.0);
+                    });
                 });
             } else if (e.ctrlKey) {
                 e.preventDefault();
                 // Heuristic: Trackpad pinch usually sends small deltas with Ctrl key.
                 // Mouse wheel usually sends large deltas (100+).
                 const isLikelyPinch = Math.abs(e.deltaY) < 60;
-                
+
                 if (isLikelyPinch) {
                     // Pinch -> Zoom
                     const delta = -e.deltaY * 0.01;
-                    setScale(s => {
-                        const newScale = s + delta;
-                        return clamp(newScale, 0.5, 5.0);
+                    cancelAnimationFrame(wheelRafRef.current);
+                    wheelRafRef.current = requestAnimationFrame(() => {
+                        setScale(s => {
+                            const newScale = s + delta;
+                            return clamp(newScale, 0.5, 5.0);
+                        });
                     });
                 } else {
                     // Ctrl + Mouse Wheel -> Pan Horizontal

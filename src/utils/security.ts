@@ -41,7 +41,9 @@ export function isValidUrl(url: string): boolean {
         const parsed = new URL(url);
         return ['http:', 'https:', 'blob:', 'data:'].includes(parsed.protocol);
     } catch {
-        // Fallback for relative URLs or partial URLs
-        return !url.toLowerCase().startsWith('javascript:');
+        // Fallback for relative URLs or partial URLs — block all known dangerous schemes
+        const lower = url.toLowerCase().trimStart();
+        const dangerousSchemes = ['javascript:', 'vbscript:', 'data:', 'blob:'];
+        return !dangerousSchemes.some(scheme => lower.startsWith(scheme));
     }
 }

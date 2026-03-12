@@ -3,16 +3,10 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { getPdfDocumentOptions } from '@/constants';
 
 // Define options outside component to prevent unnecessary re-renders
-const PDF_OPTIONS = {
-    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
-    cMapPacked: true,
-    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-    verbosity: 0,
-    stopAtErrors: false,
-    pdfBug: false,
-};
+const PDF_OPTIONS = getPdfDocumentOptions(pdfjs.version);
 
 export const PdfThumbnail = memo(function PdfThumbnail({ url, onError, className, width = 160, page = 1, rect }: { url: string; onError: () => void, className?: string, width?: number, page?: number, rect?: { x: number; y: number; width: number; height: number } }) {
     const containerRef = useRef<HTMLDivElement>(null);

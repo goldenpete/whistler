@@ -22,6 +22,7 @@ import { useShallow } from "@/lib/zustand-shallow";
 import { useStore, type AppStore } from "@/store/useStore";
 import { authStorage } from "@/utils/authStorage";
 import { useSync } from "@/hooks/useSync";
+import { SYNC_API_URL } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -82,7 +83,6 @@ declare global {
     }
 }
 
-const SYNC_API_URL = "https://whistler-sync.peteawesome.workers.dev";
 const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
@@ -177,7 +177,7 @@ export function SettingsSync() {
 
     // Passkey Management State
     const [showPasskeys, setShowPasskeys] = useState(false);
-    const [passkeys, setPasskeys] = useState<any[]>([]);
+    const [passkeys, setPasskeys] = useState<{ id: string; name?: string; created_at: string }[]>([]);
     const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
     const [isVerifyingTotpForPasskey, setIsVerifyingTotpForPasskey] = useState(false);
     const [passkeyTotpCode, setPasskeyTotpCode] = useState("");
@@ -305,7 +305,9 @@ export function SettingsSync() {
             if (widgetId && window.turnstile) {
                 try {
                     window.turnstile.remove(widgetId);
-                } catch (e) { }
+                } catch {
+                    // Turnstile widget may already be removed
+                }
             }
         };
     }, [user]);
@@ -653,9 +655,28 @@ export function SettingsSync() {
     };
 
     useEffect(() => {
-        if (showPasskeys && sessionToken) {
-            fetchPasskeys();
-        }
+        if (!showPasskeys || !sessionToken) return;
+        let cancelled = false;
+        (async () => {
+            setIsPasskeyLoading(true);
+            try {
+                const response = await fetch(`${SYNC_API_URL}/passkeys`, {
+                    headers: { Authorization: `Bearer ${sessionToken}` }
+                });
+                if (cancelled) return;
+                if (response.ok) {
+                    const data = await response.json();
+                    setPasskeys(data.passkeys || []);
+                } else if (response.status === 404) {
+                    setPasskeys([]);
+                }
+            } catch (err) {
+                if (!cancelled) console.error("Failed to fetch passkeys:", err);
+            } finally {
+                if (!cancelled) setIsPasskeyLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
     }, [showPasskeys, sessionToken]);
 
     const handleAddPasskey = async () => {

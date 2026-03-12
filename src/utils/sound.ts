@@ -40,14 +40,21 @@ const SOUNDS: Record<SoundType, string> = {
 };
 
 /** In-memory cache of HTMLAudioElement instances for instant playback. */
-const audioCache: Record<string, HTMLAudioElement> = {};
+const audioCache: Map<string, HTMLAudioElement> = new Map();
+
+/** Maximum number of cached audio elements (prevents unbounded growth from custom sounds). */
+const MAX_AUDIO_CACHE_SIZE = 20;
+
+/** Keys of the built-in preloaded sounds (these should never be evicted). */
+const preloadedKeys = new Set<string>();
 
 /** Preload all default sounds into the audio cache. Call once on app start. */
 export const preloadSounds = () => {
     Object.entries(SOUNDS).forEach(([key, url]) => {
         const audio = new Audio(url);
         audio.preload = 'auto';
-        audioCache[key] = audio;
+        audioCache.set(key, audio);
+        preloadedKeys.add(key);
     });
 };
 
@@ -83,11 +90,20 @@ export const playSfx = (type: SoundType) => {
         audioSrc = SOUNDS[presetKey];
     }
 
-    // Play
-    const audio = audioCache[audioSrc] || new Audio(audioSrc);
-    // Cache it if it's a preset or new custom sound
-    if (!audioCache[audioSrc]) {
-        audioCache[audioSrc] = audio;
+    // Play (use cached element or create a new one)
+    let audio = audioCache.get(audioSrc);
+    if (!audio) {
+        audio = new Audio(audioSrc);
+        // Evict oldest non-preloaded entry when cache is full
+        if (audioCache.size >= MAX_AUDIO_CACHE_SIZE) {
+            for (const [key] of audioCache) {
+                if (!preloadedKeys.has(key)) {
+                    audioCache.delete(key);
+                    break;
+                }
+            }
+        }
+        audioCache.set(audioSrc, audio);
     }
     
     // Reset if already playing or ended

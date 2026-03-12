@@ -28,6 +28,12 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+// ImageCapture API type (experimental browser API, no built-in TS types)
+declare class ImageCapture {
+    constructor(track: MediaStreamTrack);
+    grabFrame(): Promise<ImageBitmap>;
+}
+
 import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
@@ -103,6 +109,7 @@ import type { Highlight, File as AppFile, Collection } from "@/types";
 import { AudioPlayer, type AudioPlayerHandle } from './AudioPlayer';
 import { SeekPreview } from './SeekPreview';
 import { YouTubePlayerComponent, type YouTubePlayerHandle, getYouTubeId } from '@/components/player/YouTubePlayer';
+import { getYouTubeThumbnailUrl } from '@/constants';
 
 import { EditFileDialog } from "@/components/dialogs/FileDialogs";
 import { HighlightPlayerDialog, EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
@@ -246,7 +253,16 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     const [windowRect, setWindowRect] = useState({ x: 32, y: 32, width: 960, height: 600 });
     const [isScreenshotDialogOpen, setIsScreenshotDialogOpen] = useState(false);
     const [isCaptureConfirmOpen, setIsCaptureConfirmOpen] = useState(false);
-    const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+    const [screenshotUrl, setScreenshotUrlRaw] = useState<string | null>(null);
+    const screenshotBlobUrl = useRef<string | null>(null);
+    const tempScreenshotVideo = useRef<HTMLVideoElement | null>(null);
+    const setScreenshotUrl = (url: string | null) => {
+        if (screenshotBlobUrl.current && screenshotBlobUrl.current.startsWith('blob:')) {
+            URL.revokeObjectURL(screenshotBlobUrl.current);
+        }
+        screenshotBlobUrl.current = url && url.startsWith('blob:') ? url : null;
+        setScreenshotUrlRaw(url);
+    };
 
     const file = files.find(f => f.id === fileId);
     const { resolvedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
@@ -280,8 +296,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         if (isYouTube && file && resolvedUrl) {
             const videoId = getYouTubeId(resolvedUrl);
             if (videoId) {
-                const maxResUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-                const hqUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                const maxResUrl = getYouTubeThumbnailUrl(videoId, 'maxresdefault');
+                const hqUrl = getYouTubeThumbnailUrl(videoId, 'hqdefault');
                 
                 try {
                     const response = await fetch(maxResUrl);
@@ -347,9 +363,13 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             tempVideo.muted = true;
             tempVideo.style.display = 'none';
             document.body.appendChild(tempVideo);
+            tempScreenshotVideo.current = tempVideo;
 
             const cleanup = () => {
-                document.body.removeChild(tempVideo);
+                if (tempVideo.parentNode) {
+                    document.body.removeChild(tempVideo);
+                }
+                tempScreenshotVideo.current = null;
                 setIsLoading(false);
             };
 
@@ -396,8 +416,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             });
             
             const track = stream.getVideoTracks()[0];
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const imageCapture = new (window as any).ImageCapture(track);
+            const imageCapture = new ImageCapture(track);
             const bitmap = await imageCapture.grabFrame();
             
             const canvas = document.createElement('canvas');
@@ -1010,16 +1029,22 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         addVideoHighlight(fileId, start, currentTime, activeCollectionId || undefined);
     };
 
+    const seekHoverRaf = useRef<number>(0);
     const handleSeekHover = (e: MouseEvent<HTMLDivElement>) => {
         if (!progressRef.current || !file || (file.type !== 'video' && file.type !== 'audio')) return;
 
-        const rect = progressRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percentage = Math.max(0, Math.min(1, x / rect.width));
-        const time = percentage * duration;
+        const clientX = e.clientX;
+        cancelAnimationFrame(seekHoverRaf.current);
+        seekHoverRaf.current = requestAnimationFrame(() => {
+            if (!progressRef.current) return;
+            const rect = progressRef.current.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, x / rect.width));
+            const time = percentage * duration;
 
-        setHoverTime(time);
-        setHoverX(x);
+            setHoverTime(time);
+            setHoverX(x);
+        });
     };
 
     useEffect(() => {
@@ -1046,6 +1071,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         actionHandlersRef.current = { togglePlay, handleAddHighlight, handleCaptureFrame };
     });
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- event listeners use refs, no need to re-register
     useEffect(() => {
         const handlePdfNext = () => pdfRef.current?.nextPage();
         const handlePdfPrev = () => pdfRef.current?.prevPage();
@@ -1121,6 +1147,16 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
             window.removeEventListener("trigger-unmute", handleMediaUnmute);
             window.removeEventListener("trigger-screenshot", handleScreenshot);
             window.removeEventListener("trigger-highlight", handleHighlight);
+        };
+    }, []);
+
+    // Cleanup orphaned temp video element on unmount
+    useEffect(() => {
+        return () => {
+            if (tempScreenshotVideo.current?.parentNode) {
+                document.body.removeChild(tempScreenshotVideo.current);
+                tempScreenshotVideo.current = null;
+            }
         };
     }, []);
 

@@ -16,7 +16,7 @@
  * Related: CollectionsView, collectionUtils, useStore
  * ───────────────────────────────────────────────────────────────────
  */
-import React, { useState, useRef, useMemo, useEffect, type ChangeEvent } from "react";
+import React, { useState, useRef, useMemo, useEffect, memo, type ChangeEvent } from "react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -71,6 +71,7 @@ import type { Highlight, File as AppFile } from "@/types";
 import { EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
 import { getIcon } from "@/utils/iconMap";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
+import { getYouTubeThumbnailUrl } from "@/constants";
 
 
 
@@ -143,9 +144,43 @@ export default function CollectionView() {
     const selectedFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) || null : null;
 
     // Filter highlights for this collection
-    const collectionHighlights = highlights.filter(h =>
+    const normalizedSearchQuery = searchQuery.toLowerCase();
+    const collectionHighlights = useMemo(() => highlights.filter(h =>
         h.collectionId === collectionIdToUse &&
-        (h.note || "").toLowerCase().includes(searchQuery.toLowerCase())
+        (h.note || "").toLowerCase().includes(normalizedSearchQuery)
+    ), [highlights, collectionIdToUse, normalizedSearchQuery]);
+
+    const fileMap = useMemo(() => new Map(files.map(f => [f.id, f])), [files]);
+
+    // Progressive rendering for large collections
+    const HIGHLIGHT_BATCH_SIZE = 60;
+    const [highlightRenderLimit, setHighlightRenderLimit] = useState(HIGHLIGHT_BATCH_SIZE);
+    const loadMoreHighlightsRef = useRef<HTMLDivElement>(null);
+
+    // Reset limit when collection or search changes
+    useEffect(() => {
+        setHighlightRenderLimit(HIGHLIGHT_BATCH_SIZE);
+    }, [collectionIdToUse, normalizedSearchQuery]);
+
+    // Auto-expand when sentinel scrolls into view
+    useEffect(() => {
+        const el = loadMoreHighlightsRef.current;
+        if (!el || highlightRenderLimit >= collectionHighlights.length) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setHighlightRenderLimit(prev => Math.min(prev + HIGHLIGHT_BATCH_SIZE, collectionHighlights.length));
+                }
+            },
+            { rootMargin: '200px' }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [highlightRenderLimit, collectionHighlights.length]);
+
+    const visibleHighlights = useMemo(
+        () => collectionHighlights.slice(0, highlightRenderLimit),
+        [collectionHighlights, highlightRenderLimit]
     );
 
     const CollectionIcon = getIcon(activeCollection?.icon);
@@ -366,8 +401,8 @@ export default function CollectionView() {
             {/* Grid */}
             <ScrollArea className="flex-1 p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                    {collectionHighlights.map(h => {
-                        const file = files.find(f => f.id === h.fileId);
+                    {visibleHighlights.map(h => {
+                        const file = fileMap.get(h.fileId);
                         if (!file) return null;
                         const isSelected = selectedItems.has(h.id);
                         return (
@@ -475,6 +510,7 @@ export default function CollectionView() {
                             <p className="text-xs">Add highlights from the video player</p>
                         </div>
                     )}
+                    {highlightRenderLimit < collectionHighlights.length && <div ref={loadMoreHighlightsRef} className="h-1 col-span-full" />}
                 </div>
             </ScrollArea>
 
@@ -496,7 +532,7 @@ export default function CollectionView() {
     );
 }
 
-function CollectionHighlightPreview({ highlight, file }: { highlight: Highlight; file: AppFile }) {
+const CollectionHighlightPreview = memo(function CollectionHighlightPreview({ highlight, file }: { highlight: Highlight; file: AppFile }) {
     const { resolvedUrl } = useResolvedFileUrl(file);
 
     if (!resolvedUrl) {
@@ -514,7 +550,7 @@ function CollectionHighlightPreview({ highlight, file }: { highlight: Highlight;
     }
 
     if (file.type === 'image') {
-        return <img src={resolvedUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />;
+        return <img src={resolvedUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" loading="lazy" />;
     }
 
     if (file.type === 'pdf') {
@@ -541,7 +577,7 @@ function CollectionHighlightPreview({ highlight, file }: { highlight: Highlight;
             <FileIconByType type={file.type} size={48} />
         </div>
     );
-}
+});
 
 function FileIconByType({ type, size = 16 }: { type: string, size?: number }) {
     switch (type) {
@@ -589,9 +625,10 @@ function HighlightVideoPreview({ url, start = 0.1 }: { url: string, start?: numb
 function HighlightYouTubePreview({ videoId }: { videoId: string, start?: number }) {
     return (
         <img
-            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+            src={getYouTubeThumbnailUrl(videoId, 'hqdefault')}
             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
             alt="YouTube Preview"
+            loading="lazy"
         />
     );
 }

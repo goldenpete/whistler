@@ -44,8 +44,8 @@ const ShortcutRow = ({ label, keys, icon: Icon }: { label: string, keys: ReactNo
         <div className="flex items-center gap-1">
             {keys.map((k, i) => {
                 // Check if this element or the previous one is an "or" separator to avoid adding "+"
-                const isSeparator = React.isValidElement(k) && (k.props as any).className?.includes('text-zinc-500');
-                const prevWasSeparator = i > 0 && React.isValidElement(keys[i-1]) && (keys[i-1] as any).props?.className?.includes('text-zinc-500');
+                const isSeparator = React.isValidElement(k) && (k.props as Record<string, string>).className?.includes('text-zinc-500');
+                const prevWasSeparator = i > 0 && React.isValidElement(keys[i-1]) && (keys[i-1] as React.ReactElement<Record<string, string>>).props?.className?.includes('text-zinc-500');
                 
                 // If it's the first item, no plus.
                 // If this is a separator, no plus.

@@ -12,6 +12,9 @@
 import type { StoreSet, StoreGet } from '../types';
 import type { HistoryEntry } from '@/types';
 
+/** Maximum number of history entries to retain (prevents unbounded growth). */
+const MAX_HISTORY_ENTRIES = 500;
+
 export const createHistorySlice = (set: StoreSet, _get: StoreGet) => ({
   /** Manually log an action to history (auto-generated id + timestamp) */
   logAction: (entry: Omit<HistoryEntry, 'id' | 'timestamp'>) =>
@@ -19,7 +22,7 @@ export const createHistorySlice = (set: StoreSet, _get: StoreGet) => ({
       history: [
         { id: crypto.randomUUID(), timestamp: Date.now(), ...entry },
         ...state.history,
-      ],
+      ].slice(0, MAX_HISTORY_ENTRIES),
     })),
 
   /** Clear the entire history log */
