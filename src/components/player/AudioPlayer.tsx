@@ -129,7 +129,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
 
     // Initial load progress or highlight start
     useEffect(() => {
-        if (audioRef.current) {
+        if (!audioRef.current) return;
+
+        const seekToStart = () => {
+            if (!audioRef.current) return;
             if (highlight) {
                 audioRef.current.currentTime = highlight.start;
                 setCurrentTime(highlight.start);
@@ -141,8 +144,19 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                     setCurrentTime(savedProgress);
                 }
             }
+        };
+
+        if (audioRef.current.readyState >= 1) {
+            seekToStart();
+        } else {
+            const onLoaded = () => {
+                seekToStart();
+                audioRef.current?.removeEventListener('loadedmetadata', onLoaded);
+            };
+            audioRef.current.addEventListener('loadedmetadata', onLoaded);
+            return () => audioRef.current?.removeEventListener('loadedmetadata', onLoaded);
         }
-    }, [fileId, highlight]);
+    }, [fileId, highlight, url]);
 
     useEffect(() => {
         if (!audioRef.current) return;

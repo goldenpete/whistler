@@ -102,6 +102,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const youtubeRef = useRef<YouTubePlayerHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+    const seekingToStart = useRef(false);
 
     // File Type Flags
     const isPdf = file?.name.toLowerCase().endsWith('.pdf');
@@ -246,14 +247,36 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
 
     // Initialization Effect
     useEffect(() => {
-        if (open && file && highlight && resolvedUrl && videoRef.current) {
-            const video = videoRef.current;
-            // eslint-disable-next-line react-hooks/immutability
+        if (!open || !file || !highlight || !resolvedUrl) {
+            setIsPlaying(false);
+            return;
+        }
+
+        const video = videoRef.current;
+        if (!video) {
+            setIsPlaying(false);
+            return;
+        }
+
+        const seekAndPlay = () => {
+            seekingToStart.current = true;
             video.currentTime = start;
             video.play().catch(() => {});
             setIsPlaying(true);
+            // Clear the seeking guard after a short delay to let the seek complete
+            setTimeout(() => { seekingToStart.current = false; }, 300);
+        };
+
+        // If metadata is already loaded, seek immediately; otherwise wait
+        if (video.readyState >= 1) {
+            seekAndPlay();
         } else {
-            setIsPlaying(false);
+            const onLoaded = () => {
+                seekAndPlay();
+                video.removeEventListener('loadedmetadata', onLoaded);
+            };
+            video.addEventListener('loadedmetadata', onLoaded);
+            return () => video.removeEventListener('loadedmetadata', onLoaded);
         }
     }, [open, file, highlight, start, resolvedUrl]);
 
@@ -304,6 +327,9 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         } else {
             return;
         }
+
+        // Skip loop enforcement while we're still seeking to the initial position
+        if (seekingToStart.current) return;
 
         // Loop Logic
         if (now < start - 0.5 || now > end) {
@@ -610,6 +636,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                         ref={videoRef}
                                         src={resolvedUrl || ""}
                                         className="max-w-full max-h-full object-contain focus:outline-none"
+                                        preload="metadata"
                                         onPause={() => {
                                             setIsPlaying(false);
                                             removeAmbientMusicSuppression('highlight-player');
@@ -619,7 +646,6 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             addAmbientMusicSuppression('highlight-player');
                                         }}
                                         onTimeUpdate={() => handleTimeUpdate()}
-                                        autoPlay
                                     />
                                 )}
                             </div>
