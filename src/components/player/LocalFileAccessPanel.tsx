@@ -17,11 +17,11 @@ import type { File as AppFile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FolderOpen, LockSimple, WarningCircle, Desktop } from '@phosphor-icons/react';
-import { getDisplaySourceLabel } from '@/utils/localFiles';
+import { getDisplaySourceLabel, type LocalFileAvailability } from '@/utils/localFiles';
 
 interface LocalFileAccessPanelProps {
     file: AppFile;
-    availability: 'permission-required' | 'missing-handle' | 'unsupported' | 'error' | 'loading';
+    availability: LocalFileAvailability;
     onRequestAccess: () => Promise<boolean>;
     onRelink: () => Promise<boolean>;
     compact?: boolean;
@@ -40,6 +40,10 @@ export function LocalFileAccessPanel({
     compact = false,
     className,
 }: LocalFileAccessPanelProps) {
+    if (availability === 'ready') {
+        return null;
+    }
+
     const isPermissionIssue = availability === 'permission-required';
     const isMissingHandle = availability === 'missing-handle';
     const isUnsupported = availability === 'unsupported';
