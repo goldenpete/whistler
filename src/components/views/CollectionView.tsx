@@ -285,7 +285,7 @@ export default function CollectionView() {
         collectionViewMode === 'list'
             ? "flex flex-col"
             : collectionViewMode === 'grid'
-                ? "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4"
+                ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
                 : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
     );
 
@@ -456,7 +456,9 @@ export default function CollectionView() {
                             ? (h.end && h.end !== h.start
                                 ? `Page ${h.start}-${h.end}`
                                 : `Page ${h.start}`)
-                            : `${formatTime(h.start)} - ${formatTime(h.end || h.start)}`;
+                            : file.type === 'image'
+                                ? null
+                                : `${formatTime(h.start)} - ${formatTime(h.end || h.start)}`;
 
                         const content = collectionViewMode === 'list' ? (
                             <div
@@ -487,9 +489,11 @@ export default function CollectionView() {
                                 <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary rounded-none shrink-0">
                                     {file.type}
                                 </div>
-                                <div className="text-xs text-muted-foreground/60 w-24 text-right shrink-0 font-mono">
-                                    {timeLabel}
-                                </div>
+                                {timeLabel && (
+                                    <div className="text-xs text-muted-foreground/60 w-24 text-right shrink-0 font-mono">
+                                        {timeLabel}
+                                    </div>
+                                )}
                             </div>
                         ) : collectionViewMode === 'grid' ? (
                             <div
@@ -502,9 +506,11 @@ export default function CollectionView() {
                                 <div className="aspect-video bg-muted relative overflow-hidden">
                                     <CollectionHighlightPreview highlight={h} file={file} />
 
-                                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-none bg-black/70 text-white text-[10px] font-mono font-medium">
-                                        {timeLabel}
-                                    </div>
+                                    {timeLabel && (
+                                        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-none bg-black/70 text-white text-[10px] font-mono font-medium">
+                                            {timeLabel}
+                                        </div>
+                                    )}
 
                                     <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-none bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold uppercase flex items-center gap-1">
                                         <FileIconByType type={file.type} size={10} />
@@ -566,9 +572,11 @@ export default function CollectionView() {
                                         <div className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-tighter truncate">
                                             {file.name}
                                         </div>
-                                        <div className="text-[10px] text-muted-foreground/50 font-mono shrink-0">
-                                            {timeLabel}
-                                        </div>
+                                        {timeLabel && (
+                                            <div className="text-[10px] text-muted-foreground/50 font-mono shrink-0">
+                                                {timeLabel}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
