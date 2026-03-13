@@ -25,6 +25,7 @@ import { useShallow } from "@/lib/zustand-shallow";
 import { Folder, FolderOpen } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { getIcon } from "@/utils/iconMap";
+import { isLeafCollection } from "@/utils/collectionUtils";
 import type { Collection } from "@/types";
 
 interface CollectionPickerDialogProps {
@@ -60,7 +61,7 @@ export function CollectionPickerDialog({
                     (c: Collection) =>
                         c.projectId === activeProjectId &&
                         !c.deleted &&
-                        c.type !== "bucket"
+                        isLeafCollection(c)
                 )
                 .sort((a: Collection, b: Collection) => a.name.localeCompare(b.name)),
         [collections, activeProjectId]

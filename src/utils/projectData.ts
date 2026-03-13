@@ -21,6 +21,7 @@
 import type { Project, File, Collection, Highlight, Graph, GraphNode, GraphEdge, Doc, Storage, AppState } from "@/types";
 import { isValidUrl } from "./security";
 import { isLocalFile, sanitizeFileForPersistence } from './localFiles';
+import { sanitizeHighlightCollectionIds } from './collectionUtils';
 
 export interface ProjectExportData {
     version: number;
@@ -162,12 +163,12 @@ export function importProject(data: ProjectExportData): Omit<ProjectExportData, 
         toId: get(e.toId)
     }));
 
-    const newHighlights = data.highlights.map(h => ({
+    const newHighlights = sanitizeHighlightCollectionIds(newCollections, data.highlights.map(h => ({
         ...h,
         id: get(h.id),
         fileId: get(h.fileId),
         collectionId: h.collectionId ? get(h.collectionId) : null
-    }));
+    })));
 
     return {
         project: newProject,

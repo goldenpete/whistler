@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect, useState, useRef, type MouseEvent, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type MouseEvent, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,7 @@ import { YouTubePlayerComponent, type YouTubePlayerHandle } from "@/components/p
 import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 import { isLocalFile } from "@/utils/localFiles";
 import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
+import { isLeafCollection } from "@/utils/collectionUtils";
 
 // --- Time Helper ---
 
@@ -134,6 +135,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const [editCollectionId, setEditCollectionId] = useState("");
     const [editStart, setEditStart] = useState("");
     const [editEnd, setEditEnd] = useState("");
+    const selectableCollections = useMemo(
+        () => collections?.filter(isLeafCollection) ?? [],
+        [collections]
+    );
 
     const start = highlight?.start || 0;
     const end = (highlight?.end && highlight.end > start) ? highlight.end : start + 5;
@@ -953,7 +958,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                             <SelectValue placeholder="Select collection" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {collections?.map(c => (
+                                            {selectableCollections.map(c => (
                                                 <SelectItem key={c.id} value={c.id}>
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
@@ -1119,6 +1124,10 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, file, colle
     const [collectionId, setCollectionId] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
+    const selectableCollections = useMemo(
+        () => collections?.filter(isLeafCollection) ?? [],
+        [collections]
+    );
     
     useEffect(() => {
         if (open && highlight) {
@@ -1177,7 +1186,7 @@ export function EditHighlightDialog({ open, onOpenChange, highlight, file, colle
                                 <SelectValue placeholder="Select collection" />
                             </SelectTrigger>
                             <SelectContent>
-                                {collections?.map(c => (
+                                {selectableCollections.map(c => (
                                     <SelectItem key={c.id} value={c.id}>
                                         <div className="flex items-center gap-2">
                                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />

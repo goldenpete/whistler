@@ -9,7 +9,55 @@
  *     to find the root bucket ancestor of a given collection.
  * ───────────────────────────────────────────────────────────────────
  */
-import { type Collection } from "@/types";
+import { type Collection, type Highlight } from "@/types";
+
+/**
+ * Returns true when a collection node is a leaf collection that can hold highlights.
+ * Buckets and folders are structural nodes only.
+ */
+export const isLeafCollection = (collection: Collection): boolean => {
+    return collection.type !== 'bucket' && collection.type !== 'folder';
+};
+
+/**
+ * Normalizes a highlight collection target to a valid leaf collection id.
+ * Returns null for buckets, folders, deleted collections, or missing ids.
+ */
+export const normalizeLeafCollectionId = (
+    collections: Collection[],
+    collectionId: string | null | undefined
+): string | null => {
+    if (!collectionId) return null;
+
+    const collection = collections.find((item) => item.id === collectionId && !item.deleted);
+    return collection && isLeafCollection(collection) ? collection.id : null;
+};
+
+/**
+ * Repairs highlight collection references so they only point to leaf collections.
+ * Invalid assignments are cleared to null.
+ */
+export const sanitizeHighlightCollectionIds = (
+    collections: Collection[],
+    highlights: Highlight[]
+): Highlight[] => {
+    let changed = false;
+
+    const sanitized = highlights.map((highlight) => {
+        const collectionId = normalizeLeafCollectionId(collections, highlight.collectionId);
+        if (collectionId === highlight.collectionId) {
+            return highlight;
+        }
+
+        changed = true;
+        return {
+            ...highlight,
+            collectionId,
+        };
+    });
+
+    return changed ? sanitized : highlights;
+};
 
 /**
  * Finds the root bucket ID for a given collection item.

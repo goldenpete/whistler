@@ -10,11 +10,16 @@
 
 import type { StoreSet, StoreGet } from '../types';
 import type { Highlight } from '@/types';
+import { normalizeLeafCollectionId } from '@/utils/collectionUtils';
 
 export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
   /** Create a video timestamp highlight (start/end in seconds) */
   addVideoHighlight: (fileId: string, start: number, end: number, collectionId?: string) =>
     set((state) => {
+      const resolvedCollectionId = normalizeLeafCollectionId(
+        state.collections,
+        collectionId ?? state.activeCollectionId ?? null
+      );
       const highlight: Highlight = {
         id: crypto.randomUUID(),
         fileId,
@@ -23,7 +28,7 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
         text: `Timestamp: ${start} - ${end}`,
         note: '',
         created: Date.now(),
-        collectionId: collectionId ?? state.activeCollectionId ?? null,
+        collectionId: resolvedCollectionId,
         color: state.defaultColors?.node,
       };
       return {
@@ -50,6 +55,10 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
     collectionId?: string
   ) =>
     set((state) => {
+      const resolvedCollectionId = normalizeLeafCollectionId(
+        state.collections,
+        collectionId ?? state.activeCollectionId ?? null
+      );
       const highlight: Highlight = {
         id: crypto.randomUUID(),
         fileId,
@@ -59,7 +68,7 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
         text: 'Image Highlight',
         note: '',
         created: Date.now(),
-        collectionId: collectionId ?? state.activeCollectionId ?? null,
+        collectionId: resolvedCollectionId,
         color: state.defaultColors?.node,
       };
       return {
@@ -89,7 +98,10 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
     rect?: { x: number; y: number; width: number; height: number } | null
   ) =>
     set((state) => {
-      const collectionId = collectionIdOverride ?? state.activeCollectionId ?? null;
+      const collectionId = normalizeLeafCollectionId(
+        state.collections,
+        collectionIdOverride ?? state.activeCollectionId ?? null
+      );
       const newHighlight: Highlight = {
         id: crypto.randomUUID(),
         fileId,
@@ -139,8 +151,16 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
 
   /** Update highlight properties (note, color, collection assignment, etc.) */
   updateHighlight: (id: string, updates: Partial<Highlight>) =>
-    set((state) => ({
-      highlights: state.highlights.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    set((state) => {
+      const normalizedUpdates = Object.prototype.hasOwnProperty.call(updates, 'collectionId')
+        ? {
+            ...updates,
+            collectionId: normalizeLeafCollectionId(state.collections, updates.collectionId),
+          }
+        : updates;
+
+      return {
+      highlights: state.highlights.map((t) => (t.id === id ? { ...t, ...normalizedUpdates } : t)),
       history: [
         {
           id: crypto.randomUUID(),
@@ -153,5 +173,6 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
         },
         ...state.history,
       ],
-    })),
+    };
+    }),
 });

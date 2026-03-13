@@ -15,6 +15,7 @@
 
 import type { StoreSet, StoreGet } from '../types';
 import type { Project, File, Collection, Highlight, Graph, GraphNode, GraphEdge, Doc, Storage, HistoryEntry } from '@/types';
+import { sanitizeHighlightCollectionIds } from '@/utils/collectionUtils';
 
 export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
   /* ── Core Data Arrays ─────────────────────────────────────────────────── */
@@ -61,8 +62,15 @@ export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
 
   setProjects: (projects: Project[]) => set({ projects }),
   setFiles: (files: File[]) => set({ files }),
-  setCollections: (collections: Collection[]) => set({ collections }),
-  setHighlights: (highlights: Highlight[]) => set({ highlights }),
+  setCollections: (collections: Collection[]) =>
+    set((state) => ({
+      collections,
+      highlights: sanitizeHighlightCollectionIds(collections, state.highlights),
+    })),
+  setHighlights: (highlights: Highlight[]) =>
+    set((state) => ({
+      highlights: sanitizeHighlightCollectionIds(state.collections, highlights),
+    })),
 
   /* ── Active Entity Setters ────────────────────────────────────────────── */
 

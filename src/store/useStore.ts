@@ -37,6 +37,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { sanitizeFilesForPersistence } from '@/utils/localFiles';
+import { sanitizeHighlightCollectionIds } from '@/utils/collectionUtils';
 
 // ── Types (re-exported for backward compatibility) ───────────────────────────
 import type { AppStore } from './types';
@@ -133,6 +134,15 @@ export const useStore = create<AppStore>()(
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => createThrottledStorage()),
+      merge: (persistedState, currentState) => {
+        const merged = {
+          ...currentState,
+          ...(persistedState as Partial<AppStore>),
+        } as AppStore;
+
+        merged.highlights = sanitizeHighlightCollectionIds(merged.collections, merged.highlights);
+        return merged;
+      },
       /**
        * Exclude transient state from persistence:
        * - ambientMusicUrl: Blob URLs don't survive page reload (stored in IndexedDB)

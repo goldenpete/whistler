@@ -27,6 +27,7 @@ import { useShallow } from "@/lib/zustand-shallow";
 import type { Highlight, Collection, File } from "@/types";
 import { Clock, Tag, FilmStrip, TextT, FolderOpen } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { isLeafCollection } from "@/utils/collectionUtils";
 
 interface HighlightPickerDialogProps {
     open: boolean;
@@ -60,26 +61,29 @@ export function HighlightPickerDialog({
     const [selectedHighlightId, setSelectedHighlightId] = useState<string>("");
 
     const projectCollections = useMemo(
-        () => collections.filter(c => c.projectId === activeProjectId && !c.deleted),
+        () => collections.filter(c => c.projectId === activeProjectId && !c.deleted && isLeafCollection(c)),
         [collections, activeProjectId]
+    );
+
+    const projectCollectionIds = useMemo(
+        () => new Set(projectCollections.map((collection) => collection.id)),
+        [projectCollections]
     );
 
     const highlightsByCollection = useMemo(() => {
         const map = new Map<string, Highlight[]>();
         for (const h of highlights) {
-            if (!h.collectionId) continue;
-            const col = collections.find(c => c.id === h.collectionId && c.projectId === activeProjectId && !c.deleted);
-            if (!col) continue;
-            if (!map.has(col.id)) {
-                map.set(col.id, []);
+            if (!h.collectionId || !projectCollectionIds.has(h.collectionId)) continue;
+            if (!map.has(h.collectionId)) {
+                map.set(h.collectionId, []);
             }
-            map.get(col.id)!.push(h);
+            map.get(h.collectionId)!.push(h);
         }
         for (const [, list] of map.entries()) {
             list.sort((a, b) => a.start - b.start);
         }
         return map;
-    }, [highlights, collections, activeProjectId]);
+    }, [highlights, projectCollectionIds]);
 
     const collectionsWithHighlights: Collection[] = useMemo(() => {
         return projectCollections.filter(c => highlightsByCollection.has(c.id));
