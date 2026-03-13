@@ -79,6 +79,7 @@ import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { isValidUrl } from "@/utils/security";
+import { createCloudFileSource, detectCloudProvider, getCloudProviderLabel, inferCloudFileType, isCloudFile, type CloudFileDraft } from "@/utils/cloudFiles";
 import {
     createLocalFileSource,
     getDisplaySourceLabel,
@@ -722,6 +723,56 @@ export default function HomeView() {
         navigate(`/file/${newFile.id}`);
     };
 
+    const handleAddCloudFile = (draft: CloudFileDraft) => {
+        if (!activeProjectId) return;
+
+        const cloudSource = createCloudFileSource(draft.provider, draft.shareUrl);
+        if (!cloudSource) {
+            alert(`Unsupported ${getCloudProviderLabel(draft.provider)} link. Use a public file share URL.`);
+            return;
+        }
+
+        let targetStorageId = activeStorageId;
+        if (!targetStorageId) {
+            const projectStorages = storages.filter((s) => s.projectId === activeProjectId);
+            if (projectStorages.length > 0) {
+                targetStorageId = projectStorages[0].id;
+            } else {
+                const newStorage = {
+                    id: crypto.randomUUID(),
+                    projectId: activeProjectId,
+                    name: "Main Storage",
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                useStore.setState((state) => ({ 
+                    storages: [...state.storages, newStorage],
+                    activeStorageId: newStorage.id 
+                }));
+                targetStorageId = newStorage.id;
+            }
+        }
+
+        const newFile: AppFile = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            storageId: targetStorageId,
+            parentId: null,
+            name: draft.name,
+            url: cloudSource.shareUrl,
+            sourceKind: 'cloud',
+            cloudSource,
+            type: inferCloudFileType(draft.name, cloudSource, 'file', draft.typeSelection),
+            order: files.filter((f: AppFile) => f.projectId === activeProjectId && !f.parentId).length,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
+        useStore.setState((state) => ({ files: [...state.files, newFile] }));
+        setPopoverOpen(false);
+        navigate(`/file/${newFile.id}`);
+    };
+
     const handleCreateCollection = (name: string, color: string, icon: string) => {
         if (!activeProjectId) return;
         
@@ -1061,6 +1112,28 @@ export default function HomeView() {
                     alert("Invalid URL. Only http, https, blob, and data protocols are allowed.");
                     return;
                 }
+
+                if (isCloudFile(renameItem.data)) {
+                    const nextUrl = url?.trim() || renameItem.data.cloudSource.shareUrl;
+                    const provider = detectCloudProvider(nextUrl) || renameItem.data.cloudSource.provider;
+                    const cloudSource = createCloudFileSource(provider, nextUrl);
+                    if (!cloudSource) {
+                        alert("Unsupported cloud share link. Use a public Google Drive, Dropbox, or OneDrive file link.");
+                        return;
+                    }
+
+                    useStore.getState().updateFile(id, {
+                        name,
+                        description,
+                        url: cloudSource.shareUrl,
+                        cloudSource,
+                        type: inferCloudFileType(name, cloudSource, renameItem.data.type),
+                        color: color || undefined,
+                        icon: icon || undefined,
+                    });
+                    break;
+                }
+
                 useStore.getState().updateFile(id, {
                     name,
                     description,
@@ -1374,6 +1447,7 @@ export default function HomeView() {
                 open={addFileOpen}
                 onOpenChange={setAddFileOpen}
                 onSubmitRemote={handleAddFile}
+                onSubmitCloud={handleAddCloudFile}
                 onSubmitLocal={handleAddLocalFile}
             />
             <CreateCollectionDialog
@@ -1423,7 +1497,9 @@ export default function HomeView() {
                         onSubmit={(name, description, url, color) => handleRename(name, description, color, undefined, url)}
                         initialName={renameItem.name}
                         initialDescription={renameItem.type === 'file' ? renameItem.data.description : undefined}
-                        initialUrl={renameItem.type === 'file' ? (renameItem.data.url || undefined) : undefined}
+                        initialUrl={renameItem.type === 'file'
+                            ? (isCloudFile(renameItem.data) ? renameItem.data.cloudSource.shareUrl : (renameItem.data.url || undefined))
+                            : undefined}
                         initialColor={renameItem.type === 'file' ? renameItem.data.color : undefined}
                         isLocalFileSource={renameItem.type === 'file' ? isLocalFile(renameItem.data) : false}
                         localSourceLabel={renameItem.type === 'file' ? getDisplaySourceLabel(renameItem.data) : ''}

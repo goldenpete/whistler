@@ -25,6 +25,7 @@ import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/Co
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -53,6 +54,14 @@ import {
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
 import { pickLocalFile, supportsLocalFileAccess, type PickedLocalFile } from "@/utils/localFiles";
+import {
+    type CloudFileDraft,
+    type CloudFileTypeSelection,
+    type CloudProvider,
+    createCloudFileSource,
+    detectCloudProvider,
+    getCloudProviderLabel,
+} from "@/utils/cloudFiles";
 import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
 
 // Predefined Icons
@@ -245,14 +254,19 @@ interface AddFileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmitRemote: (url: string, name: string) => void;
+    onSubmitCloud: (draft: CloudFileDraft) => void;
     onSubmitLocal: (selection: PickedLocalFile) => Promise<void> | void;
-    defaultTab?: "web" | "local";
+    defaultTab?: "web" | "cloud" | "local";
 }
 
-export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitLocal, defaultTab = "web" }: AddFileDialogProps) {
+export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitCloud, onSubmitLocal, defaultTab = "web" }: AddFileDialogProps) {
     const [url, setUrl] = useState("");
     const [name, setName] = useState("");
-    const [tab, setTab] = useState<"web" | "local">(defaultTab);
+    const [cloudUrl, setCloudUrl] = useState("");
+    const [cloudName, setCloudName] = useState("");
+    const [cloudProvider, setCloudProvider] = useState<CloudProvider>("google-drive");
+    const [cloudTypeSelection, setCloudTypeSelection] = useState<CloudFileTypeSelection>("auto");
+    const [tab, setTab] = useState<"web" | "cloud" | "local">(defaultTab);
     const [selectedLocalFile, setSelectedLocalFile] = useState<PickedLocalFile | null>(null);
 
     useEffect(() => {
@@ -275,6 +289,30 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitLoca
         // Reset form
         setUrl("");
         setName("");
+        onOpenChange(false);
+    };
+
+    const handleSubmitCloud = () => {
+        if (!cloudUrl.trim()) return;
+
+        const detectedProvider = detectCloudProvider(cloudUrl) || cloudProvider;
+        const cloudSource = createCloudFileSource(detectedProvider, cloudUrl);
+        if (!cloudSource) {
+            alert("Unsupported cloud share link. Use a public Google Drive, Dropbox, or OneDrive file link.");
+            return;
+        }
+
+        onSubmitCloud({
+            provider: detectedProvider,
+            shareUrl: cloudSource.shareUrl,
+            name: cloudName.trim() || getSuggestedCloudName(cloudSource.shareUrl, detectedProvider),
+            typeSelection: cloudTypeSelection,
+        });
+
+        setCloudUrl("");
+        setCloudName("");
+        setCloudProvider("google-drive");
+        setCloudTypeSelection("auto");
         onOpenChange(false);
     };
 
@@ -304,11 +342,26 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitLoca
         }
     };
 
+    const handleCloudUrlChange = (value: string) => {
+        setCloudUrl(value);
+
+        const detectedProvider = detectCloudProvider(value);
+        if (detectedProvider) {
+            setCloudProvider(detectedProvider);
+        }
+
+        if (!cloudName.trim()) {
+            setCloudName(getSuggestedCloudName(value, detectedProvider || cloudProvider));
+        }
+    };
+
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
             e.preventDefault();
             if (tab === "web") {
                 handleSubmitRemote();
+            } else if (tab === "cloud") {
+                handleSubmitCloud();
             }
         }
     };
@@ -319,12 +372,13 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitLoca
                 <DialogHeader>
                     <DialogTitle>Add File</DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Add a web link or attach a file directly from this device.
+                        Add a web link, a public cloud share link, or attach a file directly from this device.
                     </DialogDescription>
                 </DialogHeader>
-                <Tabs value={tab} onValueChange={(value) => setTab(value as "web" | "local")} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 rounded-none bg-zinc-900 border border-zinc-800 p-1 h-10">
+                <Tabs value={tab} onValueChange={(value) => setTab(value as "web" | "cloud" | "local")} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 rounded-none bg-zinc-900 border border-zinc-800 p-1 h-10">
                         <TabsTrigger value="web" className="rounded-none data-[state=active]:bg-zinc-800">Web Link</TabsTrigger>
+                        <TabsTrigger value="cloud" className="rounded-none data-[state=active]:bg-zinc-800">Cloud</TabsTrigger>
                         <TabsTrigger value="local" className="rounded-none data-[state=active]:bg-zinc-800">Local File</TabsTrigger>
                     </TabsList>
 
@@ -355,6 +409,71 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitLoca
                                 onKeyDown={handleKeyDown}
                                 className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                             />
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="cloud" className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Provider</Label>
+                            <Select value={cloudProvider} onValueChange={(value) => setCloudProvider(value as CloudProvider)}>
+                                <SelectTrigger className="bg-zinc-900 border-border/60 text-white">
+                                    <SelectValue placeholder="Select cloud provider" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="google-drive">Google Drive</SelectItem>
+                                    <SelectItem value="dropbox">Dropbox</SelectItem>
+                                    <SelectItem value="onedrive">OneDrive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="cloud-url" className="text-zinc-400">
+                                Share Link
+                            </Label>
+                            <Input
+                                id="cloud-url"
+                                placeholder="Paste a public share link"
+                                value={cloudUrl}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => handleCloudUrlChange(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                autoFocus={tab === "cloud"}
+                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
+                            />
+                            <p className="text-xs text-zinc-500">
+                                Public file links from Google Drive, Dropbox, and OneDrive are supported.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="cloud-name" className="text-zinc-400">
+                                Display Name
+                            </Label>
+                            <Input
+                                id="cloud-name"
+                                placeholder={`${getCloudProviderLabel(cloudProvider)} file`}
+                                value={cloudName}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setCloudName(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">File Type</Label>
+                            <Select value={cloudTypeSelection} onValueChange={(value) => setCloudTypeSelection(value as CloudFileTypeSelection)}>
+                                <SelectTrigger className="bg-zinc-900 border-border/60 text-white">
+                                    <SelectValue placeholder="Auto detect" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="auto">Auto detect</SelectItem>
+                                    <SelectItem value="video">Video</SelectItem>
+                                    <SelectItem value="audio">Audio</SelectItem>
+                                    <SelectItem value="image">Image</SelectItem>
+                                    <SelectItem value="pdf">PDF</SelectItem>
+                                    <SelectItem value="file">Generic file</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </TabsContent>
 
@@ -431,6 +550,15 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitLoca
                             data-sound-confirm
                         >
                             Add to Project
+                        </Button>
+                    ) : tab === "cloud" ? (
+                        <Button 
+                            onClick={handleSubmitCloud}
+                            disabled={!cloudUrl.trim()}
+                            className="bg-primary text-primary-foreground hover:opacity-90"
+                            data-sound-confirm
+                        >
+                            Add Cloud File
                         </Button>
                     ) : (
                         <Button 
@@ -571,6 +699,16 @@ function extractFilename(url: string): string {
         const parts = url.split('/');
         return parts[parts.length - 1]?.split('?')[0] || 'Untitled';
     }
+}
+
+function getSuggestedCloudName(url: string, provider: CloudProvider): string {
+    const extracted = extractFilename(url);
+    const lower = extracted.toLowerCase();
+    if (!extracted || extracted === 'Untitled' || ['open', 'view', 'u', 'download', 'content', 'uc'].includes(lower)) {
+        return `${getCloudProviderLabel(provider)} File`;
+    }
+
+    return extracted;
 }
 
 interface RenameFileDialogProps {

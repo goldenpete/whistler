@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { File as AppFile } from '@/types';
 import { useStore } from '@/store/useStore';
+import { isCloudFile } from '@/utils/cloudFiles';
 import {
     createLocalFileSource,
     inferFileTypeFromName,
@@ -61,7 +62,11 @@ export interface ResolvedFileUrlState {
  * Resolve a file into a renderable URL and expose access-management actions.
  */
 export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFileUrlState {
-    const [resolvedUrl, setResolvedUrl] = useState<string | null>(file?.url ?? null);
+    const [resolvedUrl, setResolvedUrl] = useState<string | null>(() => {
+        if (!file) return null;
+        if (isCloudFile(file)) return file.cloudSource.directUrl;
+        return file.url ?? null;
+    });
     const [availability, setAvailability] = useState<LocalFileAvailability>(() => {
         if (!file) return 'error';
         if (!isLocalFile(file)) return 'ready';
@@ -72,7 +77,7 @@ export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFi
     const isLocal = isLocalFile(file);
 
     const syncRemoteFileState = useCallback(() => {
-        setResolvedUrl(file?.url ?? null);
+        setResolvedUrl(file ? (isCloudFile(file) ? file.cloudSource.directUrl : (file.url ?? null)) : null);
         setAvailability(file ? 'ready' : 'error');
     }, [file]);
 

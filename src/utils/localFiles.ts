@@ -24,6 +24,7 @@
  */
 
 import type { File as AppFile, LocalFileSource } from '@/types';
+import { isCloudFile } from '@/utils/cloudFiles';
 
 /** Reuse the existing media database so local handles live beside other browser-side media state. */
 const LOCAL_MEDIA_DB = 'whistler_media';
@@ -432,6 +433,10 @@ export function getOpenUrlForFile(file: AppFile, resolvedUrl?: string | null): s
         return resolvedUrl || getWhistlerFileRoute(file);
     }
 
+    if (isCloudFile(file)) {
+        return file.cloudSource.shareUrl || file.url || getWhistlerFileRoute(file);
+    }
+
     return file.url || getWhistlerFileRoute(file);
 }
 
@@ -444,6 +449,10 @@ export function getShareUrlForFile(file: AppFile): string {
         return getWhistlerFileRoute(file);
     }
 
+    if (isCloudFile(file)) {
+        return file.cloudSource.shareUrl || file.url || getWhistlerFileRoute(file);
+    }
+
     return file.url || getWhistlerFileRoute(file);
 }
 
@@ -454,6 +463,10 @@ export function getShareUrlForFile(file: AppFile): string {
 export function getDisplaySourceLabel(file: AppFile, resolvedUrl?: string | null): string {
     if (isLocalFile(file)) {
         return file.localSource.originalFileName;
+    }
+
+    if (isCloudFile(file)) {
+        return file.cloudSource.shareUrl || file.url || '';
     }
 
     return resolvedUrl || file.url || '';

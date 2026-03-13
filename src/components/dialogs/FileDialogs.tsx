@@ -22,6 +22,7 @@ import { type File } from "@/types";
 import { isValidUrl } from "@/utils/security";
 import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 import { getDisplaySourceLabel, isLocalFile } from "@/utils/localFiles";
+import { createCloudFileSource, detectCloudProvider, inferCloudFileType, isCloudFile, getCloudProviderLabel } from "@/utils/cloudFiles";
 import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
 
 interface EditFileDialogProps {
@@ -35,16 +36,17 @@ interface EditFileDialogProps {
 export function EditFileDialog({ open, onOpenChange, file, onSave, container }: EditFileDialogProps) {
     const [name, setName] = useState(file.name);
     const [description, setDescription] = useState(file.description || "");
-    const [url, setUrl] = useState(file.url || "");
+    const [url, setUrl] = useState(isCloudFile(file) ? file.cloudSource.shareUrl : (file.url || ""));
     const [color, setColor] = useState(file.color || "");
     const { availability, requestAccess, relink, resolvedUrl } = useResolvedFileUrl(file);
     const isLocalSource = isLocalFile(file);
+    const isCloudSource = isCloudFile(file);
 
     useEffect(() => {
         if (open) {
             setName(file.name);
             setDescription(file.description || "");
-            setUrl(file.url || "");
+            setUrl(isCloudFile(file) ? file.cloudSource.shareUrl : (file.url || ""));
             setColor(file.color || "");
         }
     }, [open, file]);
@@ -54,6 +56,27 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
             alert("Invalid or unsafe URL protocol.");
             return;
         }
+
+        if (isCloudSource) {
+            const provider = detectCloudProvider(url.trim()) || file.cloudSource.provider;
+            const cloudSource = createCloudFileSource(provider, url.trim());
+            if (!cloudSource) {
+                alert("Unsupported cloud share link. Use a public Google Drive, Dropbox, or OneDrive file link.");
+                return;
+            }
+
+            onSave({
+                name: name.trim(),
+                description: description.trim(),
+                url: cloudSource.shareUrl,
+                cloudSource,
+                type: inferCloudFileType(name.trim(), cloudSource, file.type),
+                color,
+            });
+            onOpenChange(false);
+            return;
+        }
+
         onSave({ name: name.trim(), description: description.trim(), url: isLocalSource ? file.url : url.trim(), color });
         onOpenChange(false);
     };
@@ -96,7 +119,7 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
                         </div>
                     ) : (
                         <div className="grid gap-2">
-                            <Label htmlFor="url" className="text-zinc-400">Link</Label>
+                            <Label htmlFor="url" className="text-zinc-400">{isCloudSource ? 'Cloud Link' : 'Link'}</Label>
                             <Input
                                 id="url"
                                 value={url}
@@ -104,6 +127,9 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
                                 className="bg-zinc-900 border-zinc-800 focus:border-primary/50"
                                 placeholder="https://..."
                             />
+                            {isCloudSource && (
+                                <p className="text-xs text-zinc-500">Provider: {getCloudProviderLabel(file.cloudSource.provider)}</p>
+                            )}
                         </div>
                     )}
                     <div className="grid gap-2">

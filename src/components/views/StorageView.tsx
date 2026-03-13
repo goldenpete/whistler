@@ -90,6 +90,7 @@ import {
     saveLocalFileHandle,
     type PickedLocalFile,
 } from "@/utils/localFiles";
+import { createCloudFileSource, detectCloudProvider, getCloudProviderLabel, inferCloudFileType, isCloudFile, type CloudFileDraft } from "@/utils/cloudFiles";
 
 
 
@@ -404,6 +405,30 @@ export default function StorageView() {
 
     const handleRenameSubmit = (newName: string, newDescription: string, newUrl: string, newColor: string) => {
         if (fileToRename) {
+            if (isCloudFile(fileToRename)) {
+                const nextUrl = newUrl || fileToRename.cloudSource.shareUrl;
+                const provider = detectCloudProvider(nextUrl) || fileToRename.cloudSource.provider;
+                const cloudSource = createCloudFileSource(provider, nextUrl);
+                if (!cloudSource) {
+                    alert("Unsupported cloud share link. Use a public Google Drive, Dropbox, or OneDrive file link.");
+                    return;
+                }
+
+                useStore.setState(state => ({
+                    files: state.files.map(f => f.id === fileToRename.id ? {
+                        ...f,
+                        name: newName,
+                        description: newDescription,
+                        url: cloudSource.shareUrl,
+                        cloudSource,
+                        type: inferCloudFileType(newName, cloudSource, fileToRename.type),
+                        color: newColor || undefined,
+                        lastModified: Date.now()
+                    } : f)
+                }));
+                return;
+            }
+
             useStore.setState(state => ({
                 files: state.files.map(f => f.id === fileToRename.id ? {
                     ...f,
@@ -568,6 +593,51 @@ export default function StorageView() {
             created: Date.now(),
             lastModified: Date.now()
         };
+        useStore.setState(state => ({ files: [...state.files, newFile] }));
+    };
+
+    const handleAddCloudFile = (draft: CloudFileDraft) => {
+        if (!activeProjectId) return;
+
+        const cloudSource = createCloudFileSource(draft.provider, draft.shareUrl);
+        if (!cloudSource) {
+            alert(`Unsupported ${getCloudProviderLabel(draft.provider)} link. Use a public file share URL.`);
+            return;
+        }
+
+        let targetStorageId = activeStorageId;
+        if (!targetStorageId) {
+            const projectStorages = storages.filter(s => s.projectId === activeProjectId);
+            if (projectStorages.length > 0) {
+                targetStorageId = projectStorages[0].id;
+            } else {
+                const newStorage = {
+                    id: crypto.randomUUID(),
+                    projectId: activeProjectId,
+                    name: "Main Storage",
+                    created: Date.now(),
+                    lastModified: Date.now()
+                };
+                useStore.setState(state => ({ storages: [...state.storages, newStorage] }));
+                targetStorageId = newStorage.id;
+            }
+        }
+
+        const newFile: AppFile = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            storageId: targetStorageId,
+            parentId: currentFolderId,
+            name: draft.name,
+            url: cloudSource.shareUrl,
+            sourceKind: 'cloud',
+            cloudSource,
+            type: inferCloudFileType(draft.name, cloudSource, 'file', draft.typeSelection),
+            order: projectFiles.length,
+            created: Date.now(),
+            lastModified: Date.now()
+        };
+
         useStore.setState(state => ({ files: [...state.files, newFile] }));
     };
 
@@ -1157,6 +1227,7 @@ export default function StorageView() {
                 open={addFileOpen}
                 onOpenChange={setAddFileOpen}
                 onSubmitRemote={handleAddFile}
+                onSubmitCloud={handleAddCloudFile}
                 onSubmitLocal={handleAddLocalFile}
             />
             <NewFolderDialog
@@ -1178,7 +1249,7 @@ export default function StorageView() {
                 onSubmit={handleRenameSubmit}
                 initialName={fileToRename?.name || ""}
                 initialDescription={fileToRename?.description || ""}
-                initialUrl={fileToRename?.url || ""}
+                initialUrl={fileToRename ? (isCloudFile(fileToRename) ? fileToRename.cloudSource.shareUrl : (fileToRename.url || "")) : ""}
                 initialColor={fileToRename?.color}
                 showDescription={fileToRename?.type !== 'folder'}
                 isLocalFileSource={Boolean(fileToRename && isLocalFile(fileToRename))}

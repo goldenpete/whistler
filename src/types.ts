@@ -53,6 +53,21 @@ export interface LocalFileSource {
     addedAt: number;
 }
 
+/** Supported cloud storage providers for shared media links. */
+export type CloudProvider = 'google-drive' | 'dropbox' | 'onedrive';
+
+/**
+ * Persisted metadata for a cloud-hosted file.
+ *
+ * `shareUrl` is the user-facing public link that should be copied/shared.
+ * `directUrl` is the provider-specific media URL used for in-app playback.
+ */
+export interface CloudFileSource {
+    provider: CloudProvider;
+    shareUrl: string;
+    directUrl: string;
+}
+
 /** A top-level project that groups all user data. */
 export interface Project {
     id: string;
@@ -92,10 +107,14 @@ export interface File {
      *   - 'remote' means Whistler should use `url` as the canonical source.
      *   - 'local' means Whistler should regenerate `url` at runtime from the
      *     persisted IndexedDB file handle referenced by `localSource.bindingId`.
+        *   - 'cloud' means `url` is the public share link while
+        *     `cloudSource.directUrl` is used for in-app playback.
      */
-    sourceKind?: 'remote' | 'local';
+        sourceKind?: 'remote' | 'local' | 'cloud';
     /** Extra persisted metadata used only for local-disk files. */
     localSource?: LocalFileSource | null;
+        /** Extra persisted metadata used only for cloud-hosted files. */
+        cloudSource?: CloudFileSource | null;
     /** Determines which player component renders this file. */
     type: 'file' | 'folder' | 'video' | 'pdf' | 'audio' | 'image';
     /** Sort position within its parent (lower = higher in list). */
