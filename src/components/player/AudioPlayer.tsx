@@ -75,6 +75,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
         fileProgress, 
         setFileProgress, 
         collections,
+        disableMediaAutoplay,
         rememberMediaVolume,
         audioVolumeByFile,
         setAudioVolumeForFile,
@@ -85,6 +86,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
         fileProgress: state.fileProgress,
         setFileProgress: state.setFileProgress,
         collections: state.collections,
+        disableMediaAutoplay: state.disableMediaAutoplay,
         rememberMediaVolume: state.rememberMediaVolume,
         audioVolumeByFile: state.audioVolumeByFile,
         setAudioVolumeForFile: state.setAudioVolumeForFile,
@@ -144,6 +146,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                     setCurrentTime(savedProgress);
                 }
             }
+
+            if (!disableMediaAutoplay) {
+                audioRef.current.play().catch(() => {});
+            }
         };
 
         if (audioRef.current.readyState >= 1) {
@@ -156,7 +162,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
             audioRef.current.addEventListener('loadedmetadata', onLoaded);
             return () => audioRef.current?.removeEventListener('loadedmetadata', onLoaded);
         }
-    }, [fileId, highlight, url]);
+    }, [disableMediaAutoplay, fileId, fileProgress, highlight, url]);
 
     useEffect(() => {
         if (!audioRef.current) return;

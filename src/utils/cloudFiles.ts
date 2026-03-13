@@ -97,8 +97,7 @@ export function inferCloudFileType(
 function resolveCloudDirectUrl(provider: CloudProvider, parsed: URL): string | null {
     switch (provider) {
         case 'google-drive': {
-            const fileId = extractGoogleDriveFileId(parsed);
-            return fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : null;
+            return buildGoogleDriveDirectUrl(parsed);
         }
         case 'dropbox': {
             if (parsed.hostname.toLowerCase().includes('dropboxusercontent.com')) {
@@ -123,6 +122,24 @@ function resolveCloudDirectUrl(provider: CloudProvider, parsed: URL): string | n
     }
 }
 
+function buildGoogleDriveDirectUrl(parsed: URL): string | null {
+    const fileId = extractGoogleDriveFileId(parsed);
+    if (!fileId) {
+        return null;
+    }
+
+    const directUrl = new URL('https://drive.google.com/uc');
+    directUrl.searchParams.set('export', 'download');
+    directUrl.searchParams.set('id', fileId);
+
+    const resourceKey = extractGoogleDriveResourceKey(parsed);
+    if (resourceKey) {
+        directUrl.searchParams.set('resourcekey', resourceKey);
+    }
+
+    return directUrl.toString();
+}
+
 function extractGoogleDriveFileId(parsed: URL): string | null {
     const pathname = parsed.pathname;
     const fileMatch = pathname.match(/\/file\/d\/([^/]+)/i);
@@ -137,6 +154,10 @@ function extractGoogleDriveFileId(parsed: URL): string | null {
 
     const queryId = parsed.searchParams.get('id');
     return queryId || null;
+}
+
+function extractGoogleDriveResourceKey(parsed: URL): string | null {
+    return parsed.searchParams.get('resourcekey');
 }
 
 function encodeBase64Url(value: string): string {
