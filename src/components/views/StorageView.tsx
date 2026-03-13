@@ -181,12 +181,10 @@ export default function StorageView() {
     const [sortOption, setSortOption] = useState<SortOption>("custom");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [addFileOpen, setAddFileOpen] = useState(false);
-    const [addFileMode, setAddFileMode] = useState<"web" | "local">("web");
 
     // Listen for action triggers
     useEffect(() => {
         const handleTriggerCreateFile = () => {
-            setAddFileMode('web');
             setAddFileOpen(true);
         };
         window.addEventListener("trigger-storage-create-file", handleTriggerCreateFile);
@@ -966,13 +964,9 @@ export default function StorageView() {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 <div className="w-px h-5 bg-border mx-1" />
-                                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => { setAddFileMode('web'); setAddFileOpen(true); }}>
+                                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => setAddFileOpen(true)}>
                                     <Plus weight="bold" size={14} />
                                     Add File
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => { setAddFileMode('local'); setAddFileOpen(true); }}>
-                                    <HardDrives weight="bold" size={14} />
-                                    Add Local File
                                 </Button>
                                 <Button variant="default" size="sm" className="h-8 gap-2 text-xs" onClick={() => setNewFolderOpen(true)}>
                                     <FolderOpen weight="bold" size={14} />
@@ -1164,7 +1158,6 @@ export default function StorageView() {
                 onOpenChange={setAddFileOpen}
                 onSubmitRemote={handleAddFile}
                 onSubmitLocal={handleAddLocalFile}
-                defaultTab={addFileMode}
             />
             <NewFolderDialog
                 open={newFolderOpen}
@@ -1241,7 +1234,7 @@ function EmptyState() {
         <div className="col-span-full flex flex-col items-center justify-center p-16 text-muted-foreground border-2 border-dashed border-border rounded-none">
             <Folder size={56} weight="thin" className="mb-3 opacity-40" />
             <p className="font-medium">No files here</p>
-            <p className="text-xs mt-1 opacity-70">Click "Add File" to add a web link</p>
+            <p className="text-xs mt-1 opacity-70">Click "Add File" to add a web link or local file</p>
         </div>
     );
 }

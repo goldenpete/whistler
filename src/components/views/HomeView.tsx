@@ -547,7 +547,6 @@ export default function HomeView() {
     const navigate = useNavigate();
 
     const [addFileOpen, setAddFileOpen] = useState(false);
-    const [addFileMode, setAddFileMode] = useState<"web" | "local">("web");
     const [addCollectionOpen, setAddCollectionOpen] = useState(false);
     const [addBucketOpen, setAddBucketOpen] = useState(false);
     const [addDocOpen, setAddDocOpen] = useState(false);
@@ -1238,11 +1237,8 @@ export default function HomeView() {
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-1" align="end">
-                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddFileMode('web'); setAddFileOpen(true); setPopoverOpen(false); }}>
+                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddFileOpen(true); setPopoverOpen(false); }}>
                             <FileIcon className="text-muted-foreground" size={16} /> Add File
-                        </Button>
-                        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddFileMode('local'); setAddFileOpen(true); setPopoverOpen(false); }}>
-                            <HardDrives className="text-muted-foreground" size={16} /> Add Local File
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2 font-normal" onClick={() => { setAddCollectionOpen(true); setPopoverOpen(false); }}>
                             <Tag className="text-muted-foreground" size={16} /> Add Collection
@@ -1379,7 +1375,6 @@ export default function HomeView() {
                 onOpenChange={setAddFileOpen}
                 onSubmitRemote={handleAddFile}
                 onSubmitLocal={handleAddLocalFile}
-                defaultTab={addFileMode}
             />
             <CreateCollectionDialog
                 open={addCollectionOpen}
