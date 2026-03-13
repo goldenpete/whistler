@@ -494,29 +494,41 @@ export default function CollectionView() {
                         ) : collectionViewMode === 'grid' ? (
                             <div
                                 className={cn(
-                                    "flex flex-col gap-2 p-3 rounded-none border border-border bg-card transition-all duration-200 aspect-[4/3] relative group cursor-pointer select-none",
+                                    "group relative flex flex-col rounded-none border bg-card transition-all overflow-hidden cursor-pointer hover:shadow-md",
                                     isSelected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50"
                                 )}
                                 onClick={() => handleHighlightClick(h)}
                             >
-                                {selectionMode && (
-                                    <div className="absolute top-2 left-2 z-10">
-                                        {isSelected ? (
-                                            <CheckSquare weight="fill" size={20} className="text-primary" />
-                                        ) : (
-                                            <Square weight="regular" size={20} className="text-muted-foreground" />
-                                        )}
-                                    </div>
-                                )}
-                                <div className="flex-1 flex items-center justify-center overflow-hidden w-full h-full pointer-events-none relative">
+                                <div className="aspect-video bg-muted relative overflow-hidden">
                                     <CollectionHighlightPreview highlight={h} file={file} />
-                                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-none bg-black/70 text-white text-[10px] font-mono font-medium">
-                                        {file.type === 'pdf' ? `P${h.start}` : formatTime(h.start)}
+
+                                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-none bg-black/70 text-white text-[10px] font-mono font-medium">
+                                        {timeLabel}
                                     </div>
+
+                                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-none bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold uppercase flex items-center gap-1">
+                                        <FileIconByType type={file.type} size={10} />
+                                        {file.type}
+                                    </div>
+
+                                    {selectionMode && (
+                                        <div className={cn(
+                                            "absolute top-2 right-2 size-5 rounded-none border-2 flex items-center justify-center transition-colors",
+                                            isSelected ? "bg-primary border-primary text-primary-foreground" : "border-white/70 bg-black/30"
+                                        )}>
+                                            {isSelected && <CheckSquare weight="fill" size={12} />}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="text-xs font-medium truncate px-1 text-center">
-                                    <span className="block truncate">{h.note || "Untitled Highlight"}</span>
-                                    <span className="block truncate text-[10px] font-normal text-muted-foreground mt-0.5">{file.name}</span>
+
+                                <div className="p-3">
+                                    <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">
+                                        {h.note || "Untitled Highlight"}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                        <FilmStrip size={12} />
+                                        {file.name}
+                                    </p>
                                 </div>
                             </div>
                         ) : (
