@@ -410,7 +410,7 @@ export default function CollectionView() {
                                 <ContextMenuTrigger>
                                     <div
                                         className={cn(
-                                            "group relative flex flex-col rounded-lg border bg-card transition-all overflow-hidden cursor-pointer hover:shadow-md",
+                                            "group relative flex flex-col rounded-none border bg-card transition-all overflow-hidden cursor-pointer hover:shadow-md",
                                             isSelected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50"
                                         )}
                                         onClick={() => handleHighlightClick(h)}
@@ -420,7 +420,7 @@ export default function CollectionView() {
                                             <CollectionHighlightPreview highlight={h} file={file} />
 
                                             {/* Time Badge */}
-                                            <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-mono font-medium">
+                                            <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-none bg-black/70 text-white text-[10px] font-mono font-medium">
                                                 {file.type === 'pdf'
                                                     ? (h.end && h.end !== h.start
                                                         ? `Page ${h.start}-${h.end}`
@@ -430,7 +430,7 @@ export default function CollectionView() {
                                             </div>
 
                                             {/* Type Badge */}
-                                            <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold uppercase flex items-center gap-1">
+                                            <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-none bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold uppercase flex items-center gap-1">
                                                 <FileIconByType type={file.type} size={10} />
                                                 {file.type}
                                             </div>
@@ -438,7 +438,7 @@ export default function CollectionView() {
                                             {/* Selection Checkbox */}
                                             {selectionMode && (
                                                 <div className={cn(
-                                                    "absolute top-2 right-2 size-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                                                    "absolute top-2 right-2 size-5 rounded-none border-2 flex items-center justify-center transition-colors",
                                                     isSelected ? "bg-primary border-primary text-primary-foreground" : "border-white/70 bg-black/30"
                                                 )}>
                                                     {isSelected && <CheckSquare weight="fill" size={12} />}

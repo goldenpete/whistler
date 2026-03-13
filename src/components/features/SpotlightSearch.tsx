@@ -62,6 +62,8 @@ export function SpotlightSearch() {
         collections,
         highlights,
         activeProjectId,
+        setActiveFile,
+        setActiveHighlight,
         setActiveProject,
         projects,
         isSpotlightOpen,
@@ -71,6 +73,8 @@ export function SpotlightSearch() {
         collections: state.collections,
         highlights: state.highlights,
         activeProjectId: state.activeProjectId,
+        setActiveFile: state.setActiveFile,
+        setActiveHighlight: state.setActiveHighlight,
         setActiveProject: state.setActiveProject,
         projects: state.projects,
         isSpotlightOpen: state.isSpotlightOpen,
@@ -151,9 +155,9 @@ export function SpotlightSearch() {
     const handleSelectHighlight = (highlight: Highlight) => {
         playSfx("search");
         setSpotlightOpen(false);
+        setActiveHighlight(highlight.id);
+        setActiveFile(highlight.fileId);
         navigate(`/file/${highlight.fileId}`);
-        // See comments in original code regarding time seek
-        useStore.setState({ activeFileId: highlight.fileId });
     };
 
     // --- Action Logic ---
