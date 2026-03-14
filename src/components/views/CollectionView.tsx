@@ -21,6 +21,25 @@ import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+    type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+    rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
     HardDrives,
     Folder,
     FilmStrip,
@@ -36,9 +55,14 @@ import {
     PencilSimple,
     CaretRight,
     CaretDown,
+    CaretUp,
+    Clock,
+    FileText,
+    Palette,
     Rows,
     SquaresFour,
-    Cards
+    Cards,
+    Tag
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -75,6 +99,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { findRootBucketId } from "@/utils/collectionUtils";
@@ -88,6 +113,9 @@ import { getYouTubeThumbnailUrl } from "@/constants";
 
 import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
+
+type SortOption = "custom" | "name" | "date" | "type";
+type SortDirection = "asc" | "desc";
 
 export default function CollectionView() {
     const {
@@ -150,6 +178,9 @@ export default function CollectionView() {
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [editHighlightOpen, setEditHighlightOpen] = useState(false);
     const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
+    const [sortOption, setSortOption] = useState<SortOption>("custom");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const [activeDragHighlightId, setActiveDragHighlightId] = useState<string | null>(null);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const collectionIdToUse = id || activeCollectionId;
@@ -167,6 +198,39 @@ export default function CollectionView() {
 
     const fileMap = useMemo(() => new Map(files.map(f => [f.id, f])), [files]);
 
+    const sortedHighlights = useMemo(() => {
+        if (sortOption === "custom") {
+            return collectionHighlights;
+        }
+
+        return [...collectionHighlights].sort((a, b) => {
+            let comparison = 0;
+
+            switch (sortOption) {
+                case "name": {
+                    const aName = (a.note || "Untitled Highlight").toLowerCase();
+                    const bName = (b.note || "Untitled Highlight").toLowerCase();
+                    comparison = aName.localeCompare(bName);
+                    break;
+                }
+                case "date":
+                    comparison = (a.created || 0) - (b.created || 0);
+                    break;
+                case "type": {
+                    const aFile = fileMap.get(a.fileId);
+                    const bFile = fileMap.get(b.fileId);
+                    comparison = (aFile?.type || "").localeCompare(bFile?.type || "");
+                    if (comparison === 0) {
+                        comparison = (a.note || "Untitled Highlight").localeCompare(b.note || "Untitled Highlight");
+                    }
+                    break;
+                }
+            }
+
+            return sortDirection === "asc" ? comparison : -comparison;
+        });
+    }, [collectionHighlights, fileMap, sortDirection, sortOption]);
+
     // Progressive rendering for large collections
     const HIGHLIGHT_BATCH_SIZE = 60;
     const [highlightRenderLimit, setHighlightRenderLimit] = useState(HIGHLIGHT_BATCH_SIZE);
@@ -175,28 +239,49 @@ export default function CollectionView() {
     // Reset limit when collection or search changes
     useEffect(() => {
         setHighlightRenderLimit(HIGHLIGHT_BATCH_SIZE);
-    }, [collectionIdToUse, normalizedSearchQuery]);
+    }, [collectionIdToUse, normalizedSearchQuery, sortOption, sortDirection]);
 
     // Auto-expand when sentinel scrolls into view
     useEffect(() => {
         const el = loadMoreHighlightsRef.current;
-        if (!el || highlightRenderLimit >= collectionHighlights.length) return;
+        if (!el || highlightRenderLimit >= sortedHighlights.length) return;
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting) {
-                    setHighlightRenderLimit(prev => Math.min(prev + HIGHLIGHT_BATCH_SIZE, collectionHighlights.length));
+                    setHighlightRenderLimit(prev => Math.min(prev + HIGHLIGHT_BATCH_SIZE, sortedHighlights.length));
                 }
             },
             { rootMargin: '200px' }
         );
         observer.observe(el);
         return () => observer.disconnect();
-    }, [highlightRenderLimit, collectionHighlights.length]);
+    }, [highlightRenderLimit, sortedHighlights.length]);
 
     const visibleHighlights = useMemo(
-        () => collectionHighlights.slice(0, highlightRenderLimit),
-        [collectionHighlights, highlightRenderLimit]
+        () => sortedHighlights.slice(0, highlightRenderLimit),
+        [sortedHighlights, highlightRenderLimit]
     );
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const getSortIcon = () => {
+        switch (sortOption) {
+            case "custom": return <Palette size={16} />;
+            case "name": return <FileText size={16} />;
+            case "date": return <Clock size={16} />;
+            case "type": return <Tag size={16} />;
+            default: return null;
+        }
+    };
 
     const CollectionIcon = getIcon(activeCollection?.icon);
     const activeBucket = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
@@ -280,6 +365,48 @@ export default function CollectionView() {
         setSelectionMode(false);
     };
 
+    const handleDragStart = (event: DragStartEvent) => {
+        if (sortOption !== "custom" || selectionMode) {
+            return;
+        }
+
+        setActiveDragHighlightId(String(event.active.id));
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveDragHighlightId(null);
+
+        if (!collectionIdToUse || sortOption !== "custom" || selectionMode || !over || active.id === over.id) {
+            return;
+        }
+
+        useStore.setState((state) => {
+            const collectionMembers = state.highlights.filter((highlight) => highlight.collectionId === collectionIdToUse);
+            const oldIndex = collectionMembers.findIndex((highlight) => highlight.id === active.id);
+            const newIndex = collectionMembers.findIndex((highlight) => highlight.id === over.id);
+
+            if (oldIndex === -1 || newIndex === -1) {
+                return state;
+            }
+
+            const reordered = arrayMove(collectionMembers, oldIndex, newIndex);
+            let reorderedIndex = 0;
+
+            return {
+                highlights: state.highlights.map((highlight) => {
+                    if (highlight.collectionId !== collectionIdToUse) {
+                        return highlight;
+                    }
+
+                    const nextHighlight = reordered[reorderedIndex];
+                    reorderedIndex += 1;
+                    return nextHighlight;
+                }),
+            };
+        });
+    };
+
     const gridClassName = cn(
         collectionViewMode === 'list' ? "gap-2 pb-10" : "pb-20",
         collectionViewMode === 'list'
@@ -290,6 +417,13 @@ export default function CollectionView() {
     );
 
     return (
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveDragHighlightId(null)}
+        >
         <div className="flex flex-col h-full bg-transparent text-foreground">
             {/* Header */}
             <div className="flex items-center justify-between px-4 h-12 border-b border-border bg-card/30">
@@ -325,6 +459,44 @@ export default function CollectionView() {
                     >
                         <CheckSquare weight={selectionMode ? "fill" : "regular"} size={16} className={selectionMode ? "text-primary" : ""} />
                     </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
+                                {getSortIcon()}
+                                Sort
+                                {sortDirection === "asc" ? <CaretUp size={12} className="text-muted-foreground ml-auto" /> : <CaretDown size={12} className="text-muted-foreground ml-auto" />}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => { setSortOption("custom"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                <Palette size={16} weight={sortOption === "custom" ? "fill" : "regular"} className={sortOption === "custom" ? "text-primary" : ""} />
+                                Custom Order
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                <FileText size={16} weight={sortOption === "name" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "asc" ? "text-primary" : ""} />
+                                Name (A-Z)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSortOption("name"); setSortDirection("desc"); }} className="gap-2 text-xs">
+                                <FileText size={16} weight={sortOption === "name" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "name" && sortDirection === "desc" ? "text-primary" : ""} />
+                                Name (Z-A)
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("desc"); }} className="gap-2 text-xs">
+                                <Clock size={16} weight={sortOption === "date" && sortDirection === "desc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "desc" ? "text-primary" : ""} />
+                                Newest First
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSortOption("date"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                <Clock size={16} weight={sortOption === "date" && sortDirection === "asc" ? "fill" : "regular"} className={sortOption === "date" && sortDirection === "asc" ? "text-primary" : ""} />
+                                Oldest First
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { setSortOption("type"); setSortDirection("asc"); }} className="gap-2 text-xs">
+                                <Tag size={16} weight={sortOption === "type" ? "fill" : "regular"} className={sortOption === "type" ? "text-primary" : ""} />
+                                File Type
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-8 gap-2 px-3 text-xs">
@@ -447,6 +619,10 @@ export default function CollectionView() {
 
             {/* Grid */}
             <ScrollArea className="flex-1 p-4">
+                <SortableContext
+                    items={visibleHighlights.map((highlight) => highlight.id)}
+                    strategy={collectionViewMode === 'list' ? verticalListSortingStrategy : rectSortingStrategy}
+                >
                 <div className={gridClassName}>
                     {visibleHighlights.map(h => {
                         const file = fileMap.get(h.fileId);
@@ -585,7 +761,13 @@ export default function CollectionView() {
                         return (
                             <ContextMenu key={h.id}>
                                 <ContextMenuTrigger>
-                                    {content}
+                                    <SortableHighlightShell
+                                        id={h.id}
+                                        disabled={sortOption !== "custom" || selectionMode}
+                                        isActive={activeDragHighlightId === h.id}
+                                    >
+                                        {content}
+                                    </SortableHighlightShell>
                                 </ContextMenuTrigger>
                                 <ContextMenuContent className="min-w-[8rem]">
                                     <ContextMenuItem
@@ -639,8 +821,9 @@ export default function CollectionView() {
                             <p className="text-xs">Add highlights from the video player</p>
                         </div>
                     )}
-                    {highlightRenderLimit < collectionHighlights.length && <div ref={loadMoreHighlightsRef} className="h-1 col-span-full" />}
+                    {highlightRenderLimit < sortedHighlights.length && <div ref={loadMoreHighlightsRef} className="h-1 col-span-full" />}
                 </div>
+                </SortableContext>
             </ScrollArea>
 
             <EditHighlightDialog
@@ -657,6 +840,54 @@ export default function CollectionView() {
                     }
                 }}
             />
+        </div>
+        </DndContext>
+    );
+}
+
+function SortableHighlightShell({
+    id,
+    disabled,
+    isActive,
+    children,
+}: {
+    id: string;
+    disabled: boolean;
+    isActive: boolean;
+    children: React.ReactNode;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id,
+        disabled,
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 20 : undefined,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...(disabled ? {} : attributes)}
+            {...(disabled ? {} : listeners)}
+            className={cn(
+                "touch-none h-full",
+                !disabled && "cursor-grab active:cursor-grabbing",
+                isDragging && "opacity-50",
+                isActive && "relative"
+            )}
+        >
+            {children}
         </div>
     );
 }
