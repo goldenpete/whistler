@@ -1359,14 +1359,15 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     )}
 
                     {isLocalFile(file) && !resolvedUrl ? (
-                            <div className="absolute inset-0 z-30 flex items-center justify-center p-6 bg-black/30">
-                            <LocalFileAccessPanel
-                                file={file}
-                                availability={availability}
-                                onRequestAccess={requestAccess}
-                                onRelink={relink}
-                            />
-                        </div>
+                                <div className="absolute inset-0 z-20 flex items-center justify-center p-6 bg-black/30 pointer-events-none">
+                                <LocalFileAccessPanel
+                                    file={file}
+                                    availability={availability}
+                                    onRequestAccess={requestAccess}
+                                    onRelink={relink}
+                                    className="pointer-events-auto"
+                                />
+                            </div>
                     ) : file.type === 'pdf' ? (
                         <div className="absolute inset-0 z-10">
                             <PDFPlayer
@@ -1594,7 +1595,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                                 max={1}
                                                 step={0.05}
                                                 onValueChange={handleVolumeChange}
-                                                thumbClassName="bg-white border-white shadow-sm"
+                                                trackClassName="h-3"
+                                                thumbClassName="bg-white border-white shadow-sm h-5 w-2.5 rounded-none"
                                             />
                                         </div>
                                     </div>

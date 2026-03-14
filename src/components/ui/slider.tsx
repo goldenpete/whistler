@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils"
 
 const Slider = React.forwardRef<
     React.ElementRef<typeof SliderPrimitive.Root>,
-    React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & { fillColor?: string; thumbClassName?: string; hideRange?: boolean }
->(({ className, fillColor, thumbClassName, hideRange = false, ...props }, ref) => (
+    React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & { fillColor?: string; thumbClassName?: string; trackClassName?: string; hideRange?: boolean }
+>(({ className, fillColor, thumbClassName, trackClassName, hideRange = false, ...props }, ref) => (
     <SliderPrimitive.Root
         ref={ref}
         className={cn(
@@ -15,7 +15,7 @@ const Slider = React.forwardRef<
         )}
         {...props}
     >
-        <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-none bg-secondary/50">
+        <SliderPrimitive.Track className={cn("relative h-1.5 w-full grow overflow-hidden rounded-none bg-secondary/50", trackClassName)}>
             <SliderPrimitive.Range 
                 className={cn("absolute h-full bg-primary", hideRange && "opacity-0")}
                 style={fillColor ? { backgroundColor: fillColor } : undefined}
