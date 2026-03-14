@@ -39,6 +39,7 @@ export function GlobalKeybinds() {
     const lastKey = useRef<string | null>(null);
     const lastShiftTime = useRef<number>(0);
     const lastCleanShiftUpTime = useRef<number>(0);
+    const shiftTapCount = useRef<number>(0);
     const currentPressDirty = useRef<boolean>(false);
 
     const { 
@@ -198,21 +199,27 @@ export function GlobalKeybinds() {
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
-            // Double Shift Logic (Shift Up)
+            // Triple Shift Logic (Shift Up × 3)
             if (e.key === 'Shift') {
                 const id = "global.doubleTapMenu";
-                // Only if NOT customized and NOT disabled
-                if (!customKeybinds[id] && !disabledKeybinds.includes(id)) {
+                // Only if NOT customized and NOT disabled, and menu is not already open
+                if (!customKeybinds[id] && !disabledKeybinds.includes(id) && !isDoubleTapMenuOpen) {
                     if (!currentPressDirty.current) {
                         const now = Date.now();
-                        if (now - lastCleanShiftUpTime.current < 300) {
+                        if (now - lastCleanShiftUpTime.current < 400) {
+                            shiftTapCount.current += 1;
+                        } else {
+                            shiftTapCount.current = 1;
+                        }
+                        lastCleanShiftUpTime.current = now;
+                        if (shiftTapCount.current >= 2) {
                             // Double tap detected
                             setDoubleTapMenuOpen(true);
+                            shiftTapCount.current = 0;
                             lastCleanShiftUpTime.current = 0;
-                        } else {
-                            lastCleanShiftUpTime.current = now;
                         }
                     } else {
+                        shiftTapCount.current = 0;
                         lastCleanShiftUpTime.current = 0;
                     }
                 }

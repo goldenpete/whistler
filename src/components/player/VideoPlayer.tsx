@@ -1351,8 +1351,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     className="flex-1 flex items-center justify-center bg-transparent relative overflow-hidden"
                     onClick={isMediaFile ? togglePlay : undefined}
                 >
-                    {/* Loading Spinner (only for video files) */}
-                    {file.type === 'video' && isLoading && (
+                    {/* Loading Spinner (only for video files, not when local-file access panel is up) */}
+                    {file.type === 'video' && isLoading && !(isLocalFile(file) && !resolvedUrl) && (
                         <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50 pointer-events-none">
                             <CircleNotch className="animate-spin text-white/50" size={48} />
                         </div>
