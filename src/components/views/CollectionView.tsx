@@ -435,7 +435,7 @@ export default function CollectionView() {
                     <div className="relative w-48 mr-1">
                         <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
                         <Input
-                            placeholder="Search..."
+                            placeholder="Search collection..."
                             className="pl-8 h-8 text-xs"
                             value={searchQuery}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}

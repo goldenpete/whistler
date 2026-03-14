@@ -72,11 +72,10 @@ import { QuickAccessDialog } from "@/components/dialogs/QuickAccessDialog";
 import type { QuickAccessType } from "@/components/dialogs/QuickAccessDialog";
 import { FileContextMenu } from "@/components/storage/FileContextMenu";
 import { Copy, Trash, ArrowSquareOut, PencilSimple, Lightning } from "@phosphor-icons/react";
-import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { getYouTubeThumbnailUrl } from "@/constants";
-import { thumbnailStorage } from "@/utils/thumbnailDb";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
+import { PdfThumbnail } from "@/components/ui/pdf-thumbnail";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
 import { isValidUrl } from "@/utils/security";
 import { createCloudFileSource, detectCloudProvider, getCloudProviderLabel, inferCloudFileType, isCloudFile, type CloudFileDraft } from "@/utils/cloudFiles";
@@ -208,7 +207,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
             <div className="absolute inset-0 bg-black/20">
                 <img
                     src={getYouTubeThumbnailUrl(youtubeId, 'hqdefault')}
-                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover opacity-60"
                     alt="YouTube Preview"
                     loading="lazy"
                     onContextMenu={(e) => e.preventDefault()}
@@ -222,7 +221,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
              <div className="absolute inset-0 bg-black/20">
                 <img
                     src={cachedThumbnail}
-                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover opacity-60"
                     alt="Video Preview"
                     loading="lazy"
                     onContextMenu={(e) => e.preventDefault()}
@@ -236,10 +235,11 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
             <video
                 ref={videoRef}
                 src={`${url}#t=${start}`}
-                className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full object-cover opacity-60"
                 muted
                 loop
                 playsInline
+                preload="metadata"
                 crossOrigin="anonymous"
                 onMouseOver={(e: MouseEvent<HTMLVideoElement>) => {
                     e.currentTarget.play().catch(() => {});
@@ -304,7 +304,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                 <img
                     src={resolvedUrl}
                     alt=""
-                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover opacity-60"
                     loading="lazy"
                     onContextMenu={(e) => e.preventDefault()}
                 />
@@ -325,7 +325,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                     url={resolvedUrl} 
                     onError={() => {}}
                     width={400}
-                    className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover opacity-60"
                 />
             </div>
         );
@@ -352,7 +352,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                     />
                 )}
                 <div 
-                    className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.06] scale-150 pointer-events-none"
                     style={item.data.color ? { color: item.data.color as string } : undefined}
                 >
                     <NotePencil size={180} weight="fill" />
@@ -392,7 +392,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                 */}
                 {(!highlights.some((h) => h.collectionId === item.data.id)) && (
                     <div 
-                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                        className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none"
                         style={{ color: item.data.color as string }}
                     >
                         <Tag size={180} weight="fill" />
@@ -411,7 +411,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                     style={{ backgroundColor: item.data.color as string }}
                 />
                 <div
-                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none"
                     style={{ color: item.data.color as string }}
                 >
                     <Folder size={180} weight="fill" />
@@ -431,7 +431,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                     />
                 )}
                 <div 
-                    className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.03] scale-150 pointer-events-none"
                     style={item.data.color ? { color: item.data.color as string, opacity: 0.05 } : undefined}
                 >
                     <GraphIcon size={200} weight="fill" />
@@ -451,7 +451,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                         <img 
                             src={resolvedUrl} 
                             alt="" 
-                            className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" 
+                            className="w-full h-full object-cover opacity-60" 
                             onContextMenu={(e) => e.preventDefault()}
                         />
                     </div>
@@ -471,7 +471,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                             width={400}
                             page={item.data.start || 1}
                             rect={item.data.rect || undefined}
-                            className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                            className="w-full h-full object-cover opacity-60"
                         />
                     </div>
                 );
@@ -479,7 +479,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
         }
 
         return (
-            <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none transition-transform duration-700 group-hover:-translate-y-1">
+            <div className="absolute -top-4 -left-4 text-[120px] leading-none opacity-[0.03] font-serif pointer-events-none">
                 “
             </div>
         );
@@ -496,7 +496,7 @@ const CardPreview = memo(({ item }: { item: HomeViewItem }) => {
                     />
                 )}
                 <div 
-                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none transition-transform duration-700 group-hover:-translate-y-1"
+                    className="absolute inset-0 flex items-center justify-center opacity-[0.08] scale-150 pointer-events-none"
                     style={item.data.color ? { color: item.data.color as string } : undefined}
                 >
                     <Folder size={180} weight="fill" />
@@ -1337,7 +1337,7 @@ export default function HomeView() {
             </div>
 
             {/* Content Grid */}
-            <div className="flex-1 overflow-auto p-8 pt-4">
+            <div className="flex-1 overflow-auto p-8 pt-4" style={{ willChange: 'transform' }}>
                 <div className="space-y-4 max-w-7xl mx-auto">
                     <div className="flex items-center gap-2 text-muted-foreground mb-4">
                         <Clock className="w-4 h-4" />
@@ -1355,7 +1355,8 @@ export default function HomeView() {
                                         <ContextMenuTrigger asChild>
                                             <button
                                                 onClick={() => handleItemClick(item)}
-                                                className="group relative flex flex-col items-start justify-end gap-3 p-4 rounded-none border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-all text-left overflow-hidden h-48 shadow-sm"
+                                                className="group relative flex flex-col items-start justify-end gap-3 p-4 rounded-none border border-border/40 bg-card/30 hover:bg-card/50 hover:border-accent/50 transition-colors text-left overflow-hidden h-48 shadow-sm"
+                                                style={{ contentVisibility: 'auto', containIntrinsicBlockSize: '12rem' }}
                                             >
                                                 {/* Background Preview */}
                                                 <CardPreview item={item} />
@@ -1366,10 +1367,10 @@ export default function HomeView() {
                                                 {/* Content Layer */}
                                                 <div className="relative z-20 w-full flex flex-col h-full">
                                                     <div className="flex items-center justify-between w-full gap-2 mb-auto">
-                                                        <div className="p-2 shrink-0 rounded-none bg-background/80 backdrop-blur-sm text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
+                                                        <div className="p-2 shrink-0 rounded-none bg-background/80 text-muted-foreground group-hover:text-primary transition-colors shadow-sm">
                                                             <Icon weight="duotone" className="w-5 h-5" style={getItemColor(item) ? { color: getItemColor(item) } : undefined} />
                                                         </div>
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-none bg-background/80 backdrop-blur-sm text-muted-foreground/80 shadow-sm border border-border/20">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-none bg-background/80 text-muted-foreground/80 shadow-sm border border-border/20">
                                                             {label}
                                                         </span>
                                                     </div>

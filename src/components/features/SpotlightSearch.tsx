@@ -316,53 +316,24 @@ export function SpotlightSearch() {
                             </CommandGroup>
                         )}
                         
-                         {/* Highlights */}
+                        {/* Highlights */}
                         {projectHighlights.length > 0 && (
                             <CommandGroup heading="Highlights">
                                 {projectHighlights.slice(0, 10).map((highlight: Highlight) => {
-                                    // Find file name for context
-                                    const file = projectFiles.find(f => f.id === highlight.fileId);
-                                    return (
-                                        <CommandItem
-                                            className="py-1 px-2 text-xs"
-                                            key={highlight.id}
-                                            value={highlight.note || "Highlight"}
-                                            onSelect={() => handleSelectHighlight(highlight)}
-                                        >
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center">
-                                                    <Clock className="mr-2 h-3 w-3 text-muted-foreground" />
-                                                    <span className="truncate font-medium">{highlight.note || "Untitled Highlight"}</span>
-                                                </div>
-                                                <div className="ml-5 text-xs text-muted-foreground flex items-center">
-                                                    <span className="truncate max-w-[200px]">{file?.name}</span>
-                                                    <span className="mx-1">•</span>
-                                                    <span>{formatTime(highlight.start)}</span>
-                                                </div>
-                                            </div>
-                                        </CommandItem>
-                                    );
-                                })}
-                            </CommandGroup>
-                        )}
-                    </>
-                )}
+                                    const file = projectFiles.find((f: File) => f.id === highlight.fileId);
+                                    const label = file?.type === "pdf"
+                                        ? (highlight.end && highlight.end !== highlight.start
+                                            ? `Page ${highlight.start}-${highlight.end}`
+                                            : `Page ${highlight.start}`)
+                                        : file?.type === "image"
+                                            ? "Image"
+                                            : `${formatTime(highlight.start)} - ${formatTime(highlight.end || highlight.start)}`;
 
-                {/* Highlights */}
-                {projectHighlights.length > 0 && (
-                    <CommandGroup heading="Highlights">
-                                {projectHighlights.slice(0, 10).map((highlight: Highlight) => {
-                            const file = files.find((f: File) => f.id === highlight.fileId);
-                            const label = file?.type === "pdf"
-                                ? (highlight.end && highlight.end !== highlight.start
-                                    ? `Page ${highlight.start}-${highlight.end}`
-                                    : `Page ${highlight.start}`)
-                                : `${formatTime(highlight.start)} - ${formatTime(highlight.end || highlight.start)}`;
                                     return (
                                         <CommandItem
                                             className="py-1 px-2 text-xs"
                                             key={highlight.id}
-                                            value={`${highlight.note} ${file?.name}`}
+                                            value={`${highlight.note || "Highlight"} ${file?.name || ""}`}
                                             onSelect={() => handleSelectHighlight(highlight)}
                                         >
                                             <Clock className="mr-2 h-3 w-3 text-amber-400" />
@@ -374,8 +345,10 @@ export function SpotlightSearch() {
                                             </span>
                                         </CommandItem>
                                     );
-                        })}
-                    </CommandGroup>
+                                })}
+                            </CommandGroup>
+                        )}
+                    </>
                 )}
 
                 <CommandSeparator />

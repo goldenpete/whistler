@@ -77,48 +77,47 @@ export function EditProjectDialog({ open, onOpenChange, currentName, onSave, onD
                             className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                         />
                     </div>
-                    {onDelete && (
-                        <div className="pt-2 border-t border-zinc-800 flex justify-between items-center">
-                            <span className="text-xs text-red-400">Danger zone</span>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button
-                                        variant="destructive"
-                                        type="button"
-                                    >
-                                        Delete Project
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete this project?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will permanently delete this project and all its data. This action cannot be undone.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={() => {
-                                                onDelete();
-                                                onOpenChange(false);
-                                            }}
-                                        >
-                                            Delete
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    )}
                 </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                        Save Changes
-                    </Button>
+                <DialogFooter className="border-t border-zinc-800 pt-4 sm:justify-between">
+                    {onDelete ? (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    type="button"
+                                >
+                                    Delete Project
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete this project?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete this project and all its data. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => {
+                                            onDelete();
+                                            onOpenChange(false);
+                                        }}
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    ) : <div />}
+                    <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSubmit} disabled={!name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                            Save Changes
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
