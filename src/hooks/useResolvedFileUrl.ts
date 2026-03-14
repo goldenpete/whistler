@@ -22,7 +22,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { File as AppFile } from '@/types';
 import { useStore } from '@/store/useStore';
-import { isCloudFile } from '@/utils/cloudFiles';
+import { isCloudFile, resolveCloudFileUrl, getGoogleDriveEmbedUrl } from '@/utils/cloudFiles';
 import {
     createLocalFileSource,
     inferFileTypeFromName,
@@ -50,6 +50,7 @@ function applyRuntimeFileUpdate(fileId: string, updates: Partial<AppFile>): void
  */
 export interface ResolvedFileUrlState {
     resolvedUrl: string | null;
+    googleDriveEmbedUrl: string | null;
     availability: LocalFileAvailability;
     isLocal: boolean;
     supportsLocalAccess: boolean;
@@ -64,7 +65,7 @@ export interface ResolvedFileUrlState {
 export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFileUrlState {
     const [resolvedUrl, setResolvedUrl] = useState<string | null>(() => {
         if (!file) return null;
-        if (isCloudFile(file)) return file.cloudSource.directUrl;
+        if (isCloudFile(file)) return resolveCloudFileUrl(file.cloudSource);
         return file.url ?? null;
     });
     const [availability, setAvailability] = useState<LocalFileAvailability>(() => {
@@ -75,9 +76,10 @@ export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFi
 
     const supportsLocalAccess = supportsLocalFileAccess();
     const isLocal = isLocalFile(file);
+    const googleDriveEmbedUrl = (file && isCloudFile(file)) ? getGoogleDriveEmbedUrl(file.cloudSource) : null;
 
     const syncRemoteFileState = useCallback(() => {
-        setResolvedUrl(file ? (isCloudFile(file) ? file.cloudSource.directUrl : (file.url ?? null)) : null);
+        setResolvedUrl(file ? (isCloudFile(file) ? resolveCloudFileUrl(file.cloudSource) : (file.url ?? null)) : null);
         setAvailability(file ? 'ready' : 'error');
     }, [file]);
 
@@ -234,11 +236,12 @@ export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFi
 
     return useMemo(() => ({
         resolvedUrl,
+        googleDriveEmbedUrl,
         availability,
         isLocal,
         supportsLocalAccess,
         refresh,
         requestAccess,
         relink,
-    }), [availability, isLocal, refresh, relink, requestAccess, resolvedUrl, supportsLocalAccess]);
+    }), [availability, googleDriveEmbedUrl, isLocal, refresh, relink, requestAccess, resolvedUrl, supportsLocalAccess]);
 }

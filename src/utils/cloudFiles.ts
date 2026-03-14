@@ -23,6 +23,38 @@ export function isCloudFile(file: AppFile | null | undefined): file is AppFile &
     return Boolean(file?.sourceKind === 'cloud' && file.cloudSource?.provider && file.cloudSource?.shareUrl && file.cloudSource?.directUrl);
 }
 
+/**
+ * Re-derive the direct playback URL from a cloud source's share URL.
+ * This ensures we always use the latest URL format even if the stored
+ * directUrl was generated with an older endpoint.
+ */
+export function resolveCloudFileUrl(cloudSource: CloudFileSource): string {
+    try {
+        const parsed = new URL(cloudSource.shareUrl);
+        const freshUrl = resolveCloudDirectUrl(cloudSource.provider, parsed);
+        return freshUrl ?? cloudSource.directUrl;
+    } catch {
+        return cloudSource.directUrl;
+    }
+}
+
+/**
+ * For Google Drive files, returns the embeddable preview URL
+ * (`/file/d/<ID>/preview`) which is the only reliable way to play
+ * Google Drive video/audio in a browser.  Returns null for non-Google-Drive sources.
+ */
+export function getGoogleDriveEmbedUrl(cloudSource: CloudFileSource): string | null {
+    if (cloudSource.provider !== 'google-drive') return null;
+    try {
+        const parsed = new URL(cloudSource.shareUrl);
+        const fileId = extractGoogleDriveFileId(parsed);
+        if (!fileId) return null;
+        return `https://drive.google.com/file/d/${fileId}/preview`;
+    } catch {
+        return null;
+    }
+}
+
 export function detectCloudProvider(url: string): CloudProvider | null {
     try {
         const parsed = new URL(url.trim());
@@ -128,9 +160,10 @@ function buildGoogleDriveDirectUrl(parsed: URL): string | null {
         return null;
     }
 
-    const directUrl = new URL('https://drive.google.com/uc');
-    directUrl.searchParams.set('export', 'download');
+    const directUrl = new URL('https://drive.usercontent.google.com/download');
     directUrl.searchParams.set('id', fileId);
+    directUrl.searchParams.set('export', 'download');
+    directUrl.searchParams.set('confirm', 't');
 
     const resourceKey = extractGoogleDriveResourceKey(parsed);
     if (resourceKey) {

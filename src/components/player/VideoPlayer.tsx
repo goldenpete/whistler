@@ -265,8 +265,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     };
 
     const file = files.find(f => f.id === fileId);
-    const { resolvedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
+    const { resolvedUrl, googleDriveEmbedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
     const isYouTube = resolvedUrl ? (resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be')) : false;
+    const isGoogleDriveEmbed = Boolean(googleDriveEmbedUrl);
     const [localUrl, setLocalUrl] = useState(file?.url || "");
     const displaySourceLabel = file ? getDisplaySourceLabel(file, resolvedUrl) : "";
 
@@ -1368,6 +1369,16 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     className="pointer-events-auto"
                                 />
                             </div>
+                    ) : isGoogleDriveEmbed ? (
+                        <div className="absolute inset-0 z-10">
+                            <iframe
+                                src={googleDriveEmbedUrl!}
+                                className="w-full h-full border-0"
+                                allow="autoplay; encrypted-media"
+                                allowFullScreen
+                                onLoad={() => setIsLoading(false)}
+                            />
+                        </div>
                     ) : file.type === 'pdf' ? (
                         <div className="absolute inset-0 z-10">
                             <PDFPlayer
