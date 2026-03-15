@@ -26,6 +26,7 @@ import {
     CaretLeft,
     FilmStrip,
     Gear,
+    Question,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

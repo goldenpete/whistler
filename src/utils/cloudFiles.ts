@@ -2,6 +2,11 @@ import type { CloudFileSource, CloudProvider, File as AppFile } from '@/types';
 
 export type CloudFileTypeSelection = 'auto' | Exclude<AppFile['type'], 'folder'>;
 
+export interface ResolveCloudFileUrlOptions {
+    googleDriveApiKey?: string | null;
+    allowGoogleDriveLegacyFallback?: boolean;
+}
+
 export interface CloudFileDraft {
     provider: CloudProvider;
     shareUrl: string;
@@ -28,20 +33,32 @@ export function isCloudFile(file: AppFile | null | undefined): file is AppFile &
  * This ensures we always use the latest URL format even if the stored
  * directUrl was generated with an older endpoint.
  */
-export function resolveCloudFileUrl(cloudSource: CloudFileSource): string {
+export function resolveCloudFileUrl(cloudSource: CloudFileSource, options: ResolveCloudFileUrlOptions = {}): string | null {
     try {
         const parsed = new URL(cloudSource.shareUrl);
-        const freshUrl = resolveCloudDirectUrl(cloudSource.provider, parsed);
-        return freshUrl ?? cloudSource.directUrl;
+        const freshUrl = resolveCloudDirectUrl(cloudSource.provider, parsed, options);
+        if (freshUrl) {
+            return freshUrl;
+        }
+
+        if (cloudSource.provider === 'google-drive' && !options.allowGoogleDriveLegacyFallback) {
+            return null;
+        }
+
+        return cloudSource.directUrl;
     } catch {
+        if (cloudSource.provider === 'google-drive' && !options.allowGoogleDriveLegacyFallback) {
+            return null;
+        }
+
         return cloudSource.directUrl;
     }
 }
 
 /**
  * For Google Drive files, returns the embeddable preview URL
- * (`/file/d/<ID>/preview`) which is the only reliable way to play
- * Google Drive video/audio in a browser.  Returns null for non-Google-Drive sources.
+ * (`/file/d/<ID>/preview`) used as the limited fallback when native Drive API
+ * playback is unavailable. Returns null for non-Google-Drive sources.
  */
 export function getGoogleDriveEmbedUrl(cloudSource: CloudFileSource): string | null {
     if (cloudSource.provider !== 'google-drive') return null;
@@ -88,7 +105,9 @@ export function createCloudFileSource(provider: CloudProvider, shareUrl: string)
             return null;
         }
 
-        const directUrl = resolveCloudDirectUrl(provider, parsed);
+        const directUrl = resolveCloudDirectUrl(provider, parsed, {
+            allowGoogleDriveLegacyFallback: true,
+        });
         if (!directUrl) {
             return null;
         }
@@ -126,10 +145,10 @@ export function inferCloudFileType(
     return fallback;
 }
 
-function resolveCloudDirectUrl(provider: CloudProvider, parsed: URL): string | null {
+function resolveCloudDirectUrl(provider: CloudProvider, parsed: URL, options: ResolveCloudFileUrlOptions = {}): string | null {
     switch (provider) {
         case 'google-drive': {
-            return buildGoogleDriveDirectUrl(parsed);
+            return buildGoogleDriveDirectUrl(parsed, options.googleDriveApiKey, options.allowGoogleDriveLegacyFallback);
         }
         case 'dropbox': {
             if (parsed.hostname.toLowerCase().includes('dropboxusercontent.com')) {
@@ -154,16 +173,34 @@ function resolveCloudDirectUrl(provider: CloudProvider, parsed: URL): string | n
     }
 }
 
-function buildGoogleDriveDirectUrl(parsed: URL): string | null {
+function buildGoogleDriveDirectUrl(parsed: URL, googleDriveApiKey?: string | null, allowLegacyFallback = false): string | null {
     const fileId = extractGoogleDriveFileId(parsed);
     if (!fileId) {
         return null;
     }
 
-    const directUrl = new URL('https://drive.usercontent.google.com/download');
+    const trimmedApiKey = googleDriveApiKey?.trim();
+    if (trimmedApiKey) {
+        const directUrl = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`);
+        directUrl.searchParams.set('alt', 'media');
+        directUrl.searchParams.set('key', trimmedApiKey);
+        directUrl.searchParams.set('supportsAllDrives', 'true');
+
+        const resourceKey = extractGoogleDriveResourceKey(parsed);
+        if (resourceKey) {
+            directUrl.searchParams.set('resourceKey', resourceKey);
+        }
+
+        return directUrl.toString();
+    }
+
+    if (!allowLegacyFallback) {
+        return null;
+    }
+
+    const directUrl = new URL('https://drive.google.com/uc');
     directUrl.searchParams.set('id', fileId);
-    directUrl.searchParams.set('export', 'download');
-    directUrl.searchParams.set('confirm', 't');
+    directUrl.searchParams.set('export', 'view');
 
     const resourceKey = extractGoogleDriveResourceKey(parsed);
     if (resourceKey) {
@@ -173,7 +210,7 @@ function buildGoogleDriveDirectUrl(parsed: URL): string | null {
     return directUrl.toString();
 }
 
-function extractGoogleDriveFileId(parsed: URL): string | null {
+export function extractGoogleDriveFileId(parsed: URL): string | null {
     const pathname = parsed.pathname;
     const fileMatch = pathname.match(/\/file\/d\/([^/]+)/i);
     if (fileMatch?.[1]) {

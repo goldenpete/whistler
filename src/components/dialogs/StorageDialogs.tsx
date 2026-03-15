@@ -260,6 +260,7 @@ interface AddFileDialogProps {
 }
 
 export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitCloud, onSubmitLocal, defaultTab = "web" }: AddFileDialogProps) {
+    const googleDriveApiKey = useStore((state) => state.googleDriveApiKey);
     const [url, setUrl] = useState("");
     const [name, setName] = useState("");
     const [cloudUrl, setCloudUrl] = useState("");
@@ -443,6 +444,11 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitClou
                             <p className="text-xs text-zinc-500">
                                 Public file links from Google Drive, Dropbox, and OneDrive are supported.
                             </p>
+                            {cloudProvider === 'google-drive' && !googleDriveApiKey && (
+                                <p className="text-xs text-amber-300">
+                                    Google Drive keeps full seek, speed, and highlight controls only when a Google Drive API key is set in Settings &gt; Audio &amp; Media. Otherwise playback falls back to Google&apos;s preview player.
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-2">

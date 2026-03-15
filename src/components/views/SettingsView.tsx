@@ -23,6 +23,7 @@ import {
     Cloud,
     Gear,
     Info,
+    GoogleDriveLogo,
 } from "@phosphor-icons/react";
 import { Keyboard, Lightning } from "@phosphor-icons/react";
 import { AppearanceTab } from "@/components/settings/AppearanceTab";
@@ -32,8 +33,9 @@ import { AboutTab } from "@/components/settings/AboutTab";
 import { SettingsSync } from "@/components/settings/SettingsSync";
 import { KeybindsSettings } from "@/components/settings/KeybindsSettings";
 import { ActionsSettings } from "@/components/settings/ActionsSettings";
+import { GoogleDriveTab } from "@/components/settings/GoogleDriveTab";
 
-type SettingsTab = 'appearance' | 'music' | 'keybinds' | 'actions' | 'system' | 'sync' | 'history' | 'trash' | 'about';
+type SettingsTab = 'appearance' | 'music' | 'keybinds' | 'actions' | 'system' | 'sync' | 'google-drive' | 'history' | 'trash' | 'about';
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    COMPONENT
@@ -51,7 +53,7 @@ export default function SettingsView() {
             setActiveTab('about');
         } else {
             const tab = searchParams.get('tab');
-            if (tab && ['appearance', 'music', 'keybinds', 'actions', 'system', 'sync', 'history', 'trash', 'about'].includes(tab)) {
+            if (tab && ['appearance', 'music', 'keybinds', 'actions', 'system', 'sync', 'google-drive', 'history', 'trash', 'about'].includes(tab)) {
                 setActiveTab(tab as SettingsTab);
             }
         }
@@ -91,6 +93,7 @@ export default function SettingsView() {
                             label: "Data & Account",
                             items: [
                                 { tab: 'sync' as SettingsTab, icon: Cloud, label: 'Sync & Backup' },
+                                { tab: 'google-drive' as SettingsTab, icon: GoogleDriveLogo, label: 'Google Drive' },
                                 { tab: 'system' as SettingsTab, icon: Gear, label: 'System' },
                             ],
                         },
@@ -187,6 +190,8 @@ export default function SettingsView() {
                             <SidebarTrash onBack={() => {}} variant="settings-page" />
                         </div>
                     )}
+
+                    {activeTab === 'google-drive' && <GoogleDriveTab />}
 
                     {activeTab === 'system' && <SystemTab />}
 

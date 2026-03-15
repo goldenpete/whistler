@@ -38,6 +38,10 @@ export const createPlaybackSlice = (set: StoreSet, _get: StoreGet) => ({
   muteHighlightsUntilUnmuted: false,
   /** Always show the mute indicator overlay on videos */
   alwaysShowMuteOverlay: false,
+  /** Browser-restricted Google Drive API key for native Drive playback */
+  googleDriveApiKey: '',
+  /** Cache Google Drive file blobs in IndexedDB to reduce API quota usage */
+  googleDriveCacheEnabled: true,
   /** Remember per-file volume across sessions */
   rememberMediaVolume: false,
   /** Disable auto-play when opening media files */
@@ -123,6 +127,8 @@ export const createPlaybackSlice = (set: StoreSet, _get: StoreGet) => ({
   setMuteNewVideosUntilUnmuted: (enabled: boolean) => set({ muteNewVideosUntilUnmuted: enabled }),
   setMuteHighlightsUntilUnmuted: (enabled: boolean) => set({ muteHighlightsUntilUnmuted: enabled }),
   setAlwaysShowMuteOverlay: (enabled: boolean) => set({ alwaysShowMuteOverlay: enabled }),
+  setGoogleDriveApiKey: (apiKey: string) => set({ googleDriveApiKey: apiKey.trim() }),
+  setGoogleDriveCacheEnabled: (enabled: boolean) => set({ googleDriveCacheEnabled: enabled }),
   setRememberMediaVolume: (enabled: boolean) => set({ rememberMediaVolume: enabled }),
   setDisableMediaAutoplay: (enabled: boolean) => set({ disableMediaAutoplay: enabled }),
 

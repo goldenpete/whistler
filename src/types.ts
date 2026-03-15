@@ -413,6 +413,10 @@ export interface AppState {
     videoZoomManualByFile?: Record<string, boolean>;
     /** When true, new videos start muted until user unmutes. */
     muteNewVideosUntilUnmuted?: boolean;
+    /** Optional browser-safe Google Drive API key for native cloud playback. */
+    googleDriveApiKey?: string;
+    /** When true, Google Drive file blobs are cached in IndexedDB to reduce API quota. */
+    googleDriveCacheEnabled?: boolean;
     /** When true, volume changes are remembered per-file. */
     rememberMediaVolume?: boolean;
     /** When true, media does not auto-play on open. */

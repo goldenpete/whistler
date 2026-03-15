@@ -265,11 +265,28 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
     };
 
     const file = files.find(f => f.id === fileId);
-    const { resolvedUrl, googleDriveEmbedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
+    const {
+        resolvedUrl,
+        googleDriveEmbedUrl,
+        googleDriveNeedsApiKey,
+        googleDriveCanUseNativePlayback,
+        availability,
+        requestAccess,
+        relink,
+    } = useResolvedFileUrl(file);
     const isYouTube = resolvedUrl ? (resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be')) : false;
-    const isGoogleDriveEmbed = Boolean(googleDriveEmbedUrl);
+    const hasGoogleDriveEmbed = Boolean(googleDriveEmbedUrl);
+    const [gdriveDirectFailed, setGdriveDirectFailed] = useState(false);
+    const [gdriveBannerDismissed, setGdriveBannerDismissed] = useState(false);
+    const isGoogleDriveIframe = hasGoogleDriveEmbed && (googleDriveNeedsApiKey || gdriveDirectFailed);
     const [localUrl, setLocalUrl] = useState(file?.url || "");
     const displaySourceLabel = file ? getDisplaySourceLabel(file, resolvedUrl) : "";
+
+    // Reset direct-URL failure state when switching files
+    useEffect(() => {
+        setGdriveDirectFailed(false);
+        setGdriveBannerDismissed(false);
+    }, [fileId, googleDriveNeedsApiKey, resolvedUrl]);
 
     useEffect(() => {
         setLocalUrl(isLocalFile(file) ? "" : (file?.url || ""));
@@ -1350,10 +1367,10 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                 {/* Video/PDF Stage */}
                 <div
                     className="flex-1 flex items-center justify-center bg-transparent relative overflow-hidden"
-                    onClick={isMediaFile ? togglePlay : undefined}
+                    onClick={(isMediaFile && !isGoogleDriveIframe) ? togglePlay : undefined}
                 >
                     {/* Loading Spinner (only for video files, not when local-file access panel is up) */}
-                    {file.type === 'video' && isLoading && !(isLocalFile(file) && !resolvedUrl) && (
+                    {file.type === 'video' && isLoading && !isGoogleDriveIframe && !(isLocalFile(file) && !resolvedUrl) && (
                         <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50 pointer-events-none">
                             <CircleNotch className="animate-spin text-white/50" size={48} />
                         </div>
@@ -1369,8 +1386,55 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     className="pointer-events-auto"
                                 />
                             </div>
-                    ) : isGoogleDriveEmbed ? (
+                    ) : isGoogleDriveIframe ? (
                         <div className="absolute inset-0 z-10">
+                            {!gdriveBannerDismissed && (
+                            <div className="absolute right-4 top-16 z-20 pointer-events-none">
+                                <div className="w-72 pointer-events-auto rounded-none border border-amber-500/30 bg-black/75 px-4 py-3 text-sm text-white shadow-lg backdrop-blur-sm">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="space-y-1">
+                                                <p className="font-medium text-amber-200">
+                                                    Google Drive is running in preview mode.
+                                                </p>
+                                                <p className="text-xs text-zinc-300">
+                                                    {googleDriveNeedsApiKey
+                                                        ? 'Add a Google Drive API key in Settings to restore the native player, seekbar, and highlight markers.'
+                                                        : 'Native Drive playback failed for this file. Custom playback controls and timeline markers are disabled.'}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => setGdriveBannerDismissed(true)}
+                                                className="shrink-0 text-zinc-400 hover:text-white transition-colors"
+                                                title="Dismiss"
+                                            >
+                                                <X size={14} weight="bold" />
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-amber-400/40 bg-amber-400/10 text-amber-100 hover:bg-amber-400/20"
+                                                onClick={() => navigate('/settings?tab=google-drive')}
+                                            >
+                                                Drive Settings
+                                            </Button>
+                                            {!googleDriveNeedsApiKey && googleDriveCanUseNativePlayback && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+                                                    onClick={() => setGdriveDirectFailed(false)}
+                                                >
+                                                    Retry
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            )}
                             <iframe
                                 src={googleDriveEmbedUrl!}
                                 className="w-full h-full border-0"
@@ -1458,6 +1522,9 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                                     onError={(e: SyntheticEvent<HTMLVideoElement>) => {
                                         console.error("Video error:", e);
                                         setIsLoading(false);
+                                        if (hasGoogleDriveEmbed && !gdriveDirectFailed) {
+                                            setGdriveDirectFailed(true);
+                                        }
                                     }}
                                     onPlay={() => {
                                         setIsPlaying(true);
@@ -1522,8 +1589,8 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     )}
                 </div>
 
-                {/* Bottom Bar (only for video files) */}
-                {file.type === 'video' && (
+                {/* Bottom Bar (only for video files, not for Google Drive embeds which have their own controls) */}
+                {file.type === 'video' && !isGoogleDriveIframe && (
                     <div
                         className={cn(
                             "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent transition-opacity duration-300 z-30 pb-4 pt-8 px-4 pointer-events-none",

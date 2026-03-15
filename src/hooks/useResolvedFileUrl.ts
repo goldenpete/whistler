@@ -19,10 +19,11 @@
  * ============================================================================
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { File as AppFile } from '@/types';
 import { useStore } from '@/store/useStore';
-import { isCloudFile, resolveCloudFileUrl, getGoogleDriveEmbedUrl } from '@/utils/cloudFiles';
+import { isCloudFile, resolveCloudFileUrl, getGoogleDriveEmbedUrl, extractGoogleDriveFileId } from '@/utils/cloudFiles';
+import { driveCacheStorage } from '@/utils/driveCache';
 import {
     createLocalFileSource,
     inferFileTypeFromName,
@@ -51,6 +52,8 @@ function applyRuntimeFileUpdate(fileId: string, updates: Partial<AppFile>): void
 export interface ResolvedFileUrlState {
     resolvedUrl: string | null;
     googleDriveEmbedUrl: string | null;
+    googleDriveNeedsApiKey: boolean;
+    googleDriveCanUseNativePlayback: boolean;
     availability: LocalFileAvailability;
     isLocal: boolean;
     supportsLocalAccess: boolean;
@@ -63,9 +66,17 @@ export interface ResolvedFileUrlState {
  * Resolve a file into a renderable URL and expose access-management actions.
  */
 export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFileUrlState {
+    const googleDriveApiKey = useStore((state) => state.googleDriveApiKey);
+    const googleDriveCacheEnabled = useStore((state) => state.googleDriveCacheEnabled);
+    const normalizedGoogleDriveApiKey = googleDriveApiKey.trim();
+    const isGoogleDriveCloud = Boolean(file && isCloudFile(file) && file.cloudSource.provider === 'google-drive');
+    const driveBlobUrlRef = useRef<string | null>(null);
+    const googleDriveNeedsApiKey = isGoogleDriveCloud && !normalizedGoogleDriveApiKey;
     const [resolvedUrl, setResolvedUrl] = useState<string | null>(() => {
         if (!file) return null;
-        if (isCloudFile(file)) return resolveCloudFileUrl(file.cloudSource);
+        if (isCloudFile(file)) {
+            return resolveCloudFileUrl(file.cloudSource, { googleDriveApiKey: normalizedGoogleDriveApiKey || null });
+        }
         return file.url ?? null;
     });
     const [availability, setAvailability] = useState<LocalFileAvailability>(() => {
@@ -77,11 +88,61 @@ export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFi
     const supportsLocalAccess = supportsLocalFileAccess();
     const isLocal = isLocalFile(file);
     const googleDriveEmbedUrl = (file && isCloudFile(file)) ? getGoogleDriveEmbedUrl(file.cloudSource) : null;
+    const googleDriveCanUseNativePlayback = Boolean(isGoogleDriveCloud && resolvedUrl);
 
     const syncRemoteFileState = useCallback(() => {
-        setResolvedUrl(file ? (isCloudFile(file) ? resolveCloudFileUrl(file.cloudSource) : (file.url ?? null)) : null);
+        if (!file) {
+            setResolvedUrl(null);
+            setAvailability('error');
+            return;
+        }
+
+        if (!isCloudFile(file)) {
+            setResolvedUrl(file.url ?? null);
+            setAvailability('ready');
+            return;
+        }
+
+        const apiUrl = resolveCloudFileUrl(file.cloudSource, { googleDriveApiKey: normalizedGoogleDriveApiKey || null });
+
+        // For Google Drive files with caching enabled, check IndexedDB first
+        if (isGoogleDriveCloud && googleDriveCacheEnabled && normalizedGoogleDriveApiKey) {
+            let driveFileId: string | null = null;
+            try { driveFileId = extractGoogleDriveFileId(new URL(file.cloudSource.shareUrl)); } catch { /* ignore */ }
+
+            if (driveFileId) {
+                // Try loading from cache
+                driveCacheStorage.load(driveFileId).then((cached) => {
+                    if (cached) {
+                        // Revoke previous blob URL if any
+                        if (driveBlobUrlRef.current) URL.revokeObjectURL(driveBlobUrlRef.current);
+                        const blobUrl = URL.createObjectURL(cached.blob);
+                        driveBlobUrlRef.current = blobUrl;
+                        setResolvedUrl(blobUrl);
+                    } else if (apiUrl) {
+                        setResolvedUrl(apiUrl);
+                        // Background: fetch + cache for next time
+                        fetch(apiUrl).then((res) => {
+                            if (res.ok) return res.blob();
+                            return null;
+                        }).then((blob) => {
+                            if (blob) driveCacheStorage.save(driveFileId!, blob, file.name);
+                        }).catch(() => { /* non-critical */ });
+                    } else {
+                        setResolvedUrl(null);
+                    }
+                    setAvailability('ready');
+                }).catch(() => {
+                    setResolvedUrl(apiUrl);
+                    setAvailability('ready');
+                });
+                return;
+            }
+        }
+
+        setResolvedUrl(apiUrl);
         setAvailability(file ? 'ready' : 'error');
-    }, [file]);
+    }, [file, normalizedGoogleDriveApiKey, isGoogleDriveCloud, googleDriveCacheEnabled]);
 
     const refresh = useCallback(async () => {
         if (!file) {
@@ -234,14 +295,26 @@ export function useResolvedFileUrl(file: AppFile | null | undefined): ResolvedFi
         return () => { cancelled = true; };
     }, [file, supportsLocalAccess, syncRemoteFileState]);
 
+    // Cleanup: revoke blob URL on unmount
+    useEffect(() => {
+        return () => {
+            if (driveBlobUrlRef.current) {
+                URL.revokeObjectURL(driveBlobUrlRef.current);
+                driveBlobUrlRef.current = null;
+            }
+        };
+    }, []);
+
     return useMemo(() => ({
         resolvedUrl,
         googleDriveEmbedUrl,
+        googleDriveNeedsApiKey,
+        googleDriveCanUseNativePlayback,
         availability,
         isLocal,
         supportsLocalAccess,
         refresh,
         requestAccess,
         relink,
-    }), [availability, googleDriveEmbedUrl, isLocal, refresh, relink, requestAccess, resolvedUrl, supportsLocalAccess]);
+    }), [availability, googleDriveCanUseNativePlayback, googleDriveEmbedUrl, googleDriveNeedsApiKey, isLocal, refresh, relink, requestAccess, resolvedUrl, supportsLocalAccess]);
 }

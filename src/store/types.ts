@@ -112,6 +112,7 @@ export interface AppStore extends AppState {
     history: boolean;
     trash: boolean;
     settings: boolean;
+    googleDrive: boolean;
     advancedSettings: {
       appearance: boolean;
       music: boolean;
@@ -149,6 +150,7 @@ export interface AppStore extends AppState {
   muteNewVideosUntilUnmuted: boolean;
   muteHighlightsUntilUnmuted: boolean;
   alwaysShowMuteOverlay: boolean;
+  googleDriveApiKey: string;
   rememberMediaVolume: boolean;
   disableMediaAutoplay: boolean;
   videoVolumeByFile: Record<string, number>;
@@ -298,6 +300,8 @@ export interface AppStore extends AppState {
   setMuteNewVideosUntilUnmuted: (enabled: boolean) => void;
   setMuteHighlightsUntilUnmuted: (enabled: boolean) => void;
   setAlwaysShowMuteOverlay: (enabled: boolean) => void;
+  setGoogleDriveApiKey: (apiKey: string) => void;
+  setGoogleDriveCacheEnabled: (enabled: boolean) => void;
   setRememberMediaVolume: (enabled: boolean) => void;
   setDisableMediaAutoplay: (enabled: boolean) => void;
   setVideoVolumeForFile: (fileId: string, volume: number) => void;

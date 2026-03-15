@@ -24,6 +24,7 @@ import { useResolvedFileUrl } from "@/hooks/useResolvedFileUrl";
 import { getDisplaySourceLabel, isLocalFile } from "@/utils/localFiles";
 import { createCloudFileSource, detectCloudProvider, inferCloudFileType, isCloudFile, getCloudProviderLabel } from "@/utils/cloudFiles";
 import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
+import { useStore } from "@/store/useStore";
 
 interface EditFileDialogProps {
     open: boolean;
@@ -34,6 +35,7 @@ interface EditFileDialogProps {
 }
 
 export function EditFileDialog({ open, onOpenChange, file, onSave, container }: EditFileDialogProps) {
+    const googleDriveApiKey = useStore((state) => state.googleDriveApiKey);
     const [name, setName] = useState(file.name);
     const [description, setDescription] = useState(file.description || "");
     const [url, setUrl] = useState(isCloudFile(file) ? file.cloudSource.shareUrl : (file.url || ""));
@@ -128,7 +130,14 @@ export function EditFileDialog({ open, onOpenChange, file, onSave, container }: 
                                 placeholder="https://..."
                             />
                             {isCloudSource && (
-                                <p className="text-xs text-zinc-500">Provider: {getCloudProviderLabel(file.cloudSource.provider)}</p>
+                                <>
+                                    <p className="text-xs text-zinc-500">Provider: {getCloudProviderLabel(file.cloudSource.provider)}</p>
+                                    {file.cloudSource.provider === 'google-drive' && !googleDriveApiKey && (
+                                        <p className="text-xs text-amber-300">
+                                            Native Google Drive playback needs a Google Drive API key in Settings &gt; Audio &amp; Media. Without it, this file opens in Google&apos;s preview player and Whistler&apos;s custom controls stay disabled.
+                                        </p>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}

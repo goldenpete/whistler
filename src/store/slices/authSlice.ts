@@ -36,6 +36,7 @@ export const createAuthSlice = (set: StoreSet, _get: StoreGet) => ({
     history: true,
     trash: true,
     settings: true,
+    googleDrive: true,
     advancedSettings: {
       appearance: true,
       music: true,

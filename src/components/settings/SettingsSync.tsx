@@ -60,7 +60,8 @@ import {
     CaretLeft,
     Monitor,
     Fingerprint,
-    Key
+    Key,
+    GoogleDriveLogo
 } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -1405,6 +1406,7 @@ export function SettingsSync() {
                             { id: 'history', label: 'History', desc: 'Past actions and activity log', icon: ClockCounterClockwise },
                             { id: 'trash', label: 'Trash', desc: 'Deleted items and recovery', icon: Trash },
                             { id: 'settings', label: 'Settings', desc: 'Themes, preferences, and layout', icon: Gear },
+                            { id: 'googleDrive', label: 'Google Drive', desc: 'API key for native Drive playback', icon: GoogleDriveLogo },
                         ].map((item) => (
                             <div key={item.id} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
