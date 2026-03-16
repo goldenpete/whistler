@@ -633,7 +633,7 @@ export default function ProjectSidebar() {
        COLLECTION HANDLERS
        ═══════════════════════════════════════════════════════ */
 
-    const handleAddFolder = (e: ReactMouseEvent) => {
+    const handleAddFolder = (e?: ReactMouseEvent) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
