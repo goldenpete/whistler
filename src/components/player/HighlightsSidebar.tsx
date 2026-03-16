@@ -9,12 +9,15 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { useState, type MouseEvent } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import {
     Plus,
     Play,
     PencilSimple,
     Trash,
+    SortAscending,
+    SortDescending,
+    Clock,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,6 +66,8 @@ export interface HighlightsSidebarProps {
     onDeleteHighlight: (id: string) => void;
 }
 
+type SortMode = 'asc' | 'desc' | 'created';
+
 export function HighlightsSidebar({
     file,
     highlights,
@@ -74,10 +79,39 @@ export function HighlightsSidebar({
     onEditHighlight,
     onDeleteHighlight,
 }: HighlightsSidebarProps) {
+    const [sortMode, setSortMode] = useState<SortMode>('asc');
+
+    const sortedHighlights = useMemo(() => {
+        const sorted = [...highlights];
+        switch (sortMode) {
+            case 'asc':  return sorted.sort((a, b) => a.start - b.start);
+            case 'desc': return sorted.sort((a, b) => b.start - a.start);
+            case 'created': return sorted.sort((a, b) => b.created - a.created);
+        }
+    }, [highlights, sortMode]);
+
+    const cycleSortMode = () => {
+        playSfx('cursor');
+        setSortMode(m => m === 'asc' ? 'desc' : m === 'desc' ? 'created' : 'asc');
+    };
+
+    const SortIcon = sortMode === 'created' ? Clock : sortMode === 'desc' ? SortDescending : SortAscending;
+    const sortTitle = sortMode === 'asc' ? 'Sort: Position (1→∞)' : sortMode === 'desc' ? 'Sort: Position (∞→1)' : 'Sort: Creation Date';
+
     return (
         <>
             <div className="p-4 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between">
                 <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Highlights</h3>
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-primary"
+                        onClick={cycleSortMode}
+                        title={sortTitle}
+                    >
+                        <SortIcon weight="bold" size={14} />
+                    </Button>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -91,12 +125,13 @@ export function HighlightsSidebar({
                 >
                     <Plus weight="bold" size={14} />
                 </Button>
+                </div>
             </div>
             <ScrollArea className="flex-1 w-full min-h-0">
                 {highlights.length === 0 ? (
                     <div className="text-muted-foreground text-xs text-center mt-4">No highlights yet.</div>
                 ) : (
-                    highlights.map((h: Highlight) => {
+                    sortedHighlights.map((h: Highlight) => {
                         const collection = collections.find((c: Collection) => c.id === h.collectionId);
                         const borderColor = collection ? collection.color : 'transparent';
                         const collectionName = collection ? collection.name : null;
