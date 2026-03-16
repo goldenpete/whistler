@@ -414,18 +414,38 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitClou
                     </TabsContent>
 
                     <TabsContent value="cloud" className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label className="text-zinc-400">Provider</Label>
-                            <Select value={cloudProvider} onValueChange={(value) => setCloudProvider(value as CloudProvider)}>
-                                <SelectTrigger className="bg-zinc-900 border-border/60 text-white">
-                                    <SelectValue placeholder="Select cloud provider" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="google-drive">Google Drive</SelectItem>
-                                    <SelectItem value="dropbox">Dropbox</SelectItem>
-                                    <SelectItem value="onedrive">OneDrive</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="rounded-none border border-zinc-800/80 bg-zinc-950/40 p-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Provider</Label>
+                                    <Select value={cloudProvider} onValueChange={(value) => setCloudProvider(value as CloudProvider)}>
+                                        <SelectTrigger className="h-11 w-full bg-zinc-900/90 border-zinc-700 text-white hover:bg-zinc-900 focus-visible:border-zinc-500">
+                                            <SelectValue placeholder="Select cloud provider" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="google-drive">Google Drive</SelectItem>
+                                            <SelectItem value="dropbox">Dropbox</SelectItem>
+                                            <SelectItem value="onedrive">OneDrive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">File Type</Label>
+                                    <Select value={cloudTypeSelection} onValueChange={(value) => setCloudTypeSelection(value as CloudFileTypeSelection)}>
+                                        <SelectTrigger className="h-11 w-full bg-zinc-900/90 border-zinc-700 text-white hover:bg-zinc-900 focus-visible:border-zinc-500">
+                                            <SelectValue placeholder="Auto detect" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="auto">Auto detect</SelectItem>
+                                            <SelectItem value="video">Video</SelectItem>
+                                            <SelectItem value="audio">Audio</SelectItem>
+                                            <SelectItem value="image">Image</SelectItem>
+                                            <SelectItem value="pdf">PDF</SelectItem>
+                                            <SelectItem value="file">Generic file</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -465,22 +485,6 @@ export function AddFileDialog({ open, onOpenChange, onSubmitRemote, onSubmitClou
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label className="text-zinc-400">File Type</Label>
-                            <Select value={cloudTypeSelection} onValueChange={(value) => setCloudTypeSelection(value as CloudFileTypeSelection)}>
-                                <SelectTrigger className="bg-zinc-900 border-border/60 text-white">
-                                    <SelectValue placeholder="Auto detect" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="auto">Auto detect</SelectItem>
-                                    <SelectItem value="video">Video</SelectItem>
-                                    <SelectItem value="audio">Audio</SelectItem>
-                                    <SelectItem value="image">Image</SelectItem>
-                                    <SelectItem value="pdf">PDF</SelectItem>
-                                    <SelectItem value="file">Generic file</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </TabsContent>
 
                     <TabsContent value="local" className="space-y-4 py-4">
