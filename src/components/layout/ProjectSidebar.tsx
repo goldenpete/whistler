@@ -968,11 +968,11 @@ export default function ProjectSidebar() {
                                                                         <Share className="text-muted-foreground group-hover:text-foreground transition-colors" />
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end">
-                                                                    <DropdownMenuItem onClick={handleExportProject} disabled={!activeProjectId}>
+                                                                <DropdownMenuContent align="end" className="w-auto min-w-40">
+                                                                    <DropdownMenuItem onClick={handleExportProject} disabled={!activeProjectId} className="whitespace-nowrap">
                                                                         <UploadSimple className="mr-2" /> Export Project
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem onClick={handleImportProject}>
+                                                                    <DropdownMenuItem onClick={handleImportProject} className="whitespace-nowrap">
                                                                         <DownloadSimple className="mr-2" /> Import Project
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>

@@ -226,65 +226,67 @@ export function MainLayout() {
     const motionKey = location.pathname.startsWith('/settings') ? '/settings' : location.pathname;
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground animate-in fade-in duration-300">
+        <div className="relative h-screen w-screen overflow-hidden bg-background text-foreground animate-in fade-in duration-300">
             <audio ref={audioRef} loop />
-            <AnimatePresence mode="wait">
-                {!isPlayer && (
-                    <motion.div
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ 
-                            width: "auto", 
-                            opacity: 1,
-                            transition: { 
-                                duration: 0.15, 
-                                ease: "easeOut",
-                                delay: shouldDelaySidebar ? 0.2 : 0 
-                            }
-                        }}
-                        exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeIn" }}
-                        className="h-full flex-shrink-0"
-                    >
-                        <ProjectSidebar />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            <main className="flex-1 flex flex-col relative overflow-hidden bg-black">
-                <div
-                    className="absolute inset-0 z-0 pointer-events-none"
-                    style={{
-                        background: backgroundIsGradient 
-                            ? (backgroundGradient || 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)')
-                            : (backgroundColor || '#000000'),
-                        opacity: backgroundOverlayOpacity ?? 0.5,
-                    }}
-                />
-                {backgroundImageUrl && (
+            <div className="flex h-full w-full">
+                <AnimatePresence mode="wait">
+                    {!isPlayer && (
+                        <motion.div
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ 
+                                width: "auto", 
+                                opacity: 1,
+                                transition: { 
+                                    duration: 0.15, 
+                                    ease: "easeOut",
+                                    delay: shouldDelaySidebar ? 0.2 : 0 
+                                }
+                            }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ duration: 0.15, ease: "easeIn" }}
+                            className="h-full flex-shrink-0"
+                        >
+                            <ProjectSidebar />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                <main className="flex-1 flex flex-col relative overflow-hidden bg-black">
                     <div
                         className="absolute inset-0 z-0 pointer-events-none"
                         style={{
-                            backgroundImage: `url(${backgroundImageUrl})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            opacity: backgroundImageOpacity ?? 0.2,
+                            background: backgroundIsGradient 
+                                ? (backgroundGradient || 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)')
+                                : (backgroundColor || '#000000'),
+                            opacity: backgroundOverlayOpacity ?? 0.5,
                         }}
                     />
-                )}
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={motionKey}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeInOut" }}
-                        className="h-full w-full relative z-10"
-                    >
-                        <Suspense fallback={<div className="h-full w-full bg-transparent" />}>
-                            {currentOutlet}
-                        </Suspense>
-                    </motion.div>
-                </AnimatePresence>
-            </main>
+                    {backgroundImageUrl && (
+                        <div
+                            className="absolute inset-0 z-0 pointer-events-none"
+                            style={{
+                                backgroundImage: `url(${backgroundImageUrl})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                opacity: backgroundImageOpacity ?? 0.2,
+                            }}
+                        />
+                    )}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={motionKey}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15, ease: "easeInOut" }}
+                            className="relative h-full w-full z-10"
+                        >
+                            <Suspense fallback={<div className="h-full w-full bg-transparent" />}>
+                                {currentOutlet}
+                            </Suspense>
+                        </motion.div>
+                    </AnimatePresence>
+                </main>
+            </div>
             <FloatingPlayer />
         </div>
     );
