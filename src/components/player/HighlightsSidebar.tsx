@@ -146,8 +146,8 @@ export function HighlightsSidebar({
                                     className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"
                                     style={{ backgroundColor: borderColor }}
                                 />
-                                <div className="flex items-center justify-between gap-2 h-6 relative z-10">
-                                    <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-center gap-2 h-6 relative z-10">
+                                    <div className="flex flex-1 min-w-0 items-center gap-3">
                                         <button
                                             className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
                                             onClick={() => {
@@ -170,7 +170,7 @@ export function HighlightsSidebar({
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex w-0 shrink-0 items-center justify-end gap-1 overflow-hidden opacity-0 pointer-events-none transition-all duration-150 group-hover:w-[5.75rem] group-hover:opacity-100 group-hover:pointer-events-auto">
                                         <button
                                             className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
                                             onClick={(e: MouseEvent) => {

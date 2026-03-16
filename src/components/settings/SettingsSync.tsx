@@ -89,6 +89,27 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
 import { startRegistration, startAuthentication } from "@/utils/webauthn";
 
+function normalizeServerDataPayload(json: unknown): Record<string, any> {
+    if (!json || typeof json !== 'object') return {};
+
+    let value: unknown = (json as { value?: unknown }).value;
+
+    // Backward compatibility: some responses may nest payload one level deeper.
+    if (value && typeof value === 'object' && 'value' in (value as Record<string, unknown>)) {
+        value = (value as { value?: unknown }).value;
+    }
+
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            return {};
+        }
+    }
+
+    return value && typeof value === 'object' ? (value as Record<string, any>) : {};
+}
+
 interface Session {
     id: string;
     browser: string;
@@ -222,7 +243,7 @@ export function SettingsSync() {
             if (!getResponse.ok) throw new Error("Failed to fetch current sync data");
             
             const json = await getResponse.json();
-            const currentData = json.value || {};
+            const currentData = normalizeServerDataPayload(json);
             
             // 2. Remove the key
             delete currentData[itemToDelete.id];

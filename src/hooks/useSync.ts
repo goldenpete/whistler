@@ -34,6 +34,28 @@ import { useShallow } from '@/lib/zustand-shallow';
 import { sanitizeFilesForPersistence } from '@/utils/localFiles';
 import { SYNC_API_URL } from '@/constants';
 
+function normalizeServerDataPayload(json: unknown): Record<string, any> | null {
+    if (!json || typeof json !== 'object') return null;
+
+    let value: unknown = (json as { value?: unknown }).value;
+
+    // Backward compatibility: some responses may nest the payload one level deeper.
+    if (value && typeof value === 'object' && 'value' in (value as Record<string, unknown>)) {
+        value = (value as { value?: unknown }).value;
+    }
+
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            return null;
+        }
+    }
+
+    if (!value || typeof value !== 'object') return null;
+    return value as Record<string, any>;
+}
+
 export function useSync() {
     const { 
         setLastSyncTime, 
@@ -188,6 +210,10 @@ export function useSync() {
                         data.disabledKeybinds = state.disabledKeybinds;
                     }
                 }
+
+                if (syncOptions.googleDrive) {
+                    data.googleDriveApiKey = state.googleDriveApiKey;
+                }
                 
                 const payload = JSON.stringify({
                     key: "whistler_data",
@@ -250,8 +276,8 @@ export function useSync() {
                 }
 
                 const json = await response.json();
-                if (json && json.value) {
-                    const serverData = json.value;
+                const serverData = normalizeServerDataPayload(json);
+                if (serverData) {
                     const state = useStore.getState();
                     const { syncOptions } = state;
                     const trashEnabled = syncOptions.trash ?? true;
@@ -388,6 +414,10 @@ export function useSync() {
                             if (serverData.customKeybinds) updates.customKeybinds = serverData.customKeybinds;
                             if (serverData.disabledKeybinds) updates.disabledKeybinds = serverData.disabledKeybinds;
                         }
+                    }
+
+                    if (syncOptions.googleDrive && serverData.googleDriveApiKey !== undefined) {
+                        updates.googleDriveApiKey = serverData.googleDriveApiKey;
                     }
 
                     if (Object.keys(updates).length > 0) {
