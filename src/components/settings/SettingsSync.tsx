@@ -122,6 +122,19 @@ const getBrowserInfo = () => {
     return { browser, device, icon };
 };
 
+function formatRelativeTime(isoString: string): string {
+    const diff = Date.now() - new Date(isoString).getTime();
+    const seconds = Math.floor(diff / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    return new Date(isoString).toLocaleDateString();
+}
+
 /* ═══════════════════════════════════════════════════════
    STORE BINDINGS & STATE
    ═══════════════════════════════════════════════════════ */
@@ -180,19 +193,50 @@ export function SettingsSync() {
     const [editName, setEditName] = useState("");
     const [viewSessions, setViewSessions] = useState(false);
     const [sessions, setSessions] = useState<Session[]>([]);
+    const [sessionsLoading, setSessionsLoading] = useState(false);
+
+    const fetchSessions = async () => {
+        const token = authStorage.getToken();
+        if (!token) return;
+        setSessionsLoading(true);
+        try {
+            const res = await fetch(`${SYNC_API_URL}/sessions`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error("Failed to fetch sessions");
+            const data = await res.json();
+            const localInfo = getBrowserInfo();
+            const mapped: Session[] = (data.sessions || []).map((s: { id: string; browser: string; device: string; ip_address: string; last_active: string; is_current: boolean }) => {
+                const iconMap: Record<string, React.ElementType> = {
+                    Windows: Desktop, MacOS: Laptop, Linux: Monitor,
+                    Android: DeviceMobile, iOS: DeviceMobile,
+                };
+                return {
+                    id: s.id,
+                    browser: s.is_current ? localInfo.browser : s.browser,
+                    device: s.is_current ? localInfo.device : s.device,
+                    location: s.ip_address || 'Unknown',
+                    lastActive: s.is_current ? 'Now' : formatRelativeTime(s.last_active),
+                    isCurrent: s.is_current,
+                    icon: s.is_current ? localInfo.icon : (iconMap[s.device] || Globe),
+                };
+            });
+            setSessions(mapped);
+        } catch {
+            // Fallback to local-only session info
+            const info = getBrowserInfo();
+            setSessions([{
+                id: 'current', browser: info.browser, device: info.device,
+                location: 'Current Device', lastActive: 'Now', isCurrent: true, icon: info.icon
+            }]);
+        } finally {
+            setSessionsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const info = getBrowserInfo();
-        setSessions([{
-            id: 'current',
-            browser: info.browser,
-            device: info.device,
-            location: 'Current Device',
-            lastActive: 'Now',
-            isCurrent: true,
-            icon: info.icon
-        }]);
-    }, []);
+        if (user) fetchSessions();
+    }, [user]);
 
     // Remote Deletion State
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -1026,7 +1070,24 @@ export function SettingsSync() {
                                 </div>
                             </div>
                             {!session.isCurrent && (
-                                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10"
+                                    onClick={async () => {
+                                        const token = authStorage.getToken();
+                                        if (!token) return;
+                                        try {
+                                            const res = await fetch(`${SYNC_API_URL}/sessions/${encodeURIComponent(session.id)}`, {
+                                                method: 'DELETE',
+                                                headers: { Authorization: `Bearer ${token}` },
+                                            });
+                                            if (res.ok) {
+                                                setSessions(prev => prev.filter(s => s.id !== session.id));
+                                            }
+                                        } catch { /* ignore */ }
+                                    }}
+                                >
                                     Revoke
                                 </Button>
                             )}
@@ -1470,7 +1531,7 @@ export function SettingsSync() {
                             </div>
                         ))}
                      </div>
-                     <Button variant="outline" className="w-full" onClick={() => setViewSessions(true)}>
+                     <Button variant="outline" className="w-full" onClick={() => { fetchSessions(); setViewSessions(true); }}>
                         View more
                      </Button>
                 </div>

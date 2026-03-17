@@ -172,13 +172,14 @@ async function verifyTurnstile(token, secret, ip) {
   }
 }
 
-async function generateToken(accountId, secret, expirySeconds, pendingTotp = false) {
+async function generateToken(accountId, secret, expirySeconds, pendingTotp = false, sessionId = null) {
   const payload = {
     sub: accountId,
     iat: Math.floor(Date.now() / 1e3),
     exp: Math.floor(Date.now() / 1e3) + parseInt(expirySeconds),
     pending_totp: pendingTotp,
   };
+  if (sessionId) payload.sid = sessionId;
   const payloadB64 = btoa(JSON.stringify(payload));
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -199,7 +200,7 @@ async function verifyToken(token, secret, allowPendingTotp = false) {
     const payload = JSON.parse(atob(payloadB64));
     if (payload.exp < Math.floor(Date.now() / 1e3)) return null;
     if (payload.pending_totp && !allowPendingTotp) return null;
-    return payload.sub;
+    return { sub: payload.sub, sid: payload.sid || null };
   } catch (e) {
     return null;
   }
@@ -236,7 +237,15 @@ async function getAuthenticatedAccountId(request, env, allowPendingTotp = false)
   const authHeader = request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
   const token = authHeader.slice(7);
-  return await verifyToken(token, env.JWT_SECRET, allowPendingTotp);
+  const result = await verifyToken(token, env.JWT_SECRET, allowPendingTotp);
+  if (!result) return null;
+  // Update session last_active in the background (non-blocking)
+  if (result.sid) {
+    const now = new Date().toISOString();
+    env.DB.prepare("UPDATE sessions SET last_active = ? WHERE id = ? AND account_id = ?")
+      .bind(now, result.sid, result.sub).run().catch(() => {});
+  }
+  return result.sub;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -475,7 +484,8 @@ async function handleLogin(request, env) {
       const pendingToken = await generateToken(account_id, env.JWT_SECRET, 300, true);
       return jsonResponse({ success: true, requires_totp: true, pending_token: pendingToken, account_id, display_name: displayName, is_new: isNew });
     }
-    const token = await generateToken(account_id, env.JWT_SECRET, env.TOKEN_EXPIRY, false);
+    const sessionId = await createSession(env, account_id, request);
+    const token = await generateToken(account_id, env.JWT_SECRET, env.TOKEN_EXPIRY, false, sessionId);
     return jsonResponse({ success: true, requires_totp: false, token, account_id, display_name: displayName, is_new: isNew });
   } catch (e) {
     console.error("Login error:", e);
@@ -491,13 +501,15 @@ async function handleLoginTotp(request, env) {
     const body = await request.json();
     const { pending_token, totp_code } = body;
     if (!pending_token || !totp_code) return errorResponse("Missing pending token or TOTP code", 400);
-    const accountId = await verifyToken(pending_token, env.JWT_SECRET, true);
-    if (!accountId) return errorResponse("Invalid or expired token", 401);
+    const tokenData = await verifyToken(pending_token, env.JWT_SECRET, true);
+    if (!tokenData) return errorResponse("Invalid or expired token", 401);
+    const accountId = tokenData.sub;
     const account = await env.DB.prepare("SELECT totp_secret, display_name FROM accounts WHERE id = ? AND totp_enabled = 1").bind(accountId).first();
     if (!account || !account.totp_secret) return errorResponse("2FA not enabled for this account", 400);
     const isValid = await verifyTOTP(account.totp_secret, totp_code);
     if (!isValid) return errorResponse("Invalid 2FA code", 401);
-    const token = await generateToken(accountId, env.JWT_SECRET, env.TOKEN_EXPIRY, false);
+    const sessionId = await createSession(env, accountId, request);
+    const token = await generateToken(accountId, env.JWT_SECRET, env.TOKEN_EXPIRY, false, sessionId);
     return jsonResponse({ success: true, token, account_id: accountId, display_name: account.display_name });
   } catch (e) {
     console.error("TOTP verify error:", e);
@@ -1001,7 +1013,8 @@ async function handlePasskeyLoginFinish(request, env) {
 
     // Generate session token (passkeys bypass 2FA)
     const account = await env.DB.prepare("SELECT display_name, totp_enabled FROM accounts WHERE id = ?").bind(account_id).first();
-    const token = await generateToken(account_id, env.JWT_SECRET, env.TOKEN_EXPIRY, false);
+    const sessionId = await createSession(env, account_id, request);
+    const token = await generateToken(account_id, env.JWT_SECRET, env.TOKEN_EXPIRY, false, sessionId);
 
     return jsonResponse({
       success: true,
@@ -1030,6 +1043,101 @@ async function handleDeletePasskey(request, env, credentialId) {
   } catch (e) {
     console.error("Delete passkey error:", e);
     return errorResponse("Failed to delete passkey", 500);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SESSION MANAGEMENT
+// ══════════════════════════════════════════════════════════════════════════
+
+function parseUserAgent(ua) {
+  let browser = "Unknown";
+  let device = "Unknown";
+
+  if (ua.includes("Firefox")) browser = "Firefox";
+  else if (ua.includes("Edg")) browser = "Edge";
+  else if (ua.includes("Chrome")) browser = "Chrome";
+  else if (ua.includes("Safari")) browser = "Safari";
+
+  if (ua.includes("Windows")) device = "Windows";
+  else if (ua.includes("Macintosh") || ua.includes("Mac OS")) device = "MacOS";
+  else if (ua.includes("Linux") && !ua.includes("Android")) device = "Linux";
+  else if (ua.includes("Android")) device = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) device = "iOS";
+
+  return { browser, device };
+}
+
+async function createSession(env, accountId, request) {
+  const id = crypto.randomUUID();
+  const ua = request.headers.get("User-Agent") || "";
+  const ip = getClientIP(request);
+  const { browser, device } = parseUserAgent(ua);
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(
+    "INSERT INTO sessions (id, account_id, user_agent, ip_address, browser, device, created_at, last_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(id, accountId, ua, ip, browser, device, now, now).run();
+
+  return id;
+}
+
+// GET /sessions — list all sessions for the authenticated user
+async function handleListSessions(request, env) {
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) return errorResponse("Unauthorized", 401);
+
+  // Get current session ID from token
+  const authHeader = request.headers.get("Authorization");
+  const token = authHeader.slice(7);
+  const tokenData = await verifyToken(token, env.JWT_SECRET);
+  const currentSessionId = tokenData?.sid || null;
+
+  try {
+    const { results } = await env.DB.prepare(
+      "SELECT id, browser, device, ip_address, created_at, last_active FROM sessions WHERE account_id = ? ORDER BY last_active DESC"
+    ).bind(accountId).all();
+
+    const sessions = (results || []).map(s => ({
+      id: s.id,
+      browser: s.browser || "Unknown",
+      device: s.device || "Unknown",
+      ip_address: s.ip_address,
+      created_at: s.created_at,
+      last_active: s.last_active,
+      is_current: s.id === currentSessionId,
+    }));
+
+    return jsonResponse({ success: true, sessions });
+  } catch (e) {
+    console.error("List sessions error:", e);
+    return errorResponse("Failed to list sessions", 500);
+  }
+}
+
+// DELETE /sessions/:id — revoke a session
+async function handleDeleteSession(request, env, sessionId) {
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) return errorResponse("Unauthorized", 401);
+
+  // Get current session ID to prevent self-revocation
+  const authHeader = request.headers.get("Authorization");
+  const token = authHeader.slice(7);
+  const tokenData = await verifyToken(token, env.JWT_SECRET);
+  if (tokenData?.sid === sessionId) {
+    return errorResponse("Cannot revoke your current session", 400);
+  }
+
+  try {
+    const result = await env.DB.prepare(
+      "DELETE FROM sessions WHERE id = ? AND account_id = ?"
+    ).bind(sessionId, accountId).run();
+
+    if (result.meta.changes === 0) return errorResponse("Session not found", 404);
+    return jsonResponse({ success: true });
+  } catch (e) {
+    console.error("Delete session error:", e);
+    return errorResponse("Failed to revoke session", 500);
   }
 }
 
@@ -1078,6 +1186,15 @@ export default {
     const passkeyDeleteMatch = path.match(/^\/passkeys\/([^/]+)$/);
     if (passkeyDeleteMatch && method === "DELETE") {
       return handleDeletePasskey(request, env, decodeURIComponent(passkeyDeleteMatch[1]));
+    }
+
+    // ─── Session routes ───────────────────────────────────
+    if (path === "/sessions" && method === "GET") return handleListSessions(request, env);
+
+    // DELETE /sessions/:id
+    const sessionDeleteMatch = path.match(/^\/sessions\/([^/]+)$/);
+    if (sessionDeleteMatch && method === "DELETE") {
+      return handleDeleteSession(request, env, decodeURIComponent(sessionDeleteMatch[1]));
     }
 
     return errorResponse("Not found", 404);
