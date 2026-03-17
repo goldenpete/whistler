@@ -1,0 +1,717 @@
+﻿var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+
+// src/index.js
+var corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400"
+};
+var RATE_LIMITS = {
+  login: { windowSeconds: 60, maxRequests: 5 },
+  // 5 logins per minute (increased for 2FA flow)
+  data_read: { windowSeconds: 60, maxRequests: 30 },
+  // 30 reads per minute
+  data_write: { windowSeconds: 60, maxRequests: 10 },
+  // 10 writes per minute
+  totp: { windowSeconds: 60, maxRequests: 5 },
+  // 5 TOTP attempts per minute
+  global: { windowSeconds: 60, maxRequests: 60 }
+  // 60 total requests per minute
+};
+async function checkRateLimit(db, ip, endpoint) {
+  const config = RATE_LIMITS[endpoint] || RATE_LIMITS.global;
+  const now = Math.floor(Date.now() / 1e3);
+  const windowStart = now - now % config.windowSeconds;
+  try {
+    const existing = await db.prepare(
+      "SELECT request_count FROM rate_limits WHERE ip = ? AND endpoint = ? AND window_start = ?"
+    ).bind(ip, endpoint, windowStart).first();
+    if (existing) {
+      if (existing.request_count >= config.maxRequests) {
+        return { allowed: false, remaining: 0, resetIn: config.windowSeconds - now % config.windowSeconds };
+      }
+      await db.prepare(
+        "UPDATE rate_limits SET request_count = request_count + 1 WHERE ip = ? AND endpoint = ? AND window_start = ?"
+      ).bind(ip, endpoint, windowStart).run();
+      return { allowed: true, remaining: config.maxRequests - existing.request_count - 1 };
+    } else {
+      await db.prepare(
+        "INSERT INTO rate_limits (ip, endpoint, window_start, request_count) VALUES (?, ?, ?, 1)"
+      ).bind(ip, endpoint, windowStart).run();
+      return { allowed: true, remaining: config.maxRequests - 1 };
+    }
+  } catch (e) {
+    console.error("Rate limit check error:", e);
+    return { allowed: true, remaining: 0 };
+  }
+}
+__name(checkRateLimit, "checkRateLimit");
+async function cleanupRateLimits(db) {
+  const cutoff = Math.floor(Date.now() / 1e3) - 3600;
+  try {
+    await db.prepare("DELETE FROM rate_limits WHERE window_start < ?").bind(cutoff).run();
+  } catch (e) {
+    console.error("Rate limit cleanup error:", e);
+  }
+}
+__name(cleanupRateLimits, "cleanupRateLimits");
+function generateTOTPSecret() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const array = new Uint8Array(20);
+  crypto.getRandomValues(array);
+  let secret = "";
+  for (let i = 0; i < 20; i++) {
+    secret += chars[array[i] % 32];
+  }
+  return secret;
+}
+__name(generateTOTPSecret, "generateTOTPSecret");
+function generateDisplayName() {
+  const adjectives = [
+    "Swift",
+    "Brave",
+    "Calm",
+    "Daring",
+    "Eager",
+    "Fierce",
+    "Gentle",
+    "Happy",
+    "Jolly",
+    "Kind",
+    "Lucky",
+    "Mighty",
+    "Noble",
+    "Proud",
+    "Quick",
+    "Royal",
+    "Silent",
+    "Steady",
+    "Clever",
+    "Cosmic",
+    "Crystal",
+    "Dancing",
+    "Dreamy",
+    "Electric",
+    "Frozen",
+    "Golden",
+    "Hidden",
+    "Iron",
+    "Jade",
+    "Keen",
+    "Lunar",
+    "Misty",
+    "Neon",
+    "Ocean",
+    "Phantom",
+    "Quantum",
+    "Radiant",
+    "Sapphire",
+    "Shadow",
+    "Solar",
+    "Stellar",
+    "Thunder",
+    "Velvet",
+    "Wild",
+    "Amber",
+    "Arctic",
+    "Blazing",
+    "Coral",
+    "Crimson",
+    "Dusk",
+    "Ember"
+  ];
+  const animals = [
+    "Fox",
+    "Wolf",
+    "Bear",
+    "Eagle",
+    "Hawk",
+    "Owl",
+    "Tiger",
+    "Lion",
+    "Panther",
+    "Falcon",
+    "Raven",
+    "Shark",
+    "Dragon",
+    "Phoenix",
+    "Viper",
+    "Cobra",
+    "Jaguar",
+    "Lynx",
+    "Puma",
+    "Orca",
+    "Badger",
+    "Crane",
+    "Dolphin",
+    "Elephant",
+    "Gazelle",
+    "Heron",
+    "Ibis",
+    "Jackal",
+    "Koala",
+    "Lemur",
+    "Mantis",
+    "Narwhal",
+    "Osprey",
+    "Panda",
+    "Quail",
+    "Raccoon",
+    "Sparrow",
+    "Turtle",
+    "Unicorn",
+    "Vulture",
+    "Walrus",
+    "Yak",
+    "Zebra",
+    "Otter",
+    "Seal",
+    "Stag",
+    "Moth",
+    "Bison",
+    "Coyote",
+    "Ferret"
+  ];
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const animal = animals[Math.floor(Math.random() * animals.length)];
+  return `${adj} ${animal}`;
+}
+__name(generateDisplayName, "generateDisplayName");
+function base32Decode(str) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  str = str.toUpperCase().replace(/[^A-Z2-7]/g, "");
+  let bits = "";
+  for (const char of str) {
+    const val = chars.indexOf(char);
+    bits += val.toString(2).padStart(5, "0");
+  }
+  const bytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(parseInt(bits.substr(i, 8), 2));
+  }
+  return new Uint8Array(bytes);
+}
+__name(base32Decode, "base32Decode");
+async function hmacSha1(key, message) {
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    key,
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, message);
+  return new Uint8Array(signature);
+}
+__name(hmacSha1, "hmacSha1");
+async function verifyTOTP(secret, code, timeStep = 30) {
+  const normalizedCode = code.replace(/\s/g, "");
+  for (const offset of [0, -1, 1]) {
+    const time = Math.floor(Date.now() / 1e3 / timeStep) + offset;
+    const timeBuffer = new ArrayBuffer(8);
+    const timeView = new DataView(timeBuffer);
+    timeView.setUint32(4, time, false);
+    const key = base32Decode(secret);
+    const hmac = await hmacSha1(key, new Uint8Array(timeBuffer));
+    const hmacOffset = hmac[hmac.length - 1] & 15;
+    const generatedCode = ((hmac[hmacOffset] & 127) << 24 | (hmac[hmacOffset + 1] & 255) << 16 | (hmac[hmacOffset + 2] & 255) << 8 | hmac[hmacOffset + 3] & 255) % 1e6;
+    if (generatedCode.toString().padStart(6, "0") === normalizedCode) {
+      return true;
+    }
+  }
+  return false;
+}
+__name(verifyTOTP, "verifyTOTP");
+async function verifyTurnstile(token, secret, ip) {
+  if (!token) {
+    return { success: false, error: "Captcha token required" };
+  }
+  if (!secret) {
+    console.error("TURNSTILE_SECRET is not set");
+    return { success: false, error: "Server configuration error" };
+  }
+  try {
+    const bodyParams = {
+      secret,
+      response: token
+    };
+    if (ip && ip !== "unknown") {
+      bodyParams.remoteip = ip;
+    }
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(bodyParams)
+    });
+    const result = await response.json();
+    console.log("Turnstile response:", JSON.stringify(result));
+    if (!result.success) {
+      console.error("Turnstile verification failed:", result["error-codes"]);
+      const errorCodes = result["error-codes"] || [];
+      if (errorCodes.includes("invalid-input-secret")) {
+        return { success: false, error: "Server configuration error (invalid secret)" };
+      }
+      if (errorCodes.includes("timeout-or-duplicate")) {
+        return { success: false, error: "Captcha expired, please try again" };
+      }
+      return { success: false, error: "Captcha verification failed" };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error("Turnstile verification error:", e);
+    return { success: false, error: "Captcha verification error" };
+  }
+}
+__name(verifyTurnstile, "verifyTurnstile");
+async function generateToken(accountId, secret, expirySeconds, pendingTotp = false) {
+  const payload = {
+    sub: accountId,
+    iat: Math.floor(Date.now() / 1e3),
+    exp: Math.floor(Date.now() / 1e3) + parseInt(expirySeconds),
+    pending_totp: pendingTotp
+    // If true, user still needs to verify TOTP
+  };
+  const payloadB64 = btoa(JSON.stringify(payload));
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadB64));
+  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  return `${payloadB64}.${signatureB64}`;
+}
+__name(generateToken, "generateToken");
+async function verifyToken(token, secret, allowPendingTotp = false) {
+  try {
+    const [payloadB64, signatureB64] = token.split(".");
+    if (!payloadB64 || !signatureB64)
+      return null;
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    const signature = Uint8Array.from(atob(signatureB64), (c) => c.charCodeAt(0));
+    const valid = await crypto.subtle.verify("HMAC", key, signature, encoder.encode(payloadB64));
+    if (!valid)
+      return null;
+    const payload = JSON.parse(atob(payloadB64));
+    if (payload.exp < Math.floor(Date.now() / 1e3)) {
+      return null;
+    }
+    if (payload.pending_totp && !allowPendingTotp) {
+      return null;
+    }
+    return payload.sub;
+  } catch (e) {
+    return null;
+  }
+}
+__name(verifyToken, "verifyToken");
+function isValidAccountId(id) {
+  return typeof id === "string" && /^\d{16}$/.test(id);
+}
+__name(isValidAccountId, "isValidAccountId");
+function jsonResponse(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders, ...extraHeaders }
+  });
+}
+__name(jsonResponse, "jsonResponse");
+function errorResponse(message, status = 400, extraHeaders = {}) {
+  return jsonResponse({ error: message }, status, extraHeaders);
+}
+__name(errorResponse, "errorResponse");
+function rateLimitResponse(resetIn) {
+  return errorResponse(`Too many requests. Try again in ${resetIn} seconds.`, 429, { "Retry-After": String(resetIn) });
+}
+__name(rateLimitResponse, "rateLimitResponse");
+function handleOptions() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
+__name(handleOptions, "handleOptions");
+function getClientIP(request) {
+  return request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() || "unknown";
+}
+__name(getClientIP, "getClientIP");
+async function getAuthenticatedAccountId(request, env, allowPendingTotp = false) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  const token = authHeader.slice(7);
+  return await verifyToken(token, env.JWT_SECRET, allowPendingTotp);
+}
+__name(getAuthenticatedAccountId, "getAuthenticatedAccountId");
+async function handleLogin(request, env) {
+  const ip = getClientIP(request);
+  const rateCheck = await checkRateLimit(env.DB, ip, "login");
+  if (!rateCheck.allowed) {
+    return rateLimitResponse(rateCheck.resetIn);
+  }
+  try {
+    const body = await request.json();
+    const { account_id, captcha_token } = body;
+    const captchaResult = await verifyTurnstile(captcha_token, env.TURNSTILE_SECRET, ip);
+    if (!captchaResult.success) {
+      return errorResponse(captchaResult.error || "Captcha verification failed", 400);
+    }
+    if (!isValidAccountId(account_id)) {
+      return errorResponse("Invalid account ID format. Must be 16 digits.", 400);
+    }
+    const existing = await env.DB.prepare(
+      "SELECT id, totp_enabled, display_name FROM accounts WHERE id = ?"
+    ).bind(account_id).first();
+    let isNew = false;
+    let totpEnabled = false;
+    let displayName = null;
+    if (!existing) {
+      const now = (/* @__PURE__ */ new Date()).toISOString();
+      displayName = generateDisplayName();
+      await env.DB.prepare(
+        "INSERT INTO accounts (id, created_at, totp_enabled, display_name) VALUES (?, ?, 0, ?)"
+      ).bind(account_id, now, displayName).run();
+      isNew = true;
+    } else {
+      totpEnabled = existing.totp_enabled === 1;
+      displayName = existing.display_name;
+      if (!displayName) {
+        displayName = generateDisplayName();
+        await env.DB.prepare(
+          "UPDATE accounts SET display_name = ? WHERE id = ?"
+        ).bind(displayName, account_id).run();
+      }
+    }
+    if (totpEnabled) {
+      const pendingToken = await generateToken(account_id, env.JWT_SECRET, 300, true);
+      return jsonResponse({
+        success: true,
+        requires_totp: true,
+        pending_token: pendingToken,
+        account_id,
+        display_name: displayName,
+        is_new: isNew
+      });
+    }
+    const token = await generateToken(account_id, env.JWT_SECRET, env.TOKEN_EXPIRY, false);
+    return jsonResponse({
+      success: true,
+      requires_totp: false,
+      token,
+      account_id,
+      display_name: displayName,
+      is_new: isNew
+    });
+  } catch (e) {
+    console.error("Login error:", e);
+    return errorResponse("Login failed", 500);
+  }
+}
+__name(handleLogin, "handleLogin");
+async function handleLoginTotp(request, env) {
+  const ip = getClientIP(request);
+  const rateCheck = await checkRateLimit(env.DB, ip, "totp");
+  if (!rateCheck.allowed) {
+    return rateLimitResponse(rateCheck.resetIn);
+  }
+  try {
+    const body = await request.json();
+    const { pending_token, totp_code } = body;
+    if (!pending_token || !totp_code) {
+      return errorResponse("Missing pending token or TOTP code", 400);
+    }
+    const accountId = await verifyToken(pending_token, env.JWT_SECRET, true);
+    if (!accountId) {
+      return errorResponse("Invalid or expired token", 401);
+    }
+    const account = await env.DB.prepare(
+      "SELECT totp_secret, display_name FROM accounts WHERE id = ? AND totp_enabled = 1"
+    ).bind(accountId).first();
+    if (!account || !account.totp_secret) {
+      return errorResponse("2FA not enabled for this account", 400);
+    }
+    const isValid = await verifyTOTP(account.totp_secret, totp_code);
+    if (!isValid) {
+      return errorResponse("Invalid 2FA code", 401);
+    }
+    const token = await generateToken(accountId, env.JWT_SECRET, env.TOKEN_EXPIRY, false);
+    return jsonResponse({
+      success: true,
+      token,
+      account_id: accountId,
+      display_name: account.display_name
+    });
+  } catch (e) {
+    console.error("TOTP verify error:", e);
+    return errorResponse("Verification failed", 500);
+  }
+}
+__name(handleLoginTotp, "handleLoginTotp");
+async function handle2FASetup(request, env) {
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) {
+    return errorResponse("Unauthorized", 401);
+  }
+  try {
+    const account = await env.DB.prepare(
+      "SELECT totp_enabled FROM accounts WHERE id = ?"
+    ).bind(accountId).first();
+    if (account && account.totp_enabled === 1) {
+      return errorResponse("2FA is already enabled", 400);
+    }
+    const secret = generateTOTPSecret();
+    await env.DB.prepare(
+      "UPDATE accounts SET totp_secret = ? WHERE id = ?"
+    ).bind(secret, accountId).run();
+    const otpauthUrl = `otpauth://totp/Whistler:${accountId}?secret=${secret}&issuer=Whistler&digits=6&period=30`;
+    return jsonResponse({
+      success: true,
+      secret,
+      otpauth_url: otpauthUrl
+    });
+  } catch (e) {
+    console.error("2FA setup error:", e);
+    return errorResponse("Setup failed", 500);
+  }
+}
+__name(handle2FASetup, "handle2FASetup");
+async function handle2FAEnable(request, env) {
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) {
+    return errorResponse("Unauthorized", 401);
+  }
+  try {
+    const body = await request.json();
+    const { totp_code } = body;
+    if (!totp_code) {
+      return errorResponse("TOTP code required", 400);
+    }
+    const account = await env.DB.prepare(
+      "SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?"
+    ).bind(accountId).first();
+    if (!account || !account.totp_secret) {
+      return errorResponse("Please run setup first", 400);
+    }
+    if (account.totp_enabled === 1) {
+      return errorResponse("2FA is already enabled", 400);
+    }
+    const isValid = await verifyTOTP(account.totp_secret, totp_code);
+    if (!isValid) {
+      return errorResponse("Invalid code. Please try again.", 400);
+    }
+    await env.DB.prepare(
+      "UPDATE accounts SET totp_enabled = 1 WHERE id = ?"
+    ).bind(accountId).run();
+    return jsonResponse({
+      success: true,
+      message: "2FA enabled successfully"
+    });
+  } catch (e) {
+    console.error("2FA enable error:", e);
+    return errorResponse("Failed to enable 2FA", 500);
+  }
+}
+__name(handle2FAEnable, "handle2FAEnable");
+async function handle2FADisable(request, env) {
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) {
+    return errorResponse("Unauthorized", 401);
+  }
+  try {
+    const body = await request.json();
+    const { totp_code } = body;
+    if (!totp_code) {
+      return errorResponse("TOTP code required to disable 2FA", 400);
+    }
+    const account = await env.DB.prepare(
+      "SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?"
+    ).bind(accountId).first();
+    if (!account || account.totp_enabled !== 1) {
+      return errorResponse("2FA is not enabled", 400);
+    }
+    const isValid = await verifyTOTP(account.totp_secret, totp_code);
+    if (!isValid) {
+      return errorResponse("Invalid code", 400);
+    }
+    await env.DB.prepare(
+      "UPDATE accounts SET totp_enabled = 0, totp_secret = NULL WHERE id = ?"
+    ).bind(accountId).run();
+    return jsonResponse({
+      success: true,
+      message: "2FA disabled successfully"
+    });
+  } catch (e) {
+    console.error("2FA disable error:", e);
+    return errorResponse("Failed to disable 2FA", 500);
+  }
+}
+__name(handle2FADisable, "handle2FADisable");
+async function handle2FAStatus(request, env) {
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) {
+    return errorResponse("Unauthorized", 401);
+  }
+  try {
+    const account = await env.DB.prepare(
+      "SELECT totp_enabled FROM accounts WHERE id = ?"
+    ).bind(accountId).first();
+    return jsonResponse({
+      success: true,
+      totp_enabled: account ? account.totp_enabled === 1 : false
+    });
+  } catch (e) {
+    console.error("2FA status error:", e);
+    return errorResponse("Failed to get status", 500);
+  }
+}
+__name(handle2FAStatus, "handle2FAStatus");
+async function handleGetData(request, env) {
+  const ip = getClientIP(request);
+  const rateCheck = await checkRateLimit(env.DB, ip, "data_read");
+  if (!rateCheck.allowed) {
+    return rateLimitResponse(rateCheck.resetIn);
+  }
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) {
+    return errorResponse("Unauthorized", 401);
+  }
+  try {
+    const results = await env.DB.prepare(
+      "SELECT key, value, updated_at FROM user_data WHERE account_id = ?"
+    ).bind(accountId).all();
+    return jsonResponse({
+      success: true,
+      data: results.results || []
+    });
+  } catch (e) {
+    console.error("Get data error:", e);
+    return errorResponse("Failed to retrieve data", 500);
+  }
+}
+__name(handleGetData, "handleGetData");
+async function handlePutData(request, env) {
+  const ip = getClientIP(request);
+  const rateCheck = await checkRateLimit(env.DB, ip, "data_write");
+  if (!rateCheck.allowed) {
+    return rateLimitResponse(rateCheck.resetIn);
+  }
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) {
+    return errorResponse("Unauthorized", 401);
+  }
+  try {
+    const body = await request.json();
+    const { key, value } = body;
+    if (!key || typeof key !== "string") {
+      return errorResponse("Invalid key", 400);
+    }
+    if (value === void 0) {
+      return errorResponse("Value is required", 400);
+    }
+    const valueStr = JSON.stringify(value);
+    if (valueStr.length > 5e5) {
+      return errorResponse("Data too large. Maximum 500KB allowed.", 400);
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    await env.DB.prepare(
+      "INSERT OR REPLACE INTO user_data (account_id, key, value, updated_at) VALUES (?, ?, ?, ?)"
+    ).bind(accountId, key, valueStr, now).run();
+    return jsonResponse({ success: true, key, updated_at: now });
+  } catch (e) {
+    console.error("Put data error:", e);
+    return errorResponse("Failed to save data", 500);
+  }
+}
+__name(handlePutData, "handlePutData");
+async function handleDeleteData(request, env) {
+  const ip = getClientIP(request);
+  const rateCheck = await checkRateLimit(env.DB, ip, "data_write");
+  if (!rateCheck.allowed) {
+    return rateLimitResponse(rateCheck.resetIn);
+  }
+  const accountId = await getAuthenticatedAccountId(request, env);
+  if (!accountId) {
+    return errorResponse("Unauthorized", 401);
+  }
+  try {
+    const body = await request.json();
+    const { key } = body;
+    if (!key || typeof key !== "string") {
+      return errorResponse("Invalid key", 400);
+    }
+    await env.DB.prepare(
+      "DELETE FROM user_data WHERE account_id = ? AND key = ?"
+    ).bind(accountId, key).run();
+    return jsonResponse({ success: true, key });
+  } catch (e) {
+    console.error("Delete data error:", e);
+    return errorResponse("Failed to delete data", 500);
+  }
+}
+__name(handleDeleteData, "handleDeleteData");
+function handleHealth() {
+  return jsonResponse({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+}
+__name(handleHealth, "handleHealth");
+var src_default = {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const method = request.method;
+    if (method === "OPTIONS") {
+      return handleOptions();
+    }
+    if (Math.random() < 0.01) {
+      cleanupRateLimits(env.DB);
+    }
+    const ip = getClientIP(request);
+    const globalCheck = await checkRateLimit(env.DB, ip, "global");
+    if (!globalCheck.allowed) {
+      return rateLimitResponse(globalCheck.resetIn);
+    }
+    if (path === "/login" && method === "POST") {
+      return handleLogin(request, env);
+    }
+    if (path === "/login/totp" && method === "POST") {
+      return handleLoginTotp(request, env);
+    }
+    if (path === "/2fa/setup" && method === "POST") {
+      return handle2FASetup(request, env);
+    }
+    if (path === "/2fa/enable" && method === "POST") {
+      return handle2FAEnable(request, env);
+    }
+    if (path === "/2fa/disable" && method === "POST") {
+      return handle2FADisable(request, env);
+    }
+    if (path === "/2fa/status" && method === "GET") {
+      return handle2FAStatus(request, env);
+    }
+    if (path === "/data") {
+      if (method === "GET")
+        return handleGetData(request, env);
+      if (method === "PUT")
+        return handlePutData(request, env);
+      if (method === "DELETE")
+        return handleDeleteData(request, env);
+    }
+    if (path === "/health" && method === "GET") {
+      return handleHealth();
+    }
+    return errorResponse("Not found", 404);
+  }
+};
+export {
+  src_default as default
+};
+//# sourceMappingURL=index.js.map
