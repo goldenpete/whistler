@@ -51,7 +51,8 @@ import {
     FilmStrip,
     FileText,
     Book,
-    HardDrives
+    HardDrives,
+    WarningOctagon
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
@@ -96,9 +97,10 @@ interface CollectionFormProps {
     onCancel: () => void;
     submitLabel: string;
     isFolder?: boolean;
+    footerPrefix?: React.ReactNode;
 }
 
-function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], defaultIcon = "FolderPlus", onSubmit, onCancel, submitLabel, isFolder = false }: CollectionFormProps) {
+function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], defaultIcon = "FolderPlus", onSubmit, onCancel, submitLabel, isFolder = false, footerPrefix }: CollectionFormProps) {
     const [name, setName] = useState(defaultName);
     const [color, setColor] = useState(defaultColor);
     const [iconName, setIconName] = useState(defaultIcon);
@@ -124,7 +126,7 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
     };
 
     return (
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 pt-4">
             <div className="space-y-2">
                 <Label htmlFor="collection-name" className="text-zinc-400">{isFolder ? "Folder Name" : "Collection Name"}</Label>
                 <Input
@@ -181,14 +183,15 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
                 </>
             )}
 
-            <DialogFooter>
+            <div className="flex items-center gap-2 pt-4">
+                {footerPrefix ? <div className="mr-auto">{footerPrefix}</div> : null}
                 <Button variant="outline" onClick={onCancel} className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800">
                     Cancel
                 </Button>
                 <Button onClick={handleSubmit} disabled={!name.trim()} data-sound-confirm>
                     {submitLabel}
                 </Button>
-            </DialogFooter>
+            </div>
         </div>
     );
 }
@@ -307,39 +310,120 @@ interface EditCollectionDialogProps {
     onOpenChange: (open: boolean) => void;
     collection: Collection | null;
     onSubmit: (id: string, updates: { name: string; color: string; icon: string }) => void;
+    onDelete?: (collection: Collection) => void;
 }
 
-export function EditCollectionDialog({ open, onOpenChange, collection, onSubmit }: EditCollectionDialogProps) {
-    // Reset form state when collection changes or dialog opens is handled by key={collection?.id} strategy or inside Form using useEffect
+export function EditCollectionDialog({ open, onOpenChange, collection, onSubmit, onDelete }: EditCollectionDialogProps) {
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteCooldown, setDeleteCooldown] = useState(8);
+
+    useEffect(() => {
+        if (open) {
+            setShowDeleteConfirm(false);
+            setDeleteCooldown(8);
+        }
+    }, [open]);
+
+    useEffect(() => {
+        if (!showDeleteConfirm) {
+            setDeleteCooldown(8);
+            return;
+        }
+        setDeleteCooldown(8);
+        const intervalId = window.setInterval(() => {
+            setDeleteCooldown((current) => {
+                if (current <= 1) { window.clearInterval(intervalId); return 0; }
+                return current - 1;
+            });
+        }, 1000);
+        return () => { window.clearInterval(intervalId); };
+    }, [showDeleteConfirm]);
 
     if (!collection) return null;
 
     const isFolder = collection.type === 'folder';
     const isBucket = collection.type === 'bucket';
+    const typeLabel = isBucket ? "Bucket" : isFolder ? "Folder" : "Collection";
+
+    const handleDelete = () => {
+        if (!onDelete || deleteCooldown > 0) return;
+        onDelete(collection);
+        setShowDeleteConfirm(false);
+        onOpenChange(false);
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                <DialogHeader>
-                    <DialogTitle>{isBucket ? "Edit Bucket" : isFolder ? "Edit Folder" : "Edit Collection"}</DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Update your {isBucket ? "bucket" : isFolder ? "folder" : "collection"} details.
-                    </DialogDescription>
-                </DialogHeader>
-                {/* Use key to force re-render when collection changes */}
-                <CollectionForm
-                    key={collection.id}
-                    defaultName={collection.name}
-                    defaultColor={collection.color}
-                    defaultIcon={collection.icon}
-                    isFolder={isFolder}
-                    onSubmit={(name, color, icon) => {
-                        onSubmit(collection.id, { name, color, icon });
-                        onOpenChange(false);
-                    }}
-                    onCancel={() => onOpenChange(false)}
-                    submitLabel="Save Changes"
-                />
+                <div className="relative">
+                    {/* ── Edit layer ── */}
+                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "pointer-events-none absolute inset-0 translate-y-1 opacity-0" : "relative translate-y-0 opacity-100"}`}>
+                        <DialogHeader>
+                            <DialogTitle>{`Edit ${typeLabel}`}</DialogTitle>
+                            <DialogDescription className="sr-only">
+                                Update your {typeLabel.toLowerCase()} details.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <CollectionForm
+                            key={collection.id}
+                            defaultName={collection.name}
+                            defaultColor={collection.color}
+                            defaultIcon={collection.icon}
+                            isFolder={isFolder}
+                            onSubmit={(name, color, icon) => {
+                                onSubmit(collection.id, { name, color, icon });
+                                onOpenChange(false);
+                            }}
+                            onCancel={() => onOpenChange(false)}
+                            submitLabel="Save Changes"
+                            footerPrefix={onDelete ? (
+                                <Button variant="destructive" type="button" onClick={() => setShowDeleteConfirm(true)}>
+                                    {`Delete ${typeLabel}`}
+                                </Button>
+                            ) : undefined}
+                        />
+                    </div>
+                    {/* ── Delete confirmation layer ── */}
+                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "relative translate-y-0 opacity-100" : "pointer-events-none absolute inset-0 -translate-y-1 opacity-0"}`}>
+                        <DialogHeader>
+                            <DialogTitle>{`Delete this ${typeLabel.toLowerCase()}?`}</DialogTitle>
+                            <DialogDescription className="text-zinc-400">
+                                {`This will move ${collection.name} to the trash.`}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <div className="space-y-2">
+                                <Label className="text-zinc-400">{typeLabel}</Label>
+                                <div className="flex min-h-9 items-center gap-3 border border-red-500/25 bg-red-500/6 px-3 text-sm text-zinc-200">
+                                    <WarningOctagon size={16} weight="fill" className="shrink-0 text-red-400" />
+                                    <span className="truncate font-medium text-white" title={collection.name}>
+                                        {collection.name}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="border-t border-zinc-800 pt-4 sm:justify-between">
+                            <Button
+                                variant="ghost"
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="hover:bg-white/10 text-zinc-400 hover:text-white"
+                            >
+                                Back
+                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                                <Button
+                                    variant="destructive"
+                                    type="button"
+                                    disabled={deleteCooldown > 0}
+                                    onClick={handleDelete}
+                                >
+                                    {deleteCooldown > 0 ? `Delete (${deleteCooldown}s)` : "Delete"}
+                                </Button>
+                            </div>
+                        </DialogFooter>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );

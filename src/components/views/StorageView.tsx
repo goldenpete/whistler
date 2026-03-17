@@ -29,7 +29,7 @@ import {
     MagnifyingGlass, Plus, CaretRight, CheckSquare,
     CaretDown, CaretUp, Clock, Tag,
     SquaresFour, Rows, FolderOpen, ArrowSquareOut, X, Palette,
-    Cards
+    Cards, PencilSimple
 } from "@phosphor-icons/react";
 import { type File as AppFile } from "@/types";
 import {
@@ -73,7 +73,8 @@ import {
     AddFileDialog,
     NewFolderDialog,
     RenameFileDialog,
-    EditFolderDialog
+    EditFolderDialog,
+    EditStorageDialog
 } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { useKeybind } from "@/hooks/use-keybind";
@@ -145,6 +146,8 @@ export default function StorageView() {
         activeStorageId,
         trashFile,
         addStorage,
+        updateStorage,
+        deleteStorage,
     } = useStore(useShallow((state) => ({
         projects: state.projects,
         activeProjectId: state.activeProjectId,
@@ -153,6 +156,8 @@ export default function StorageView() {
         activeStorageId: state.activeStorageId,
         trashFile: state.trashFile,
         addStorage: state.addStorage,
+        updateStorage: state.updateStorage,
+        deleteStorage: state.deleteStorage,
     })));
 
     // Helper: check if folderId is ancestor of targetId
@@ -207,6 +212,7 @@ export default function StorageView() {
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const [fileToRename, setFileToRename] = useState<AppFile | null>(null);
     const [editFolderOpen, setEditFolderOpen] = useState(false);
+    const [editStorageOpen, setEditStorageOpen] = useState(false);
     const [folderToEdit, setFolderToEdit] = useState<AppFile | null>(null);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -448,6 +454,38 @@ export default function StorageView() {
                 files: state.files.map(f => f.id === folderToEdit.id ? { ...f, name, description, color, icon, lastModified: Date.now() } : f)
             }));
         }
+    };
+
+    const handleOpenCurrentEdit = () => {
+        if (currentFolder) {
+            setFolderToEdit(currentFolder);
+            setEditFolderOpen(true);
+            return;
+        }
+
+        if (activeStorage) {
+            setEditStorageOpen(true);
+        }
+    };
+
+    const handleDeleteCurrentContext = () => {
+        if (currentFolder) {
+            const parentFolderId = currentFolder.parentId;
+            trashFile(currentFolder.id);
+            if (parentFolderId) {
+                setSearchParams({ folderId: parentFolderId });
+            } else {
+                setSearchParams({});
+            }
+            return;
+        }
+
+        if (!activeStorage) return;
+
+        const nextStorageId = projectStorages.find((storage) => storage.id !== activeStorage.id)?.id || null;
+        deleteStorage(activeStorage.id);
+        setSearchParams({});
+        navigate(nextStorageId ? `/storage/${nextStorageId}` : '/storage');
     };
 
     // --- Shortcuts ---
@@ -1033,6 +1071,16 @@ export default function StorageView() {
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0 bg-card border-border/60 group"
+                                    onClick={handleOpenCurrentEdit}
+                                    title={currentFolder ? 'Edit Folder' : 'Edit Storage'}
+                                    disabled={!currentFolder && !activeStorage}
+                                >
+                                    <PencilSimple className="text-muted-foreground group-hover:text-foreground transition-colors" size={16} />
+                                </Button>
                                 <div className="w-px h-5 bg-border mx-1" />
                                 <Button variant="outline" size="sm" className="h-8 gap-2 text-xs" onClick={() => setAddFileOpen(true)}>
                                     <Plus weight="bold" size={14} />
@@ -1235,6 +1283,28 @@ export default function StorageView() {
                 onOpenChange={setNewFolderOpen}
                 onSubmit={handleNewFolder}
             />
+            <EditFolderDialog
+                open={editFolderOpen}
+                onOpenChange={setEditFolderOpen}
+                onSubmit={handleEditFolderSubmit}
+                initialName={folderToEdit?.name || ""}
+                initialColor={folderToEdit?.color}
+                initialIcon={folderToEdit?.icon}
+                initialDescription={folderToEdit?.description}
+                onDelete={handleDeleteCurrentContext}
+            />
+            <EditStorageDialog
+                open={editStorageOpen}
+                onOpenChange={setEditStorageOpen}
+                onSubmit={(name, color, icon) => {
+                    if (!activeStorage) return;
+                    updateStorage(activeStorage.id, { name, color, icon, lastModified: Date.now() });
+                }}
+                initialName={activeStorage?.name || ""}
+                initialColor={activeStorage?.color}
+                initialIcon={activeStorage?.icon}
+                onDelete={handleDeleteCurrentContext}
+            />
             <MoveFileDialog
                 open={moveDialogOpen}
                 onOpenChange={(open) => {
@@ -1254,14 +1324,6 @@ export default function StorageView() {
                 showDescription={fileToRename?.type !== 'folder'}
                 isLocalFileSource={Boolean(fileToRename && isLocalFile(fileToRename))}
                 localSourceLabel={fileToRename ? getDisplaySourceLabel(fileToRename) : ''}
-            />
-            <EditFolderDialog
-                open={editFolderOpen}
-                onOpenChange={setEditFolderOpen}
-                onSubmit={handleEditFolderSubmit}
-                initialName={folderToEdit?.name || ""}
-                initialColor={folderToEdit?.color}
-                initialIcon={folderToEdit?.icon}
             />
 
             <DragOverlay>

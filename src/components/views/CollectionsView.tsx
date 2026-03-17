@@ -104,7 +104,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useKeybind } from "@/hooks/use-keybind";
-import { CreateCollectionDialog, CreateFolderDialog } from "@/components/dialogs/CollectionDialogs";
+import { CreateCollectionDialog, CreateFolderDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { MoveCollectionDialog } from "@/components/dialogs/MoveCollectionDialog";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
 
@@ -760,6 +760,7 @@ export default function CollectionsView() {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [addCollectionOpen, setAddCollectionOpen] = useState(false);
     const [addFolderOpen, setAddFolderOpen] = useState(false);
+    const [editCollectionOpen, setEditCollectionOpen] = useState(false);
     const [collectionToEdit, setCollectionToEdit] = useState<Collection | null>(null);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [collectionToMove, setCollectionToMove] = useState<Collection | null>(null);
@@ -767,6 +768,7 @@ export default function CollectionsView() {
     const activeProject = projects.find(p => p.id === activeProjectId);
     const currentFolder = currentFolderId ? collections.find(c => c.id === currentFolderId) : null;
     const activeBucket = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
+    const currentEditTarget = currentFolder || activeBucket || null;
 
     // Breadcrumbs with memoization and protection
     const breadcrumbs = useMemo(() => {
@@ -920,7 +922,13 @@ export default function CollectionsView() {
 
     const handleRenameInit = (collection: Collection) => {
         setCollectionToEdit(collection);
-        setAddCollectionOpen(true);
+        setEditCollectionOpen(true);
+    };
+
+    const handleEditCurrentTarget = () => {
+        if (!currentEditTarget) return;
+        setCollectionToEdit(currentEditTarget);
+        setEditCollectionOpen(true);
     };
 
     const handleCreateCollection = (name: string, color: string, icon?: string) => {
@@ -978,6 +986,25 @@ export default function CollectionsView() {
         updateCollection(collectionToEdit.id, { name, color, icon, lastModified: Date.now() });
         setCollectionToEdit(null);
         playSfx('confirm');
+    };
+
+    const handleDeleteCollectionTarget = (target: Collection) => {
+        trashCollection(target.id);
+        setCollectionToEdit(null);
+
+        if (target.id === currentFolderId) {
+            if (target.parentId && target.parentId !== activeCollectionId) {
+                setSearchParams({ folderId: target.parentId });
+            } else {
+                setSearchParams({});
+            }
+            return;
+        }
+
+        if (target.type === 'bucket' && target.id === activeCollectionId) {
+            setSearchParams({});
+            navigate('/collections');
+        }
     };
 
     const handleCreateFolder = (name: string) => {
@@ -1171,6 +1198,17 @@ export default function CollectionsView() {
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 bg-card border-border/60 group"
+                            onClick={handleEditCurrentTarget}
+                            title={currentEditTarget ? `Edit ${currentEditTarget.type === 'bucket' ? 'Bucket' : currentEditTarget.type === 'folder' ? 'Folder' : 'Collection'}` : 'Edit'}
+                            disabled={!currentEditTarget}
+                        >
+                            <PencilSimple className="text-muted-foreground group-hover:text-foreground transition-colors" size={16} />
+                        </Button>
 
                         <div className="w-px h-5 bg-border mx-1" />
 
@@ -1400,18 +1438,24 @@ export default function CollectionsView() {
             <CreateCollectionDialog
                 open={addCollectionOpen}
                 onOpenChange={setAddCollectionOpen}
-                onSubmit={collectionToEdit ? handleUpdateCollection : handleCreateCollection}
-                initialData={collectionToEdit ? {
-                    name: collectionToEdit.name,
-                    color: collectionToEdit.color,
-                    icon: collectionToEdit.icon || "FolderPlus"
-                } : undefined}
-                title={collectionToEdit ? "Edit Collection" : "New Collection"}
+                onSubmit={handleCreateCollection}
+                title="New Collection"
             />
             <CreateFolderDialog
                 open={addFolderOpen}
                 onOpenChange={setAddFolderOpen}
                 onSubmit={handleCreateFolder}
+            />
+            <EditCollectionDialog
+                open={editCollectionOpen}
+                onOpenChange={setEditCollectionOpen}
+                collection={collectionToEdit}
+                onSubmit={(id, updates) => {
+                    updateCollection(id, { ...updates, lastModified: Date.now() });
+                    setCollectionToEdit(null);
+                    playSfx('confirm');
+                }}
+                onDelete={handleDeleteCollectionTarget}
             />
             <MoveCollectionDialog
                 open={moveDialogOpen}

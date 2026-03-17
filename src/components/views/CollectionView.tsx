@@ -105,6 +105,7 @@ import {
 import { findRootBucketId } from "@/utils/collectionUtils";
 import type { Highlight, File as AppFile } from "@/types";
 import { EditHighlightDialog } from "@/components/dialogs/HighlightDialogs";
+import { EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { getIcon } from "@/utils/iconMap";
 import { getYouTubeId } from "@/components/player/YouTubePlayer";
 import { getYouTubeThumbnailUrl } from "@/constants";
@@ -128,6 +129,8 @@ export default function CollectionView() {
         collectionViewMode,
         setActiveCollection,
         setCollectionViewMode,
+        updateCollection,
+        trashCollection,
         updateHighlight,
         setActiveHighlight,
         floatingPlayerWindows,
@@ -143,6 +146,8 @@ export default function CollectionView() {
         collectionViewMode: state.collectionViewMode,
         setActiveCollection: state.setActiveCollection,
         setCollectionViewMode: state.setCollectionViewMode,
+        updateCollection: state.updateCollection,
+        trashCollection: state.trashCollection,
         updateHighlight: state.updateHighlight,
         setActiveHighlight: state.setActiveHighlight,
         floatingPlayerWindows: state.floatingPlayerWindows,
@@ -181,6 +186,7 @@ export default function CollectionView() {
     const [sortOption, setSortOption] = useState<SortOption>("custom");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [activeDragHighlightId, setActiveDragHighlightId] = useState<string | null>(null);
+    const [editCollectionOpen, setEditCollectionOpen] = useState(false);
 
     const activeProject = projects.find(p => p.id === activeProjectId);
     const collectionIdToUse = id || activeCollectionId;
@@ -188,6 +194,23 @@ export default function CollectionView() {
 
     const selectedHighlight = highlights.find(h => h.id === selectedHighlightId) || null;
     const selectedFile = selectedHighlight ? files.find(f => f.id === selectedHighlight.fileId) || null : null;
+
+    const handleDeleteCollection = () => {
+        if (!activeCollection) return;
+
+        const parent = activeCollection.parentId
+            ? collections.find((collection) => collection.id === activeCollection.parentId)
+            : null;
+
+        trashCollection(activeCollection.id);
+
+        if (parent?.type === 'folder') {
+            navigate(`/collections?folderId=${parent.id}`);
+            return;
+        }
+
+        navigate('/collections');
+    };
 
     // Filter highlights for this collection
     const normalizedSearchQuery = searchQuery.toLowerCase();
@@ -520,6 +543,16 @@ export default function CollectionView() {
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 bg-card border-border/60 group"
+                        onClick={() => setEditCollectionOpen(true)}
+                        title="Edit Collection"
+                        disabled={!activeCollection}
+                    >
+                        <PencilSimple className="text-muted-foreground group-hover:text-foreground transition-colors" size={16} />
+                    </Button>
                 </div>
             </div>
 
@@ -838,6 +871,17 @@ export default function CollectionView() {
                     if (selectedHighlight) {
                         updateHighlight(selectedHighlight.id, updates);
                     }
+                }}
+            />
+            <EditCollectionDialog
+                open={editCollectionOpen}
+                onOpenChange={setEditCollectionOpen}
+                collection={activeCollection || null}
+                onSubmit={(targetId, updates) => {
+                    updateCollection(targetId, { ...updates, lastModified: Date.now() });
+                }}
+                onDelete={() => {
+                    handleDeleteCollection();
                 }}
             />
         </div>

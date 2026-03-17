@@ -49,7 +49,8 @@ import {
     Image,
     FilmStrip,
     FileText,
-    Book
+    Book,
+    WarningOctagon
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
@@ -101,6 +102,7 @@ interface EntityFormProps {
     placeholder: string;
     allowNoIcon?: boolean;
     showDescription?: boolean;
+    footerPrefix?: React.ReactNode;
 }
 
 export function EntityForm({ 
@@ -114,7 +116,8 @@ export function EntityForm({
     label,
     placeholder,
     allowNoIcon = false,
-    showDescription = false
+    showDescription = false,
+    footerPrefix,
 }: EntityFormProps) {
     const [name, setName] = useState(defaultName);
     const [description, setDescription] = useState(defaultDescription);
@@ -144,7 +147,7 @@ export function EntityForm({
     };
 
     return (
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 pt-4">
             <div className="space-y-2">
                 <Label htmlFor="entity-name" className="text-zinc-400">
                     {label}
@@ -229,7 +232,8 @@ export function EntityForm({
                 </Tabs>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex items-center gap-2 pt-4">
+                {footerPrefix ? <div className="mr-auto">{footerPrefix}</div> : null}
                 <Button 
                     variant="ghost" 
                     onClick={onCancel} 
@@ -664,31 +668,87 @@ interface EditStorageDialogProps {
     initialName: string;
     initialColor?: string;
     initialIcon?: string;
+    onDelete?: () => void;
 }
 
-export function EditStorageDialog({ open, onOpenChange, onSubmit, initialName, initialColor, initialIcon }: EditStorageDialogProps) {
+export function EditStorageDialog({ open, onOpenChange, onSubmit, initialName, initialColor, initialIcon, onDelete }: EditStorageDialogProps) {
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteCooldown, setDeleteCooldown] = useState(8);
+
+    useEffect(() => {
+        if (open) { setShowDeleteConfirm(false); setDeleteCooldown(8); }
+    }, [open]);
+
+    useEffect(() => {
+        if (!showDeleteConfirm) { setDeleteCooldown(8); return; }
+        setDeleteCooldown(8);
+        const intervalId = window.setInterval(() => {
+            setDeleteCooldown((c) => { if (c <= 1) { window.clearInterval(intervalId); return 0; } return c - 1; });
+        }, 1000);
+        return () => { window.clearInterval(intervalId); };
+    }, [showDeleteConfirm]);
+
+    const handleDelete = () => {
+        if (!onDelete || deleteCooldown > 0) return;
+        onDelete();
+        setShowDeleteConfirm(false);
+        onOpenChange(false);
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                <DialogHeader>
-                    <DialogTitle>Edit Storage</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
-                        Update storage details.
-                    </DialogDescription>
-                </DialogHeader>
-                <EntityForm
-                    label="Storage Name"
-                    placeholder="My Storage"
-                    submitLabel="Save"
-                    defaultName={initialName}
-                    defaultColor={initialColor}
-                    defaultIcon={initialIcon}
-                    onSubmit={(name, description, color, icon) => {
-                        onSubmit(name, color, icon);
-                        onOpenChange(false);
-                    }}
-                    onCancel={() => onOpenChange(false)}
-                />
+                <div className="relative">
+                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "pointer-events-none absolute inset-0 translate-y-1 opacity-0" : "relative translate-y-0 opacity-100"}`}>
+                        <DialogHeader>
+                            <DialogTitle>Edit Storage</DialogTitle>
+                            <DialogDescription className="text-zinc-400">
+                                Update storage details.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <EntityForm
+                            label="Storage Name"
+                            placeholder="My Storage"
+                            submitLabel="Save"
+                            defaultName={initialName}
+                            defaultColor={initialColor}
+                            defaultIcon={initialIcon}
+                            onSubmit={(name, description, color, icon) => {
+                                onSubmit(name, color, icon);
+                                onOpenChange(false);
+                            }}
+                            onCancel={() => onOpenChange(false)}
+                            footerPrefix={onDelete ? (
+                                <Button variant="destructive" type="button" onClick={() => setShowDeleteConfirm(true)}>Delete Storage</Button>
+                            ) : undefined}
+                        />
+                    </div>
+                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "relative translate-y-0 opacity-100" : "pointer-events-none absolute inset-0 -translate-y-1 opacity-0"}`}>
+                        <DialogHeader>
+                            <DialogTitle>Delete this storage?</DialogTitle>
+                            <DialogDescription className="text-zinc-400">
+                                {`This will move ${initialName} to the trash.`}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <div className="space-y-2">
+                                <Label className="text-zinc-400">Storage</Label>
+                                <div className="flex min-h-9 items-center gap-3 border border-red-500/25 bg-red-500/6 px-3 text-sm text-zinc-200">
+                                    <WarningOctagon size={16} weight="fill" className="shrink-0 text-red-400" />
+                                    <span className="truncate font-medium text-white" title={initialName}>{initialName}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="border-t border-zinc-800 pt-4 sm:justify-between">
+                            <Button variant="ghost" type="button" onClick={() => setShowDeleteConfirm(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">Back</Button>
+                            <div className="flex items-center justify-end gap-2">
+                                <Button variant="destructive" type="button" disabled={deleteCooldown > 0} onClick={handleDelete}>
+                                    {deleteCooldown > 0 ? `Delete (${deleteCooldown}s)` : "Delete"}
+                                </Button>
+                            </div>
+                        </DialogFooter>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );
@@ -941,33 +1001,89 @@ interface EditFolderDialogProps {
     initialDescription?: string;
     initialColor?: string;
     initialIcon?: string;
+    onDelete?: () => void;
 }
 
-export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, initialDescription, initialColor, initialIcon }: EditFolderDialogProps) {
+export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, initialDescription, initialColor, initialIcon, onDelete }: EditFolderDialogProps) {
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteCooldown, setDeleteCooldown] = useState(8);
+
+    useEffect(() => {
+        if (open) { setShowDeleteConfirm(false); setDeleteCooldown(8); }
+    }, [open]);
+
+    useEffect(() => {
+        if (!showDeleteConfirm) { setDeleteCooldown(8); return; }
+        setDeleteCooldown(8);
+        const intervalId = window.setInterval(() => {
+            setDeleteCooldown((c) => { if (c <= 1) { window.clearInterval(intervalId); return 0; } return c - 1; });
+        }, 1000);
+        return () => { window.clearInterval(intervalId); };
+    }, [showDeleteConfirm]);
+
+    const handleDelete = () => {
+        if (!onDelete || deleteCooldown > 0) return;
+        onDelete();
+        setShowDeleteConfirm(false);
+        onOpenChange(false);
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                <DialogHeader>
-                    <DialogTitle>Edit Folder</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
-                        Update folder details.
-                    </DialogDescription>
-                </DialogHeader>
-                <EntityForm
-                    label="Folder Name"
-                    placeholder="My Folder"
-                    submitLabel="Save"
-                    defaultName={initialName}
-                    defaultDescription={initialDescription}
-                    defaultColor={initialColor}
-                    defaultIcon={initialIcon}
-                    showDescription={true}
-                    onSubmit={(name, description, color, icon) => {
-                        onSubmit(name, description, color, icon);
-                        onOpenChange(false);
-                    }}
-                    onCancel={() => onOpenChange(false)}
-                />
+                <div className="relative">
+                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "pointer-events-none absolute inset-0 translate-y-1 opacity-0" : "relative translate-y-0 opacity-100"}`}>
+                        <DialogHeader>
+                            <DialogTitle>Edit Folder</DialogTitle>
+                            <DialogDescription className="text-zinc-400">
+                                Update folder details.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <EntityForm
+                            label="Folder Name"
+                            placeholder="My Folder"
+                            submitLabel="Save"
+                            defaultName={initialName}
+                            defaultDescription={initialDescription}
+                            defaultColor={initialColor}
+                            defaultIcon={initialIcon}
+                            showDescription={true}
+                            onSubmit={(name, description, color, icon) => {
+                                onSubmit(name, description, color, icon);
+                                onOpenChange(false);
+                            }}
+                            onCancel={() => onOpenChange(false)}
+                            footerPrefix={onDelete ? (
+                                <Button variant="destructive" type="button" onClick={() => setShowDeleteConfirm(true)}>Delete Folder</Button>
+                            ) : undefined}
+                        />
+                    </div>
+                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "relative translate-y-0 opacity-100" : "pointer-events-none absolute inset-0 -translate-y-1 opacity-0"}`}>
+                        <DialogHeader>
+                            <DialogTitle>Delete this folder?</DialogTitle>
+                            <DialogDescription className="text-zinc-400">
+                                {`This will move ${initialName} to the trash.`}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <div className="space-y-2">
+                                <Label className="text-zinc-400">Folder</Label>
+                                <div className="flex min-h-9 items-center gap-3 border border-red-500/25 bg-red-500/6 px-3 text-sm text-zinc-200">
+                                    <WarningOctagon size={16} weight="fill" className="shrink-0 text-red-400" />
+                                    <span className="truncate font-medium text-white" title={initialName}>{initialName}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="border-t border-zinc-800 pt-4 sm:justify-between">
+                            <Button variant="ghost" type="button" onClick={() => setShowDeleteConfirm(false)} className="hover:bg-white/10 text-zinc-400 hover:text-white">Back</Button>
+                            <div className="flex items-center justify-end gap-2">
+                                <Button variant="destructive" type="button" disabled={deleteCooldown > 0} onClick={handleDelete}>
+                                    {deleteCooldown > 0 ? `Delete (${deleteCooldown}s)` : "Delete"}
+                                </Button>
+                            </div>
+                        </DialogFooter>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );
