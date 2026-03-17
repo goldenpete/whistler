@@ -8,7 +8,7 @@
  *   - Sync ID login with Cloudflare Turnstile captcha
  *   - TOTP two-factor authentication (enable/disable)
  *   - WebAuthn passkey registration and login
- *   - Push/pull sync with configurable auto-sync interval
+ *   - Push/pull sync with manual controls
  *   - Per-category sync toggles (files, collections, settings, etc.)
  *   - Remote data deletion per category
  *   - Session management and display name editing
@@ -25,7 +25,6 @@ import { useSync } from "@/hooks/useSync";
 import { SYNC_API_URL } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/toggle-switch";
 import {
     CloudArrowUp,
@@ -89,26 +88,7 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACL9Ojn2jXAFNaw_";
 import { DestructiveDeleteDialog } from "@/components/ui/destructive-delete-dialog";
 import { startRegistration, startAuthentication } from "@/utils/webauthn";
 
-function normalizeServerDataPayload(json: unknown): Record<string, any> {
-    if (!json || typeof json !== 'object') return {};
-
-    let value: unknown = (json as { value?: unknown }).value;
-
-    // Backward compatibility: some responses may nest payload one level deeper.
-    if (value && typeof value === 'object' && 'value' in (value as Record<string, unknown>)) {
-        value = (value as { value?: unknown }).value;
-    }
-
-    if (typeof value === 'string') {
-        try {
-            value = JSON.parse(value);
-        } catch {
-            return {};
-        }
-    }
-
-    return value && typeof value === 'object' ? (value as Record<string, any>) : {};
-}
+import { normalizeServerDataPayload } from "@/utils/syncPayload";
 
 interface Session {
     id: string;
@@ -146,17 +126,13 @@ const getBrowserInfo = () => {
    STORE BINDINGS & STATE
    ═══════════════════════════════════════════════════════ */
 export function SettingsSync() {
-    const { 
-        user, 
-        login, 
-        logout, 
+    const {
+        user,
+        login,
+        logout,
         updateUser,
-        lastSyncTime, 
-        setLastSyncTime, 
-        autoSyncEnabled,
-        setAutoSyncEnabled,
-        autoSyncInterval,
-        setAutoSyncInterval,
+        lastSyncTime,
+        setLastSyncTime,
         syncStatus,
         setSyncStatus,
         syncOptions,
@@ -168,10 +144,6 @@ export function SettingsSync() {
         updateUser: state.updateUser,
         lastSyncTime: state.lastSyncTime,
         setLastSyncTime: state.setLastSyncTime,
-        autoSyncEnabled: state.autoSyncEnabled,
-        setAutoSyncEnabled: state.setAutoSyncEnabled,
-        autoSyncInterval: state.autoSyncInterval,
-        setAutoSyncInterval: state.setAutoSyncInterval,
         syncStatus: state.syncStatus,
         setSyncStatus: state.setSyncStatus,
         syncOptions: state.syncOptions,
@@ -232,22 +204,24 @@ export function SettingsSync() {
     const containerRef = useRef<HTMLDivElement>(null);
 
     const handleDeleteRemote = async () => {
-        if (!itemToDelete || !sessionToken) return;
+        if (!itemToDelete) return;
+        const token = authStorage.getToken();
+        if (!token) return;
         setIsDeletingRemote(true);
         try {
             // 1. Fetch current data
             const getResponse = await fetch(`${SYNC_API_URL}/data`, {
-                headers: { Authorization: `Bearer ${sessionToken}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (!getResponse.ok) throw new Error("Failed to fetch current sync data");
-            
+
             const json = await getResponse.json();
-            const currentData = normalizeServerDataPayload(json);
-            
+            const currentData = normalizeServerDataPayload(json) ?? {};
+
             // 2. Remove the key
             delete currentData[itemToDelete.id];
-            
+
             // Handle dependent keys
             if (itemToDelete.id === 'graphs') {
                 delete currentData.graphNodes;
@@ -274,7 +248,7 @@ export function SettingsSync() {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${sessionToken}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: payload,
             });
@@ -1336,43 +1310,6 @@ export function SettingsSync() {
                     Sync Status
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-5 rounded-none border border-border bg-card/50 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <label className="text-sm font-medium">Auto-Sync</label>
-                                <p className="text-xs text-muted-foreground">Automatically sync changes in background.</p>
-                            </div>
-                            <Switch checked={autoSyncEnabled} onCheckedChange={setAutoSyncEnabled} />
-                        </div>
-                        {autoSyncEnabled && (
-                            <div className="pt-2 space-y-3">
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Interval</span>
-                                    <span>
-                                        {autoSyncInterval <= 60000 
-                                            ? `${Math.round(autoSyncInterval / 1000)}s` 
-                                            : `${Math.round(autoSyncInterval / 60000)}m`}
-                                    </span>
-                                </div>
-                                <Slider
-                                    value={[
-                                        autoSyncInterval <= 60000 
-                                            ? autoSyncInterval / 1000 
-                                            : (autoSyncInterval / 60000) + 59
-                                    ]}
-                                    onValueChange={(vals: number[]) => {
-                                        const v = vals[0];
-                                        const ms = v <= 60 ? v * 1000 : (v - 59) * 60000;
-                                        setAutoSyncInterval(ms);
-                                    }}
-                                    min={0}
-                                    max={119}
-                                    step={1}
-                                />
-                            </div>
-                        )}
-                    </div>
-
                     <div className="p-5 rounded-none border border-border bg-card/50 flex flex-col justify-between">
                          <div className="flex items-center justify-between mb-4">
                              <div>
@@ -1554,7 +1491,6 @@ export function SettingsSync() {
                             { id: 'playback', label: 'Media Playback', desc: 'Volume, mute settings, and autoplay' },
                             { id: 'cache', label: 'Cache & Performance', desc: 'Frame caching and performance flags' },
                             { id: 'sounds', label: 'Sound Effects', desc: 'SFX enabled status and configurations' },
-                            { id: 'sync', label: 'Sync Settings', desc: 'Auto-sync interval and background sync' },
                             { id: 'keybinds', label: 'Keybinds', desc: 'Custom keyboard shortcuts and disabled keys' },
                         ].map((option) => (
                             <div key={option.id} className="flex items-center justify-between">

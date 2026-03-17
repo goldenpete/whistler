@@ -98,8 +98,6 @@ export interface AppStore extends AppState {
   // ── Auth & Sync ─────────────────────────────────────────────────────────
   user: User | null;
   lastSyncTime: number | null;
-  autoSyncEnabled: boolean;
-  autoSyncInterval: number; // milliseconds
   syncStatus: SyncStatus;
   syncOptions: {
     projects: boolean;
@@ -119,7 +117,6 @@ export interface AppStore extends AppState {
       playback: boolean;
       cache: boolean;
       sounds: boolean;
-      sync: boolean;
       keybinds: boolean;
     };
   };
@@ -313,9 +310,6 @@ export interface AppStore extends AppState {
   setCacheHighlights: (enabled: boolean) => void;
   clearMediaVolumes: () => void;
 
-  // ── Sync Settings Action ──────────────────────────────────────────────
-  setAutoSyncInterval: (interval: number) => void;
-
   // ── Trash Actions ─────────────────────────────────────────────────────
   trashFile: (id: string) => void;
   restoreFile: (id: string) => void;
@@ -350,7 +344,6 @@ export interface AppStore extends AppState {
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   setLastSyncTime: (time: number) => void;
-  setAutoSyncEnabled: (enabled: boolean) => void;
   setSyncStatus: (status: SyncStatus) => void;
   setSyncOptions: (options: Partial<AppStore['syncOptions']>) => void;
 

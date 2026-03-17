@@ -17,10 +17,6 @@ export const createAuthSlice = (set: StoreSet, _get: StoreGet) => ({
   user: null as User | null,
   /** Timestamp of last successful sync */
   lastSyncTime: null as number | null,
-  /** Whether automatic background sync is enabled */
-  autoSyncEnabled: true,
-  /** Interval between auto-syncs in milliseconds (default: 1 minute) */
-  autoSyncInterval: 60000,
   /** Current sync operation status */
   syncStatus: 'idle' as SyncStatus,
 
@@ -43,7 +39,6 @@ export const createAuthSlice = (set: StoreSet, _get: StoreGet) => ({
       playback: true,
       cache: true,
       sounds: true,
-      sync: true,
       keybinds: true,
     },
   },
@@ -56,8 +51,6 @@ export const createAuthSlice = (set: StoreSet, _get: StoreGet) => ({
     set((state) => ({ user: state.user ? { ...state.user, ...updates } : null })),
 
   setLastSyncTime: (time: number) => set({ lastSyncTime: time }),
-  setAutoSyncEnabled: (enabled: boolean) => set({ autoSyncEnabled: enabled }),
-  setAutoSyncInterval: (interval: number) => set({ autoSyncInterval: interval }),
   setSyncStatus: (status: SyncStatus) => set({ syncStatus: status }),
 
   /** Merge partial sync options (supports nested advancedSettings) */

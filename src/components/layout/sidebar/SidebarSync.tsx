@@ -8,7 +8,6 @@ import { SYNC_API_URL } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     CaretLeft,
@@ -54,18 +53,14 @@ interface SidebarSyncProps {
 }
 
 export function SidebarSync({ onBack }: SidebarSyncProps) {
-    const { 
-        user, 
-        login, 
-        logout, 
+    const {
+        user,
+        login,
+        logout,
         updateUser,
-        lastSyncTime, 
-        setLastSyncTime, 
+        lastSyncTime,
+        setLastSyncTime,
         setState,
-        autoSyncEnabled,
-        setAutoSyncEnabled,
-        autoSyncInterval,
-        setAutoSyncInterval,
         syncStatus,
         setSyncStatus
     } = useStore(useShallow((state: AppStore) => ({
@@ -76,10 +71,6 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
         lastSyncTime: state.lastSyncTime,
         setLastSyncTime: state.setLastSyncTime,
         setState: state.setState,
-        autoSyncEnabled: state.autoSyncEnabled,
-        setAutoSyncEnabled: state.setAutoSyncEnabled,
-        autoSyncInterval: state.autoSyncInterval,
-        setAutoSyncInterval: state.setAutoSyncInterval,
         syncStatus: state.syncStatus,
         setSyncStatus: state.setSyncStatus
     })));
@@ -1027,64 +1018,6 @@ export function SidebarSync({ onBack }: SidebarSyncProps) {
                                         Enable
                                     </Button>
                                 )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <Separator className="bg-sidebar-border" />
-
-                    {/* Sync Settings */}
-                    <div>
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Configuration</div>
-                        <div className="space-y-2">
-                            <button
-                                type="button"
-                                className="flex w-full items-center justify-between p-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer group"
-                                onClick={() => setAutoSyncEnabled(!autoSyncEnabled)}
-                            >
-                                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Auto-sync</span>
-                                <span
-                                    className={`w-8 h-4 rounded-full relative transition-colors ${
-                                        autoSyncEnabled ? "bg-primary group-hover:bg-primary/90" : "bg-zinc-700 group-hover:bg-zinc-600"
-                                    }`}
-                                >
-                                    <span
-                                        className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${
-                                            autoSyncEnabled ? "right-0.5" : "left-0.5"
-                                        }`}
-                                    />
-                                </span>
-                            </button>
-                            <p className="text-[11px] text-muted-foreground px-2">
-                                Auto-sync is enabled by default and saves changes automatically. Turn this off to require manual Push and Pull.
-                            </p>
-                            
-                            <div className={`pt-2 px-2 space-y-3 transition-opacity ${autoSyncEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Sync Interval</span>
-                                    <span>
-                                        {autoSyncInterval <= 60000 
-                                            ? `${Math.round(autoSyncInterval / 1000)}s` 
-                                            : `${Math.round(autoSyncInterval / 60000)}m`}
-                                    </span>
-                                </div>
-                                <Slider
-                                    value={[
-                                        autoSyncInterval <= 60000 
-                                            ? autoSyncInterval / 1000 
-                                            : (autoSyncInterval / 60000) + 59
-                                    ]}
-                                    min={5}
-                                    max={119}
-                                    step={1}
-                                    onValueChange={(vals: number[]) => {
-                                        const v = vals[0];
-                                        const ms = v <= 60 ? v * 1000 : (v - 59) * 60000;
-                                        setAutoSyncInterval(ms);
-                                    }}
-                                    disabled={!autoSyncEnabled}
-                                    className="py-1"
-                                />
                             </div>
                         </div>
                     </div>

@@ -218,7 +218,7 @@ export const WelcomeView = () => {
         {
             icon: ArrowsClockwise,
             title: "Cloud sync",
-            desc: "Sync your data across devices. Choose what syncs — files, collections, highlights, docs — with per-entity toggles and configurable auto-sync intervals.",
+            desc: "Sync your data across devices. Choose what syncs — files, collections, highlights, docs — with per-entity toggles and manual push/pull controls.",
         },
         {
             icon: MusicNote,

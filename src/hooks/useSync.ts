@@ -5,15 +5,16 @@
  *
  * Handles bidirectional synchronization with a Cloudflare Workers backend
  * at SYNC_API_URL. Supports push (upload local state) and pull (download
- * remote state and merge).
+ * remote state).
  *
  * Architecture:
  *   - Auth is token-based: session token + account ID stored in localStorage
- *   - Push: serializes selected state slices per syncOptions config
- *   - Pull: downloads remote state and performs per-entity merge with
- *     timestamp-based conflict resolution (newest wins)
- *   - Auto-sync: optional timer-based push at configurable intervals
- *   - Encryption: data is encrypted client-side before upload (see encrypt/decrypt)
+ *   - Push: fetches current server data, merges locally-enabled categories
+ *     on top, and writes back. Categories this device has disabled are
+ *     preserved on the server untouched.
+ *   - Pull: downloads remote state and applies enabled categories to the
+ *     local store. Uses `!== undefined` checks so falsy values (false, 0,
+ *     empty string) are correctly synced.
  *
  * Sync options (from store.syncOptions):
  *   - projects, files, collections, highlights, graphs, graphNodes,
@@ -32,70 +33,53 @@ import { authStorage } from "@/utils/authStorage";
 import { useStore } from '@/store/useStore';
 import { useShallow } from '@/lib/zustand-shallow';
 import { sanitizeFilesForPersistence } from '@/utils/localFiles';
+import { normalizeServerDataPayload } from '@/utils/syncPayload';
 import { SYNC_API_URL } from '@/constants';
 
-function normalizeServerDataPayload(json: unknown): Record<string, any> | null {
-    if (!json || typeof json !== 'object') return null;
-
-    let value: unknown = (json as { value?: unknown }).value;
-
-    // Backward compatibility: some responses may nest the payload one level deeper.
-    if (value && typeof value === 'object' && 'value' in (value as Record<string, unknown>)) {
-        value = (value as { value?: unknown }).value;
-    }
-
-    if (typeof value === 'string') {
-        try {
-            value = JSON.parse(value);
-        } catch {
-            return null;
-        }
-    }
-
-    if (!value || typeof value !== 'object') return null;
-    return value as Record<string, any>;
-}
+// Module-level abort controller shared across all useSync instances so that
+// concurrent push/pull calls from different components properly cancel each other.
+let activeAbortController: AbortController | null = null;
 
 export function useSync() {
-    const { 
-        setLastSyncTime, 
-        setState, 
+    const {
+        setLastSyncTime,
+        setState,
         setSyncStatus,
         syncStatus,
-        user,
         logout,
-        autoSyncEnabled,
-        autoSyncInterval
     } = useStore(useShallow((state) => ({
         setLastSyncTime: state.setLastSyncTime,
         setState: state.setState,
         setSyncStatus: state.setSyncStatus,
         syncStatus: state.syncStatus,
-        user: state.user,
         logout: state.logout,
-        autoSyncEnabled: state.autoSyncEnabled,
-        autoSyncInterval: state.autoSyncInterval,
     })));
     const [error, setError] = useState<string | null>(null);
-    const syncIntervalRef = useRef<number | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
+    const mountedRef = useRef(true);
 
-    const handleSync = useCallback(async (type: 'push' | 'pull', silent = false) => {
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    const handleSync = useCallback(async (type: 'push' | 'pull') => {
         const storedToken = authStorage.getToken();
         const storedAccountId = authStorage.getAccountId();
 
         if (!storedAccountId || !storedToken) {
-            if (!silent) setError("Connect with your Sync ID first");
+            setError("Connect with your Sync ID first");
             return;
         }
 
-        if (!silent) setSyncStatus("syncing");
+        setSyncStatus("syncing");
         setError(null);
 
         // Abort any in-flight sync request
-        abortRef.current?.abort();
+        activeAbortController?.abort();
         const controller = new AbortController();
-        abortRef.current = controller;
+        activeAbortController = controller;
 
         try {
             if (type === "push") {
@@ -104,49 +88,70 @@ export function useSync() {
                 const trashEnabled = syncOptions.trash ?? true;
                 const historyEnabled = syncOptions.history ?? true;
 
+                // ── Fetch current server data so we can preserve disabled categories ──
+                let serverData: Record<string, any> = {};
+                const getResponse = await fetch(`${SYNC_API_URL}/data`, {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${storedToken}` },
+                    signal: controller.signal,
+                });
+                if (getResponse.ok) {
+                    const json = await getResponse.json();
+                    serverData = normalizeServerDataPayload(json) ?? {};
+                } else if (getResponse.status === 401) {
+                    logout();
+                    setError("Session expired. Please sign in again.");
+                    setSyncStatus("error");
+                    return;
+                }
+                // Non-401 errors on the GET are fine — we just push a full payload.
+
+                // Start from server data (preserves categories this device has disabled)
+                // then overwrite with local data for enabled categories.
                 const data: Record<string, unknown> = {
+                    ...serverData,
                     lastModified: Date.now(),
                 };
 
                 if (syncOptions.projects) {
-                    data.projects = trashEnabled 
-                        ? state.projects 
+                    data.projects = trashEnabled
+                        ? state.projects
                         : state.projects.filter(p => !p.deleted);
                 }
                 if (syncOptions.files) {
-                    data.files = trashEnabled 
+                    data.files = trashEnabled
                         ? sanitizeFilesForPersistence(state.files)
                         : sanitizeFilesForPersistence(state.files.filter(f => !f.deleted));
                 }
                 if (syncOptions.collections) {
-                    data.collections = trashEnabled 
-                        ? state.collections 
+                    data.collections = trashEnabled
+                        ? state.collections
                         : state.collections.filter(c => !c.deleted);
                 }
                 if (syncOptions.highlights) data.highlights = state.highlights;
                 if (syncOptions.graphs) {
-                    data.graphs = trashEnabled 
-                        ? state.graphs 
+                    data.graphs = trashEnabled
+                        ? state.graphs
                         : state.graphs.filter(g => !g.deleted);
                     data.graphNodes = state.graphNodes;
                     data.graphEdges = state.graphEdges;
                 }
                 if (syncOptions.docs) {
-                    data.docs = trashEnabled 
-                        ? state.docs 
+                    data.docs = trashEnabled
+                        ? state.docs
                         : state.docs.filter(d => !d.deleted);
                 }
                 if (syncOptions.storages) {
-                    data.storages = trashEnabled 
-                        ? state.storages 
+                    data.storages = trashEnabled
+                        ? state.storages
                         : state.storages.filter(s => !s.deleted);
                 }
-                
+
                 if (historyEnabled) data.history = state.history;
-                
+
                 if (syncOptions.settings) {
                     const adv = syncOptions.advancedSettings || {};
-                    
+
                     if (adv.appearance) {
                         data.accentTheme = state.accentTheme;
                         data.accentThemeMode = state.accentThemeMode;
@@ -200,11 +205,6 @@ export function useSync() {
                         data.soundConfigs = state.soundConfigs;
                     }
 
-                    if (adv.sync) {
-                        data.autoSyncEnabled = state.autoSyncEnabled;
-                        data.autoSyncInterval = state.autoSyncInterval;
-                    }
-
                     if (adv.keybinds) {
                         data.customKeybinds = state.customKeybinds;
                         data.disabledKeybinds = state.disabledKeybinds;
@@ -214,15 +214,11 @@ export function useSync() {
                 if (syncOptions.googleDrive) {
                     data.googleDriveApiKey = state.googleDriveApiKey;
                 }
-                
+
                 const payload = JSON.stringify({
                     key: "whistler_data",
                     value: data,
                 });
-                
-                if (!silent) {
-                    // Debug logging omitted in production
-                }
 
                 const response = await fetch(`${SYNC_API_URL}/data`, {
                     method: "PUT",
@@ -233,17 +229,14 @@ export function useSync() {
                     body: payload,
                     signal: controller.signal,
                 });
-                
+
                 if (response.status === 401) {
-                    console.error("Sync Push 401 Unauthorized");
-                    // Only logout if explicit action, or maybe just stop auto-sync?
-                    // For now, let's keep behavior consistent
                     logout();
                     setError("Session expired. Please sign in again.");
                     setSyncStatus("error");
                     return;
                 }
-                
+
                 if (!response.ok) {
                     const body = await response.json().catch(() => null);
                     setError(body?.error || "Push failed");
@@ -251,7 +244,7 @@ export function useSync() {
                     return;
                 }
             } else {
-                
+
                 const response = await fetch(`${SYNC_API_URL}/data`, {
                     method: "GET",
                     headers: {
@@ -261,7 +254,6 @@ export function useSync() {
                 });
 
                 if (response.status === 401) {
-                    console.error("Sync Pull 401 Unauthorized");
                     logout();
                     setError("Session expired. Please sign in again.");
                     setSyncStatus("error");
@@ -283,8 +275,8 @@ export function useSync() {
                     const trashEnabled = syncOptions.trash ?? true;
                     const historyEnabled = syncOptions.history ?? true;
                     const updates: Record<string, unknown> = {};
-                    
-                    if (syncOptions.projects && serverData.projects) {
+
+                    if (syncOptions.projects && serverData.projects !== undefined) {
                         if (trashEnabled) {
                             updates.projects = serverData.projects;
                         } else {
@@ -293,7 +285,7 @@ export function useSync() {
                             updates.projects = [...serverData.projects, ...localDeleted.filter(p => !serverIds.has(p.id))];
                         }
                     }
-                    if (syncOptions.files && serverData.files) {
+                    if (syncOptions.files && serverData.files !== undefined) {
                         if (trashEnabled) {
                             updates.files = sanitizeFilesForPersistence(serverData.files);
                         } else {
@@ -305,7 +297,7 @@ export function useSync() {
                             ];
                         }
                     }
-                    if (syncOptions.collections && serverData.collections) {
+                    if (syncOptions.collections && serverData.collections !== undefined) {
                         if (trashEnabled) {
                             updates.collections = serverData.collections;
                         } else {
@@ -314,9 +306,9 @@ export function useSync() {
                             updates.collections = [...serverData.collections, ...localDeleted.filter(c => !serverIds.has(c.id))];
                         }
                     }
-                    if (syncOptions.highlights && serverData.highlights) updates.highlights = serverData.highlights;
+                    if (syncOptions.highlights && serverData.highlights !== undefined) updates.highlights = serverData.highlights;
                     if (syncOptions.graphs) {
-                        if (serverData.graphs) {
+                        if (serverData.graphs !== undefined) {
                             if (trashEnabled) {
                                 updates.graphs = serverData.graphs;
                             } else {
@@ -325,10 +317,10 @@ export function useSync() {
                                 updates.graphs = [...serverData.graphs, ...localDeleted.filter(g => !serverIds.has(g.id))];
                             }
                         }
-                        if (serverData.graphNodes) updates.graphNodes = serverData.graphNodes;
-                        if (serverData.graphEdges) updates.graphEdges = serverData.graphEdges;
+                        if (serverData.graphNodes !== undefined) updates.graphNodes = serverData.graphNodes;
+                        if (serverData.graphEdges !== undefined) updates.graphEdges = serverData.graphEdges;
                     }
-                    if (syncOptions.docs && serverData.docs) {
+                    if (syncOptions.docs && serverData.docs !== undefined) {
                         if (trashEnabled) {
                             updates.docs = serverData.docs;
                         } else {
@@ -337,7 +329,7 @@ export function useSync() {
                             updates.docs = [...serverData.docs, ...localDeleted.filter(d => !serverIds.has(d.id))];
                         }
                     }
-                    if (syncOptions.storages && serverData.storages) {
+                    if (syncOptions.storages && serverData.storages !== undefined) {
                         if (trashEnabled) {
                             updates.storages = serverData.storages;
                         } else {
@@ -346,21 +338,21 @@ export function useSync() {
                             updates.storages = [...serverData.storages, ...localDeleted.filter(s => !serverIds.has(s.id))];
                         }
                     }
-                    
-                    if (historyEnabled && serverData.history) updates.history = serverData.history;
-                    
+
+                    if (historyEnabled && serverData.history !== undefined) updates.history = serverData.history;
+
                     if (syncOptions.settings) {
                         const adv = syncOptions.advancedSettings || {};
 
                         if (adv.appearance) {
-                            if (serverData.accentTheme) updates.accentTheme = serverData.accentTheme;
-                            if (serverData.accentThemeMode) updates.accentThemeMode = serverData.accentThemeMode;
-                            if (serverData.customAccentThemes) updates.customAccentThemes = serverData.customAccentThemes;
-                            if (serverData.baseTheme) updates.baseTheme = serverData.baseTheme;
-                            if (serverData.baseThemeMode) updates.baseThemeMode = serverData.baseThemeMode;
-                            if (serverData.customBaseThemes) updates.customBaseThemes = serverData.customBaseThemes;
+                            if (serverData.accentTheme !== undefined) updates.accentTheme = serverData.accentTheme;
+                            if (serverData.accentThemeMode !== undefined) updates.accentThemeMode = serverData.accentThemeMode;
+                            if (serverData.customAccentThemes !== undefined) updates.customAccentThemes = serverData.customAccentThemes;
+                            if (serverData.baseTheme !== undefined) updates.baseTheme = serverData.baseTheme;
+                            if (serverData.baseThemeMode !== undefined) updates.baseThemeMode = serverData.baseThemeMode;
+                            if (serverData.customBaseThemes !== undefined) updates.customBaseThemes = serverData.customBaseThemes;
                             if (serverData.enableDefaultColorControls !== undefined) updates.enableDefaultColorControls = serverData.enableDefaultColorControls;
-                            if (serverData.defaultColors) updates.defaultColors = serverData.defaultColors;
+                            if (serverData.defaultColors !== undefined) updates.defaultColors = serverData.defaultColors;
                             if (serverData.backgroundImageUrl !== undefined) updates.backgroundImageUrl = serverData.backgroundImageUrl;
                             if (serverData.backgroundImageOpacity !== undefined) updates.backgroundImageOpacity = serverData.backgroundImageOpacity;
                             if (serverData.backgroundColor !== undefined) updates.backgroundColor = serverData.backgroundColor;
@@ -385,9 +377,9 @@ export function useSync() {
                             if (serverData.alwaysShowMuteOverlay !== undefined) updates.alwaysShowMuteOverlay = serverData.alwaysShowMuteOverlay;
                             if (serverData.rememberMediaVolume !== undefined) updates.rememberMediaVolume = serverData.rememberMediaVolume;
                             if (serverData.disableMediaAutoplay !== undefined) updates.disableMediaAutoplay = serverData.disableMediaAutoplay;
-                            if (serverData.videoVolumeByFile) updates.videoVolumeByFile = serverData.videoVolumeByFile;
-                            if (serverData.audioVolumeByFile) updates.audioVolumeByFile = serverData.audioVolumeByFile;
-                            if (serverData.videoUnmutedByFile) updates.videoUnmutedByFile = serverData.videoUnmutedByFile;
+                            if (serverData.videoVolumeByFile !== undefined) updates.videoVolumeByFile = serverData.videoVolumeByFile;
+                            if (serverData.audioVolumeByFile !== undefined) updates.audioVolumeByFile = serverData.audioVolumeByFile;
+                            if (serverData.videoUnmutedByFile !== undefined) updates.videoUnmutedByFile = serverData.videoUnmutedByFile;
                         }
 
                         if (adv.cache) {
@@ -399,20 +391,15 @@ export function useSync() {
 
                         if (adv.sounds) {
                             if (serverData.sfxEnabled !== undefined) updates.sfxEnabled = serverData.sfxEnabled;
-                            if (serverData.enabledSounds) updates.enabledSounds = serverData.enabledSounds;
+                            if (serverData.enabledSounds !== undefined) updates.enabledSounds = serverData.enabledSounds;
                             if (serverData.replaceSearchWithConfirm !== undefined) updates.replaceSearchWithConfirm = serverData.replaceSearchWithConfirm;
                             if (serverData.replaceAllSoundsWithCursor !== undefined) updates.replaceAllSoundsWithCursor = serverData.replaceAllSoundsWithCursor;
-                            if (serverData.soundConfigs) updates.soundConfigs = serverData.soundConfigs;
-                        }
-
-                        if (adv.sync) {
-                            if (serverData.autoSyncEnabled !== undefined) updates.autoSyncEnabled = serverData.autoSyncEnabled;
-                            if (serverData.autoSyncInterval !== undefined) updates.autoSyncInterval = serverData.autoSyncInterval;
+                            if (serverData.soundConfigs !== undefined) updates.soundConfigs = serverData.soundConfigs;
                         }
 
                         if (adv.keybinds) {
-                            if (serverData.customKeybinds) updates.customKeybinds = serverData.customKeybinds;
-                            if (serverData.disabledKeybinds) updates.disabledKeybinds = serverData.disabledKeybinds;
+                            if (serverData.customKeybinds !== undefined) updates.customKeybinds = serverData.customKeybinds;
+                            if (serverData.disabledKeybinds !== undefined) updates.disabledKeybinds = serverData.disabledKeybinds;
                         }
                     }
 
@@ -424,20 +411,21 @@ export function useSync() {
                         setState(updates);
 
                         // If activeProjectId is no longer valid after update, switch to the first available project
-                        const finalProjects = updates.projects || state.projects;
-                        if (finalProjects.length > 0) {
+                        const finalProjects = (updates.projects ?? state.projects) as Array<{ id: string; projectId?: string }>;
+                        if (Array.isArray(finalProjects) && finalProjects.length > 0) {
                             const currentActiveId = useStore.getState().activeProjectId;
-                            const isStillValid = finalProjects.some((p: { id: string }) => p.id === currentActiveId);
-                            
+                            const isStillValid = finalProjects.some(p => p.id === currentActiveId);
+
                             if (!isStillValid) {
                                 const firstProject = finalProjects[0];
                                 useStore.getState().setActiveProject(firstProject.id);
-                                
-                                // Also try to set a valid storage for this project
-                                const finalStorages = updates.storages || state.storages;
-                                const projectStorage = finalStorages.find((s: { projectId?: string }) => s.projectId === firstProject.id);
-                                if (projectStorage) {
-                                    useStore.getState().setState({ activeStorageId: projectStorage.id });
+
+                                const finalStorages = (updates.storages ?? state.storages) as Array<{ id: string; projectId?: string }>;
+                                if (Array.isArray(finalStorages)) {
+                                    const projectStorage = finalStorages.find(s => s.projectId === firstProject.id);
+                                    if (projectStorage) {
+                                        useStore.getState().setState({ activeStorageId: projectStorage.id });
+                                    }
                                 }
                             }
                         }
@@ -450,32 +438,22 @@ export function useSync() {
             authStorage.setLastSync(now.toString());
             setSyncStatus("success");
         } catch (err) {
-            if (err instanceof DOMException && err.name === 'AbortError') return;
+            if (err instanceof DOMException && err.name === 'AbortError') {
+                // Another sync request superseded this one — don't touch status.
+                return;
+            }
             console.error("Sync Error:", err);
             setError("Network error");
             setSyncStatus("error");
         }
     }, [setLastSyncTime, setState, setSyncStatus, logout]);
 
+    // Clean up on unmount
     useEffect(() => {
-        if (autoSyncEnabled && user) {
-            if (syncIntervalRef.current) window.clearInterval(syncIntervalRef.current);
-            syncIntervalRef.current = window.setInterval(() => {
-                if (useStore.getState().syncStatus !== 'syncing') {
-                    handleSync('push', true);
-                }
-            }, autoSyncInterval);
-        } else {
-            if (syncIntervalRef.current) {
-                window.clearInterval(syncIntervalRef.current);
-                syncIntervalRef.current = null;
-            }
-        }
         return () => {
-            if (syncIntervalRef.current) window.clearInterval(syncIntervalRef.current);
-            abortRef.current?.abort();
+            activeAbortController?.abort();
         };
-    }, [autoSyncEnabled, user, autoSyncInterval, handleSync]);
+    }, []);
 
     return { handleSync, error, syncStatus };
 }
