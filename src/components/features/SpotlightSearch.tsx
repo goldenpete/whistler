@@ -50,12 +50,12 @@ import { useKeybind } from "@/hooks/use-keybind";
 import { formatTime } from "@/lib/utils";
 import { playSfx } from "@/utils/sound";
 import { ACTION_REGISTRY, type ActionContext } from "@/utils/actions";
+import { findRootBucketId } from "@/utils/collectionUtils";
 
 export function SpotlightSearch() {
     const navigate = useNavigate();
     const location = useLocation();
     const [inputValue, setInputValue] = useState("");
-    const [pages, setPages] = useState<string[]>([]);
 
     const {
         files,
@@ -64,6 +64,7 @@ export function SpotlightSearch() {
         activeProjectId,
         setActiveFile,
         setActiveHighlight,
+        setActiveCollection,
         setActiveProject,
         projects,
         isSpotlightOpen,
@@ -75,6 +76,7 @@ export function SpotlightSearch() {
         activeProjectId: state.activeProjectId,
         setActiveFile: state.setActiveFile,
         setActiveHighlight: state.setActiveHighlight,
+        setActiveCollection: state.setActiveCollection,
         setActiveProject: state.setActiveProject,
         projects: state.projects,
         isSpotlightOpen: state.isSpotlightOpen,
@@ -85,7 +87,6 @@ export function SpotlightSearch() {
     useEffect(() => {
         if (isSpotlightOpen) {
             setInputValue("");
-            setPages([]);
         }
     }, [isSpotlightOpen]);
 
@@ -128,36 +129,76 @@ export function SpotlightSearch() {
         }
     }, []);
 
+    const getCollectionIcon = useCallback((collection: Collection) => {
+        if (collection.type === "bucket" || collection.type === "folder") {
+            return <Folder className="mr-2 h-3 w-3 text-amber-400" />;
+        }
+
+        return (
+            <Tag
+                className="mr-2 h-3 w-3"
+                style={{ color: collection.color }}
+            />
+        );
+    }, []);
+
+    const closeSpotlight = useCallback(() => {
+        setSpotlightOpen(false);
+    }, [setSpotlightOpen]);
+
     const handleSelectFile = (file: File) => {
         playSfx("search");
-        setSpotlightOpen(false);
+        closeSpotlight();
         if (file.type === "folder") {
-            // Navigate to storage with folder open
-            navigate(`/storage?folderId=${file.id}`);
+            useStore.setState({ activeStorageId: file.storageId });
+            navigate(`/storage/${file.storageId}?folderId=${file.id}`);
         } else {
+            setActiveFile(file.id);
             navigate(`/file/${file.id}`);
         }
     };
 
     const handleSelectCollection = (collection: Collection) => {
         playSfx("search");
-        setSpotlightOpen(false);
-        useStore.setState({ activeCollectionId: collection.id });
-        navigate("/collections");
+        closeSpotlight();
+
+        const bucketId = findRootBucketId(collections, collection.id);
+        if (bucketId) {
+            setActiveCollection(bucketId);
+        }
+
+        if (collection.type === "bucket") {
+            navigate("/collections");
+            return;
+        }
+
+        if (collection.type === "folder") {
+            navigate(`/collections?folderId=${collection.id}`);
+            return;
+        }
+
+        navigate(`/collection/${collection.id}`);
     };
 
     const handleNavigation = (path: string) => {
         playSfx("search");
-        setSpotlightOpen(false);
+        closeSpotlight();
         navigate(path);
     };
 
     const handleSelectHighlight = (highlight: Highlight) => {
         playSfx("search");
-        setSpotlightOpen(false);
+        closeSpotlight();
         setActiveHighlight(highlight.id);
         setActiveFile(highlight.fileId);
         navigate(`/file/${highlight.fileId}`);
+    };
+
+    const handleSelectProject = (projectId: string) => {
+        playSfx("search");
+        setActiveProject(projectId);
+        closeSpotlight();
+        navigate("/");
     };
 
     // --- Action Logic ---
@@ -212,7 +253,7 @@ export function SpotlightSearch() {
         
         // For now assume synchronous success usually
         playSfx("confirm");
-        setSpotlightOpen(false);
+        closeSpotlight();
     };
 
     return (
@@ -239,7 +280,8 @@ export function SpotlightSearch() {
                             <CommandItem
                                 className="py-1 px-2 text-xs"
                                 key={action.id}
-                                value={action.labels[0]} // value used for selection
+                                value={`action:${action.id}`}
+                                keywords={[...action.labels, ...(action.keywords ?? [])]}
                                 onSelect={() => executeAction(action.id)}
                             >
                                 <action.icon className="mr-2 h-3 w-3" />
@@ -255,23 +297,23 @@ export function SpotlightSearch() {
                     <>
                         {/* Quick Navigation */}
                         <CommandGroup heading="Navigation">
-                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/")}> 
+                            <CommandItem className="py-1 px-2 text-xs" value="nav:home" keywords={["home"]} onSelect={() => handleNavigation("/")}> 
                                 <House className="mr-2 h-3 w-3" />
                                 <span>Home</span>
                             </CommandItem>
-                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/storage")}>
+                            <CommandItem className="py-1 px-2 text-xs" value="nav:storage" keywords={["storage", "files"]} onSelect={() => handleNavigation("/storage")}>
                                 <HardDrives className="mr-2 h-3 w-3" />
                                 <span>Storage</span>
                             </CommandItem>
-                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/docs")}>
+                            <CommandItem className="py-1 px-2 text-xs" value="nav:docs" keywords={["docs", "documents"]} onSelect={() => handleNavigation("/docs")}>
                                 <NotePencil className="mr-2 h-3 w-3" />
                                 <span>Docs</span>
                             </CommandItem>
-                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/graphs")}>
+                            <CommandItem className="py-1 px-2 text-xs" value="nav:graphs" keywords={["graphs", "graph"]} onSelect={() => handleNavigation("/graphs")}>
                                 <Graph className="mr-2 h-3 w-3" />
                                 <span>Graphs</span>
                             </CommandItem>
-                            <CommandItem className="py-1 px-2 text-xs" onSelect={() => handleNavigation("/settings")}>
+                            <CommandItem className="py-1 px-2 text-xs" value="nav:settings" keywords={["settings", "preferences"]} onSelect={() => handleNavigation("/settings")}>
                                 <Gear className="mr-2 h-3 w-3" />
                                 <span>Settings</span>
                             </CommandItem>
@@ -286,7 +328,8 @@ export function SpotlightSearch() {
                                     <CommandItem
                                         className="py-1 px-2 text-xs"
                                         key={file.id}
-                                        value={file.name}
+                                        value={`file:${file.id}`}
+                                        keywords={[file.name, file.type]}
                                         onSelect={() => handleSelectFile(file)}
                                     >
                                         {getFileIcon(file.type)}
@@ -303,14 +346,15 @@ export function SpotlightSearch() {
                                     <CommandItem
                                         className="py-1 px-2 text-xs"
                                         key={collection.id}
-                                        value={collection.name}
+                                        value={`collection:${collection.id}`}
+                                        keywords={[collection.name, collection.type ?? "collection"]}
                                         onSelect={() => handleSelectCollection(collection)}
                                     >
-                                        <Tag
-                                            className="mr-2 h-3 w-3"
-                                            style={{ color: collection.color }}
-                                        />
+                                        {getCollectionIcon(collection)}
                                         <span>{collection.name}</span>
+                                        <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                            {collection.type ?? "collection"}
+                                        </span>
                                     </CommandItem>
                                 ))}
                             </CommandGroup>
@@ -333,7 +377,8 @@ export function SpotlightSearch() {
                                         <CommandItem
                                             className="py-1 px-2 text-xs"
                                             key={highlight.id}
-                                            value={`${highlight.note || "Highlight"} ${file?.name || ""}`}
+                                            value={`highlight:${highlight.id}`}
+                                            keywords={[highlight.note || "Highlight", file?.name || "", label]}
                                             onSelect={() => handleSelectHighlight(highlight)}
                                         >
                                             <Clock className="mr-2 h-3 w-3 text-amber-400" />
@@ -362,12 +407,9 @@ export function SpotlightSearch() {
                                 <CommandItem
                                     className="py-1 px-2 text-xs"
                                     key={project.id}
-                                    value={`project ${project.name}`}
-                                    onSelect={() => {
-                                        playSfx("search");
-                                        setActiveProject(project.id);
-                                        setSpotlightOpen(false);
-                                    }}
+                                    value={`project:${project.id}`}
+                                    keywords={[project.name, "project"]}
+                                    onSelect={() => handleSelectProject(project.id)}
                                 >
                                     <Folder className="mr-2 h-3 w-3 text-primary" />
                                     <span>{project.name}</span>
