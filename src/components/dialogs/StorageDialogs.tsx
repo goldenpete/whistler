@@ -699,7 +699,7 @@ export function EditStorageDialog({ open, onOpenChange, onSubmit, initialName, i
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <div className="relative">
-                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "pointer-events-none absolute inset-0 translate-y-1 opacity-0" : "relative translate-y-0 opacity-100"}`}>
+                    <div className={`flex flex-col ${showDeleteConfirm ? "hidden" : "relative"}`}>
                         <DialogHeader>
                             <DialogTitle>Edit Storage</DialogTitle>
                             <DialogDescription className="text-zinc-400">
@@ -723,7 +723,7 @@ export function EditStorageDialog({ open, onOpenChange, onSubmit, initialName, i
                             ) : undefined}
                         />
                     </div>
-                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "relative translate-y-0 opacity-100" : "pointer-events-none absolute inset-0 -translate-y-1 opacity-0"}`}>
+                    <div className={`flex flex-col ${showDeleteConfirm ? "relative" : "hidden"}`}>
                         <DialogHeader>
                             <DialogTitle>Delete this storage?</DialogTitle>
                             <DialogDescription className="text-zinc-400">
@@ -1032,7 +1032,7 @@ export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, in
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <div className="relative">
-                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "pointer-events-none absolute inset-0 translate-y-1 opacity-0" : "relative translate-y-0 opacity-100"}`}>
+                    <div className={`flex flex-col ${showDeleteConfirm ? "hidden" : "relative"}`}>
                         <DialogHeader>
                             <DialogTitle>Edit Folder</DialogTitle>
                             <DialogDescription className="text-zinc-400">
@@ -1058,7 +1058,7 @@ export function EditFolderDialog({ open, onOpenChange, onSubmit, initialName, in
                             ) : undefined}
                         />
                     </div>
-                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "relative translate-y-0 opacity-100" : "pointer-events-none absolute inset-0 -translate-y-1 opacity-0"}`}>
+                    <div className={`flex flex-col ${showDeleteConfirm ? "relative" : "hidden"}`}>
                         <DialogHeader>
                             <DialogTitle>Delete this folder?</DialogTitle>
                             <DialogDescription className="text-zinc-400">

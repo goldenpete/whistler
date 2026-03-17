@@ -357,7 +357,7 @@ export function EditCollectionDialog({ open, onOpenChange, collection, onSubmit,
             <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <div className="relative">
                     {/* ── Edit layer ── */}
-                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "pointer-events-none absolute inset-0 translate-y-1 opacity-0" : "relative translate-y-0 opacity-100"}`}>
+                    <div className={`flex flex-col ${showDeleteConfirm ? "hidden" : "relative"}`}>
                         <DialogHeader>
                             <DialogTitle>{`Edit ${typeLabel}`}</DialogTitle>
                             <DialogDescription className="sr-only">
@@ -384,7 +384,7 @@ export function EditCollectionDialog({ open, onOpenChange, collection, onSubmit,
                         />
                     </div>
                     {/* ── Delete confirmation layer ── */}
-                    <div className={`flex flex-col transition-all duration-200 ${showDeleteConfirm ? "relative translate-y-0 opacity-100" : "pointer-events-none absolute inset-0 -translate-y-1 opacity-0"}`}>
+                    <div className={`flex flex-col ${showDeleteConfirm ? "relative" : "hidden"}`}>
                         <DialogHeader>
                             <DialogTitle>{`Delete this ${typeLabel.toLowerCase()}?`}</DialogTitle>
                             <DialogDescription className="text-zinc-400">
