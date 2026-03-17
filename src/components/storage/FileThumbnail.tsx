@@ -51,6 +51,7 @@ export function getFileTypeFromUrl(url: string): 'file' | 'folder' | 'video' | '
 
 export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: number }) {
     const useMiddleFrameForPreviews = useStore(state => state.useMiddleFrameForPreviews);
+    const cacheFiles = useStore(state => state.cacheFiles);
     const videoRef = useRef<HTMLVideoElement>(null);
     const { resolvedUrl } = useResolvedFileUrl(file);
 
@@ -58,7 +59,7 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
     const thumbnailKey = (file.type === 'video' && resolvedUrl && !getYouTubeId(resolvedUrl))
         ? `${resolvedUrl}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`
         : null;
-    const cachedThumbnail = useCachedThumbnail(thumbnailKey);
+    const cachedThumbnail = useCachedThumbnail(thumbnailKey, cacheFiles);
 
     const Icon = (() => {
         let icon = getFileIcon(file.type);
@@ -132,6 +133,8 @@ export function FileThumbnail({ file, iconSize }: { file: AppFile, iconSize: num
                     }
                 }}
                 onSeeked={async (e: SyntheticEvent<HTMLVideoElement>) => {
+                    if (!cacheFiles) return;
+
                     const video = e.currentTarget;
                     const key = `${resolvedUrl}-0.1-${useMiddleFrameForPreviews ? 'mid' : 'start'}`;
 

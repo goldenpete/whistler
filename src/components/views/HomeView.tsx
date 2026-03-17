@@ -175,7 +175,7 @@ const VideoCardPreview = ({ url, start = 0.1, overrideMiddleFrame = false }: { u
     const thumbnailKey = (youtubeId || Number.isNaN(start))
         ? null
         : `${url}-${start}-${overrideMiddleFrame ? 'mid' : 'start'}`;
-    const cachedThumbnail = useCachedThumbnail(thumbnailKey);
+    const cachedThumbnail = useCachedThumbnail(thumbnailKey, cacheFiles);
 
     useEffect(() => {
         if (youtubeId || cachedThumbnail) return;

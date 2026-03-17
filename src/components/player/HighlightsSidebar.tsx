@@ -21,6 +21,12 @@ import {
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    ContextMenu,
+    ContextMenuTrigger,
+    ContextMenuContent,
+    ContextMenuItem,
+} from "@/components/ui/context-menu";
 import { formatTime } from "@/lib/utils";
 import { playSfx } from "@/utils/sound";
 import type { Highlight, Collection, File as AppFile } from "@/types";
@@ -137,84 +143,101 @@ export function HighlightsSidebar({
                         const collectionName = collection ? collection.name : null;
 
                         return (
-                            <div
-                                key={h.id}
-                                className="group flex flex-col gap-1.5 p-2 rounded-none border-l-4 transition-all relative overflow-hidden"
-                                style={{ borderLeftColor: borderColor }}
-                            >
-                                <div 
-                                    className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"
-                                    style={{ backgroundColor: borderColor }}
-                                />
-                                <div className="flex items-center gap-2 h-6 relative z-10">
-                                    <div className="flex flex-1 min-w-0 items-center gap-3">
-                                        <button
-                                            className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
-                                            onClick={() => {
-                                                playSfx('cursor');
-                                                onSeekToHighlight(h);
-                                            }}
-                                        >
-                                            {file.type === 'pdf'
-                                                ? (h.end && h.end !== h.start
-                                                    ? `Page ${h.start}-${h.end}`
-                                                    : `Page ${h.start}`)
-                                                : file.type === 'image'
-                                                    ? 'View Region'
-                                                    : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
-                                            }
-                                        </button>
-                                        {collectionName && (
-                                            <span className="text-xs font-semibold truncate uppercase tracking-tight" style={{ color: collection?.color }}>
-                                                {collectionName}
-                                            </span>
+                            <ContextMenu key={h.id}>
+                                <ContextMenuTrigger asChild>
+                                    <div
+                                        className="group flex flex-col gap-1.5 p-2 rounded-none border-l-4 transition-all relative overflow-hidden"
+                                        style={{ borderLeftColor: borderColor }}
+                                    >
+                                        <div 
+                                            className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"
+                                            style={{ backgroundColor: borderColor }}
+                                        />
+                                        <div className="flex items-center gap-2 h-6 relative z-10">
+                                            <div className="flex flex-1 min-w-0 items-center gap-3">
+                                                <button
+                                                    className="text-primary font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
+                                                    onClick={() => {
+                                                        playSfx('cursor');
+                                                        onSeekToHighlight(h);
+                                                    }}
+                                                >
+                                                    {file.type === 'pdf'
+                                                        ? (h.end && h.end !== h.start
+                                                            ? `Page ${h.start}-${h.end}`
+                                                            : `Page ${h.start}`)
+                                                        : file.type === 'image'
+                                                            ? 'View Region'
+                                                            : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
+                                                    }
+                                                </button>
+                                                {collectionName && (
+                                                    <span className="text-xs font-semibold truncate uppercase tracking-tight" style={{ color: collection?.color }}>
+                                                        {collectionName}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="absolute right-2 top-1.5 flex items-center gap-1 opacity-0 pointer-events-none transition-all duration-150 group-hover:opacity-100 group-hover:pointer-events-auto bg-background/90 rounded px-1">
+                                                <button
+                                                    className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
+                                                    onClick={(e: MouseEvent) => {
+                                                        playSfx('cursor');
+                                                        e.stopPropagation();
+                                                        onOpenHighlight(h.id);
+                                                    }}
+                                                    title="Open Highlight"
+                                                >
+                                                    <Play weight="fill" size={10} />
+                                                </button>
+                                                <button
+                                                    className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded"
+                                                    onClick={(e: MouseEvent) => {
+                                                        playSfx('cursor');
+                                                        e.stopPropagation();
+                                                        onEditHighlight(h.id);
+                                                    }}
+                                                    title="Edit Highlight"
+                                                >
+                                                    <PencilSimple weight="bold" size={12} />
+                                                </button>
+                                                <button
+                                                    className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded"
+                                                    onClick={(e: MouseEvent) => {
+                                                        playSfx('cursor');
+                                                        e.stopPropagation();
+                                                        onDeleteHighlight(h.id);
+                                                    }}
+                                                    title="Delete Highlight"
+                                                >
+                                                    <Trash weight="bold" size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {file.type === 'pdf' && h.text && (
+                                            <div className="text-foreground text-xs whitespace-pre-wrap break-all pl-1 leading-snug">
+                                                {h.text}
+                                            </div>
                                         )}
+                                        <div className="text-muted-foreground text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
+                                            <ExpandableNote text={h.note} />
+                                        </div>
                                     </div>
-                                    <div className="flex w-0 shrink-0 items-center justify-end gap-1 overflow-hidden opacity-0 pointer-events-none transition-all duration-150 group-hover:w-[5.75rem] group-hover:opacity-100 group-hover:pointer-events-auto">
-                                        <button
-                                            className="p-1 px-1.5 text-xs bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded flex items-center gap-1"
-                                            onClick={(e: MouseEvent) => {
-                                                playSfx('cursor');
-                                                e.stopPropagation();
-                                                onOpenHighlight(h.id);
-                                            }}
-                                            title="Open Highlight"
-                                        >
-                                            <Play weight="fill" size={10} />
-                                        </button>
-                                        <button
-                                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded"
-                                            onClick={(e: MouseEvent) => {
-                                                playSfx('cursor');
-                                                e.stopPropagation();
-                                                onEditHighlight(h.id);
-                                            }}
-                                            title="Edit Highlight"
-                                        >
-                                            <PencilSimple weight="bold" size={12} />
-                                        </button>
-                                        <button
-                                            className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded"
-                                            onClick={(e: MouseEvent) => {
-                                                playSfx('cursor');
-                                                e.stopPropagation();
-                                                onDeleteHighlight(h.id);
-                                            }}
-                                            title="Delete Highlight"
-                                        >
-                                            <Trash weight="bold" size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                                {file.type === 'pdf' && h.text && (
-                                    <div className="text-foreground text-xs whitespace-pre-wrap break-all pl-1 leading-snug">
-                                        {h.text}
-                                    </div>
-                                )}
-                                <div className="text-muted-foreground text-sm whitespace-pre-wrap break-all pl-1 leading-relaxed mt-0.5">
-                                    <ExpandableNote text={h.note} />
-                                </div>
-                            </div>
+                                </ContextMenuTrigger>
+                                <ContextMenuContent className="min-w-[10rem]">
+                                    <ContextMenuItem onSelect={() => { playSfx('cursor'); onOpenHighlight(h.id); }}>
+                                        <Play weight="fill" size={14} />
+                                        Play
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onSelect={() => { playSfx('cursor'); onEditHighlight(h.id); }}>
+                                        <PencilSimple weight="bold" size={14} />
+                                        Edit
+                                    </ContextMenuItem>
+                                    <ContextMenuItem variant="destructive" onSelect={() => { playSfx('cursor'); onDeleteHighlight(h.id); }}>
+                                        <Trash weight="bold" size={14} />
+                                        Delete
+                                    </ContextMenuItem>
+                                </ContextMenuContent>
+                            </ContextMenu>
                         );
                     })
                 )}

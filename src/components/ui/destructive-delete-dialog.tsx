@@ -60,7 +60,7 @@ export function DestructiveDeleteDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-500 text-sm">
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
                         Warning: This action cannot be undone.
                     </div>
                     <div className="space-y-2">

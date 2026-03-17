@@ -280,7 +280,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
             />
 
             {/* Visualizer / Cover Art Area */}
-            <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-2xl bg-zinc-900 shadow-2xl flex items-center justify-center mb-12 border border-zinc-800 overflow-hidden group">
+            <div className="relative w-64 h-64 md:w-80 md:h-80 bg-zinc-900 shadow-2xl flex items-center justify-center mb-12 border border-zinc-800 overflow-hidden group">
                 <div className={cn(
                     "absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/20 opacity-50",
                     isPlaying ? "animate-pulse" : ""
@@ -309,7 +309,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
             {/* Controls Container */}
             {showControls && (
                 <div 
-                    className="w-full max-w-2xl bg-zinc-900/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-800/50 shadow-xl"
+                    className="w-full max-w-2xl bg-zinc-900/50 backdrop-blur-sm p-6 border border-zinc-800/50 shadow-xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Progress Bar */}
@@ -327,7 +327,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                                     return (
                                         <div 
                                             key={h.id}
-                                            className="absolute top-1/2 -translate-y-1/2 h-3 rounded-full opacity-60 transition-opacity hover:opacity-100"
+                                            className="absolute top-1/2 -translate-y-1/2 h-3 opacity-60 transition-opacity hover:opacity-100"
                                             style={{ 
                                                 left: `${startPct}%`,
                                                 width: hasRange ? `${widthPct}%` : '4px',
@@ -403,7 +403,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                                     playSfx('cursor');
                                     togglePlay();
                                 }}
-                                className="h-14 w-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg scale-100 hover:scale-105 transition-transform"
+                                className="h-14 w-14 rounded-none bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg scale-100 hover:scale-105 transition-transform"
                             >
                                 {isPlaying ? <Pause size={28} weight="fill" /> : <Play size={28} weight="fill" className="ml-1" />}
                             </Button>
@@ -464,7 +464,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(({ ur
                                                     key={rate}
                                                     onClick={() => { playSfx('cursor'); handlePlaybackRateChange(rate); }}
                                                     className={cn(
-                                                        "px-2 py-1.5 rounded text-xs font-medium transition-colors border",
+                                                        "px-2 py-1.5 rounded-none text-xs font-medium transition-colors border",
                                                         playbackRate === rate
                                                             ? "bg-primary/10 text-primary border-primary/50"
                                                             : "bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground"

@@ -16,7 +16,7 @@ interface CachedVideoPreviewProps {
 function CachedVideoPreview({ url, time }: CachedVideoPreviewProps) {
     const cacheHighlights = useStore(state => state.cacheHighlights);
     const thumbnailKey = Number.isNaN(time) ? null : `${url}-${time}-grid`;
-    const cachedThumbnail = useCachedThumbnail(thumbnailKey);
+    const cachedThumbnail = useCachedThumbnail(thumbnailKey, cacheHighlights);
 
     if (cachedThumbnail) {
         return <img src={cachedThumbnail} className="w-full h-full object-cover" alt="" loading="lazy" />;
@@ -106,12 +106,14 @@ function CollectionGridPreviewTile({ highlight, file }: { highlight: Highlight; 
 }
 
 export function CollectionGridPreview({ collectionId, highlights, files }: CollectionGridPreviewProps) {
+    const cacheCollections = useStore(state => state.cacheCollections);
+
     // Get first 4 highlights for this collection
     const items = highlights
         .filter(h => h.collectionId === collectionId)
         .slice(0, 4);
 
-    if (items.length === 0) return null;
+    if (!cacheCollections || items.length === 0) return null;
 
     return (
         <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 opacity-20 pointer-events-none">

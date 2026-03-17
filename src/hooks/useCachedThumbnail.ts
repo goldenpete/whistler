@@ -6,13 +6,14 @@ import { thumbnailStorage } from "@/utils/thumbnailDb";
  * and cleans up (revokeObjectURL) on unmount or when the key changes.
  *
  * @param key - The thumbnail cache key, or null/undefined to skip loading.
+ * @param enabled - Whether caching is enabled. When false, skips loading and returns null.
  * @returns The object URL for the cached thumbnail, or null if not found.
  */
-export function useCachedThumbnail(key: string | null | undefined): string | null {
+export function useCachedThumbnail(key: string | null | undefined, enabled: boolean = true): string | null {
     const [url, setUrl] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!key) {
+        if (!key || !enabled) {
             setUrl(null);
             return;
         }
@@ -46,7 +47,7 @@ export function useCachedThumbnail(key: string | null | undefined): string | nul
                 URL.revokeObjectURL(objectUrl);
             }
         };
-    }, [key]);
+    }, [key, enabled]);
 
     return url;
 }

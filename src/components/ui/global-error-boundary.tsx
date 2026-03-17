@@ -50,7 +50,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 </div>
 
                 {/* Right Side: Console Output */}
-                <div className="flex-1 h-[400px] w-full bg-zinc-950/50 rounded-lg border border-red-900/20 p-4 font-mono text-xs text-zinc-400 overflow-auto shadow-inner relative group">
+                <div className="flex-1 h-[400px] w-full bg-zinc-950/50 border border-red-900/20 p-4 font-mono text-xs text-zinc-400 overflow-auto shadow-inner relative group">
                     <Button
                         variant="ghost"
                         size="icon"
