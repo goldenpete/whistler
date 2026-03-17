@@ -97,7 +97,9 @@ export function useSync() {
                 });
                 if (getResponse.ok) {
                     const json = await getResponse.json();
+                    console.log('[Sync Push] Server GET raw response:', JSON.stringify(json).slice(0, 500));
                     serverData = normalizeServerDataPayload(json) ?? {};
+                    console.log('[Sync Push] Normalized server data keys:', Object.keys(serverData));
                 } else if (getResponse.status === 401) {
                     logout();
                     setError("Session expired. Please sign in again.");
@@ -220,6 +222,8 @@ export function useSync() {
                     value: data,
                 });
 
+                console.log('[Sync Push] Payload keys being sent:', Object.keys(data));
+
                 const response = await fetch(`${SYNC_API_URL}/data`, {
                     method: "PUT",
                     headers: {
@@ -268,10 +272,13 @@ export function useSync() {
                 }
 
                 const json = await response.json();
+                console.log('[Sync Pull] Server GET raw response:', JSON.stringify(json).slice(0, 500));
                 const serverData = normalizeServerDataPayload(json);
+                console.log('[Sync Pull] Normalized result:', serverData ? Object.keys(serverData) : null);
                 if (serverData) {
                     const state = useStore.getState();
                     const { syncOptions } = state;
+                    console.log('[Sync Pull] syncOptions:', JSON.stringify(syncOptions));
                     const trashEnabled = syncOptions.trash ?? true;
                     const historyEnabled = syncOptions.history ?? true;
                     const updates: Record<string, unknown> = {};
@@ -408,6 +415,7 @@ export function useSync() {
                     }
 
                     if (Object.keys(updates).length > 0) {
+                        console.log('[Sync Pull] Applying updates for keys:', Object.keys(updates));
                         setState(updates);
 
                         // If activeProjectId is no longer valid after update, switch to the first available project
