@@ -41,6 +41,7 @@ export function FloatingPlayer() {
                     key={window.id}
                     fileIdOverride={window.fileId}
                     floating
+                    floatingWindowId={window.id}
                     isMinimized={window.minimized}
                     windowZIndex={80 + index}
                     onFocus={() => bringFloatingPlayerToFront(window.id)}

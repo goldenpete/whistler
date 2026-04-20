@@ -154,6 +154,7 @@ export interface AppStore extends AppState {
   audioVolumeByFile: Record<string, number>;
   videoUnmutedByFile: Record<string, boolean>;
   useMiddleFrameForPreviews: boolean;
+  highlightViewerListMode: 'video' | 'collection';
 
   // ── Cache Settings ──────────────────────────────────────────────────────
   cacheFiles: boolean;
@@ -231,6 +232,7 @@ export interface AppStore extends AppState {
   addFloatingPlayer: (id: string) => string;
   removeFloatingPlayer: (id: string) => void;
   setFloatingPlayerMinimized: (id: string, minimized: boolean) => void;
+  setFloatingPlayerFile: (id: string, fileId: string) => void;
   bringFloatingPlayerToFront: (id: string) => void;
 
   // ── Project CRUD ──────────────────────────────────────────────────────
@@ -305,6 +307,7 @@ export interface AppStore extends AppState {
   setAudioVolumeForFile: (fileId: string, volume: number) => void;
   setVideoUnmutedForFile: (fileId: string, unmuted: boolean) => void;
   setUseMiddleFrameForPreviews: (enabled: boolean) => void;
+  setHighlightViewerListMode: (mode: 'video' | 'collection') => void;
   setCacheFiles: (enabled: boolean) => void;
   setCacheCollections: (enabled: boolean) => void;
   setCacheHighlights: (enabled: boolean) => void;

@@ -54,6 +54,8 @@ export const createPlaybackSlice = (set: StoreSet, _get: StoreGet) => ({
   videoUnmutedByFile: {} as Record<string, boolean>,
   /** Use middle frame for video preview thumbnails instead of first frame */
   useMiddleFrameForPreviews: true,
+  /** Preferred highlight viewer list scope in the highlight playback dialog */
+  highlightViewerListMode: 'video' as 'video' | 'collection',
 
   /* ── Cache Settings ───────────────────────────────────────────────────── */
 
@@ -96,6 +98,13 @@ export const createPlaybackSlice = (set: StoreSet, _get: StoreGet) => ({
     set((state) => ({
       floatingPlayerWindows: state.floatingPlayerWindows.map((w) =>
         w.id === id ? { ...w, minimized } : w
+      ),
+    })),
+
+  setFloatingPlayerFile: (id: string, fileId: string) =>
+    set((state) => ({
+      floatingPlayerWindows: state.floatingPlayerWindows.map((w) =>
+        w.id === id ? { ...w, fileId } : w
       ),
     })),
 
@@ -148,6 +157,7 @@ export const createPlaybackSlice = (set: StoreSet, _get: StoreGet) => ({
     })),
 
   setUseMiddleFrameForPreviews: (enabled: boolean) => set({ useMiddleFrameForPreviews: enabled }),
+  setHighlightViewerListMode: (mode: 'video' | 'collection') => set({ highlightViewerListMode: mode }),
   setCacheFiles: (enabled: boolean) => set({ cacheFiles: enabled }),
   setCacheCollections: (enabled: boolean) => set({ cacheCollections: enabled }),
   setCacheHighlights: (enabled: boolean) => set({ cacheHighlights: enabled }),

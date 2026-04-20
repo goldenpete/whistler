@@ -367,6 +367,8 @@ export interface AppState {
     // ── Playback state ───────────────────────────────────────────────────
     /** Maps fileId → playback position in seconds (resume support). */
     fileProgress: Record<string, number>;
+    /** Preferred highlight viewer list scope in the highlight playback dialog. */
+    highlightViewerListMode?: 'video' | 'collection';
 
     // ── Document editor ──────────────────────────────────────────────────
     docViewMode?: 'page' | 'pageless' | 'pageless-wide';

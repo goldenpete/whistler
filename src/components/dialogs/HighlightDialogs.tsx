@@ -76,20 +76,35 @@ interface HighlightPlayerDialogProps {
     inline?: boolean;
     onRequestMinimize?: () => void;
     onRequestClose?: () => void;
-    onSelectHighlight?: (id: string) => void;
+    onSelectHighlight?: (highlight: Highlight) => void;
     isDraggable?: boolean;
     onDragHandlePointerDown?: (event: React.PointerEvent) => void;
 }
 
+const getHighlightRangeLabel = (highlight: Highlight, file?: File | null) => {
+    if (file?.type === 'pdf') {
+        return highlight.end && highlight.end !== highlight.start
+            ? `Page ${highlight.start}-${highlight.end}`
+            : `Page ${highlight.start}`;
+    }
+
+    if (file?.type === 'image') {
+        return "View Region";
+    }
+
+    return `${formatTime(highlight.start)} - ${formatTime(highlight.end || highlight.start + 5)}`;
+};
+
 export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, collection, collections, onUpdate, inline = false, onRequestMinimize, onRequestClose, onSelectHighlight, isDraggable = false, onDragHandlePointerDown }: HighlightPlayerDialogProps) {
     const { resolvedUrl, availability, requestAccess, relink } = useResolvedFileUrl(file);
     const navigate = useNavigate();
-    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile } = useStore(useShallow((state) => ({
+    const { setPipFile, setFileProgress, addAmbientMusicSuppression, removeAmbientMusicSuppression, highlights: allHighlights, files, addFloatingPlayer, setFloatingPlayerMinimized, windowOutlineEnabled, videoZoomByFile, setVideoZoomForFile, videoZoomManualByFile, setVideoZoomManualForFile, highlightViewerListMode, setHighlightViewerListMode } = useStore(useShallow((state) => ({
         setPipFile: state.setPipFile,
         setFileProgress: state.setFileProgress,
         addAmbientMusicSuppression: state.addAmbientMusicSuppression,
         removeAmbientMusicSuppression: state.removeAmbientMusicSuppression,
         highlights: state.highlights,
+        files: state.files,
         addFloatingPlayer: state.addFloatingPlayer,
         setFloatingPlayerMinimized: state.setFloatingPlayerMinimized,
         windowOutlineEnabled: state.windowOutlineEnabled,
@@ -97,6 +112,8 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         setVideoZoomForFile: state.setVideoZoomForFile,
         videoZoomManualByFile: state.videoZoomManualByFile,
         setVideoZoomManualForFile: state.setVideoZoomManualForFile,
+        highlightViewerListMode: state.highlightViewerListMode,
+        setHighlightViewerListMode: state.setHighlightViewerListMode,
     })));
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -143,8 +160,28 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
     const start = highlight?.start || 0;
     const end = (highlight?.end && highlight.end > start) ? highlight.end : start + 5;
     const segmentDuration = end - start;
+    const currentCollectionId = highlight?.collectionId ?? collection?.id ?? null;
+    const fileMap = useMemo(
+        () => new Map(files.map((item) => [item.id, item])),
+        [files]
+    );
     const fileHighlights = file ? allHighlights.filter((h: Highlight) => h.fileId === file.id) : [];
-    const sortedHighlights = fileHighlights.slice().sort((a: Highlight, b: Highlight) => a.start - b.start);
+    const videoHighlights = useMemo(
+        () => fileHighlights.slice().sort((a: Highlight, b: Highlight) => a.start - b.start),
+        [fileHighlights]
+    );
+    const collectionHighlights = useMemo(
+        () => currentCollectionId
+            ? allHighlights.filter((item: Highlight) => item.collectionId === currentCollectionId)
+            : [],
+        [allHighlights, currentCollectionId]
+    );
+    const effectiveHighlightListMode = highlightViewerListMode === 'collection' && currentCollectionId
+        ? 'collection'
+        : 'video';
+    const visibleHighlights = effectiveHighlightListMode === 'collection'
+        ? collectionHighlights
+        : videoHighlights;
 
     // Windowed Logic
     const handleToggleWindowed = () => {
@@ -1027,21 +1064,71 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                     />
                                 </div>
 
-                                <div className="flex flex-col gap-2">
-                                    <Label className="text-xs font-mono text-muted-foreground uppercase">Highlights</Label>
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <Label className="text-xs font-mono text-muted-foreground uppercase">Highlights</Label>
+                                        <div className="inline-flex border border-border/50 bg-muted/20 p-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    playSfx('cursor');
+                                                    setHighlightViewerListMode('video');
+                                                }}
+                                                className={cn(
+                                                    "px-3 py-1 text-[11px] font-mono uppercase tracking-wide transition-colors",
+                                                    effectiveHighlightListMode === 'video'
+                                                        ? "bg-primary/10 text-primary"
+                                                        : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                                                )}
+                                            >
+                                                Video
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!currentCollectionId) return;
+                                                    playSfx('cursor');
+                                                    setHighlightViewerListMode('collection');
+                                                }}
+                                                disabled={!currentCollectionId}
+                                                className={cn(
+                                                    "px-3 py-1 text-[11px] font-mono uppercase tracking-wide transition-colors",
+                                                    effectiveHighlightListMode === 'collection'
+                                                        ? "bg-primary/10 text-primary"
+                                                        : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                                                    !currentCollectionId && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground"
+                                                )}
+                                            >
+                                                Collection
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="flex flex-col gap-2">
-                                        {sortedHighlights.length === 0 ? (
-                                            <div className="text-xs text-muted-foreground">No highlights yet.</div>
+                                        {visibleHighlights.length === 0 ? (
+                                            <div className="text-xs text-muted-foreground">
+                                                {effectiveHighlightListMode === 'collection'
+                                                    ? "No highlights in this collection yet."
+                                                    : "No highlights yet."}
+                                            </div>
                                         ) : (
-                                            sortedHighlights.map((h: Highlight) => {
+                                            visibleHighlights.map((h: Highlight) => {
                                                 const isActive = h.id === highlight.id;
-                                                const hCollection = collections?.find(c => c.id === h.collectionId);
+                                                const hCollection = collections?.find((item) => item.id === h.collectionId);
+                                                const hFile = fileMap.get(h.fileId) ?? (file?.id === h.fileId ? file : null);
+                                                const metaLabel = effectiveHighlightListMode === 'collection'
+                                                    ? hFile?.name ?? "Unknown file"
+                                                    : hCollection?.name;
+                                                const metaColor = effectiveHighlightListMode === 'collection'
+                                                    ? hFile?.color
+                                                    : hCollection?.color;
+
                                                 return (
                                                     <button
                                                         key={h.id}
+                                                        type="button"
                                                         onClick={() => {
                                                             playSfx('cursor');
-                                                            onSelectHighlight?.(h.id);
+                                                            onSelectHighlight?.(h);
                                                         }}
                                                         className={cn(
                                                             "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors border border-transparent w-full",
@@ -1051,19 +1138,14 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                         )}
                                                     >
                                                         <span className="font-mono shrink-0">
-                                                            {isPdf
-                                                                ? (h.end && h.end !== h.start ? `Page ${h.start}-${h.end}` : `Page ${h.start}`)
-                                                                : isImage
-                                                                    ? "View Region"
-                                                                    : `${formatTime(h.start)} - ${formatTime(h.end || h.start + 5)}`
-                                                            }
+                                                            {getHighlightRangeLabel(h, hFile)}
                                                         </span>
                                                         <span className={cn("flex-1 truncate", isActive ? "text-primary/90" : "text-muted-foreground")}>
                                                             {h.note?.trim() ? h.note : "No note"}
                                                         </span>
-                                                        {hCollection && (
-                                                            <span className="shrink-0 truncate uppercase tracking-tight text-[10px]" style={{ color: hCollection.color }}>
-                                                                {hCollection.name}
+                                                        {metaLabel && (
+                                                            <span className="shrink-0 truncate text-[10px] tracking-tight" style={{ color: metaColor }}>
+                                                                {metaLabel}
                                                             </span>
                                                         )}
                                                     </button>

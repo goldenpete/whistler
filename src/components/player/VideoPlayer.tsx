@@ -34,7 +34,7 @@ declare class ImageCapture {
     grabFrame(): Promise<ImageBitmap>;
 }
 
-import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type SyntheticEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useParams, useNavigate } from "react-router-dom";
@@ -130,6 +130,7 @@ import { LocalFileAccessPanel } from "@/components/player/LocalFileAccessPanel";
 interface VideoPlayerProps {
     fileIdOverride?: string;
     floating?: boolean;
+    floatingWindowId?: string;
     isMinimized?: boolean;
     windowZIndex?: number;
     onFocus?: () => void;
@@ -141,7 +142,7 @@ interface VideoPlayerProps {
 /* ═══════════════════════════════════════════════════════
    STORE BINDINGS & STATE
    ═══════════════════════════════════════════════════════ */
-export default function VideoPlayer({ fileIdOverride, floating = false, isMinimized: isMinimizedProp, windowZIndex, onFocus, onMinimize, onClose, onExitFloating }: VideoPlayerProps) {
+export default function VideoPlayer({ fileIdOverride, floating = false, floatingWindowId, isMinimized: isMinimizedProp, windowZIndex, onFocus, onMinimize, onClose, onExitFloating }: VideoPlayerProps) {
     const { id: routeFileId } = useParams() as { id?: string };
     const fileId = fileIdOverride ?? routeFileId;
     const navigate = useNavigate();
@@ -170,6 +171,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         trashFile,
         addFloatingPlayer,
         setFloatingPlayerMinimized,
+        setFloatingPlayerFile,
         windowOutlineEnabled,
         videoZoomByFile,
         setVideoZoomForFile,
@@ -210,6 +212,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         trashFile: state.trashFile,
         addFloatingPlayer: state.addFloatingPlayer,
         setFloatingPlayerMinimized: state.setFloatingPlayerMinimized,
+        setFloatingPlayerFile: state.setFloatingPlayerFile,
         windowOutlineEnabled: state.windowOutlineEnabled,
         videoZoomByFile: state.videoZoomByFile,
         setVideoZoomForFile: state.setVideoZoomForFile,
@@ -980,6 +983,24 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
         }
     };
 
+    const handleHighlightDialogSelect = useCallback((nextHighlight: Highlight) => {
+        setSelectedHighlightId(nextHighlight.id);
+
+        if (nextHighlight.fileId === fileId) {
+            setActiveHighlight(nextHighlight.id);
+            return;
+        }
+
+        if (floating && floatingWindowId) {
+            setFloatingPlayerFile(floatingWindowId, nextHighlight.fileId);
+            setActiveHighlight(nextHighlight.id);
+            return;
+        }
+
+        navigate(`/file/${nextHighlight.fileId}`);
+        setActiveHighlight(nextHighlight.id);
+    }, [fileId, floating, floatingWindowId, navigate, setActiveHighlight, setFloatingPlayerFile]);
+
 
 
     const handleSeek = (value: number[]) => {
@@ -1230,7 +1251,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, isMinimi
                     inline
                     onRequestMinimize={handleMinimize}
                     onRequestClose={handleClose}
-                    onSelectHighlight={setActiveHighlight}
+                    onSelectHighlight={handleHighlightDialogSelect}
                     isDraggable={isWindowed}
                     onDragHandlePointerDown={handleDragStart}
                 />
