@@ -165,7 +165,10 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
         () => new Map(files.map((item) => [item.id, item])),
         [files]
     );
-    const fileHighlights = file ? allHighlights.filter((h: Highlight) => h.fileId === file.id) : [];
+    const fileHighlights = useMemo(
+        () => file ? allHighlights.filter((h: Highlight) => h.fileId === file.id) : [],
+        [allHighlights, file]
+    );
     const videoHighlights = useMemo(
         () => fileHighlights.slice().sort((a: Highlight, b: Highlight) => a.start - b.start),
         [fileHighlights]
@@ -1118,9 +1121,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                 const metaLabel = effectiveHighlightListMode === 'collection'
                                                     ? hFile?.name ?? "Unknown file"
                                                     : hCollection?.name;
-                                                const metaColor = effectiveHighlightListMode === 'collection'
-                                                    ? hFile?.color
-                                                    : hCollection?.color;
+                                                const metaColor = hCollection?.color ?? collection?.color;
 
                                                 return (
                                                     <button
@@ -1131,7 +1132,7 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                             onSelectHighlight?.(h);
                                                         }}
                                                         className={cn(
-                                                            "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors border border-transparent w-full",
+                                                            "flex w-full items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-xs transition-colors",
                                                             isActive
                                                                 ? "bg-primary/10 text-primary border-primary/40"
                                                                 : "bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -1140,14 +1141,20 @@ export function HighlightPlayerDialog({ open, onOpenChange, highlight, file, col
                                                         <span className="font-mono shrink-0">
                                                             {getHighlightRangeLabel(h, hFile)}
                                                         </span>
-                                                        <span className={cn("flex-1 truncate", isActive ? "text-primary/90" : "text-muted-foreground")}>
-                                                            {h.note?.trim() ? h.note : "No note"}
-                                                        </span>
-                                                        {metaLabel && (
-                                                            <span className="shrink-0 truncate text-[10px] tracking-tight" style={{ color: metaColor }}>
-                                                                {metaLabel}
+                                                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                                                            <span className={cn("min-w-0 flex-1 truncate", isActive ? "text-primary/90" : "text-muted-foreground")}>
+                                                                {h.note?.trim() ? h.note : "No note"}
                                                             </span>
-                                                        )}
+                                                            {metaLabel && (
+                                                                <span
+                                                                    className="max-w-[45%] shrink truncate text-[10px] tracking-tight text-right"
+                                                                    style={{ color: metaColor }}
+                                                                    title={metaLabel}
+                                                                >
+                                                                    {metaLabel}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </button>
                                                 );
                                             })

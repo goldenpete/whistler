@@ -34,7 +34,7 @@ declare class ImageCapture {
     grabFrame(): Promise<ImageBitmap>;
 }
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type SyntheticEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useStore, type AppStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { useParams, useNavigate } from "react-router-dom";
@@ -983,7 +983,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, floating
         }
     };
 
-    const handleHighlightDialogSelect = useCallback((nextHighlight: Highlight) => {
+    const handleHighlightDialogSelect = (nextHighlight: Highlight) => {
         setSelectedHighlightId(nextHighlight.id);
 
         if (nextHighlight.fileId === fileId) {
@@ -999,7 +999,7 @@ export default function VideoPlayer({ fileIdOverride, floating = false, floating
 
         navigate(`/file/${nextHighlight.fileId}`);
         setActiveHighlight(nextHighlight.id);
-    }, [fileId, floating, floatingWindowId, navigate, setActiveHighlight, setFloatingPlayerFile]);
+    };
 
 
 
