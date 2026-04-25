@@ -87,6 +87,7 @@ import type { AccentTheme } from "@/types";
 import { preloadSounds, playSfx } from "@/utils/sound";
 import { GlobalErrorBoundary } from "@/components/ui/global-error-boundary";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserTooltipBridge } from "@/components/ui/BrowserTooltipBridge";
 
 const NotFoundView = () => {
   const navigate = useNavigate();
@@ -266,6 +267,7 @@ export default function App() {
 
   return (
     <TooltipProvider>
+      <BrowserTooltipBridge />
       <GlobalKeybinds />
       <SpotlightSearch />
       <DoubleTapMenu />

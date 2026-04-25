@@ -15,7 +15,28 @@
  * ============================================================================
  */
 
-import type { StoreSet, StoreGet } from '../types';
+import type { StoreSet, StoreGet } from "../types";
+import type {
+  ActivityClearRange,
+  Collection,
+  Doc,
+  File,
+  Graph,
+  Storage,
+} from "@/types";
+import {
+  getActivityClearRangeLabel,
+  isTimestampInActivityRange,
+} from "@/lib/activityRanges";
+import { appendHistoryEntriesIfEnabled } from "../helpers/historyTracking";
+
+function getTrashTimestamp(
+  item: Pick<File | Collection | Storage | Graph | Doc, "created"> & {
+    lastModified?: number;
+  },
+) {
+  return item.lastModified ?? item.created;
+}
 
 export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
   /* ── File Trash ───────────────────────────────────────────────────────── */
@@ -23,39 +44,33 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
   trashFile: (id: string) =>
     set((state) => ({
       files: state.files.map((f) =>
-        f.id === id ? { ...f, deleted: true, lastModified: Date.now() } : f
+        f.id === id ? { ...f, deleted: true, lastModified: Date.now() } : f,
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'delete',
-          entityType: 'file',
+          projectId: state.activeProjectId || "global",
+          action: "delete",
+          entityType: "file",
           entityId: id,
           entityName: state.files.find((f) => f.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   restoreFile: (id: string) =>
     set((state) => ({
       files: state.files.map((f) =>
-        f.id === id ? { ...f, deleted: false, lastModified: Date.now() } : f
+        f.id === id ? { ...f, deleted: false, lastModified: Date.now() } : f,
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'restore',
-          entityType: 'file',
+          projectId: state.activeProjectId || "global",
+          action: "restore",
+          entityType: "file",
           entityId: id,
           entityName: state.files.find((f) => f.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /** Permanently remove file + all its highlights */
@@ -63,19 +78,16 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
     set((state) => ({
       files: state.files.filter((f) => f.id !== id),
       highlights: state.highlights.filter((t) => t.fileId !== id),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'delete',
-          entityType: 'file',
+          projectId: state.activeProjectId || "global",
+          action: "delete",
+          entityType: "file",
           entityId: id,
           entityName: state.files.find((f) => f.id === id)?.name,
-          details: 'Permanent Delete',
-          timestamp: Date.now(),
+          details: "Permanent Delete",
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /* ── Collection Trash ─────────────────────────────────────────────────── */
@@ -83,46 +95,42 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
   trashCollection: (id: string) =>
     set((state) => {
       const collection = state.collections.find((c) => c.id === id);
-      const isBucket = collection?.type === 'bucket';
+      const isBucket = collection?.type === "bucket";
       return {
         collections: state.collections.map((c) =>
-          c.id === id ? { ...c, deleted: true, lastModified: Date.now() } : c
+          c.id === id ? { ...c, deleted: true, lastModified: Date.now() } : c,
         ),
         // Clear active collection if trashing the active bucket
         activeCollectionId:
-          isBucket && state.activeCollectionId === id ? null : state.activeCollectionId,
-        history: [
+          isBucket && state.activeCollectionId === id
+            ? null
+            : state.activeCollectionId,
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
-            projectId: state.activeProjectId || 'global',
-            action: 'delete',
-            entityType: 'collection',
+            projectId: state.activeProjectId || "global",
+            action: "delete",
+            entityType: "collection",
             entityId: id,
             entityName: collection?.name,
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
   restoreCollection: (id: string) =>
     set((state) => ({
       collections: state.collections.map((c) =>
-        c.id === id ? { ...c, deleted: false, lastModified: Date.now() } : c
+        c.id === id ? { ...c, deleted: false, lastModified: Date.now() } : c,
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'restore',
-          entityType: 'collection',
+          projectId: state.activeProjectId || "global",
+          action: "restore",
+          entityType: "collection",
           entityId: id,
           entityName: state.collections.find((c) => c.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /** Permanently remove collection + all its highlights */
@@ -130,19 +138,16 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
     set((state) => ({
       collections: state.collections.filter((c) => c.id !== id),
       highlights: state.highlights.filter((h) => h.collectionId !== id),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'delete',
-          entityType: 'collection',
+          projectId: state.activeProjectId || "global",
+          action: "delete",
+          entityType: "collection",
           entityId: id,
           entityName: state.collections.find((c) => c.id === id)?.name,
-          details: 'Permanent Delete',
-          timestamp: Date.now(),
+          details: "Permanent Delete",
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /* ── Storage Trash ────────────────────────────────────────────────────── */
@@ -156,44 +161,38 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
   restoreStorage: (id: string) =>
     set((state) => ({
       storages: state.storages.map((s) =>
-        s.id === id ? { ...s, deleted: false, lastModified: Date.now() } : s
+        s.id === id ? { ...s, deleted: false, lastModified: Date.now() } : s,
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'restore',
-          entityType: 'collection',
+          projectId: state.activeProjectId || "global",
+          action: "restore",
+          entityType: "storage",
           entityId: id,
           entityName: state.storages.find((s) => s.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /** Permanently remove storage + all its files */
   permanentDeleteStorage: (id: string) =>
     set((state) => {
       const storageFileIds = new Set(
-        state.files.filter((f) => f.storageId === id).map((f) => f.id)
+        state.files.filter((f) => f.storageId === id).map((f) => f.id),
       );
       return {
         storages: state.storages.filter((s) => s.id !== id),
         files: state.files.filter((f) => !storageFileIds.has(f.id)),
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
-            projectId: state.activeProjectId || 'global',
-            action: 'delete',
-            entityType: 'collection',
+            projectId: state.activeProjectId || "global",
+            action: "delete",
+            entityType: "storage",
             entityId: id,
             entityName: state.storages.find((s) => s.id === id)?.name,
-            details: 'Permanently Deleted',
-            timestamp: Date.now(),
+            details: "Permanently Deleted",
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -202,40 +201,34 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
   trashGraph: (id: string) =>
     set((state) => ({
       graphs: state.graphs.map((g) =>
-        g.id === id ? { ...g, deleted: true, lastModified: Date.now() } : g
+        g.id === id ? { ...g, deleted: true, lastModified: Date.now() } : g,
       ),
       activeGraphId: state.activeGraphId === id ? null : state.activeGraphId,
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'delete',
-          entityType: 'graph',
+          projectId: state.activeProjectId || "global",
+          action: "delete",
+          entityType: "graph",
           entityId: id,
           entityName: state.graphs.find((g) => g.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   restoreGraph: (id: string) =>
     set((state) => ({
       graphs: state.graphs.map((g) =>
-        g.id === id ? { ...g, deleted: false, lastModified: Date.now() } : g
+        g.id === id ? { ...g, deleted: false, lastModified: Date.now() } : g,
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'restore',
-          entityType: 'graph',
+          projectId: state.activeProjectId || "global",
+          action: "restore",
+          entityType: "graph",
           entityId: id,
           entityName: state.graphs.find((g) => g.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /** Permanently remove graph + all its nodes and edges */
@@ -244,19 +237,16 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
       graphs: state.graphs.filter((g) => g.id !== id),
       graphNodes: state.graphNodes.filter((n) => n.graphId !== id),
       graphEdges: state.graphEdges.filter((e) => e.graphId !== id),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'delete',
-          entityType: 'graph',
+          projectId: state.activeProjectId || "global",
+          action: "delete",
+          entityType: "graph",
           entityId: id,
           entityName: state.graphs.find((g) => g.id === id)?.name,
-          details: 'Permanent Delete',
-          timestamp: Date.now(),
+          details: "Permanent Delete",
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /* ── Doc Trash ────────────────────────────────────────────────────────── */
@@ -264,58 +254,49 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
   trashDoc: (id: string) =>
     set((state) => ({
       docs: state.docs.map((d) =>
-        d.id === id ? { ...d, deleted: true, lastModified: Date.now() } : d
+        d.id === id ? { ...d, deleted: true, lastModified: Date.now() } : d,
       ),
       activeDocId: state.activeDocId === id ? null : state.activeDocId,
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'delete',
-          entityType: 'doc',
+          projectId: state.activeProjectId || "global",
+          action: "delete",
+          entityType: "doc",
           entityId: id,
           entityName: state.docs.find((d) => d.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   restoreDoc: (id: string) =>
     set((state) => ({
       docs: state.docs.map((d) =>
-        d.id === id ? { ...d, deleted: false, lastModified: Date.now() } : d
+        d.id === id ? { ...d, deleted: false, lastModified: Date.now() } : d,
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'restore',
-          entityType: 'doc',
+          projectId: state.activeProjectId || "global",
+          action: "restore",
+          entityType: "doc",
           entityId: id,
           entityName: state.docs.find((d) => d.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   permanentDeleteDoc: (id: string) =>
     set((state) => ({
       docs: state.docs.filter((d) => d.id !== id),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
-          projectId: state.activeProjectId || 'global',
-          action: 'delete',
-          entityType: 'doc',
+          projectId: state.activeProjectId || "global",
+          action: "delete",
+          entityType: "doc",
           entityId: id,
           entityName: state.docs.find((d) => d.id === id)?.name,
-          details: 'Permanent Delete',
-          timestamp: Date.now(),
+          details: "Permanent Delete",
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /* ── Empty Trash (all entity types at once) ───────────────────────────── */
@@ -324,53 +305,124 @@ export const createTrashSlice = (set: StoreSet, get: StoreGet) => ({
    * Permanently delete ALL trashed items across all entity types.
    * Also cleans up orphaned highlights, graph nodes, and graph edges.
    */
-  emptyTrash: () =>
+  emptyTrash: (options?: {
+    projectId?: string | null;
+    range?: ActivityClearRange;
+  }) =>
     set((state) => {
-      // Collect IDs of all trashed entities
-      const deletedFileIds = new Set(state.files.filter((f) => f.deleted).map((f) => f.id));
+      const range = options?.range ?? state.trashClearRange ?? "all-time";
+      const projectId = options?.projectId ?? state.activeProjectId ?? null;
+      const now = Date.now();
+      const matchesProject = (value: string) =>
+        !projectId || value === projectId;
+      const matchesTrashRange = (timestamp: number | null | undefined) =>
+        isTimestampInActivityRange(timestamp, range, now);
+
+      const deletedFileIds = new Set(
+        state.files
+          .filter(
+            (f) =>
+              f.deleted &&
+              matchesProject(f.projectId) &&
+              matchesTrashRange(f.lastModified),
+          )
+          .map((f) => f.id),
+      );
       const deletedCollectionIds = new Set(
-        state.collections.filter((c) => c.deleted).map((c) => c.id)
+        state.collections
+          .filter(
+            (c) =>
+              c.deleted &&
+              matchesProject(c.projectId) &&
+              matchesTrashRange(getTrashTimestamp(c)),
+          )
+          .map((c) => c.id),
       );
       const deletedGraphIds = new Set(
-        state.graphs.filter((g) => g.deleted).map((g) => g.id)
+        state.graphs
+          .filter(
+            (g) =>
+              g.deleted &&
+              matchesProject(g.projectId) &&
+              matchesTrashRange(getTrashTimestamp(g)),
+          )
+          .map((g) => g.id),
       );
       const deletedStorageIds = new Set(
-        state.storages.filter((s) => s.deleted).map((s) => s.id)
+        state.storages
+          .filter(
+            (s) =>
+              s.deleted &&
+              matchesProject(s.projectId) &&
+              matchesTrashRange(getTrashTimestamp(s)),
+          )
+          .map((s) => s.id),
+      );
+      const deletedDocIds = new Set(
+        state.docs
+          .filter(
+            (d) =>
+              d.deleted &&
+              matchesProject(d.projectId) &&
+              matchesTrashRange(getTrashTimestamp(d)),
+          )
+          .map((d) => d.id),
       );
 
-      // Files inside deleted storages should also be removed
       const storageDeletedFileIds = new Set(
         state.files
           .filter((f) => f.storageId && deletedStorageIds.has(f.storageId))
-          .map((f) => f.id)
+          .map((f) => f.id),
       );
-      const allDeletedFileIds = new Set([...deletedFileIds, ...storageDeletedFileIds]);
+      const allDeletedFileIds = new Set([
+        ...deletedFileIds,
+        ...storageDeletedFileIds,
+      ]);
+      const deletedCount =
+        deletedCollectionIds.size +
+        deletedGraphIds.size +
+        deletedStorageIds.size +
+        deletedDocIds.size +
+        allDeletedFileIds.size;
+
+      if (deletedCount === 0) {
+        return {};
+      }
+
+      const detailLabel =
+        range === "all-time"
+          ? "Emptied Trash"
+          : `Emptied Trash (${getActivityClearRangeLabel(range)})`;
 
       return {
         files: state.files.filter((f) => !allDeletedFileIds.has(f.id)),
-        collections: state.collections.filter((c) => !c.deleted),
-        storages: state.storages.filter((s) => !s.deleted),
-        graphs: state.graphs.filter((g) => !g.deleted),
-        docs: state.docs.filter((d) => !d.deleted),
+        collections: state.collections.filter(
+          (c) => !deletedCollectionIds.has(c.id),
+        ),
+        storages: state.storages.filter((s) => !deletedStorageIds.has(s.id)),
+        graphs: state.graphs.filter((g) => !deletedGraphIds.has(g.id)),
+        docs: state.docs.filter((d) => !deletedDocIds.has(d.id)),
         highlights: state.highlights.filter(
           (h) =>
-            !allDeletedFileIds.has(h.fileId) && !deletedCollectionIds.has(h.collectionId || '')
+            !allDeletedFileIds.has(h.fileId) &&
+            !deletedCollectionIds.has(h.collectionId || ""),
         ),
-        graphNodes: state.graphNodes.filter((n) => !deletedGraphIds.has(n.graphId)),
-        graphEdges: state.graphEdges.filter((e) => !deletedGraphIds.has(e.graphId)),
-        history: [
+        graphNodes: state.graphNodes.filter(
+          (n) => !deletedGraphIds.has(n.graphId),
+        ),
+        graphEdges: state.graphEdges.filter(
+          (e) => !deletedGraphIds.has(e.graphId),
+        ),
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
-            projectId: state.activeProjectId || 'global',
-            action: 'delete',
-            entityType: 'file',
-            details: 'Empty Trash',
-            entityId: 'trash',
-            entityName: 'Trash',
-            timestamp: Date.now(),
+            projectId: projectId || state.activeProjectId || "global",
+            action: "delete",
+            entityType: "file",
+            details: detailLabel,
+            entityId: "trash",
+            entityName: "Trash",
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 });

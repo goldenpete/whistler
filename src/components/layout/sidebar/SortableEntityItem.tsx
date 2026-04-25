@@ -95,7 +95,7 @@ export function SortableEntityItem({
             />
 
             {/* Entity name */}
-            <span title={entity.name} className="truncate w-0 flex-1 min-w-0 text-left py-0.5">
+            <span className="truncate w-0 flex-1 min-w-0 text-left py-0.5">
                 {entity.name}
             </span>
 

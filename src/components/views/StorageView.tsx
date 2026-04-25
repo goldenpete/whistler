@@ -78,6 +78,7 @@ import {
 } from "@/components/dialogs/StorageDialogs";
 import { MoveFileDialog } from "@/components/dialogs/MoveFileDialog";
 import { useKeybind } from "@/hooks/use-keybind";
+import { ViewEmptyState } from "@/components/views/ViewEmptyState";
 import {
     FileCardGrid, FileCardList, FileCardCards,
     FileCardGridInner, FileCardListInner, FileCardCardsInner
@@ -965,19 +966,18 @@ export default function StorageView() {
             onDragCancel={() => setActiveId(null)}
         >
             {showEmptyState ? (
-                <div className="flex h-full bg-transparent overflow-hidden">
-                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                            <HardDrives size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p className="mb-4">{!activeProjectId ? "Select a project to use storage" : "Select or create a storage"}</p>
-                            {activeProject && (
-                                <Button onClick={handleCreateStorage}>
-                                    <Plus className="mr-2" /> Create Storage
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <ViewEmptyState
+                    icon={HardDrives}
+                    title={!activeProjectId ? "No Project Selected" : "Select or create a storage"}
+                    description={
+                        !activeProjectId
+                            ? "Select or create a project to start organizing your storage."
+                            : "Create a storage to start organizing files in this project."
+                    }
+                    actionLabel={activeProject ? "Create Storage" : undefined}
+                    onAction={activeProject ? handleCreateStorage : undefined}
+                    className="bg-transparent overflow-hidden"
+                />
             ) : (
                 <div className="flex h-full bg-transparent text-foreground relative">
                     <div className="flex-1 flex flex-col">
@@ -1169,7 +1169,13 @@ export default function StorageView() {
                                             <Trash size={14} />
                                             Delete ({selectedIds.size})
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="size-7" onClick={toggleSelectionMode}>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="size-7"
+                                            title="Exit selection mode"
+                                            onClick={toggleSelectionMode}
+                                        >
                                             <X size={16} />
                                         </Button>
                                     </div>

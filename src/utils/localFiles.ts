@@ -26,6 +26,28 @@
 import type { File as AppFile, LocalFileSource } from '@/types';
 import { isCloudFile } from '@/utils/cloudFiles';
 
+type FileSystemHandlePermissionDescriptor = {
+    mode?: 'read' | 'readwrite';
+};
+
+type PermissionCapableFileSystemFileHandle = FileSystemFileHandle & {
+    queryPermission: (descriptor?: FileSystemHandlePermissionDescriptor) => Promise<PermissionState>;
+    requestPermission: (descriptor?: FileSystemHandlePermissionDescriptor) => Promise<PermissionState>;
+};
+
+type LocalFilePickerOptions = {
+    multiple?: boolean;
+    excludeAcceptAllOption?: boolean;
+    types?: Array<{
+        description?: string;
+        accept: Record<string, string[]>;
+    }>;
+};
+
+type LocalFilePickerWindow = Window & {
+    showOpenFilePicker: (options?: LocalFilePickerOptions) => Promise<FileSystemFileHandle[]>;
+};
+
 /** Reuse the existing media database so local handles live beside other browser-side media state. */
 const LOCAL_MEDIA_DB = 'whistler_media';
 
@@ -235,7 +257,7 @@ export async function deleteLocalFileHandle(bindingId: string): Promise<void> {
  */
 async function queryLocalFilePermission(handle: FileSystemFileHandle): Promise<PermissionState | 'prompt'> {
     try {
-        return await handle.queryPermission({ mode: 'read' });
+        return await (handle as PermissionCapableFileSystemFileHandle).queryPermission({ mode: 'read' });
     } catch {
         return 'prompt';
     }
@@ -253,7 +275,7 @@ export async function requestLocalFilePermission(bindingId: string): Promise<boo
     }
 
     try {
-        const permission = await handle.requestPermission({ mode: 'read' });
+        const permission = await (handle as PermissionCapableFileSystemFileHandle).requestPermission({ mode: 'read' });
         return permission === 'granted';
     } catch {
         return false;
@@ -287,7 +309,7 @@ export async function pickLocalFile(): Promise<PickedLocalFile | null> {
     }
 
     try {
-        const [handle] = await window.showOpenFilePicker({
+        const [handle] = await (window as unknown as LocalFilePickerWindow).showOpenFilePicker({
             multiple: false,
             excludeAcceptAllOption: false,
             types: [

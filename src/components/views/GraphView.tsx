@@ -49,6 +49,7 @@ import {
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useNavigate, useParams } from "react-router-dom";
+import { ViewEmptyState } from "@/components/views/ViewEmptyState";
 
 // ── Node shape constants ──
 // "Circle" mode is actually a compact square; "square" mode is a wider badge/rectangle
@@ -118,6 +119,7 @@ export default function GraphView() {
 
     const [nodeShape, setNodeShape] = useState<'circle' | 'square'>('circle');
     const [draggingNode, setDraggingNode] = useState<string | null>(null);
+    const dragStartNodeRef = useRef<{ id: string; x: number; y: number } | null>(null);
     const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [offset, setOffset] = useState({ x: 0, y: 0 }); // Offset from node center to mouse click
@@ -606,13 +608,16 @@ export default function GraphView() {
         
         if (node) {
             if (e.shiftKey) {
+                dragStartNodeRef.current = null;
                 setConnectingNodeId(node.id);
                 setMousePos({ x: worldX, y: worldY });
                 return;
             }
             setDraggingNode(node.id);
+            dragStartNodeRef.current = { id: node.id, x: node.x, y: node.y };
             setOffset({ x: worldX - node.x, y: worldY - node.y });
         } else {
+            dragStartNodeRef.current = null;
             setIsPanning(true);
             setDragStart({ x: e.clientX, y: e.clientY }); // Global client coords for delta
         }
@@ -657,6 +662,7 @@ export default function GraphView() {
     };
 
     const handleMouseUp = (e: MouseEvent) => {
+        const finishedDraggingNodeId = draggingNode;
         if (connectingNodeId) {
              const rect = canvasRef.current?.getBoundingClientRect();
              if (rect) {
@@ -693,6 +699,29 @@ export default function GraphView() {
              setConnectingNodeId(null);
         }
 
+        if (finishedDraggingNodeId && dragStartNodeRef.current?.id === finishedDraggingNodeId) {
+            const latestNode = useStore.getState().graphNodes.find((node: GraphNode) => node.id === finishedDraggingNodeId);
+            const startPosition = dragStartNodeRef.current;
+            if (
+                latestNode &&
+                (latestNode.x !== startPosition.x || latestNode.y !== startPosition.y)
+            ) {
+                const projectId =
+                    useStore.getState().graphs.find((graph: Graph) => graph.id === latestNode.graphId)?.projectId ||
+                    activeProjectId ||
+                    "global";
+                useStore.getState().logAction({
+                    projectId,
+                    action: "update",
+                    entityType: "node",
+                    entityId: latestNode.id,
+                    entityName: latestNode.title || "Node",
+                    details: "Moved",
+                });
+            }
+        }
+
+        dragStartNodeRef.current = null;
         setDraggingNode(null);
         setIsPanning(false);
     };
@@ -1278,22 +1307,21 @@ export default function GraphView() {
                         })()}
                     </>
                 ) : !activeProjectId ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                            <Square size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p>Select a project to create graphs</p>
-                        </div>
-                    </div>
+                    <ViewEmptyState
+                        icon={Square}
+                        title="No Project Selected"
+                        description="Select or create a project to start mapping graphs."
+                        className="absolute inset-0"
+                    />
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                            <Square size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p className="mb-4">Select or create a graph</p>
-                            <Button variant="default" size="sm" className="rounded-none" onClick={handleCreateGraph}>
-                                <Plus className="mr-2" /> Create Graph
-                            </Button>
-                        </div>
-                    </div>
+                    <ViewEmptyState
+                        icon={Square}
+                        title="Select or create a graph"
+                        description="Create a graph to start connecting notes, files, and ideas."
+                        actionLabel="Create Graph"
+                        onAction={handleCreateGraph}
+                        className="absolute inset-0"
+                    />
                 )}
             </div>
         </div>

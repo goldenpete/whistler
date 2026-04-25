@@ -471,6 +471,7 @@ export default function CollectionView() {
                             "size-8",
                             selectionMode && "bg-secondary border-secondary"
                         )}
+                        title="Selection mode"
                         onClick={() => {
                             if (selectionMode) {
                                 setSelectionMode(false);

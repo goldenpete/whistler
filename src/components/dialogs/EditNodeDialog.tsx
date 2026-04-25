@@ -21,16 +21,16 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-    DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ColorPicker, PRESET_COLORS, ACCENT_COLOR_MAP } from "@/components/ui/ColorPicker";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import type { GraphNode, File, Highlight, Collection, Doc } from "@/types";
-import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon, Check, NotePencil } from "@phosphor-icons/react";
+import { File as FileIcon, FolderOpen, Clock, Link as LinkIcon, NotePencil } from "@phosphor-icons/react";
 import { FilePickerDialog } from "./FilePickerDialog";
 import { CollectionPickerDialog } from "./CollectionPickerDialog";
 import { HighlightPickerDialog } from "./HighlightPickerDialog";
@@ -86,6 +86,7 @@ export function NodeDialog({
     const [selectedHighlightId, setSelectedHighlightId] = useState("");
     const [selectedDocId, setSelectedDocId] = useState("");
     const [linkUrl, setLinkUrl] = useState("");
+    const [customizeTab, setCustomizeTab] = useState("color");
     
     // Picker Dialog State
     const [filePickerOpen, setFilePickerOpen] = useState(false);
@@ -96,6 +97,7 @@ export function NodeDialog({
     // Initialize state
     useEffect(() => {
         if (open) {
+            setCustomizeTab("color");
             if (mode === 'edit' && node) {
                 setTitle(node.title);
                 setColor(node.color ?? PRESET_COLORS[0]);
@@ -220,22 +222,22 @@ export function NodeDialog({
 
     const fileSelector = (
         <div className="space-y-2">
-            <Label>Select File</Label>
+            <Label className="text-zinc-400">Select File</Label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                <div className="flex-1 min-h-10 px-3 py-2 flex items-center gap-2 border border-border/60 bg-zinc-900 text-sm text-zinc-400 overflow-hidden">
                     {selectedFile ? (
                         <>
-                            <FileIcon className="shrink-0 text-foreground" />
-                            <span className="truncate text-foreground">{selectedFile.name}</span>
+                            <FileIcon className="shrink-0 text-white" />
+                            <span className="truncate text-white">{selectedFile.name}</span>
                         </>
                     ) : (
-                        <span className="opacity-50">No file selected</span>
+                        <span className="opacity-70">No file selected</span>
                     )}
                 </div>
                 <Button 
                     variant="outline" 
                     size="sm" 
-                    className="shrink-0"
+                    className="shrink-0 bg-zinc-900 border-border/60 text-zinc-300 hover:bg-zinc-800 hover:text-white"
                     onClick={() => setFilePickerOpen(true)}
                 >
                     <FolderOpen className="mr-2" />
@@ -286,14 +288,14 @@ export function NodeDialog({
 
     const highlightSelector = (
         <div className="space-y-2">
-            <Label>Select Highlight</Label>
+            <Label className="text-zinc-400">Select Highlight</Label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-11 px-3 py-1.5 flex items-center gap-3 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                <div className="flex-1 min-h-12 px-3 py-2 flex items-center gap-3 border border-border/60 bg-zinc-900 text-sm text-zinc-400 overflow-hidden">
                     {selectedHighlight && selectedHighlightFile ? (
                         <>
                             <div className="flex flex-col items-center justify-center gap-1">
                                 <Clock className="text-primary" size={16} />
-                                <span className="font-mono text-[10px] text-muted-foreground">
+                                <span className="font-mono text-[10px] text-zinc-500">
                                     {(() => {
                                         const mins = Math.floor(selectedHighlight.start / 60);
                                         const secs = Math.floor(selectedHighlight.start % 60);
@@ -302,22 +304,22 @@ export function NodeDialog({
                                 </span>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-xs font-medium truncate text-foreground">
+                                <div className="text-xs font-medium truncate text-white">
                                     {selectedHighlight.note || selectedHighlight.text || selectedHighlightFile.name}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate">
+                                <div className="text-xs text-zinc-500 truncate">
                                     {selectedHighlightFile.name}
                                 </div>
                             </div>
                         </>
                     ) : (
-                        <span className="opacity-50 text-xs">No highlight selected</span>
+                        <span className="opacity-70 text-xs">No highlight selected</span>
                     )}
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
-                    className="shrink-0"
+                    className="shrink-0 bg-zinc-900 border-border/60 text-zinc-300 hover:bg-zinc-800 hover:text-white"
                     onClick={() => setHighlightPickerOpen(true)}
                 >
                     <Clock className="mr-2" />
@@ -335,23 +337,23 @@ export function NodeDialog({
     );
 
     const docSelector = (
-        <div className="space-y-1.5">
-            <Label className="text-xs">Document</Label>
+        <div className="space-y-2">
+            <Label className="text-zinc-400">Document</Label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                <div className="flex-1 min-h-10 px-3 py-2 flex items-center gap-2 border border-border/60 bg-zinc-900 text-sm text-zinc-400 overflow-hidden">
                     {selectedDoc ? (
                         <>
-                            <NotePencil className="shrink-0 text-foreground" size={14} />
-                            <span className="truncate text-foreground">{selectedDoc.name}</span>
+                            <NotePencil className="shrink-0 text-white" size={14} />
+                            <span className="truncate text-white">{selectedDoc.name}</span>
                         </>
                     ) : (
-                        <span className="opacity-50">No document selected</span>
+                        <span className="opacity-70">No document selected</span>
                     )}
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
-                    className="shrink-0"
+                    className="shrink-0 bg-zinc-900 border-border/60 text-zinc-300 hover:bg-zinc-800 hover:text-white"
                     onClick={() => setDocPickerOpen(true)}
                 >
                     <NotePencil className="mr-2" size={14} />
@@ -369,63 +371,53 @@ export function NodeDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
                     <DialogTitle>{mode === 'create' ? `New ${type.charAt(0).toUpperCase() + type.slice(1)} Node` : 'Edit Node'}</DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-zinc-400">
                         {mode === 'create' ? 'Configure the node to add to your graph.' : 'Update this node\'s properties.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-2">
+                <div className="space-y-4 pt-4">
                     {/* Title */}
-                    <div className="space-y-1.5">
-                        <Label className="text-xs">Title</Label>
-                        <Input 
+                    <div className="space-y-2">
+                        <Label htmlFor="node-title" className="text-zinc-400">Title</Label>
+                        <Input
+                            id="node-title"
                             value={title} 
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)} 
                             placeholder={type === 'note' ? "Note title..." : "Optional — auto-fills from selection"}
-                            className="bg-secondary/50 border-border h-9"
+                            className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                         />
                     </div>
 
-                    {/* Color & Icon row */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {/* Compact Color Picker */}
-                        <div className="space-y-1.5">
-                            <Label className="text-xs">Color</Label>
-                            <div className="flex flex-wrap gap-1 p-2 bg-zinc-900/50 rounded-none border border-white/5">
-                                {PRESET_COLORS.slice(0, 12).map(c => (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => setColor(c)}
-                                        className={cn(
-                                            "w-5 h-5 rounded-none border-2 transition-all",
-                                            color.toLowerCase() === c.toLowerCase() ? "border-white scale-110" : "border-transparent hover:scale-110 hover:border-white/20"
-                                        )}
-                                        style={{ backgroundColor: c }}
-                                    >
-                                        {color.toLowerCase() === c.toLowerCase() && (
-                                            <Check weight="bold" className={cn("w-2.5 h-2.5 mx-auto", c === "#ffffff" ? "text-black" : "text-white")} />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                    <div className="space-y-2">
+                        <Label className="text-zinc-400">Customize</Label>
+                        <Tabs value={customizeTab} onValueChange={setCustomizeTab} className="border border-zinc-800 bg-zinc-950/40 rounded-none overflow-hidden">
+                            <TabsList className="w-full rounded-none bg-zinc-900 border-b border-zinc-800 p-1 h-9">
+                                <TabsTrigger value="color" className="flex-1 rounded-none text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Color</TabsTrigger>
+                                <TabsTrigger value="icon" className="flex-1 rounded-none text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Icon</TabsTrigger>
+                            </TabsList>
 
-                        {/* Compact Icon Picker */}
-                        <div className="space-y-1.5">
-                            <Label className="text-xs">Icon</Label>
-                            <div className="flex flex-wrap gap-1 p-2 bg-zinc-900/50 rounded-none border border-white/5 max-h-[72px] overflow-y-auto">
+                            <TabsContent value="color" className="mt-0 p-3">
+                                <ColorPicker
+                                    color={color}
+                                    onChange={setColor}
+                                    showLabel={false}
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="icon" className="mt-0 p-3">
+                                <div className="grid grid-cols-7 gap-2 max-h-56 overflow-y-auto pr-1">
                                 <button
                                     type="button"
                                     onClick={() => setIconName("")}
                                     className={cn(
-                                        "w-5 h-5 flex items-center justify-center rounded-none border transition-all",
-                                        !iconName ? "border-white bg-white/10 text-white" : "border-transparent text-zinc-500 hover:border-white/20 hover:text-white"
+                                        "aspect-square flex items-center justify-center rounded-none border transition-all",
+                                        !iconName ? "bg-primary border-primary text-primary-foreground" : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
                                     )}
-                                    title="No icon"
+                                    title="None"
                                 >
                                     <span className="text-[8px] font-bold">Ø</span>
                                 </button>
@@ -437,40 +429,41 @@ export function NodeDialog({
                                             type="button"
                                             onClick={() => setIconName(name)}
                                             className={cn(
-                                                "w-5 h-5 flex items-center justify-center rounded-none border transition-all",
-                                                iconName === name ? "border-white bg-white/10 text-white" : "border-transparent text-zinc-500 hover:border-white/20 hover:text-white"
+                                                "aspect-square flex items-center justify-center rounded-none border transition-all",
+                                                iconName === name ? "bg-primary border-primary text-primary-foreground" : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
                                             )}
                                             title={name}
                                         >
-                                            <Icon size={12} />
+                                            <Icon size={18} />
                                         </button>
                                     );
                                 })}
-                            </div>
-                        </div>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                     </div>
 
                     {/* Type-specific Fields */}
                     {type === 'file' && fileSelector}
 
                     {type === 'collection' && (
-                        <div className="space-y-1.5">
-                            <Label className="text-xs">Collection</Label>
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Collection</Label>
                             <div className="flex items-center gap-2">
-                                <div className="flex-1 h-9 px-3 py-1 flex items-center gap-2 border border-border rounded-none bg-secondary/50 text-sm text-muted-foreground overflow-hidden">
+                                <div className="flex-1 min-h-10 px-3 py-2 flex items-center gap-2 border border-border/60 bg-zinc-900 text-sm text-zinc-400 overflow-hidden">
                                     {selectedCollection ? (
                                         <>
-                                            <FolderOpen className="shrink-0 text-foreground" size={14} />
-                                            <span className="truncate text-foreground">{selectedCollection.name}</span>
+                                            <FolderOpen className="shrink-0 text-white" size={14} />
+                                            <span className="truncate text-white">{selectedCollection.name}</span>
                                         </>
                                     ) : (
-                                        <span className="opacity-50">No collection selected</span>
+                                        <span className="opacity-70">No collection selected</span>
                                     )}
                                 </div>
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="shrink-0"
+                                    className="shrink-0 bg-zinc-900 border-border/60 text-zinc-300 hover:bg-zinc-800 hover:text-white"
                                     onClick={() => setCollectionPickerOpen(true)}
                                 >
                                     <FolderOpen className="mr-2" size={14} />
@@ -487,13 +480,14 @@ export function NodeDialog({
                     )}
 
                     {type === 'link' && (
-                        <div className="space-y-1.5">
-                            <Label className="text-xs">URL</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="node-url" className="text-zinc-400">URL</Label>
                             <Input 
+                                id="node-url"
                                 value={linkUrl} 
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)} 
                                 placeholder="https://..."
-                                className="bg-secondary/50 border-border h-9"
+                                className="bg-zinc-900 border-border/60 text-white placeholder:text-zinc-500"
                             />
                         </div>
                     )}
@@ -503,7 +497,7 @@ export function NodeDialog({
 
                     {/* Compact Preview */}
                     {(canOpen || (type === 'note' && title.trim())) && (
-                        <div className="border border-border rounded-none bg-secondary/10 p-2.5 flex items-center gap-3">
+                        <div className="border border-zinc-800 bg-zinc-950/40 p-3 flex items-center gap-3">
                             <div
                                 className="w-8 h-8 rounded-none flex items-center justify-center shrink-0"
                                 style={{ backgroundColor: color || '#3b82f6' }}
@@ -517,7 +511,7 @@ export function NodeDialog({
                                 )}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="text-xs font-medium text-foreground truncate">
+                                <div className="text-xs font-medium text-white truncate">
                                     {type === 'note' ? title : (
                                         type === 'file' ? selectedFile?.name :
                                         type === 'collection' ? selectedCollection?.name :
@@ -526,12 +520,12 @@ export function NodeDialog({
                                         type === 'link' ? linkUrl : title
                                     ) || title || 'Untitled'}
                                 </div>
-                                <div className="text-[10px] text-muted-foreground">{type} node</div>
+                                <div className="text-[10px] text-zinc-500">{type} node</div>
                             </div>
                             <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-7 px-2 text-xs shrink-0"
+                                className="h-8 px-3 shrink-0 text-zinc-400 hover:text-white hover:bg-zinc-900"
                                 disabled={!canOpen}
                                 onClick={handleOpenTarget}
                             >
@@ -541,17 +535,24 @@ export function NodeDialog({
                     )}
                 </div>
 
-                <DialogFooter>
-                    <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button
-                        size="sm"
-                        onClick={handleSubmit}
-                        className="bg-primary text-primary-foreground"
-                        data-sound-confirm={mode === "create" ? true : undefined}
-                    >
-                        {mode === 'create' ? 'Create' : 'Save'}
-                    </Button>
-                </DialogFooter>
+                <div className="flex items-center gap-2 pt-4">
+                    <div className="ml-auto flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => onOpenChange(false)}
+                            className="text-zinc-400 hover:text-white hover:bg-zinc-900"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleSubmit}
+                            className="bg-primary text-primary-foreground hover:opacity-90"
+                            data-sound-confirm={mode === "create" ? true : undefined}
+                        >
+                            {mode === 'create' ? 'Create' : 'Save'}
+                        </Button>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );

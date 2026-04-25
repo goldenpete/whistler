@@ -137,6 +137,7 @@ import { PiPPlayer } from "@/components/player/PiPPlayer";
 import { exportProject, importProject, type ProjectExportData } from "@/utils/projectData";
 import { playSfx } from "@/utils/sound";
 import { WhistlerLogo } from "@/components/ui/WhistlerLogo";
+import { ViewEmptyState } from "@/components/views/ViewEmptyState";
 
 // ── Extracted sidebar sub-components ─────────────────────────────────────────
 // These components are in separate files for easier AI editing and readability.
@@ -629,6 +630,12 @@ export default function ProjectSidebar() {
         setCreateCollectionOpen(true);
     };
 
+    const handleCreateBucket = () => {
+        if (!activeProjectId) return;
+        setSidebarView('collections');
+        setCreateCollectionOpen(true);
+    };
+
     /* ═══════════════════════════════════════════════════════
        COLLECTION HANDLERS
        ═══════════════════════════════════════════════════════ */
@@ -844,6 +851,10 @@ export default function ProjectSidebar() {
                             setCollectionToEdit(collection);
                             setEditCollectionOpen(true);
                         }}
+                        onCreateStorage={handleCreateStorage}
+                        onCreateDoc={handleCreateDoc}
+                        onCreateGraph={handleCreateGraph}
+                        onCreateBucket={handleCreateBucket}
                     />
                 ) : (
                     <>
@@ -1104,7 +1115,6 @@ export default function ProjectSidebar() {
                                                                     setSidebarView('main');
                                                                 }
                                                             }}
-                                                            title="Storage"
                                                             className={cn(
                                                                 "flex items-center justify-center rounded-none transition-all duration-200 group relative cursor-pointer px-2 w-full border border-border/60 shadow-sm",
                                                                 (isSidebarCollapsed || isSlim)
@@ -1148,7 +1158,6 @@ export default function ProjectSidebar() {
                                                                     setSidebarView('main');
                                                                 }
                                                             }}
-                                                            title="Docs"
                                                             className={cn(
                                                                 "flex items-center justify-center rounded-none transition-all duration-200 group relative cursor-pointer px-2 w-full border border-border/60 shadow-sm",
                                                                 (isSidebarCollapsed || isSlim)
@@ -1192,7 +1201,6 @@ export default function ProjectSidebar() {
                                                                     setSidebarView('main');
                                                                 }
                                                             }}
-                                                            title="Graphs"
                                                             className={cn(
                                                                 "flex items-center justify-center rounded-none transition-all duration-200 group relative cursor-pointer px-2 w-full border border-border/60 shadow-sm",
                                                                 (isSidebarCollapsed || isSlim)
@@ -1429,6 +1437,7 @@ export default function ProjectSidebar() {
                                             setSidebarView('main');
                                         }}
                                         className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                        title="Back to sidebar"
                                     >
                                         <CaretLeft weight="bold" size={14} />
                                     </button>
@@ -1442,6 +1451,7 @@ export default function ProjectSidebar() {
                                             handleCreateDoc();
                                         }}
                                         className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                        title="New document"
                                     >
                                         <Plus weight="bold" size={14} />
                                     </button>
@@ -1488,6 +1498,7 @@ export default function ProjectSidebar() {
                                     <button
                                         onClick={() => setSidebarView('main')}
                                         className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                        title="Back to sidebar"
                                     >
                                         <CaretLeft weight="bold" size={14} />
                                     </button>
@@ -1495,7 +1506,7 @@ export default function ProjectSidebar() {
                                         <Graph weight="bold" />
                                         Graphs
                                     </div>
-                                    <button onClick={handleCreateGraph} className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200">
+                                    <button onClick={handleCreateGraph} className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200" title="New graph">
                                         <Plus weight="bold" size={14} />
                                     </button>
                                 </div>
@@ -1576,6 +1587,7 @@ export default function ProjectSidebar() {
                                             setSidebarView('main');
                                         }}
                                         className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                        title="Back to sidebar"
                                     >
                                         <CaretLeft weight="bold" size={14} />
                                     </button>
@@ -1586,9 +1598,10 @@ export default function ProjectSidebar() {
                                     <button 
                                         onClick={() => { 
                                             playSfx('cursor'); 
-                                            handleAddCollection();
+                                            handleCreateBucket();
                                         }} 
                                         className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                        title="New bucket"
                                     >
                                         <Plus weight="bold" size={14} />
                                     </button>
@@ -1598,9 +1611,8 @@ export default function ProjectSidebar() {
                             <ScrollArea className="flex-1 px-3 py-2">
                                 <div className="space-y-1">
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                        <SortableContext items={collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted).map((c: Collection) => c.id)} strategy={verticalListSortingStrategy}>
-                                            {collections
-                                                .filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted)
+                                        <SortableContext items={projectBuckets.map((c: Collection) => c.id)} strategy={verticalListSortingStrategy}>
+                                            {projectBuckets
                                                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                                                 .map((collection: Collection) => (
                                                     <SortableCollectionItem
@@ -1625,10 +1637,15 @@ export default function ProjectSidebar() {
                                         </SortableContext>
                                     </DndContext>
 
-                                    {collections.filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted).length === 0 && (
-                                        <div className="p-4 text-center text-xs text-muted-foreground/60 italic border-2 border-dashed border-border/30 rounded-md m-2">
-                                            No buckets created yet
-                                        </div>
+                                    {projectBuckets.length === 0 && (
+                                        <ViewEmptyState
+                                            icon={Folder}
+                                            title="Select or create a bucket"
+                                            description="Create a bucket to start organizing collection roots."
+                                            actionLabel="Create Bucket"
+                                            onAction={handleCreateBucket}
+                                            compact
+                                        />
                                     )}
                                 </div>
                             </ScrollArea>
@@ -1651,6 +1668,7 @@ export default function ProjectSidebar() {
                                         }}
                                         data-sound-back
                                         className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                        title="Back to sidebar"
                                     >
                                         <CaretLeft weight="bold" size={14} />
                                     </button>
@@ -1664,6 +1682,7 @@ export default function ProjectSidebar() {
                                             handleCreateStorage();
                                         }}
                                         className="h-6 w-6 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
+                                        title="New storage"
                                     >
                                         <Plus weight="bold" size={14} />
                                     </button>
@@ -1715,7 +1734,6 @@ export default function ProjectSidebar() {
                                     setSidebarView('sync');
                                 }}
                                 className="flex-1 min-w-0 h-8 flex items-center gap-2 px-2 rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200"
-                                title="Sync Status"
                             >
                                 <ArrowsClockwise weight="bold" size={16} className={cn("shrink-0", syncStatus === 'syncing' && "animate-spin text-primary")} />
                                 <span className="text-[10px] font-medium truncate">

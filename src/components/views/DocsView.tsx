@@ -50,6 +50,7 @@ import { FilePickerDialog } from "@/components/dialogs/FilePickerDialog";
 import { CollectionPickerDialog } from "@/components/dialogs/CollectionPickerDialog";
 import { HighlightPickerDialog } from "@/components/dialogs/HighlightPickerDialog";
 import { DocPickerDialog } from "@/components/dialogs/DocPickerDialog";
+import { ViewEmptyState } from "@/components/views/ViewEmptyState";
 
 export default function DocsView() {
     const { id } = useParams();
@@ -99,24 +100,21 @@ export default function DocsView() {
             {/* Main Editor Area */}
             <div className="flex-1 flex flex-col min-h-0">
                 {!activeProjectId ? (
-                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                            <NotePencil size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p>Select a project to create documents</p>
-                        </div>
-                    </div>
+                    <ViewEmptyState
+                        icon={NotePencil}
+                        title="No Project Selected"
+                        description="Select or create a project to start organizing your documents."
+                    />
                 ) : activeDoc ? (
                     <DocEditor doc={activeDoc} />
                 ) : (
-                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                            <NotePencil size={64} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p className="mb-4">Select or create a document</p>
-                            <Button onClick={handleCreateDoc}>
-                                <Plus className="mr-2" /> Create Document
-                            </Button>
-                        </div>
-                    </div>
+                    <ViewEmptyState
+                        icon={NotePencil}
+                        title="Select or create a document"
+                        description="Create a document to start writing inside this project."
+                        actionLabel="Create Document"
+                        onAction={handleCreateDoc}
+                    />
                 )}
             </div>
         </div>

@@ -19,7 +19,7 @@
 import {
     FolderPlus, Star, Heart, Flag, Tag, Bookmark, Briefcase, House, User, Users,
     Planet, Rocket, Code, Cpu, Database, GameController, MusicNotes, Image,
-    FilmStrip, FileText, Book, Folder,
+    FilmStrip, FileText, Book, Folder, HardDrives,
     Lightning, Diamond, Crown, Eye, Gear, ChatCircle, Envelope,
     MapPin, Globe, Shield, Fire, Leaf, Sun, Moon,
     Camera, Microphone, Headphones, Monitor, Terminal
@@ -51,6 +51,7 @@ export const iconMap: Record<string, Icon> = {
     "FileText": FileText,
     "Book": Book,
     "Folder": Folder,
+    "HardDrives": HardDrives,
     "Lightning": Lightning,
     "Diamond": Diamond,
     "Crown": Crown,

@@ -263,13 +263,21 @@ export interface Storage {
 
 // ── History ──────────────────────────────────────────────────────────────────
 
+export type ActivityClearRange =
+    | 'all-time'
+    | 'last-hour'
+    | 'last-5-hours'
+    | 'last-day'
+    | 'last-week'
+    | 'last-month';
+
 /** An audit-log entry tracking a CRUD action on any entity. */
 export interface HistoryEntry {
     id: string;
     /** The project this action occurred in. */
     projectId: string;
     action: 'create' | 'update' | 'delete' | 'restore';
-    entityType: 'file' | 'collection' | 'highlight' | 'project' | 'graph' | 'doc' | 'node' | 'edge';
+    entityType: 'file' | 'collection' | 'highlight' | 'project' | 'graph' | 'doc' | 'node' | 'edge' | 'storage' | 'settings';
     entityId: string;
     entityName?: string;
     /** Human-readable description of what changed. */
@@ -348,6 +356,9 @@ export interface AppState {
     docs: Doc[];
     storages: Storage[];
     history: HistoryEntry[];
+    historyEnabled?: boolean;
+    historyClearRange?: ActivityClearRange;
+    trashClearRange?: ActivityClearRange;
 
     // ── Active selections (which entity the user is currently viewing) ───
     activeProjectId: string | null;

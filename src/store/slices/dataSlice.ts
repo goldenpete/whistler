@@ -57,6 +57,9 @@ export const createDataSlice = (set: StoreSet, _get: StoreGet) => ({
   /* ── History ──────────────────────────────────────────────────────────── */
   /** Action history log (newest first) */
   history: [] as HistoryEntry[],
+  historyEnabled: true,
+  historyClearRange: 'all-time' as const,
+  trashClearRange: 'all-time' as const,
 
   /* ── Bulk Setters (used by sync/migration to replace entire arrays) ──── */
 

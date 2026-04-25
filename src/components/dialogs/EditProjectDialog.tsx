@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AppTooltip } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { WarningOctagon } from "@phosphor-icons/react";
 
@@ -143,9 +144,11 @@ export function EditProjectDialog({ open, onOpenChange, currentName, onSave, onD
                                 <Label className="text-zinc-400">Project</Label>
                                 <div className="flex min-h-9 items-center gap-3 border border-red-500/25 bg-red-500/6 px-3 text-sm text-zinc-200">
                                     <WarningOctagon size={16} weight="fill" className="shrink-0 text-red-400" />
-                                    <span className="truncate font-medium text-white" title={currentName}>
-                                        {currentName}
-                                    </span>
+                                    <AppTooltip content={currentName}>
+                                        <span className="truncate font-medium text-white">
+                                            {currentName}
+                                        </span>
+                                    </AppTooltip>
                                 </div>
                             </div>
                         </div>

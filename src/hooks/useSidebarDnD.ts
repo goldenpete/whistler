@@ -46,6 +46,21 @@ export function useSidebarDnD({
     activeCollectionId,
 }: UseSidebarDnDParams) {
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const logReorder = (
+        entityType: "storage" | "doc" | "graph",
+        entityId: string,
+        entityName?: string
+    ) => {
+        if (!activeProjectId) return;
+        useStore.getState().logAction({
+            projectId: activeProjectId,
+            action: "update",
+            entityType,
+            entityId,
+            entityName,
+            details: "Reordered",
+        });
+    };
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -261,6 +276,7 @@ export function useSidebarDnD({
                  const reordered = arrayMove(projectStoragesList, storageOldIndex, storageNewIndex);
                  const otherStorages = storages.filter((s: Storage) => !(s.projectId === activeProjectId && !s.deleted));
                  useStore.setState({ storages: [...otherStorages, ...reordered] });
+                 logReorder("storage", active.id as string, projectStoragesList[storageOldIndex]?.name);
                  return;
              }
         }
@@ -275,6 +291,7 @@ export function useSidebarDnD({
                 const reordered = arrayMove(projectDocsList, docOldIndex, docNewIndex);
                 const otherDocs = docs.filter((d: Doc) => !(d.projectId === activeProjectId && !d.deleted));
                 useStore.setState({ docs: [...otherDocs, ...reordered] });
+                logReorder("doc", active.id as string, projectDocsList[docOldIndex]?.name);
                 return;
             }
         }
@@ -289,6 +306,7 @@ export function useSidebarDnD({
                 const reordered = arrayMove(projectGraphsList, graphOldIndex, graphNewIndex);
                 const otherGraphs = graphs.filter((g: GraphType) => !(g.projectId === activeProjectId && !g.deleted));
                 useStore.setState({ graphs: [...otherGraphs, ...reordered] });
+                logReorder("graph", active.id as string, projectGraphsList[graphOldIndex]?.name);
                 return;
             }
         }

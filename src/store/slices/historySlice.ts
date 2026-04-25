@@ -10,21 +10,46 @@
  */
 
 import type { StoreSet, StoreGet } from '../types';
-import type { HistoryEntry } from '@/types';
-
-/** Maximum number of history entries to retain (prevents unbounded growth). */
-const MAX_HISTORY_ENTRIES = 500;
+import type { ActivityClearRange, HistoryEntry } from '@/types';
+import { isTimestampInActivityRange } from '@/lib/activityRanges';
+import { appendHistoryEntriesIfEnabled } from '../helpers/historyTracking';
 
 export const createHistorySlice = (set: StoreSet, _get: StoreGet) => ({
   /** Manually log an action to history (auto-generated id + timestamp) */
   logAction: (entry: Omit<HistoryEntry, 'id' | 'timestamp'>) =>
     set((state) => ({
-      history: [
-        { id: crypto.randomUUID(), timestamp: Date.now(), ...entry },
-        ...state.history,
-      ].slice(0, MAX_HISTORY_ENTRIES),
+      history: appendHistoryEntriesIfEnabled(state, [entry]),
     })),
 
-  /** Clear the entire history log */
-  clearHistory: () => set({ history: [] }),
+  /** Clear history using the remembered or explicitly provided range */
+  clearHistory: (range?: ActivityClearRange) =>
+    set((state) => {
+      const activeRange = range ?? state.historyClearRange ?? 'all-time';
+      const now = Date.now();
+
+      if (activeRange === 'all-time') {
+        return { history: [] };
+      }
+
+      return {
+        history: state.history.filter(
+          (entry) => !isTimestampInActivityRange(entry.timestamp, activeRange, now)
+        ),
+      };
+    }),
+
+  /** Remove a single history row without affecting the rest of the log */
+  removeHistoryEntry: (id: string) =>
+    set((state) => ({
+      history: state.history.filter((entry) => entry.id !== id),
+    })),
+
+  /** Toggle whether future history entries should be recorded */
+  setHistoryEnabled: (enabled: boolean) => set({ historyEnabled: enabled }),
+
+  /** Remember the last-used history clear range */
+  setHistoryClearRange: (range: ActivityClearRange) => set({ historyClearRange: range }),
+
+  /** Remember the last-used trash clear range */
+  setTrashClearRange: (range: ActivityClearRange) => set({ trashClearRange: range }),
 });

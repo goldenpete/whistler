@@ -33,6 +33,7 @@ import type {
   BaseTheme,
   CustomBaseTheme,
   FloatingPlayerWindow,
+  ActivityClearRange,
 } from '@/types';
 
 // ── Store-specific types ─────────────────────────────────────────────────────
@@ -177,6 +178,7 @@ export interface AppStore extends AppState {
   // ── Theme Toggle Settings ───────────────────────────────────────────────
   toggleThemingEnabled: boolean;
   largeTogglesThemingEnabled: boolean;
+  tooltipsEnabled: boolean;
   hideSeekbarProgressTrail: boolean;
 
   // ── UI State ────────────────────────────────────────────────────────────
@@ -203,6 +205,7 @@ export interface AppStore extends AppState {
   // ── Theme Toggle Actions ──────────────────────────────────────────────
   setToggleThemingEnabled: (enabled: boolean) => void;
   setLargeTogglesThemingEnabled: (enabled: boolean) => void;
+  setTooltipsEnabled: (enabled: boolean) => void;
   setHideSeekbarProgressTrail: (enabled: boolean) => void;
 
   // ── UI Actions ────────────────────────────────────────────────────────
@@ -329,11 +332,15 @@ export interface AppStore extends AppState {
   trashDoc: (id: string) => void;
   restoreDoc: (id: string) => void;
   permanentDeleteDoc: (id: string) => void;
-  emptyTrash: () => void;
+  emptyTrash: (options?: { projectId?: string | null; range?: ActivityClearRange }) => void;
 
   // ── History Actions ───────────────────────────────────────────────────
   logAction: (entry: Omit<HistoryEntry, 'id' | 'timestamp'>) => void;
-  clearHistory: () => void;
+  clearHistory: (range?: ActivityClearRange) => void;
+  removeHistoryEntry: (id: string) => void;
+  setHistoryEnabled: (enabled: boolean) => void;
+  setHistoryClearRange: (range: ActivityClearRange) => void;
+  setTrashClearRange: (range: ActivityClearRange) => void;
 
   // ── Keybind Actions ───────────────────────────────────────────────────
   customKeybinds: Record<string, string>;

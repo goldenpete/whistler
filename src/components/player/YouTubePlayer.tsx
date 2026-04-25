@@ -47,6 +47,8 @@ interface YTPlayer {
     pauseVideo: () => void;
     getCurrentTime: () => number;
     getDuration: () => number;
+    getVideoData: () => { video_id: string };
+    loadVideoById: (videoId: string, startSeconds?: number) => void;
     getVolume: () => number;
     setVolume: (v: number) => void;
     isMuted: () => boolean;

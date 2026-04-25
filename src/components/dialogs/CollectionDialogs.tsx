@@ -29,63 +29,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    FolderPlus,
-    Star,
-    Heart,
-    Flag,
-    Tag,
-    Bookmark,
-    Briefcase,
-    House,
-    User,
-    Users,
-    Planet,
-    Rocket,
-    Code,
-    Cpu,
-    Database,
-    GameController,
-    MusicNotes,
-    Image,
-    FilmStrip,
-    FileText,
-    Book,
-    HardDrives,
-    WarningOctagon
-} from "@phosphor-icons/react";
+import { AppTooltip } from "@/components/ui/tooltip";
+import { WarningOctagon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "@/lib/zustand-shallow";
 import { type Collection } from "@/types";
+import { iconMap, iconNames } from "@/utils/iconMap";
 
 
 
 // Predefined Icons
-export const ICONS = [
-    { name: "FolderPlus", icon: FolderPlus },
-    { name: "Star", icon: Star },
-    { name: "Heart", icon: Heart },
-    { name: "Flag", icon: Flag },
-    { name: "Tag", icon: Tag },
-    { name: "Bookmark", icon: Bookmark },
-    { name: "Briefcase", icon: Briefcase },
-    { name: "House", icon: House },
-    { name: "User", icon: User },
-    { name: "Users", icon: Users },
-    { name: "Planet", icon: Planet },
-    { name: "Rocket", icon: Rocket },
-    { name: "Code", icon: Code },
-    { name: "Cpu", icon: Cpu },
-    { name: "Database", icon: Database },
-    { name: "GameController", icon: GameController },
-    { name: "MusicNotes", icon: MusicNotes },
-    { name: "Image", icon: Image },
-    { name: "FilmStrip", icon: FilmStrip },
-    { name: "FileText", icon: FileText },
-    { name: "Book", icon: Book },
-    { name: "HardDrives", icon: HardDrives },
-];
+export const ICONS = iconNames.map((name) => ({ name, icon: iconMap[name] }));
 
 
 interface CollectionFormProps {
@@ -159,22 +114,23 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
                             </TabsContent>
 
                             <TabsContent value="icon" className="mt-0 p-3">
-                                <div className="grid grid-cols-7 gap-2">
+                                <div className="grid max-h-56 grid-cols-7 gap-2 overflow-y-auto pr-1">
                                     {ICONS.map(({ name: iName, icon: Icon }) => (
-                                        <button
-                                            key={iName}
-                                            type="button"
-                                            onClick={() => setIconName(iName)}
-                                            className={cn(
-                                                "aspect-square flex items-center justify-center rounded-none border transition-all",
-                                                iconName === iName
-                                                    ? "bg-primary border-primary text-primary-foreground shadow-sm"
-                                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                                            )}
-                                            title={iName}
-                                        >
-                                            <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
-                                        </button>
+                                        <AppTooltip key={iName} content={iName}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIconName(iName)}
+                                                className={cn(
+                                                    "aspect-square flex items-center justify-center rounded-none border transition-all",
+                                                    iconName === iName
+                                                        ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                                                        : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                                                )}
+                                                aria-label={iName}
+                                            >
+                                                <Icon weight={iconName === iName ? "fill" : "bold"} size={20} />
+                                            </button>
+                                        </AppTooltip>
                                     ))}
                                 </div>
                             </TabsContent>
@@ -184,13 +140,15 @@ function CollectionForm({ defaultName = "", defaultColor = PRESET_COLORS[0], def
             )}
 
             <div className="flex items-center gap-2 pt-4">
-                {footerPrefix ? <div className="mr-auto">{footerPrefix}</div> : null}
-                <Button variant="outline" onClick={onCancel} className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800">
-                    Cancel
-                </Button>
-                <Button onClick={handleSubmit} disabled={!name.trim()} data-sound-confirm>
-                    {submitLabel}
-                </Button>
+                {footerPrefix ? <div>{footerPrefix}</div> : null}
+                <div className="ml-auto flex items-center gap-2">
+                    <Button variant="outline" onClick={onCancel} className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={!name.trim()} data-sound-confirm>
+                        {submitLabel}
+                    </Button>
+                </div>
             </div>
         </div>
     );
@@ -292,14 +250,14 @@ export function CreateFolderDialog({ open, onOpenChange, onSubmit }: CreateFolde
                         />
                     </div>
                 </div>
-                <DialogFooter>
+                <div className="flex justify-end gap-2 pt-4">
                     <Button variant="outline" onClick={() => onOpenChange(false)} className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800">
                         Cancel
                     </Button>
                     <Button onClick={handleSubmit} disabled={!name.trim()} data-sound-confirm>
                         Create Folder
                     </Button>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );
@@ -396,9 +354,11 @@ export function EditCollectionDialog({ open, onOpenChange, collection, onSubmit,
                                 <Label className="text-zinc-400">{typeLabel}</Label>
                                 <div className="flex min-h-9 items-center gap-3 border border-red-500/25 bg-red-500/6 px-3 text-sm text-zinc-200">
                                     <WarningOctagon size={16} weight="fill" className="shrink-0 text-red-400" />
-                                    <span className="truncate font-medium text-white" title={collection.name}>
-                                        {collection.name}
-                                    </span>
+                                    <AppTooltip content={collection.name}>
+                                        <span className="truncate font-medium text-white">
+                                            {collection.name}
+                                        </span>
+                                    </AppTooltip>
                                 </div>
                             </div>
                         </div>

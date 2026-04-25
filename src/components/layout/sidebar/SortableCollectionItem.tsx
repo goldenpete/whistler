@@ -161,7 +161,6 @@ export function SortableCollectionItem({
                             {/* Collection name (hidden in slim mode) */}
                             {!isSlim && (
                                 <span
-                                    title={collection.name}
                                     className="truncate w-0 flex-1 py-2 max-w-[calc(100%-50px)] group-hover/item:max-w-[calc(100%-95px)]"
                                 >
                                     {collection.name}

@@ -2,6 +2,7 @@ import * as React from "react"
 import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { AppTooltip } from "@/components/ui/tooltip"
 
 const baseStyles = "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-none border border-transparent bg-clip-padding text-xs font-medium focus-visible:ring-1 aria-invalid:ring-1 [&_svg:not([class*='size-'])]:size-4 inline-flex items-center justify-center whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none"
 
@@ -41,15 +42,35 @@ interface ButtonProps extends React.ComponentProps<"button"> {
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", asChild = false, ...props }, ref) => {
+  ({ className, variant = "default", size = "default", asChild = false, title, disabled, ["aria-label"]: ariaLabel, ...props }, ref) => {
     const Comp = asChild ? Slot.Root : "button"
-    return (
+    const isIconButton = size.startsWith("icon")
+    const tooltipContent = isIconButton
+      ? title ?? (typeof ariaLabel === "string" ? ariaLabel : undefined)
+      : undefined
+    const button = (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={disabled}
+        aria-label={ariaLabel ?? (typeof tooltipContent === "string" ? tooltipContent : undefined)}
         {...props}
       />
     )
+
+    if (!tooltipContent) {
+      return button
+    }
+
+    if (disabled) {
+      return (
+        <AppTooltip content={tooltipContent}>
+          <span className="inline-flex">{button}</span>
+        </AppTooltip>
+      )
+    }
+
+    return <AppTooltip content={tooltipContent}>{button}</AppTooltip>
   }
 )
 Button.displayName = "Button"

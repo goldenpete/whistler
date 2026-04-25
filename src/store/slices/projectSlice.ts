@@ -10,6 +10,7 @@
 
 import type { StoreSet, StoreGet } from '../types';
 import type { Project, Collection, File } from '@/types';
+import { appendHistoryEntriesIfEnabled } from '../helpers/historyTracking';
 
 export const createProjectSlice = (set: StoreSet, _get: StoreGet) => ({
   /**
@@ -56,18 +57,15 @@ export const createProjectSlice = (set: StoreSet, _get: StoreGet) => ({
       activeStorageId: state.projects.length === 0 ? defaultStorage.id : state.activeStorageId,
       activeCollectionId: state.projects.length === 0 ? defaultBucket.id : state.activeCollectionId,
       // Log history
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: newProject.id,
           action: 'create',
           entityType: 'project',
           entityId: newProject.id,
           entityName: name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     }));
     return newProject;
   },
@@ -78,18 +76,15 @@ export const createProjectSlice = (set: StoreSet, _get: StoreGet) => ({
       projects: state.projects.map((p) =>
         p.id === id ? { ...p, ...updates, lastModified: Date.now() } : p
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: id,
           action: 'update',
           entityType: 'project',
           entityId: id,
           entityName: state.projects.find((p) => p.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /**
@@ -136,19 +131,16 @@ export const createProjectSlice = (set: StoreSet, _get: StoreGet) => ({
         activeCollectionId: null,
         activeGraphId: null,
         activeDocId: null,
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: id,
             action: 'delete',
             entityType: 'project',
             entityId: id,
             entityName: deletedProject?.name,
             details: 'Delete Project',
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 });

@@ -1,1 +1,1 @@
-export { default } from "./ProjectSidebar";
+export { default } from "../ProjectSidebar";

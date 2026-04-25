@@ -329,7 +329,7 @@ export function SidebarFolderItem({
                         )}
 
                         {/* Folder name */}
-                        <span title={folder.name} className="truncate w-0 flex-1 text-left py-0.5 max-w-[calc(100%-60px)]">{folder.name}</span>
+                        <span title={isRoot ? undefined : folder.name} className="truncate w-0 flex-1 text-left py-0.5 max-w-[calc(100%-60px)]">{folder.name}</span>
 
                         {/* ── Hover-reveal action buttons ──────────────────────────── */}
                         <div className="h-full flex-shrink-0 flex items-center transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">

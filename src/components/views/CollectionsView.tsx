@@ -107,6 +107,7 @@ import { useKeybind } from "@/hooks/use-keybind";
 import { CreateCollectionDialog, CreateFolderDialog, EditCollectionDialog } from "@/components/dialogs/CollectionDialogs";
 import { MoveCollectionDialog } from "@/components/dialogs/MoveCollectionDialog";
 import { CollectionGridPreview } from "@/components/previews/CollectionPreviews";
+import { ViewEmptyState } from "@/components/views/ViewEmptyState";
 
 const COLLECTION_COLORS = [
     "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
@@ -759,6 +760,7 @@ export default function CollectionsView() {
     const [focusedId, setFocusedId] = useState<string | null>(null);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [addCollectionOpen, setAddCollectionOpen] = useState(false);
+    const [addBucketOpen, setAddBucketOpen] = useState(false);
     const [addFolderOpen, setAddFolderOpen] = useState(false);
     const [editCollectionOpen, setEditCollectionOpen] = useState(false);
     const [collectionToEdit, setCollectionToEdit] = useState<Collection | null>(null);
@@ -768,6 +770,10 @@ export default function CollectionsView() {
     const activeProject = projects.find(p => p.id === activeProjectId);
     const currentFolder = currentFolderId ? collections.find(c => c.id === currentFolderId) : null;
     const activeBucket = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
+    const projectBuckets = useMemo(
+        () => collections.filter((c) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted),
+        [collections, activeProjectId]
+    );
     const currentEditTarget = currentFolder || activeBucket || null;
 
     // Breadcrumbs with memoization and protection
@@ -981,6 +987,35 @@ export default function CollectionsView() {
         playSfx('confirm');
     };
 
+    const handleCreateBucket = (name: string, color: string, icon?: string) => {
+        if (!activeProjectId) return;
+
+        const maxOrder = projectBuckets.length > 0
+            ? Math.max(...projectBuckets.map((bucket) => bucket.order || 0))
+            : -1;
+
+        const newBucket: Collection = {
+            id: crypto.randomUUID(),
+            projectId: activeProjectId,
+            parentId: null,
+            name,
+            color,
+            icon: icon || "HardDrives",
+            order: maxOrder + 1,
+            created: Date.now(),
+            lastModified: Date.now(),
+            type: 'bucket'
+        };
+
+        useStore.setState((state) => ({
+            collections: [...state.collections, newBucket],
+            activeCollectionId: newBucket.id
+        }));
+        setSearchParams({});
+        navigate('/collections');
+        playSfx('confirm');
+    };
+
     const handleUpdateCollection = (name: string, color: string, icon?: string) => {
         if (!collectionToEdit) return;
         updateCollection(collectionToEdit.id, { name, color, icon, lastModified: Date.now() });
@@ -1106,6 +1141,26 @@ export default function CollectionsView() {
                 <h1 className="text-2xl font-semibold mb-2 text-foreground">No Project Selected</h1>
                 <p className="max-w-md opacity-60">Select or create a project to start organizing your collections.</p>
             </div>
+        );
+    }
+
+    if (projectBuckets.length === 0) {
+        return (
+            <>
+                <ViewEmptyState
+                    icon={FolderOpen}
+                    title="Select or create a bucket"
+                    description="Create a bucket to start organizing collection roots in this project."
+                    actionLabel="Create Bucket"
+                    onAction={() => setAddBucketOpen(true)}
+                />
+                <CreateCollectionDialog
+                    open={addBucketOpen}
+                    onOpenChange={setAddBucketOpen}
+                    onSubmit={handleCreateBucket}
+                    title="New Bucket"
+                />
+            </>
         );
     }
 
@@ -1320,7 +1375,16 @@ export default function CollectionsView() {
                                     <Trash size={14} />
                                     Delete
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedIds(new Set()); setSelectionMode(false); }}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    title="Exit selection mode"
+                                    onClick={() => {
+                                        setSelectedIds(new Set());
+                                        setSelectionMode(false);
+                                    }}
+                                >
                                     <X size={16} />
                                 </Button>
                             </div>
@@ -1440,6 +1504,12 @@ export default function CollectionsView() {
                 onOpenChange={setAddCollectionOpen}
                 onSubmit={handleCreateCollection}
                 title="New Collection"
+            />
+            <CreateCollectionDialog
+                open={addBucketOpen}
+                onOpenChange={setAddBucketOpen}
+                onSubmit={handleCreateBucket}
+                title="New Bucket"
             />
             <CreateFolderDialog
                 open={addFolderOpen}

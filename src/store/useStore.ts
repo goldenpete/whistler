@@ -34,41 +34,57 @@
  * ============================================================================
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { sanitizeFilesForPersistence } from '@/utils/localFiles';
-import { sanitizeHighlightCollectionIds } from '@/utils/collectionUtils';
+import { create } from "zustand";
+import {
+  persist,
+  createJSONStorage,
+  type StateStorage,
+} from "zustand/middleware";
+import { sanitizeFilesForPersistence } from "@/utils/localFiles";
+import { sanitizeHighlightCollectionIds } from "@/utils/collectionUtils";
+import {
+  MAX_HISTORY_ENTRIES,
+  collectHistoryEntries,
+  dedupeHistoryEntries,
+  getLeadingManualHistoryEntries,
+  insertHistoryEntries,
+  isHistoryOnlyUpdate,
+} from "./helpers/historyTracking";
 
 // ── Types (re-exported for backward compatibility) ───────────────────────────
-import type { AppStore } from './types';
-export type { AppStore, SoundKey } from './types';
+import type { AppStore } from "./types";
+export type { AppStore, SoundKey } from "./types";
 
 // ── Helpers (re-exported for backward compatibility) ─────────────────────────
-export { ambientMusicStorage } from './helpers/ambientMusicDb';
-export { DEFAULT_CUSTOM_THEMES, DEFAULT_CUSTOM_ACCENT_THEMES } from './helpers/themeDefaults';
+export { ambientMusicStorage } from "./helpers/ambientMusicDb";
+export {
+  DEFAULT_CUSTOM_THEMES,
+  DEFAULT_CUSTOM_ACCENT_THEMES,
+} from "./helpers/themeDefaults";
 
 // ── Slices ───────────────────────────────────────────────────────────────────
-import { createKeybindSlice } from './slices/keybindSlice';
-import { createDataSlice } from './slices/dataSlice';
-import { createProjectSlice } from './slices/projectSlice';
-import { createEntitySlice } from './slices/entitySlice';
-import { createHighlightSlice } from './slices/highlightSlice';
-import { createGraphEditSlice } from './slices/graphEditSlice';
-import { createTrashSlice } from './slices/trashSlice';
-import { createHistorySlice } from './slices/historySlice';
-import { createAuthSlice } from './slices/authSlice';
-import { createAppearanceSlice } from './slices/appearanceSlice';
-import { createPlaybackSlice } from './slices/playbackSlice';
-import { createSoundSlice } from './slices/soundSlice';
-import { createUiSlice } from './slices/uiSlice';
+import { createKeybindSlice } from "./slices/keybindSlice";
+import { createDataSlice } from "./slices/dataSlice";
+import { createProjectSlice } from "./slices/projectSlice";
+import { createEntitySlice } from "./slices/entitySlice";
+import { createHighlightSlice } from "./slices/highlightSlice";
+import { createGraphEditSlice } from "./slices/graphEditSlice";
+import { createTrashSlice } from "./slices/trashSlice";
+import { createHistorySlice } from "./slices/historySlice";
+import { createAuthSlice } from "./slices/authSlice";
+import { createAppearanceSlice } from "./slices/appearanceSlice";
+import { createPlaybackSlice } from "./slices/playbackSlice";
+import { createSoundSlice } from "./slices/soundSlice";
+import { createUiSlice } from "./slices/uiSlice";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 /** localStorage key for persisted store data */
-const STORAGE_KEY = 'whistler_v2_data';
+const STORAGE_KEY = "whistler_v2_data";
 
 /** Debounce interval for localStorage writes (ms) */
 const PERSIST_DEBOUNCE_MS = 1000;
+let isHistoryHydrating = false;
 
 /**
  * Wraps localStorage with debounced setItem to avoid serializing
@@ -115,32 +131,137 @@ function createThrottledStorage(): StateStorage {
  */
 export const useStore = create<AppStore>()(
   persist<AppStore>(
-    (set, get) => ({
-      // Each slice receives (set, get) and returns its state + actions
-      ...createKeybindSlice(set, get),
-      ...createDataSlice(set, get),
-      ...createProjectSlice(set, get),
-      ...createEntitySlice(set, get),
-      ...createHighlightSlice(set, get),
-      ...createGraphEditSlice(set, get),
-      ...createTrashSlice(set, get),
-      ...createHistorySlice(set, get),
-      ...createAuthSlice(set, get),
-      ...createAppearanceSlice(set, get),
-      ...createPlaybackSlice(set, get),
-      ...createSoundSlice(set, get),
-      ...createUiSlice(set, get),
-    }),
+    (set, get, api) => {
+      type StoreStateUpdater =
+        | AppStore
+        | Partial<AppStore>
+        | ((state: AppStore) => AppStore | Partial<AppStore>);
+      type StoreStateReplacer = AppStore | ((state: AppStore) => AppStore);
+
+      const rawSetState = api.setState.bind(api);
+      const applyRawSetState = (
+        partial: StoreStateUpdater,
+        replace?: boolean,
+      ): void => {
+        if (replace === true) {
+          rawSetState(partial as StoreStateReplacer, true);
+          return;
+        }
+
+        if (replace === false) {
+          rawSetState(partial, false);
+          return;
+        }
+
+        rawSetState(partial);
+      };
+      let suppressHistoryTracking = false;
+
+      const trimHistoryIfNeeded = () => {
+        if (get().history.length <= MAX_HISTORY_ENTRIES) {
+          return;
+        }
+
+        suppressHistoryTracking = true;
+        applyRawSetState((state: AppStore) => ({
+          history: state.history.slice(0, MAX_HISTORY_ENTRIES),
+        }));
+        suppressHistoryTracking = false;
+      };
+
+      const trackedSetState: typeof api.setState = ((
+        partial: StoreStateUpdater,
+        replace?: boolean,
+      ) => {
+        const prevState = get();
+        applyRawSetState(partial, replace);
+
+        if (suppressHistoryTracking || isHistoryHydrating) {
+          return;
+        }
+
+        const nextState = get();
+        if (prevState === nextState) {
+          return;
+        }
+
+        if (isHistoryOnlyUpdate(prevState, nextState)) {
+          trimHistoryIfNeeded();
+          return;
+        }
+
+        if (nextState.historyEnabled === false) {
+          trimHistoryIfNeeded();
+          return;
+        }
+
+        const manualEntries = getLeadingManualHistoryEntries(
+          prevState.history,
+          nextState.history,
+        );
+        const autoEntries = dedupeHistoryEntries(
+          collectHistoryEntries(prevState, nextState),
+          manualEntries,
+        );
+
+        if (autoEntries.length === 0) {
+          trimHistoryIfNeeded();
+          return;
+        }
+
+        suppressHistoryTracking = true;
+        applyRawSetState((state: AppStore) => ({
+          history: insertHistoryEntries(
+            state.history,
+            manualEntries.length,
+            autoEntries,
+          ),
+        }));
+        suppressHistoryTracking = false;
+        trimHistoryIfNeeded();
+      }) as typeof api.setState;
+
+      api.setState = trackedSetState;
+
+      const trackedSet = ((partial: StoreStateUpdater) =>
+        trackedSetState(partial)) as typeof set;
+
+      return {
+        // Each slice receives (set, get) and returns its state + actions
+        ...createKeybindSlice(trackedSet, get),
+        ...createDataSlice(trackedSet, get),
+        ...createProjectSlice(trackedSet, get),
+        ...createEntitySlice(trackedSet, get),
+        ...createHighlightSlice(trackedSet, get),
+        ...createGraphEditSlice(trackedSet, get),
+        ...createTrashSlice(trackedSet, get),
+        ...createHistorySlice(trackedSet, get),
+        ...createAuthSlice(trackedSet, get),
+        ...createAppearanceSlice(trackedSet, get),
+        ...createPlaybackSlice(trackedSet, get),
+        ...createSoundSlice(trackedSet, get),
+        ...createUiSlice(trackedSet, get),
+      };
+    },
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => createThrottledStorage()),
+      onRehydrateStorage: () => {
+        isHistoryHydrating = true;
+        return () => {
+          isHistoryHydrating = false;
+        };
+      },
       merge: (persistedState, currentState) => {
         const merged = {
           ...currentState,
           ...(persistedState as Partial<AppStore>),
         } as AppStore;
 
-        merged.highlights = sanitizeHighlightCollectionIds(merged.collections, merged.highlights);
+        merged.highlights = sanitizeHighlightCollectionIds(
+          merged.collections,
+          merged.highlights,
+        );
         return merged;
       },
       /**
@@ -150,13 +271,18 @@ export const useStore = create<AppStore>()(
        * - floatingPlayerWindows: Don't persist open floating windows
        */
       partialize: (state: AppStore) => {
-        const { ambientMusicUrl, ambientMusicSuppressedBy, floatingPlayerWindows, ...rest } = state;
+        const {
+          ambientMusicUrl,
+          ambientMusicSuppressedBy,
+          floatingPlayerWindows,
+          ...rest
+        } = state;
 
         return {
           ...rest,
           files: sanitizeFilesForPersistence(rest.files),
         } as AppStore;
       },
-    }
-  )
+    },
+  ),
 );

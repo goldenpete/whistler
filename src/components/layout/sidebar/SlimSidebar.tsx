@@ -1,5 +1,5 @@
 /**
- * ─── SlimSidebar.tsx ─────────────────────────────────────────────────────────
+ * SlimSidebar.tsx
  *
  * Collapsed icon-only sidebar mode. Renders a vertical strip of icon buttons
  * for quick navigation to Home, Storage, Docs, Graphs, Collections, and
@@ -9,10 +9,9 @@
  *
  * All buttons use squared styling with border/shadow matching the expanded
  * sidebar's search and collapse buttons.
- * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     SidebarSimple,
@@ -40,6 +39,7 @@ import {
     ContextMenu,
     ContextMenuContent,
     ContextMenuItem,
+    ContextMenuSeparator,
     ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
@@ -50,7 +50,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PiPPlayer } from "@/components/player/PiPPlayer";
 
-// Consistent squared button style used throughout
 const BTN = "h-8 w-8 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200";
 const BTN_ACTIVE = "h-8 w-8 flex items-center justify-center rounded-none border shadow-sm transition-all duration-200 bg-primary/20 text-primary border-primary/30";
 const NAV_BTN = "h-9 w-9 flex items-center justify-center rounded-none border border-border/60 shadow-sm bg-secondary/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-200";
@@ -59,9 +58,48 @@ const NAV_BTN_ACTIVE = "h-9 w-9 flex items-center justify-center rounded-none bo
 interface SlimSidebarProps {
     handleSelectCollection: (id: string) => void;
     onEditCollection: (collection: Collection) => void;
+    onCreateStorage: () => void;
+    onCreateDoc: () => void;
+    onCreateGraph: () => void;
+    onCreateBucket: () => void;
 }
 
-export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSidebarProps) {
+interface SidebarIconButtonProps {
+    tooltip: string;
+    buttonClassName: string;
+    onClick: () => void;
+    menuItems: ReactNode;
+    children: ReactNode;
+}
+
+function SidebarIconButton({ tooltip, buttonClassName, onClick, menuItems, children }: SidebarIconButtonProps) {
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger className="flex w-full justify-center">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button type="button" onClick={onClick} className={buttonClassName}>
+                            {children}
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{tooltip}</TooltipContent>
+                </Tooltip>
+            </ContextMenuTrigger>
+            <ContextMenuContent side="right" align="start" sideOffset={8} className="min-w-[10rem]">
+                {menuItems}
+            </ContextMenuContent>
+        </ContextMenu>
+    );
+}
+
+export function SlimSidebar({
+    handleSelectCollection,
+    onEditCollection,
+    onCreateStorage,
+    onCreateDoc,
+    onCreateGraph,
+    onCreateBucket,
+}: SlimSidebarProps) {
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -87,20 +125,19 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
         pipFileId: state.pipFileId,
     })));
 
-    const isHome = location.pathname === '/';
-    const isStorage = location.pathname === '/storage';
-    const isDocs = location.pathname.startsWith('/docs');
-    const isGraphs = location.pathname.startsWith('/graphs');
-    const isCollectionsRoot = location.pathname.startsWith('/collections');
-    const isCollectionDetail = location.pathname.startsWith('/collection/');
-    const isCollections = isCollectionsRoot || isCollectionDetail;
-    const isSettings = location.pathname === '/settings';
-    const projectBuckets = collections
-        .filter((c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === 'bucket' && !c.deleted);
+    const isHome = location.pathname === "/";
+    const isStorage = location.pathname === "/storage";
+    const isDocs = location.pathname.startsWith("/docs");
+    const isGraphs = location.pathname.startsWith("/graphs");
+    const isCollectionsRoot = location.pathname.startsWith("/collections");
+    const isSettings = location.pathname === "/settings";
+    const projectBuckets = collections.filter(
+        (c: Collection) => c.projectId === activeProjectId && c.parentId === null && c.type === "bucket" && !c.deleted
+    );
     const activeBucket = projectBuckets.find((b) => b.id === activeCollectionId) || projectBuckets[0] || null;
     const ActiveBucketIcon = activeBucket?.icon ? getIcon(activeBucket.icon) : Folder;
     const recentCollections = collections
-        .filter((c: Collection) => c.projectId === activeProjectId && c.type === 'collection' && !c.deleted)
+        .filter((c: Collection) => c.projectId === activeProjectId && c.type === "collection" && !c.deleted)
         .sort((a: Collection, b: Collection) => {
             const aTime = Math.max(a.lastViewed || 0, a.lastModified || 0, a.created || 0);
             const bTime = Math.max(b.lastViewed || 0, b.lastModified || 0, b.created || 0);
@@ -110,256 +147,447 @@ export function SlimSidebar({ handleSelectCollection, onEditCollection }: SlimSi
 
     const handleOpenCollections = () => {
         if (isCollectionsRoot) {
-            // Keep behavior consistent with other sections: expand sidebar into collections management.
             toggleSidebarCollapse();
-            setSidebarView('collections');
+            setSidebarView("collections");
             return;
         }
 
-        // Ensure a bucket is selected when entering collections.
         if (!activeCollectionId && projectBuckets.length > 0) {
             handleSelectCollection(projectBuckets[0].id);
         }
-        navigate('/collections');
+        navigate("/collections");
+    };
+
+    const handleExpandSidebar = () => {
+        playSfx("cursor");
+        toggleSidebarCollapse();
+    };
+
+    const handleCreateStorageAction = () => {
+        playSfx("cursor");
+        onCreateStorage();
+    };
+
+    const handleCreateDocAction = () => {
+        playSfx("cursor");
+        onCreateDoc();
+    };
+
+    const handleCreateGraphAction = () => {
+        playSfx("cursor");
+        onCreateGraph();
+    };
+
+    const handleCreateBucketAction = () => {
+        playSfx("cursor");
+        onCreateBucket();
+    };
+
+    const handleOpenHome = () => {
+        playSfx("cursor");
+        navigate("/");
+        setSidebarView("main");
+    };
+
+    const handleOpenSearch = () => {
+        playSfx("cursor");
+        useStore.getState().setSpotlightOpen(true);
+    };
+
+    const handleOpenStorage = () => {
+        playSfx("cursor");
+        if (isStorage) {
+            toggleSidebarCollapse();
+            setSidebarView("storage");
+            return;
+        }
+        navigate("/storage");
+    };
+
+    const handleOpenDocs = () => {
+        playSfx("cursor");
+        if (isDocs) {
+            toggleSidebarCollapse();
+            setSidebarView("docs");
+            return;
+        }
+        navigate("/docs");
+    };
+
+    const handleOpenGraphs = () => {
+        playSfx("cursor");
+        if (isGraphs) {
+            toggleSidebarCollapse();
+            setSidebarView("graphs");
+            return;
+        }
+        navigate("/graphs");
+    };
+
+    const handleOpenCollectionsAction = () => {
+        playSfx("cursor");
+        handleOpenCollections();
+    };
+
+    const handleOpenBucketManager = () => {
+        playSfx("cursor");
+        setSidebarView("collections");
+        toggleSidebarCollapse();
+    };
+
+    const handleOpenSync = () => {
+        playSfx("cursor");
+        setSidebarView("sync");
+        toggleSidebarCollapse();
+    };
+
+    const handleOpenHistory = () => {
+        playSfx("cursor");
+        setSidebarView("history");
+        toggleSidebarCollapse();
+    };
+
+    const handleOpenTrash = () => {
+        playSfx("cursor");
+        setSidebarView("trash");
+        toggleSidebarCollapse();
+    };
+
+    const handleOpenSettings = () => {
+        playSfx("cursor");
+        navigate("/settings");
     };
 
     return (
-        <div className="flex flex-col h-full min-h-0 items-center py-2 gap-1.5 w-full">
-            {/* ── Top controls ── */}
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <button
-                        onClick={() => { playSfx('cursor'); toggleSidebarCollapse(); }}
-                        className={BTN}
-                    >
-                        <SidebarSimple weight="bold" size={18} />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Expand Sidebar</TooltipContent>
-            </Tooltip>
+        <div className="flex h-full min-h-0 w-full flex-col items-center gap-1.5 py-2">
+            <SidebarIconButton
+                tooltip="Expand Sidebar"
+                buttonClassName={BTN}
+                onClick={handleExpandSidebar}
+                menuItems={
+                    <ContextMenuItem onClick={handleExpandSidebar}>
+                        <SidebarSimple weight="bold" size={16} />
+                        Expand Sidebar
+                    </ContextMenuItem>
+                }
+            >
+                <SidebarSimple weight="bold" size={18} />
+            </SidebarIconButton>
 
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <button
-                        onClick={() => { playSfx('cursor'); navigate('/'); setSidebarView('main'); }}
-                        className={isHome ? NAV_BTN_ACTIVE : NAV_BTN}
-                    >
-                        <House weight={isHome ? "fill" : "bold"} size={20} />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Home</TooltipContent>
-            </Tooltip>
+            <SidebarIconButton
+                tooltip="Home"
+                buttonClassName={isHome ? NAV_BTN_ACTIVE : NAV_BTN}
+                onClick={handleOpenHome}
+                menuItems={
+                    <>
+                        <ContextMenuItem onClick={handleOpenHome}>
+                            <House weight="bold" size={16} />
+                            Go Home
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={handleExpandSidebar}>
+                            <SidebarSimple weight="bold" size={16} />
+                            Expand Sidebar
+                        </ContextMenuItem>
+                    </>
+                }
+            >
+                <House weight={isHome ? "fill" : "bold"} size={20} />
+            </SidebarIconButton>
 
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <button
-                        onClick={() => { playSfx('cursor'); useStore.getState().setSpotlightOpen(true); }}
-                        className={BTN}
-                    >
-                        <MagnifyingGlass weight="bold" size={18} />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Search</TooltipContent>
-            </Tooltip>
+            <SidebarIconButton
+                tooltip="Search"
+                buttonClassName={BTN}
+                onClick={handleOpenSearch}
+                menuItems={
+                    <>
+                        <ContextMenuItem onClick={handleOpenSearch}>
+                            <MagnifyingGlass weight="bold" size={16} />
+                            Open Search
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={handleExpandSidebar}>
+                            <SidebarSimple weight="bold" size={16} />
+                            Expand Sidebar
+                        </ContextMenuItem>
+                    </>
+                }
+            >
+                <MagnifyingGlass weight="bold" size={18} />
+            </SidebarIconButton>
 
-            {/* ── Divider ── */}
-            <div className="w-6 h-px bg-border/40 my-0.5" />
+            <div className="my-0.5 h-px w-6 bg-border/40" />
 
-            {/* ── Navigation ── */}
-            <div className="flex flex-col gap-1.5 w-full items-center">
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => {
-                                playSfx('cursor');
-                                if (isStorage) { toggleSidebarCollapse(); setSidebarView('storage'); }
-                                else navigate('/storage');
-                            }}
-                            className={isStorage ? NAV_BTN_ACTIVE : NAV_BTN}
-                        >
-                            <HardDrives weight={isStorage ? "fill" : "bold"} size={20} />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Storage</TooltipContent>
-                </Tooltip>
+            <div className="flex w-full flex-col items-center gap-1.5">
+                <SidebarIconButton
+                    tooltip="Storage"
+                    buttonClassName={isStorage ? NAV_BTN_ACTIVE : NAV_BTN}
+                    onClick={handleOpenStorage}
+                    menuItems={
+                        <>
+                            <ContextMenuItem onClick={handleOpenStorage}>
+                                <HardDrives weight="bold" size={16} />
+                                Open Storage
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={handleCreateStorageAction} disabled={!activeProjectId}>
+                                <HardDrives weight="bold" size={16} />
+                                Create Storage
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={handleExpandSidebar}>
+                                <SidebarSimple weight="bold" size={16} />
+                                Expand Sidebar
+                            </ContextMenuItem>
+                        </>
+                    }
+                >
+                    <HardDrives weight={isStorage ? "fill" : "bold"} size={20} />
+                </SidebarIconButton>
 
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => {
-                                playSfx('cursor');
-                                if (isDocs) { toggleSidebarCollapse(); setSidebarView('docs'); }
-                                else navigate('/docs');
-                            }}
-                            className={isDocs ? NAV_BTN_ACTIVE : NAV_BTN}
-                        >
-                            <NotePencil weight={isDocs ? "fill" : "bold"} size={20} />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Docs</TooltipContent>
-                </Tooltip>
+                <SidebarIconButton
+                    tooltip="Docs"
+                    buttonClassName={isDocs ? NAV_BTN_ACTIVE : NAV_BTN}
+                    onClick={handleOpenDocs}
+                    menuItems={
+                        <>
+                            <ContextMenuItem onClick={handleOpenDocs}>
+                                <NotePencil weight="bold" size={16} />
+                                Open Docs
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={handleCreateDocAction} disabled={!activeProjectId}>
+                                <NotePencil weight="bold" size={16} />
+                                Create Document
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={handleExpandSidebar}>
+                                <SidebarSimple weight="bold" size={16} />
+                                Expand Sidebar
+                            </ContextMenuItem>
+                        </>
+                    }
+                >
+                    <NotePencil weight={isDocs ? "fill" : "bold"} size={20} />
+                </SidebarIconButton>
 
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => {
-                                playSfx('cursor');
-                                if (isGraphs) { toggleSidebarCollapse(); setSidebarView('graphs'); }
-                                else navigate('/graphs');
-                            }}
-                            className={isGraphs ? NAV_BTN_ACTIVE : NAV_BTN}
-                        >
-                            <Graph weight={isGraphs ? "fill" : "bold"} size={20} />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Graphs</TooltipContent>
-                </Tooltip>
+                <SidebarIconButton
+                    tooltip="Graphs"
+                    buttonClassName={isGraphs ? NAV_BTN_ACTIVE : NAV_BTN}
+                    onClick={handleOpenGraphs}
+                    menuItems={
+                        <>
+                            <ContextMenuItem onClick={handleOpenGraphs}>
+                                <Graph weight="bold" size={16} />
+                                Open Graphs
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={handleCreateGraphAction} disabled={!activeProjectId}>
+                                <Graph weight="bold" size={16} />
+                                Create Graph
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={handleExpandSidebar}>
+                                <SidebarSimple weight="bold" size={16} />
+                                Expand Sidebar
+                            </ContextMenuItem>
+                        </>
+                    }
+                >
+                    <Graph weight={isGraphs ? "fill" : "bold"} size={20} />
+                </SidebarIconButton>
             </div>
 
-            {/* ── Divider ── */}
-            <div className="w-6 h-px bg-border/40 my-0.5" />
+            <div className="my-0.5 h-px w-6 bg-border/40" />
 
-            {/* ── Collections (scrollable) ── */}
             <ScrollArea className="flex-1 min-h-0 w-full px-1">
-                <div className="flex flex-col gap-1.5 w-full items-center py-1">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button
-                                onClick={() => { playSfx('cursor'); handleOpenCollections(); }}
-                                className={cn(
-                                    isCollectionsRoot ? NAV_BTN_ACTIVE : NAV_BTN
-                                )}
-                            >
-                                {activeBucket ? (
-                                    <div style={{ color: activeBucket.color }}>
-                                        <ActiveBucketIcon weight="fill" size={20} />
-                                    </div>
-                                ) : (
-                                    <FolderOpen weight={isCollectionsRoot ? "fill" : "bold"} size={20} />
-                                )}
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                            {activeBucket ? activeBucket.name : "Collections Root"}
-                        </TooltipContent>
-                    </Tooltip>
+                <div className="flex w-full flex-col items-center gap-1.5 py-1">
+                    <SidebarIconButton
+                        tooltip={activeBucket ? activeBucket.name : "Collections Root"}
+                        buttonClassName={isCollectionsRoot ? NAV_BTN_ACTIVE : NAV_BTN}
+                        onClick={handleOpenCollectionsAction}
+                        menuItems={
+                            <>
+                                <ContextMenuItem onClick={handleOpenCollectionsAction}>
+                                    <FolderOpen weight="bold" size={16} />
+                                    Open Collections
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={handleOpenBucketManager}>
+                                    <Folder weight="bold" size={16} />
+                                    Manage Buckets
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={handleCreateBucketAction} disabled={!activeProjectId}>
+                                    <FolderOpen weight="bold" size={16} />
+                                    Create Bucket
+                                </ContextMenuItem>
+                                <ContextMenuSeparator />
+                                <ContextMenuItem onClick={handleExpandSidebar}>
+                                    <SidebarSimple weight="bold" size={16} />
+                                    Expand Sidebar
+                                </ContextMenuItem>
+                            </>
+                        }
+                    >
+                        {activeBucket ? (
+                            <div style={{ color: activeBucket.color }}>
+                                <ActiveBucketIcon weight="fill" size={20} />
+                            </div>
+                        ) : (
+                            <FolderOpen weight={isCollectionsRoot ? "fill" : "bold"} size={20} />
+                        )}
+                    </SidebarIconButton>
 
                     {recentCollections.map((collection: Collection) => {
-                            const Icon = getIcon(collection.icon);
-                            const isActive = location.pathname === `/collection/${collection.id}`;
-                            return (
-                                <ContextMenu key={collection.id}>
-                                    <ContextMenuTrigger className="flex justify-center w-full">
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        playSfx('cursor');
-                                                        handleSelectCollection(collection.id);
-                                                        navigate(`/collection/${collection.id}`);
-                                                    }}
-                                                    className={cn(
-                                                        isActive ? NAV_BTN_ACTIVE : NAV_BTN,
-                                                        "relative"
-                                                    )}
-                                                    title={collection.name}
-                                                >
-                                                    <div style={{ color: collection.color }}>
-                                                        <Icon className="text-lg" weight="fill" />
-                                                    </div>
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="right">{collection.name}</TooltipContent>
-                                        </Tooltip>
-                                    </ContextMenuTrigger>
-                                    <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
-                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                onEditCollection(collection);
-                                            }}>
-                                                <PencilSimple className="mr-2 h-4 w-4" />
-                                            Rename Collection
-                                            </ContextMenuItem>
-                                            <ContextMenuItem onClick={(e: ReactMouseEvent) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                trashCollection(collection.id);
-                                            }} className="text-red-500 focus:text-red-500">
-                                                <Trash className="mr-2 h-4 w-4" />
-                                            Delete Collection
-                                            </ContextMenuItem>
-                                    </ContextMenuContent>
-                                </ContextMenu>
-                            );
-                        })}
+                        const Icon = getIcon(collection.icon);
+                        const isActive = location.pathname === `/collection/${collection.id}`;
+
+                        return (
+                            <ContextMenu key={collection.id}>
+                                <ContextMenuTrigger className="flex w-full justify-center">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    playSfx("cursor");
+                                                    handleSelectCollection(collection.id);
+                                                    navigate(`/collection/${collection.id}`);
+                                                }}
+                                                className={cn(
+                                                    isActive ? NAV_BTN_ACTIVE : NAV_BTN,
+                                                    "relative"
+                                                )}
+                                            >
+                                                <div style={{ color: collection.color }}>
+                                                    <Icon className="text-lg" weight="fill" />
+                                                </div>
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">{collection.name}</TooltipContent>
+                                    </Tooltip>
+                                </ContextMenuTrigger>
+                                <ContextMenuContent side="bottom" align="start" sideOffset={4} className="min-w-[8rem]">
+                                    <ContextMenuItem
+                                        onClick={(e: ReactMouseEvent) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onEditCollection(collection);
+                                        }}
+                                    >
+                                        <PencilSimple className="mr-2 h-4 w-4" />
+                                        Rename Collection
+                                    </ContextMenuItem>
+                                    <ContextMenuItem
+                                        onClick={(e: ReactMouseEvent) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            trashCollection(collection.id);
+                                        }}
+                                        className="text-red-500 focus:text-red-500"
+                                    >
+                                        <Trash className="mr-2 h-4 w-4" />
+                                        Delete Collection
+                                    </ContextMenuItem>
+                                </ContextMenuContent>
+                            </ContextMenu>
+                        );
+                    })}
                 </div>
             </ScrollArea>
 
-            {/* ── Divider ── */}
-            <div className="w-6 h-px bg-border/40 my-0.5" />
+            <div className="my-0.5 h-px w-6 bg-border/40" />
 
-            {/* ── PiP player ── */}
             {isPipOpen && pipFileId && (
                 <div className="w-full px-1 pb-1">
                     <PiPPlayer isCollapsed={true} />
                 </div>
             )}
 
-            {/* ── Bottom utilities ── */}
-            <div className="flex flex-col gap-1.5 w-full items-center pb-1">
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => { playSfx('cursor'); setSidebarView('sync'); toggleSidebarCollapse(); }}
-                            className={BTN}
-                        >
-                            <ArrowsClockwise
-                                weight="bold"
-                                size={18}
-                                className={cn(syncStatus === 'syncing' && "animate-spin text-primary")}
-                            />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Sync Status</TooltipContent>
-                </Tooltip>
+            <div className="flex w-full flex-col items-center gap-1.5 pb-1">
+                <SidebarIconButton
+                    tooltip="Sync Status"
+                    buttonClassName={BTN}
+                    onClick={handleOpenSync}
+                    menuItems={
+                        <>
+                            <ContextMenuItem onClick={handleOpenSync}>
+                                <ArrowsClockwise weight="bold" size={16} className={cn(syncStatus === "syncing" && "animate-spin text-primary")} />
+                                Open Sync
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={handleExpandSidebar}>
+                                <SidebarSimple weight="bold" size={16} />
+                                Expand Sidebar
+                            </ContextMenuItem>
+                        </>
+                    }
+                >
+                    <ArrowsClockwise
+                        weight="bold"
+                        size={18}
+                        className={cn(syncStatus === "syncing" && "animate-spin text-primary")}
+                    />
+                </SidebarIconButton>
 
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => { playSfx('cursor'); setSidebarView('history'); toggleSidebarCollapse(); }}
-                            className={BTN}
-                        >
-                            <ClockCounterClockwise weight="bold" size={18} />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">History</TooltipContent>
-                </Tooltip>
+                <SidebarIconButton
+                    tooltip="History"
+                    buttonClassName={BTN}
+                    onClick={handleOpenHistory}
+                    menuItems={
+                        <>
+                            <ContextMenuItem onClick={handleOpenHistory}>
+                                <ClockCounterClockwise weight="bold" size={16} />
+                                Open History
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={handleExpandSidebar}>
+                                <SidebarSimple weight="bold" size={16} />
+                                Expand Sidebar
+                            </ContextMenuItem>
+                        </>
+                    }
+                >
+                    <ClockCounterClockwise weight="bold" size={18} />
+                </SidebarIconButton>
 
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => { playSfx('cursor'); setSidebarView('trash'); toggleSidebarCollapse(); }}
-                            className={BTN}
-                        >
-                            <Trash weight="bold" size={18} />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Trash</TooltipContent>
-                </Tooltip>
+                <SidebarIconButton
+                    tooltip="Trash"
+                    buttonClassName={BTN}
+                    onClick={handleOpenTrash}
+                    menuItems={
+                        <>
+                            <ContextMenuItem onClick={handleOpenTrash}>
+                                <Trash weight="bold" size={16} />
+                                Open Trash
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={handleExpandSidebar}>
+                                <SidebarSimple weight="bold" size={16} />
+                                Expand Sidebar
+                            </ContextMenuItem>
+                        </>
+                    }
+                >
+                    <Trash weight="bold" size={18} />
+                </SidebarIconButton>
 
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => { playSfx('cursor'); navigate('/settings'); }}
-                            className={isSettings ? BTN_ACTIVE : BTN}
-                        >
-                            <Gear weight="fill" size={18} />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Settings</TooltipContent>
-                </Tooltip>
+                <SidebarIconButton
+                    tooltip="Settings"
+                    buttonClassName={isSettings ? BTN_ACTIVE : BTN}
+                    onClick={handleOpenSettings}
+                    menuItems={
+                        <>
+                            <ContextMenuItem onClick={handleOpenSettings}>
+                                <Gear weight="bold" size={16} />
+                                Open Settings
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={handleExpandSidebar}>
+                                <SidebarSimple weight="bold" size={16} />
+                                Expand Sidebar
+                            </ContextMenuItem>
+                        </>
+                    }
+                >
+                    <Gear weight="fill" size={18} />
+                </SidebarIconButton>
             </div>
         </div>
     );

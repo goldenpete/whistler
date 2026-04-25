@@ -71,7 +71,6 @@ export function SyncStatusFooter() {
         <button
             onClick={() => setSidebarView('sync')}
             className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all group"
-            title="Click to manage sync settings"
         >
             {/* Status icon */}
             <div className={cn("text-base shrink-0 transition-colors flex items-center justify-center", getStatusColor())}>

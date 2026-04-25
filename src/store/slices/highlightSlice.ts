@@ -11,6 +11,7 @@
 import type { StoreSet, StoreGet } from '../types';
 import type { Highlight } from '@/types';
 import { normalizeLeafCollectionId } from '@/utils/collectionUtils';
+import { appendHistoryEntriesIfEnabled } from '../helpers/historyTracking';
 
 export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
   /** Create a video timestamp highlight (start/end in seconds) */
@@ -33,18 +34,15 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
       };
       return {
         highlights: [...state.highlights, highlight],
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: state.activeProjectId || 'global',
             action: 'create',
             entityType: 'highlight',
             entityId: highlight.id,
             entityName: 'Video Highlight',
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -73,18 +71,15 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
       };
       return {
         highlights: [...state.highlights, highlight],
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: state.activeProjectId || 'global',
             action: 'create',
             entityType: 'highlight',
             entityId: highlight.id,
             entityName: 'Image Highlight',
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -116,18 +111,15 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
       };
       return {
         highlights: [...state.highlights, newHighlight],
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: state.activeProjectId || 'global',
             action: 'create',
             entityType: 'highlight',
             entityId: newHighlight.id,
             entityName: 'Highlight',
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -135,18 +127,15 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
   removeHighlight: (id: string) =>
     set((state) => ({
       highlights: state.highlights.filter((t) => t.id !== id),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'delete',
           entityType: 'highlight',
           entityId: id,
           entityName: state.highlights.find((t) => t.id === id)?.text || 'Highlight',
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /** Update highlight properties (note, color, collection assignment, etc.) */
@@ -161,18 +150,15 @@ export const createHighlightSlice = (set: StoreSet, _get: StoreGet) => ({
 
       return {
       highlights: state.highlights.map((t) => (t.id === id ? { ...t, ...normalizedUpdates } : t)),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'update',
           entityType: 'highlight',
           entityId: id,
           entityName: state.highlights.find((t) => t.id === id)?.text || 'Highlight',
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     };
     }),
 });

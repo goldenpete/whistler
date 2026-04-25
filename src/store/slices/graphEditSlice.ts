@@ -10,24 +10,22 @@
 
 import type { StoreSet, StoreGet } from '../types';
 import type { GraphNode, GraphEdge } from '@/types';
+import { appendHistoryEntriesIfEnabled } from '../helpers/historyTracking';
 
 export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
   /** Add a new node to a graph */
   addNode: (node: GraphNode) =>
     set((state) => ({
       graphNodes: [...state.graphNodes, node],
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'create',
           entityType: 'node',
           entityId: node.id,
           entityName: node.title,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /**
@@ -41,18 +39,15 @@ export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
       history:
         updates.x !== undefined || updates.y !== undefined
           ? state.history
-          : [
+          : appendHistoryEntriesIfEnabled(state, [
               {
-                id: crypto.randomUUID(),
                 projectId: state.activeProjectId || 'global',
                 action: 'update',
                 entityType: 'node',
                 entityId: id,
                 entityName: state.graphNodes.find((n) => n.id === id)?.title,
-                timestamp: Date.now(),
               },
-              ...state.history,
-            ],
+            ]),
     })),
 
   /** Remove a node and all edges connected to it */
@@ -60,53 +55,44 @@ export const createGraphEditSlice = (set: StoreSet, _get: StoreGet) => ({
     set((state) => ({
       graphNodes: state.graphNodes.filter((n) => n.id !== id),
       graphEdges: state.graphEdges.filter((e) => e.fromId !== id && e.toId !== id),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'delete',
           entityType: 'node',
           entityId: id,
           entityName: state.graphNodes.find((n) => n.id === id)?.title,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /** Add an edge (connection) between two nodes */
   addEdge: (edge: GraphEdge) =>
     set((state) => ({
       graphEdges: [...state.graphEdges, edge],
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'create',
           entityType: 'edge',
           entityId: edge.id,
           entityName: 'Connection',
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /** Remove an edge */
   removeEdge: (id: string) =>
     set((state) => ({
       graphEdges: state.graphEdges.filter((e) => e.id !== id),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'delete',
           entityType: 'edge',
           entityId: id,
           entityName: 'Connection',
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 });

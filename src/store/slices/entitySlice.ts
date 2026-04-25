@@ -14,6 +14,7 @@
 
 import type { StoreSet, StoreGet } from '../types';
 import type { Storage, Doc, Graph, File, Collection } from '@/types';
+import { appendHistoryEntriesIfEnabled } from '../helpers/historyTracking';
 
 export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
   /* ── Storage CRUD ─────────────────────────────────────────────────────── */
@@ -33,18 +34,15 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       return {
         storages: [...state.storages, newStorage],
         activeStorageId: newStorage.id,
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: state.activeProjectId || 'global',
             action: 'create',
-            entityType: 'collection',
+            entityType: 'storage',
             entityId: newStorage.id,
             entityName: name,
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -54,18 +52,15 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       storages: state.storages.map((s) =>
         s.id === id ? { ...s, ...updates, lastModified: Date.now() } : s
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'update',
-          entityType: 'collection',
+          entityType: 'storage',
           entityId: id,
           entityName: state.storages.find((s) => s.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /**
@@ -96,19 +91,16 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
           s.id === id ? { ...s, deleted: true, lastModified: Date.now() } : s
         ),
         activeStorageId: nextActiveStorageId,
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: storage?.projectId ?? (state.activeProjectId || 'global'),
             action: 'delete',
-            entityType: 'collection',
+            entityType: 'storage',
             entityId: id,
             entityName: storage?.name,
             details: 'Moved to Trash',
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -130,18 +122,15 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       return {
         docs: [...state.docs, newDoc],
         activeDocId: newDoc.id,
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: state.activeProjectId || 'global',
             action: 'create',
             entityType: 'doc',
             entityId: newDoc.id,
             entityName: name,
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -151,18 +140,15 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       docs: state.docs.map((d) =>
         d.id === id ? { ...d, ...updates, lastModified: Date.now() } : d
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'update',
           entityType: 'doc',
           entityId: id,
           entityName: state.docs.find((d) => d.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /* ── Graph CRUD ───────────────────────────────────────────────────────── */
@@ -182,18 +168,15 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       return {
         graphs: [...state.graphs, newGraph],
         activeGraphId: newGraph.id,
-        history: [
+        history: appendHistoryEntriesIfEnabled(state, [
           {
-            id: crypto.randomUUID(),
             projectId: state.activeProjectId || 'global',
             action: 'create',
             entityType: 'graph',
             entityId: newGraph.id,
             entityName: name,
-            timestamp: Date.now(),
           },
-          ...state.history,
-        ],
+        ]),
       };
     }),
 
@@ -203,18 +186,15 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       graphs: state.graphs.map((g) =>
         g.id === id ? { ...g, ...updates, lastModified: Date.now() } : g
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'update',
           entityType: 'graph',
           entityId: id,
           entityName: state.graphs.find((g) => g.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /* ── File Update ──────────────────────────────────────────────────────── */
@@ -226,18 +206,15 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
         if (f.id !== id) return f;
         return { ...f, ...updates, lastModified: Date.now() } as File;
       }),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'update',
           entityType: 'file',
           entityId: id,
           entityName: state.files.find((f) => f.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 
   /* ── Collection Update ────────────────────────────────────────────────── */
@@ -248,17 +225,14 @@ export const createEntitySlice = (set: StoreSet, _get: StoreGet) => ({
       collections: state.collections.map((c) =>
         c.id === id ? { ...c, ...updates, lastModified: Date.now() } : c
       ),
-      history: [
+      history: appendHistoryEntriesIfEnabled(state, [
         {
-          id: crypto.randomUUID(),
           projectId: state.activeProjectId || 'global',
           action: 'update',
           entityType: 'collection',
           entityId: id,
           entityName: state.collections.find((c) => c.id === id)?.name,
-          timestamp: Date.now(),
         },
-        ...state.history,
-      ],
+      ]),
     })),
 });

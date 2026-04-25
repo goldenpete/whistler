@@ -118,6 +118,8 @@ export function AppearanceTab() {
         setToggleThemingEnabled,
         largeTogglesThemingEnabled,
         setLargeTogglesThemingEnabled,
+        tooltipsEnabled,
+        setTooltipsEnabled,
         hideSeekbarProgressTrail,
         setHideSeekbarProgressTrail,
         docViewMode,
@@ -163,6 +165,8 @@ export function AppearanceTab() {
         setToggleThemingEnabled: state.setToggleThemingEnabled,
         largeTogglesThemingEnabled: state.largeTogglesThemingEnabled,
         setLargeTogglesThemingEnabled: state.setLargeTogglesThemingEnabled,
+        tooltipsEnabled: state.tooltipsEnabled,
+        setTooltipsEnabled: state.setTooltipsEnabled,
         hideSeekbarProgressTrail: state.hideSeekbarProgressTrail,
         setHideSeekbarProgressTrail: state.setHideSeekbarProgressTrail,
         docViewMode: state.docViewMode,
@@ -876,6 +880,18 @@ export function AppearanceTab() {
                         <Switch 
                             checked={windowOutlineEnabled}
                             onCheckedChange={setWindowOutlineEnabled}
+                        />
+                    </div>
+
+                    {/* Tooltips */}
+                    <div className="p-5 rounded-none border border-border bg-card/50 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <label className="text-sm font-medium">Tooltips</label>
+                            <p className="text-xs text-muted-foreground">Show hover tooltips throughout the interface</p>
+                        </div>
+                        <Switch
+                            checked={tooltipsEnabled}
+                            onCheckedChange={setTooltipsEnabled}
                         />
                     </div>
 
