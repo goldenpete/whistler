@@ -3,14 +3,182 @@
 // Handles: login, TOTP 2FA, data sync, passkey (WebAuthn) registration/login
 // ══════════════════════════════════════════════════════════════════════════
 
-const corsHeaders = {
+// ══════════════════════════════════════════════════════════════════════════
+// TYPE DEFINITIONS
+// ══════════════════════════════════════════════════════════════════════════
+
+interface Env {
+  DB: D1Database;
+  JWT_SECRET: string;
+  TURNSTILE_SECRET: string;
+  TOKEN_EXPIRY: string;
+}
+
+interface RateLimitConfig {
+  windowSeconds: number;
+  maxRequests: number;
+}
+
+interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetIn?: number;
+}
+
+interface TurnstileVerifyResult {
+  success: boolean;
+  error?: string;
+}
+
+interface TurnstileApiResponse {
+  success: boolean;
+  "error-codes"?: string[];
+}
+
+interface TokenPayload {
+  sub: string;
+  iat: number;
+  exp: number;
+  pending_totp: boolean;
+  sid?: string;
+}
+
+interface TokenVerifyResult {
+  sub: string;
+  sid: string | null;
+}
+
+interface UserAgentInfo {
+  browser: string;
+  device: string;
+}
+
+interface COSEKey {
+  [key: number | string]: number | Uint8Array;
+}
+
+interface WebAuthnClientData {
+  type: string;
+  challenge: string;
+  origin: string;
+}
+
+interface LoginRequestBody {
+  account_id: string;
+  captcha_token: string;
+}
+
+interface LoginTotpRequestBody {
+  pending_token: string;
+  totp_code: string;
+}
+
+interface TotpCodeBody {
+  totp_code?: string;
+}
+
+interface DataPutBody {
+  key: string;
+  value: unknown;
+}
+
+interface DataDeleteBody {
+  key: string;
+}
+
+interface DisplayNameBody {
+  display_name: string;
+}
+
+interface PasskeyRegisterStartBody {
+  totp_code?: string;
+}
+
+interface WebAuthnCredentialResponse {
+  clientDataJSON: string;
+  attestationObject: string;
+  transports?: string[];
+}
+
+interface WebAuthnCredentialBody {
+  id?: string;
+  rawId?: string;
+  response?: WebAuthnCredentialResponse;
+  credential?: {
+    id: string;
+    rawId?: string;
+    response: WebAuthnCredentialResponse;
+  };
+}
+
+interface WebAuthnAssertionResponse {
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+}
+
+interface PasskeyLoginFinishBody {
+  account_id: string;
+  assertion?: {
+    id: string;
+    response: WebAuthnAssertionResponse;
+  };
+  id?: string;
+  response?: WebAuthnAssertionResponse;
+}
+
+interface WebAuthnRegistrationOptions {
+  challenge: string;
+  rp: { name: string; id: string };
+  user: { id: string; name: string; displayName: string };
+  pubKeyCredParams: Array<{ type: "public-key"; alg: number }>;
+  timeout: number;
+  attestation: string;
+  authenticatorSelection: {
+    authenticatorAttachment: string;
+    residentKey: string;
+    userVerification: string;
+  };
+  excludeCredentials: Array<{ type: "public-key"; id: string }>;
+}
+
+interface WebAuthnAuthenticationOptions {
+  challenge: string;
+  timeout: number;
+  rpId: string;
+  allowCredentials: Array<{
+    type: "public-key";
+    id: string;
+    transports?: string[];
+  }>;
+  userVerification: string;
+}
+
+interface SessionRow {
+  id: string;
+  browser: string;
+  device: string;
+  ip_address: string;
+  created_at: string;
+  last_active: string;
+}
+
+interface SessionResponse extends SessionRow {
+  is_current: boolean;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════════════════════
+
+const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age": "86400",
 };
 
-const RATE_LIMITS = {
+const RATE_LIMITS: Record<string, RateLimitConfig> = {
   login: { windowSeconds: 60, maxRequests: 5 },
   data_read: { windowSeconds: 60, maxRequests: 30 },
   data_write: { windowSeconds: 60, maxRequests: 10 },
@@ -27,7 +195,7 @@ const RP_ORIGIN = "https://whistlerbox.com";
 // UTILITY FUNCTIONS
 // ══════════════════════════════════════════════════════════════════════════
 
-async function checkRateLimit(db, ip, endpoint) {
+async function checkRateLimit(db: D1Database, ip: string, endpoint: string): Promise<RateLimitResult> {
   const config = RATE_LIMITS[endpoint] || RATE_LIMITS.global;
   const now = Math.floor(Date.now() / 1e3);
   const windowStart = now - (now % config.windowSeconds);
@@ -35,7 +203,7 @@ async function checkRateLimit(db, ip, endpoint) {
     const existing = await db
       .prepare("SELECT request_count FROM rate_limits WHERE ip = ? AND endpoint = ? AND window_start = ?")
       .bind(ip, endpoint, windowStart)
-      .first();
+      .first<{ request_count: number }>();
     if (existing) {
       if (existing.request_count >= config.maxRequests) {
         return { allowed: false, remaining: 0, resetIn: config.windowSeconds - (now % config.windowSeconds) };
@@ -58,7 +226,7 @@ async function checkRateLimit(db, ip, endpoint) {
   }
 }
 
-async function cleanupRateLimits(db) {
+async function cleanupRateLimits(db: D1Database): Promise<void> {
   const cutoff = Math.floor(Date.now() / 1e3) - 3600;
   try {
     await db.prepare("DELETE FROM rate_limits WHERE window_start < ?").bind(cutoff).run();
@@ -67,7 +235,7 @@ async function cleanupRateLimits(db) {
   }
 }
 
-function generateTOTPSecret() {
+function generateTOTPSecret(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const array = new Uint8Array(20);
   crypto.getRandomValues(array);
@@ -78,7 +246,7 @@ function generateTOTPSecret() {
   return secret;
 }
 
-function generateDisplayName() {
+function generateDisplayName(): string {
   const adjectives = [
     "Swift","Brave","Calm","Daring","Eager","Fierce","Gentle","Happy","Jolly","Kind",
     "Lucky","Mighty","Noble","Proud","Quick","Royal","Silent","Steady","Clever","Cosmic",
@@ -98,7 +266,7 @@ function generateDisplayName() {
   return `${adj} ${animal}`;
 }
 
-function base32Decode(str) {
+function base32Decode(str: string): Uint8Array {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   str = str.toUpperCase().replace(/[^A-Z2-7]/g, "");
   let bits = "";
@@ -106,20 +274,20 @@ function base32Decode(str) {
     const val = chars.indexOf(char);
     bits += val.toString(2).padStart(5, "0");
   }
-  const bytes = [];
+  const bytes: number[] = [];
   for (let i = 0; i + 8 <= bits.length; i += 8) {
     bytes.push(parseInt(bits.substr(i, 8), 2));
   }
   return new Uint8Array(bytes);
 }
 
-async function hmacSha1(key, message) {
+async function hmacSha1(key: Uint8Array, message: Uint8Array): Promise<Uint8Array> {
   const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
   const signature = await crypto.subtle.sign("HMAC", cryptoKey, message);
   return new Uint8Array(signature);
 }
 
-async function verifyTOTP(secret, code, timeStep = 30) {
+async function verifyTOTP(secret: string, code: string, timeStep: number = 30): Promise<boolean> {
   const normalizedCode = code.replace(/\s/g, "");
   for (const offset of [0, -1, 1]) {
     const time = Math.floor(Date.now() / 1e3 / timeStep) + offset;
@@ -142,21 +310,21 @@ async function verifyTOTP(secret, code, timeStep = 30) {
   return false;
 }
 
-async function verifyTurnstile(token, secret, ip) {
+async function verifyTurnstile(token: string | undefined, secret: string | undefined, ip: string): Promise<TurnstileVerifyResult> {
   if (!token) return { success: false, error: "Captcha token required" };
   if (!secret) {
     console.error("TURNSTILE_SECRET is not set");
     return { success: false, error: "Server configuration error" };
   }
   try {
-    const bodyParams = { secret, response: token };
+    const bodyParams: Record<string, string> = { secret, response: token };
     if (ip && ip !== "unknown") bodyParams.remoteip = ip;
     const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams(bodyParams),
     });
-    const result = await response.json();
+    const result = await response.json<TurnstileApiResponse>();
     if (!result.success) {
       const errorCodes = result["error-codes"] || [];
       if (errorCodes.includes("invalid-input-secret"))
@@ -172,11 +340,17 @@ async function verifyTurnstile(token, secret, ip) {
   }
 }
 
-async function generateToken(accountId, secret, expirySeconds, pendingTotp = false, sessionId = null) {
-  const payload = {
+async function generateToken(
+  accountId: string,
+  secret: string,
+  expirySeconds: string | number,
+  pendingTotp: boolean = false,
+  sessionId: string | null = null
+): Promise<string> {
+  const payload: TokenPayload = {
     sub: accountId,
     iat: Math.floor(Date.now() / 1e3),
-    exp: Math.floor(Date.now() / 1e3) + parseInt(expirySeconds),
+    exp: Math.floor(Date.now() / 1e3) + parseInt(String(expirySeconds)),
     pending_totp: pendingTotp,
   };
   if (sessionId) payload.sid = sessionId;
@@ -188,7 +362,7 @@ async function generateToken(accountId, secret, expirySeconds, pendingTotp = fal
   return `${payloadB64}.${signatureB64}`;
 }
 
-async function verifyToken(token, secret, allowPendingTotp = false) {
+async function verifyToken(token: string, secret: string, allowPendingTotp: boolean = false): Promise<TokenVerifyResult | null> {
   try {
     const [payloadB64, signatureB64] = token.split(".");
     if (!payloadB64 || !signatureB64) return null;
@@ -197,49 +371,48 @@ async function verifyToken(token, secret, allowPendingTotp = false) {
     const signature = Uint8Array.from(atob(signatureB64), (c) => c.charCodeAt(0));
     const valid = await crypto.subtle.verify("HMAC", key, signature, encoder.encode(payloadB64));
     if (!valid) return null;
-    const payload = JSON.parse(atob(payloadB64));
+    const payload: TokenPayload = JSON.parse(atob(payloadB64));
     if (payload.exp < Math.floor(Date.now() / 1e3)) return null;
     if (payload.pending_totp && !allowPendingTotp) return null;
     return { sub: payload.sub, sid: payload.sid || null };
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-function isValidAccountId(id) {
+function isValidAccountId(id: unknown): id is string {
   return typeof id === "string" && /^\d{16}$/.test(id);
 }
 
-function jsonResponse(data, status = 200, extraHeaders = {}) {
+function jsonResponse(data: unknown, status: number = 200, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json", ...corsHeaders, ...extraHeaders },
   });
 }
 
-function errorResponse(message, status = 400, extraHeaders = {}) {
+function errorResponse(message: string, status: number = 400, extraHeaders: Record<string, string> = {}): Response {
   return jsonResponse({ error: message }, status, extraHeaders);
 }
 
-function rateLimitResponse(resetIn) {
+function rateLimitResponse(resetIn: number): Response {
   return errorResponse(`Too many requests. Try again in ${resetIn} seconds.`, 429, { "Retry-After": String(resetIn) });
 }
 
-function handleOptions() {
+function handleOptions(): Response {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-function getClientIP(request) {
+function getClientIP(request: Request): string {
   return request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() || "unknown";
 }
 
-async function getAuthenticatedAccountId(request, env, allowPendingTotp = false) {
+async function getAuthenticatedAccountId(request: Request, env: Env, allowPendingTotp: boolean = false): Promise<string | null> {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
   const token = authHeader.slice(7);
   const result = await verifyToken(token, env.JWT_SECRET, allowPendingTotp);
   if (!result) return null;
-  // Update session last_active in the background (non-blocking)
   if (result.sid) {
     const now = new Date().toISOString();
     env.DB.prepare("UPDATE sessions SET last_active = ? WHERE id = ? AND account_id = ?")
@@ -252,7 +425,7 @@ async function getAuthenticatedAccountId(request, env, allowPendingTotp = false)
 // BASE64URL HELPERS (for WebAuthn)
 // ══════════════════════════════════════════════════════════════════════════
 
-function base64urlEncode(buffer) {
+function base64urlEncode(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   let str = "";
   for (let i = 0; i < bytes.length; i++) {
@@ -261,7 +434,7 @@ function base64urlEncode(buffer) {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
-function base64urlDecode(str) {
+function base64urlDecode(str: string): Uint8Array {
   const padding = "=".repeat((4 - (str.length % 4)) % 4);
   const base64 = str.replace(/-/g, "+").replace(/_/g, "/") + padding;
   const binary = atob(base64);
@@ -276,16 +449,18 @@ function base64urlDecode(str) {
 // CBOR DECODER (minimal, for attestationObject parsing)
 // ══════════════════════════════════════════════════════════════════════════
 
-function decodeCBOR(data) {
+type CBORValue = number | string | boolean | null | Uint8Array | CBORValue[] | { [key: string | number]: CBORValue };
+
+function decodeCBOR(data: Uint8Array): CBORValue {
   let offset = 0;
 
-  function read() {
+  function read(): CBORValue {
     if (offset >= data.length) throw new Error("CBOR: unexpected end of data");
     const initial = data[offset++];
     const major = initial >> 5;
     const additional = initial & 0x1f;
 
-    let value = readArgument(additional);
+    const value = readArgument(additional);
 
     switch (major) {
       case 0: // unsigned int
@@ -297,15 +472,15 @@ function decodeCBOR(data) {
       case 3: // text string
         return new TextDecoder().decode(readBytes(value));
       case 4: { // array
-        const arr = [];
+        const arr: CBORValue[] = [];
         for (let i = 0; i < value; i++) arr.push(read());
         return arr;
       }
       case 5: { // map
-        const obj = {};
+        const obj: { [key: string | number]: CBORValue } = {};
         for (let i = 0; i < value; i++) {
           const key = read();
-          obj[key] = read();
+          obj[key as string | number] = read();
         }
         return obj;
       }
@@ -321,7 +496,7 @@ function decodeCBOR(data) {
     }
   }
 
-  function readArgument(additional) {
+  function readArgument(additional: number): number {
     if (additional < 24) return additional;
     if (additional === 24) return data[offset++];
     if (additional === 25) {
@@ -343,7 +518,7 @@ function decodeCBOR(data) {
     return additional;
   }
 
-  function readBytes(length) {
+  function readBytes(length: number): Uint8Array {
     const slice = data.slice(offset, offset + length);
     offset += length;
     return slice;
@@ -356,7 +531,7 @@ function decodeCBOR(data) {
 // WEBAUTHN HELPERS
 // ══════════════════════════════════════════════════════════════════════════
 
-function extractPublicKeyFromAuthData(authData) {
+function extractPublicKeyFromAuthData(authData: Uint8Array): COSEKey {
   // authData layout: rpIdHash(32) + flags(1) + signCount(4) + [attestedCredentialData]
   // attestedCredentialData: aaguid(16) + credIdLen(2) + credId(credIdLen) + credentialPublicKey(CBOR)
   let pos = 37; // skip rpIdHash + flags + signCount
@@ -369,17 +544,17 @@ function extractPublicKeyFromAuthData(authData) {
   pos += credIdLen;
   // rest is CBOR-encoded public key (COSE_Key)
   const publicKeyCBOR = authData.slice(pos);
-  return decodeCBOR(publicKeyCBOR);
+  return decodeCBOR(publicKeyCBOR) as COSEKey;
 }
 
-async function importCOSEPublicKey(coseKey) {
+async function importCOSEPublicKey(coseKey: COSEKey): Promise<JsonWebKey> {
   // Support ES256 (alg -7) — ECDSA with P-256
-  const alg = coseKey[3] || coseKey["3"];
+  const alg = (coseKey[3] || coseKey["3"]) as number;
   if (alg !== -7) {
     throw new Error(`Unsupported COSE algorithm: ${alg}. Only ES256 (-7) is supported.`);
   }
-  const x = coseKey[-2] || coseKey["-2"];
-  const y = coseKey[-3] || coseKey["-3"];
+  const x = (coseKey[-2] || coseKey["-2"]) as Uint8Array;
+  const y = (coseKey[-3] || coseKey["-3"]) as Uint8Array;
   if (!x || !y) throw new Error("Missing x/y coordinates in COSE key");
 
   // Build uncompressed EC point: 0x04 || x || y
@@ -396,11 +571,16 @@ async function importCOSEPublicKey(coseKey) {
     ["verify"]
   );
   // Export as JWK for storage
-  const jwk = await crypto.subtle.exportKey("jwk", key);
+  const jwk = await crypto.subtle.exportKey("jwk", key) as JsonWebKey;
   return jwk;
 }
 
-async function verifyWebAuthnSignature(publicKeyJwk, authenticatorData, clientDataJSON, signature) {
+async function verifyWebAuthnSignature(
+  publicKeyJwk: JsonWebKey,
+  authenticatorData: Uint8Array,
+  clientDataJSON: Uint8Array,
+  signature: Uint8Array
+): Promise<boolean> {
   const key = await crypto.subtle.importKey(
     "jwk",
     publicKeyJwk,
@@ -423,7 +603,7 @@ async function verifyWebAuthnSignature(publicKeyJwk, authenticatorData, clientDa
   return crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, rawSig, signedData);
 }
 
-function derToRaw(derSig) {
+function derToRaw(derSig: Uint8Array | ArrayBuffer): Uint8Array {
   // DER format: 0x30 <totalLen> 0x02 <rLen> <r> 0x02 <sLen> <s>
   const sig = derSig instanceof Uint8Array ? derSig : new Uint8Array(derSig);
   if (sig[0] !== 0x30) {
@@ -453,20 +633,20 @@ function derToRaw(derSig) {
 // EXISTING ROUTE HANDLERS
 // ══════════════════════════════════════════════════════════════════════════
 
-async function handleLogin(request, env) {
+async function handleLogin(request: Request, env: Env): Promise<Response> {
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "login");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
   try {
-    const body = await request.json();
+    const body = await request.json<LoginRequestBody>();
     const { account_id, captcha_token } = body;
     const captchaResult = await verifyTurnstile(captcha_token, env.TURNSTILE_SECRET, ip);
     if (!captchaResult.success) return errorResponse(captchaResult.error || "Captcha verification failed", 400);
     if (!isValidAccountId(account_id)) return errorResponse("Invalid account ID format. Must be 16 digits.", 400);
-    const existing = await env.DB.prepare("SELECT id, totp_enabled, display_name FROM accounts WHERE id = ?").bind(account_id).first();
+    const existing = await env.DB.prepare("SELECT id, totp_enabled, display_name FROM accounts WHERE id = ?").bind(account_id).first<{ id: string; totp_enabled: number; display_name: string | null }>();
     let isNew = false;
     let totpEnabled = false;
-    let displayName = null;
+    let displayName: string | null = null;
     if (!existing) {
       const now = new Date().toISOString();
       displayName = generateDisplayName();
@@ -493,18 +673,18 @@ async function handleLogin(request, env) {
   }
 }
 
-async function handleLoginTotp(request, env) {
+async function handleLoginTotp(request: Request, env: Env): Promise<Response> {
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "totp");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
   try {
-    const body = await request.json();
+    const body = await request.json<LoginTotpRequestBody>();
     const { pending_token, totp_code } = body;
     if (!pending_token || !totp_code) return errorResponse("Missing pending token or TOTP code", 400);
     const tokenData = await verifyToken(pending_token, env.JWT_SECRET, true);
     if (!tokenData) return errorResponse("Invalid or expired token", 401);
     const accountId = tokenData.sub;
-    const account = await env.DB.prepare("SELECT totp_secret, display_name FROM accounts WHERE id = ? AND totp_enabled = 1").bind(accountId).first();
+    const account = await env.DB.prepare("SELECT totp_secret, display_name FROM accounts WHERE id = ? AND totp_enabled = 1").bind(accountId).first<{ totp_secret: string; display_name: string | null }>();
     if (!account || !account.totp_secret) return errorResponse("2FA not enabled for this account", 400);
     const isValid = await verifyTOTP(account.totp_secret, totp_code);
     if (!isValid) return errorResponse("Invalid 2FA code", 401);
@@ -517,11 +697,11 @@ async function handleLoginTotp(request, env) {
   }
 }
 
-async function handle2FASetup(request, env) {
+async function handle2FASetup(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const account = await env.DB.prepare("SELECT totp_enabled FROM accounts WHERE id = ?").bind(accountId).first();
+    const account = await env.DB.prepare("SELECT totp_enabled FROM accounts WHERE id = ?").bind(accountId).first<{ totp_enabled: number }>();
     if (account && account.totp_enabled === 1) return errorResponse("2FA is already enabled", 400);
     const secret = generateTOTPSecret();
     await env.DB.prepare("UPDATE accounts SET totp_secret = ? WHERE id = ?").bind(secret, accountId).run();
@@ -533,14 +713,14 @@ async function handle2FASetup(request, env) {
   }
 }
 
-async function handle2FAEnable(request, env) {
+async function handle2FAEnable(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const body = await request.json();
+    const body = await request.json<TotpCodeBody>();
     const { totp_code } = body;
     if (!totp_code) return errorResponse("TOTP code required", 400);
-    const account = await env.DB.prepare("SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?").bind(accountId).first();
+    const account = await env.DB.prepare("SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?").bind(accountId).first<{ totp_secret: string; totp_enabled: number }>();
     if (!account || !account.totp_secret) return errorResponse("Please run setup first", 400);
     if (account.totp_enabled === 1) return errorResponse("2FA is already enabled", 400);
     const isValid = await verifyTOTP(account.totp_secret, totp_code);
@@ -553,14 +733,14 @@ async function handle2FAEnable(request, env) {
   }
 }
 
-async function handle2FADisable(request, env) {
+async function handle2FADisable(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const body = await request.json();
+    const body = await request.json<TotpCodeBody>();
     const { totp_code } = body;
     if (!totp_code) return errorResponse("TOTP code required to disable 2FA", 400);
-    const account = await env.DB.prepare("SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?").bind(accountId).first();
+    const account = await env.DB.prepare("SELECT totp_secret, totp_enabled FROM accounts WHERE id = ?").bind(accountId).first<{ totp_secret: string; totp_enabled: number }>();
     if (!account || account.totp_enabled !== 1) return errorResponse("2FA is not enabled", 400);
     const isValid = await verifyTOTP(account.totp_secret, totp_code);
     if (!isValid) return errorResponse("Invalid code", 400);
@@ -572,11 +752,11 @@ async function handle2FADisable(request, env) {
   }
 }
 
-async function handle2FAStatus(request, env) {
+async function handle2FAStatus(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const account = await env.DB.prepare("SELECT totp_enabled FROM accounts WHERE id = ?").bind(accountId).first();
+    const account = await env.DB.prepare("SELECT totp_enabled FROM accounts WHERE id = ?").bind(accountId).first<{ totp_enabled: number }>();
     return jsonResponse({ success: true, totp_enabled: account ? account.totp_enabled === 1 : false });
   } catch (e) {
     console.error("2FA status error:", e);
@@ -584,14 +764,14 @@ async function handle2FAStatus(request, env) {
   }
 }
 
-async function handleGetData(request, env) {
+async function handleGetData(request: Request, env: Env): Promise<Response> {
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "data_read");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const results = await env.DB.prepare("SELECT key, value, updated_at FROM user_data WHERE account_id = ?").bind(accountId).all();
+    const results = await env.DB.prepare("SELECT key, value, updated_at FROM user_data WHERE account_id = ?").bind(accountId).all<{ key: string; value: string; updated_at: string }>();
     return jsonResponse({ success: true, data: results.results || [] });
   } catch (e) {
     console.error("Get data error:", e);
@@ -599,14 +779,14 @@ async function handleGetData(request, env) {
   }
 }
 
-async function handlePutData(request, env) {
+async function handlePutData(request: Request, env: Env): Promise<Response> {
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "data_write");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const body = await request.json();
+    const body = await request.json<DataPutBody>();
     const { key, value } = body;
     if (!key || typeof key !== "string") return errorResponse("Invalid key", 400);
     if (value === undefined) return errorResponse("Value is required", 400);
@@ -621,14 +801,14 @@ async function handlePutData(request, env) {
   }
 }
 
-async function handleDeleteData(request, env) {
+async function handleDeleteData(request: Request, env: Env): Promise<Response> {
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "data_write");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const body = await request.json();
+    const body = await request.json<DataDeleteBody>();
     const { key } = body;
     if (!key || typeof key !== "string") return errorResponse("Invalid key", 400);
     await env.DB.prepare("DELETE FROM user_data WHERE account_id = ? AND key = ?").bind(accountId, key).run();
@@ -639,11 +819,11 @@ async function handleDeleteData(request, env) {
   }
 }
 
-async function handleUpdateDisplayName(request, env) {
+async function handleUpdateDisplayName(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
-    const body = await request.json();
+    const body = await request.json<DisplayNameBody>();
     const { display_name } = body;
     if (!display_name || typeof display_name !== "string" || display_name.length > 50) {
       return errorResponse("Invalid display name", 400);
@@ -656,7 +836,7 @@ async function handleUpdateDisplayName(request, env) {
   }
 }
 
-function handleHealth() {
+function handleHealth(): Response {
   return jsonResponse({ status: "ok", timestamp: new Date().toISOString() });
 }
 
@@ -664,14 +844,13 @@ function handleHealth() {
 // PASSKEY (WebAuthn) ROUTE HANDLERS
 // ══════════════════════════════════════════════════════════════════════════
 
-// GET /passkeys — list registered passkeys for the authenticated user
-async function handleListPasskeys(request, env) {
+async function handleListPasskeys(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
     const results = await env.DB.prepare(
       "SELECT credential_id as id, name, created_at FROM passkeys WHERE account_id = ?"
-    ).bind(accountId).all();
+    ).bind(accountId).all<{ id: string; name: string; created_at: string }>();
     return jsonResponse({ passkeys: results.results || [] });
   } catch (e) {
     console.error("List passkeys error:", e);
@@ -679,60 +858,54 @@ async function handleListPasskeys(request, env) {
   }
 }
 
-// POST /passkeys/register/start — generate registration challenge
-async function handlePasskeyRegisterStart(request, env) {
+async function handlePasskeyRegisterStart(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
 
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "passkey");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
 
   try {
-    const body = await request.json();
+    const body = await request.json<PasskeyRegisterStartBody>();
 
-    // If 2FA enabled, verify TOTP first
     const account = await env.DB.prepare(
       "SELECT totp_enabled, totp_secret, display_name FROM accounts WHERE id = ?"
-    ).bind(accountId).first();
+    ).bind(accountId).first<{ totp_enabled: number; totp_secret: string | null; display_name: string | null }>();
 
     if (account && account.totp_enabled === 1) {
       const { totp_code } = body;
       if (!totp_code) return errorResponse("2FA code required to add a passkey", 400);
-      const isValid = await verifyTOTP(account.totp_secret, totp_code);
+      const isValid = await verifyTOTP(account.totp_secret!, totp_code);
       if (!isValid) return errorResponse("Invalid 2FA code", 400);
     }
 
-    // Get existing credentials to exclude
     const existing = await env.DB.prepare(
       "SELECT credential_id FROM passkeys WHERE account_id = ?"
-    ).bind(accountId).all();
+    ).bind(accountId).all<{ credential_id: string }>();
 
     const excludeCredentials = (existing.results || []).map((row) => ({
-      type: "public-key",
+      type: "public-key" as const,
       id: row.credential_id,
     }));
 
-    // Generate challenge
     const challenge = new Uint8Array(32);
     crypto.getRandomValues(challenge);
     const challengeB64 = base64urlEncode(challenge);
 
-    // Store challenge temporarily (expires in 5 min)
     const challengeKey = `webauthn_challenge:${accountId}:register`;
     const now = new Date().toISOString();
     await env.DB.prepare(
       "INSERT OR REPLACE INTO user_data (account_id, key, value, updated_at) VALUES (?, ?, ?, ?)"
     ).bind(accountId, challengeKey, challengeB64, now).run();
 
-    // Generate user ID (use account ID hashed to avoid exposing it)
     const userIdBytes = new TextEncoder().encode(accountId);
     const userIdHash = new Uint8Array(await crypto.subtle.digest("SHA-256", userIdBytes));
     const userIdB64 = base64urlEncode(userIdHash);
 
     const displayName = (account && account.display_name) || accountId;
 
-    const options = {
+    const options: WebAuthnRegistrationOptions = {
       challenge: challengeB64,
       rp: { name: RP_NAME, id: RP_ID },
       user: {
@@ -761,13 +934,12 @@ async function handlePasskeyRegisterStart(request, env) {
   }
 }
 
-// POST /passkeys/register/finish — verify and store the new credential
-async function handlePasskeyRegisterFinish(request, env) {
+async function handlePasskeyRegisterFinish(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
 
   try {
-    const body = await request.json();
+    const body = await request.json<WebAuthnCredentialBody>();
     // Support both { id, rawId, response, ... } and { credential: { id, rawId, response, ... } }
     const cred = body.credential || body;
 
@@ -775,55 +947,45 @@ async function handlePasskeyRegisterFinish(request, env) {
       return errorResponse("Invalid credential data", 400);
     }
 
-    // Retrieve stored challenge
     const challengeKey = `webauthn_challenge:${accountId}:register`;
     const storedChallenge = await env.DB.prepare(
       "SELECT value FROM user_data WHERE account_id = ? AND key = ?"
-    ).bind(accountId, challengeKey).first();
+    ).bind(accountId, challengeKey).first<{ value: string }>();
 
     if (!storedChallenge) return errorResponse("Registration session expired", 400);
 
-    // Clean up challenge
     await env.DB.prepare(
       "DELETE FROM user_data WHERE account_id = ? AND key = ?"
     ).bind(accountId, challengeKey).run();
 
-    // Decode attestationObject and clientDataJSON
     const clientDataJSON = base64urlDecode(cred.response.clientDataJSON);
     const attestationObject = base64urlDecode(cred.response.attestationObject);
 
-    // Verify clientDataJSON
-    const clientData = JSON.parse(new TextDecoder().decode(clientDataJSON));
+    const clientData: WebAuthnClientData = JSON.parse(new TextDecoder().decode(clientDataJSON));
 
     if (clientData.type !== "webauthn.create") {
       return errorResponse("Invalid client data type", 400);
     }
 
-    // Verify challenge matches
     if (clientData.challenge !== storedChallenge.value) {
       return errorResponse("Challenge mismatch", 400);
     }
 
-    // Verify origin
     if (clientData.origin !== RP_ORIGIN) {
-      // Also allow localhost for development
       if (!clientData.origin.startsWith("http://localhost") && !clientData.origin.startsWith("https://localhost")) {
         return errorResponse("Origin mismatch", 400);
       }
     }
 
-    // Parse attestation object (CBOR)
-    const attestation = decodeCBOR(attestationObject);
+    const attestation = decodeCBOR(attestationObject) as { authData: Uint8Array };
     const authData = attestation.authData;
 
     if (!authData || authData.length < 37) {
       return errorResponse("Invalid authenticator data", 400);
     }
 
-    // Verify RP ID hash
     const rpIdHash = authData.slice(0, 32);
     const expectedRpIdHash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(RP_ID)));
-    // Also check localhost RP ID for dev
     let rpIdValid = rpIdHash.every((b, i) => b === expectedRpIdHash[i]);
     if (!rpIdValid) {
       const localhostHash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("localhost")));
@@ -831,26 +993,21 @@ async function handlePasskeyRegisterFinish(request, env) {
     }
     if (!rpIdValid) return errorResponse("RP ID hash mismatch", 400);
 
-    // Check flags: bit 0 (UP) must be set
     const flags = authData[32];
     if (!(flags & 0x01)) return errorResponse("User presence not confirmed", 400);
 
-    // Extract public key from authData
     const coseKey = extractPublicKeyFromAuthData(authData);
     const publicKeyJwk = await importCOSEPublicKey(coseKey);
 
-    // Get sign count
     const signCount = (authData[33] << 24) | (authData[34] << 16) | (authData[35] << 8) | authData[36];
 
-    // Store the credential
     const credentialId = cred.id;
     const transports = JSON.stringify(cred.response.transports || []);
     const now = new Date().toISOString();
 
-    // Check credential doesn't already exist
     const existingCred = await env.DB.prepare(
       "SELECT credential_id FROM passkeys WHERE credential_id = ?"
-    ).bind(credentialId).first();
+    ).bind(credentialId).first<{ credential_id: string }>();
     if (existingCred) return errorResponse("Credential already registered", 400);
 
     await env.DB.prepare(
@@ -864,53 +1021,48 @@ async function handlePasskeyRegisterFinish(request, env) {
   }
 }
 
-// POST /passkeys/login/start — generate authentication challenge
-async function handlePasskeyLoginStart(request, env) {
+async function handlePasskeyLoginStart(request: Request, env: Env): Promise<Response> {
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "passkey");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
 
   try {
-    const body = await request.json();
+    const body = await request.json<{ account_id: string }>();
     const { account_id } = body;
 
     if (!isValidAccountId(account_id)) return errorResponse("Invalid account ID", 400);
 
-    // Verify account exists
-    const account = await env.DB.prepare("SELECT id FROM accounts WHERE id = ?").bind(account_id).first();
+    const account = await env.DB.prepare("SELECT id FROM accounts WHERE id = ?").bind(account_id).first<{ id: string }>();
     if (!account) return errorResponse("Account not found", 404);
 
-    // Get registered passkeys
     const passkeys = await env.DB.prepare(
       "SELECT credential_id, transports FROM passkeys WHERE account_id = ?"
-    ).bind(account_id).all();
+    ).bind(account_id).all<{ credential_id: string; transports: string }>();
 
     if (!passkeys.results || passkeys.results.length === 0) {
       return errorResponse("No passkeys registered for this account", 400);
     }
 
     const allowCredentials = passkeys.results.map((pk) => {
-      const entry = { type: "public-key", id: pk.credential_id };
+      const entry: { type: "public-key"; id: string; transports?: string[] } = { type: "public-key", id: pk.credential_id };
       try {
-        const t = JSON.parse(pk.transports || "[]");
+        const t: string[] = JSON.parse(pk.transports || "[]");
         if (t.length > 0) entry.transports = t;
-      } catch {}
+      } catch { /* ignore parse errors */ }
       return entry;
     });
 
-    // Generate challenge
     const challenge = new Uint8Array(32);
     crypto.getRandomValues(challenge);
     const challengeB64 = base64urlEncode(challenge);
 
-    // Store challenge
     const challengeKey = `webauthn_challenge:${account_id}:login`;
     const now = new Date().toISOString();
     await env.DB.prepare(
       "INSERT OR REPLACE INTO user_data (account_id, key, value, updated_at) VALUES (?, ?, ?, ?)"
     ).bind(account_id, challengeKey, challengeB64, now).run();
 
-    const options = {
+    const options: WebAuthnAuthenticationOptions = {
       challenge: challengeB64,
       timeout: 60000,
       rpId: RP_ID,
@@ -925,14 +1077,13 @@ async function handlePasskeyLoginStart(request, env) {
   }
 }
 
-// POST /passkeys/login/finish — verify the assertion and return a token
-async function handlePasskeyLoginFinish(request, env) {
+async function handlePasskeyLoginFinish(request: Request, env: Env): Promise<Response> {
   const ip = getClientIP(request);
   const rateCheck = await checkRateLimit(env.DB, ip, "passkey");
-  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn);
+  if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetIn!);
 
   try {
-    const body = await request.json();
+    const body = await request.json<PasskeyLoginFinishBody>();
     const { account_id } = body;
 
     if (!isValidAccountId(account_id)) return errorResponse("Invalid account ID", 400);
@@ -943,34 +1094,29 @@ async function handlePasskeyLoginFinish(request, env) {
     const credentialId = assertion.id;
     if (!credentialId) return errorResponse("Missing credential ID", 400);
 
-    // Retrieve stored challenge
     const challengeKey = `webauthn_challenge:${account_id}:login`;
     const storedChallenge = await env.DB.prepare(
       "SELECT value FROM user_data WHERE account_id = ? AND key = ?"
-    ).bind(account_id, challengeKey).first();
+    ).bind(account_id, challengeKey).first<{ value: string }>();
 
     if (!storedChallenge) return errorResponse("Login session expired", 400);
 
-    // Clean up challenge
     await env.DB.prepare(
       "DELETE FROM user_data WHERE account_id = ? AND key = ?"
     ).bind(account_id, challengeKey).run();
 
-    // Find the credential
     const passkey = await env.DB.prepare(
       "SELECT credential_id, public_key, counter, account_id FROM passkeys WHERE credential_id = ? AND account_id = ?"
-    ).bind(credentialId, account_id).first();
+    ).bind(credentialId, account_id).first<{ credential_id: string; public_key: string; counter: number; account_id: string }>();
 
     if (!passkey) return errorResponse("Passkey not found", 400);
 
-    // Decode assertion response
     const assertionResponse = assertion.response || assertion;
-    const authenticatorData = base64urlDecode(assertionResponse.authenticatorData);
-    const clientDataJSON = base64urlDecode(assertionResponse.clientDataJSON);
-    const signature = base64urlDecode(assertionResponse.signature);
+    const authenticatorData = base64urlDecode((assertionResponse as WebAuthnAssertionResponse).authenticatorData);
+    const clientDataJSON = base64urlDecode((assertionResponse as WebAuthnAssertionResponse).clientDataJSON);
+    const signature = base64urlDecode((assertionResponse as WebAuthnAssertionResponse).signature);
 
-    // Verify clientDataJSON
-    const clientData = JSON.parse(new TextDecoder().decode(clientDataJSON));
+    const clientData: WebAuthnClientData = JSON.parse(new TextDecoder().decode(clientDataJSON));
 
     if (clientData.type !== "webauthn.get") {
       return errorResponse("Invalid client data type", 400);
@@ -984,7 +1130,6 @@ async function handlePasskeyLoginFinish(request, env) {
       }
     }
 
-    // Verify RP ID hash
     const rpIdHash = authenticatorData.slice(0, 32);
     const expectedRpIdHash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(RP_ID)));
     let rpIdValid = rpIdHash.every((b, i) => b === expectedRpIdHash[i]);
@@ -994,25 +1139,21 @@ async function handlePasskeyLoginFinish(request, env) {
     }
     if (!rpIdValid) return errorResponse("RP ID hash mismatch", 400);
 
-    // Check user presence
     const flags = authenticatorData[32];
     if (!(flags & 0x01)) return errorResponse("User presence not confirmed", 400);
 
-    // Verify signature
-    const publicKeyJwk = JSON.parse(passkey.public_key);
+    const publicKeyJwk: JsonWebKey = JSON.parse(passkey.public_key);
     const isValid = await verifyWebAuthnSignature(publicKeyJwk, authenticatorData, clientDataJSON, signature);
 
     if (!isValid) return errorResponse("Invalid passkey signature", 400);
 
-    // Update counter (prevent replay)
     const newCounter = (authenticatorData[33] << 24) | (authenticatorData[34] << 16) | (authenticatorData[35] << 8) | authenticatorData[36];
     if (newCounter > 0 && newCounter <= passkey.counter) {
       return errorResponse("Possible credential cloning detected", 400);
     }
     await env.DB.prepare("UPDATE passkeys SET counter = ? WHERE credential_id = ?").bind(newCounter, credentialId).run();
 
-    // Generate session token (passkeys bypass 2FA)
-    const account = await env.DB.prepare("SELECT display_name, totp_enabled FROM accounts WHERE id = ?").bind(account_id).first();
+    const account = await env.DB.prepare("SELECT display_name, totp_enabled FROM accounts WHERE id = ?").bind(account_id).first<{ display_name: string | null; totp_enabled: number }>();
     const sessionId = await createSession(env, account_id, request);
     const token = await generateToken(account_id, env.JWT_SECRET, env.TOKEN_EXPIRY, false, sessionId);
 
@@ -1029,8 +1170,7 @@ async function handlePasskeyLoginFinish(request, env) {
   }
 }
 
-// DELETE /passkeys/:credentialId — remove a passkey
-async function handleDeletePasskey(request, env, credentialId) {
+async function handleDeletePasskey(request: Request, env: Env, credentialId: string): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
   try {
@@ -1050,7 +1190,7 @@ async function handleDeletePasskey(request, env, credentialId) {
 // SESSION MANAGEMENT
 // ══════════════════════════════════════════════════════════════════════════
 
-function parseUserAgent(ua) {
+function parseUserAgent(ua: string): UserAgentInfo {
   let browser = "Unknown";
   let device = "Unknown";
 
@@ -1068,7 +1208,7 @@ function parseUserAgent(ua) {
   return { browser, device };
 }
 
-async function createSession(env, accountId, request) {
+async function createSession(env: Env, accountId: string, request: Request): Promise<string> {
   const id = crypto.randomUUID();
   const ua = request.headers.get("User-Agent") || "";
   const ip = getClientIP(request);
@@ -1082,13 +1222,11 @@ async function createSession(env, accountId, request) {
   return id;
 }
 
-// GET /sessions — list all sessions for the authenticated user
-async function handleListSessions(request, env) {
+async function handleListSessions(request: Request, env: Env): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
 
-  // Get current session ID from token
-  const authHeader = request.headers.get("Authorization");
+  const authHeader = request.headers.get("Authorization")!;
   const token = authHeader.slice(7);
   const tokenData = await verifyToken(token, env.JWT_SECRET);
   const currentSessionId = tokenData?.sid || null;
@@ -1096,9 +1234,9 @@ async function handleListSessions(request, env) {
   try {
     const { results } = await env.DB.prepare(
       "SELECT id, browser, device, ip_address, created_at, last_active FROM sessions WHERE account_id = ? ORDER BY last_active DESC"
-    ).bind(accountId).all();
+    ).bind(accountId).all<SessionRow>();
 
-    const sessions = (results || []).map(s => ({
+    const sessions: SessionResponse[] = (results || []).map(s => ({
       id: s.id,
       browser: s.browser || "Unknown",
       device: s.device || "Unknown",
@@ -1115,13 +1253,11 @@ async function handleListSessions(request, env) {
   }
 }
 
-// DELETE /sessions/:id — revoke a session
-async function handleDeleteSession(request, env, sessionId) {
+async function handleDeleteSession(request: Request, env: Env, sessionId: string): Promise<Response> {
   const accountId = await getAuthenticatedAccountId(request, env);
   if (!accountId) return errorResponse("Unauthorized", 401);
 
-  // Get current session ID to prevent self-revocation
-  const authHeader = request.headers.get("Authorization");
+  const authHeader = request.headers.get("Authorization")!;
   const token = authHeader.slice(7);
   const tokenData = await verifyToken(token, env.JWT_SECRET);
   if (tokenData?.sid === sessionId) {
@@ -1146,7 +1282,7 @@ async function handleDeleteSession(request, env, sessionId) {
 // ══════════════════════════════════════════════════════════════════════════
 
 export default {
-  async fetch(request, env) {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
@@ -1158,7 +1294,7 @@ export default {
 
     const ip = getClientIP(request);
     const globalCheck = await checkRateLimit(env.DB, ip, "global");
-    if (!globalCheck.allowed) return rateLimitResponse(globalCheck.resetIn);
+    if (!globalCheck.allowed) return rateLimitResponse(globalCheck.resetIn!);
 
     // ─── Existing routes ──────────────────────────────────
     if (path === "/login" && method === "POST") return handleLogin(request, env);
@@ -1199,4 +1335,4 @@ export default {
 
     return errorResponse("Not found", 404);
   },
-};
+} satisfies ExportedHandler<Env>;
